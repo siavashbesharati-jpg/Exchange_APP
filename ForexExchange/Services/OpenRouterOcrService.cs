@@ -77,8 +77,8 @@ namespace ForexExchange.Services
                             }
                         }
                     },
-                    max_tokens = 1000,
-                    temperature = 0.1
+                    max_tokens = _configuration.GetValue<int>("OpenRouter:MaxTokens", 1000),
+                    temperature = _configuration.GetValue<double>("OpenRouter:Temperature", 0.1)
                 };
 
                 var jsonContent = JsonSerializer.Serialize(requestBody);

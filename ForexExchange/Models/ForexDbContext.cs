@@ -18,6 +18,7 @@ namespace ForexExchange.Models
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Receipt> Receipts { get; set; }
         public DbSet<ExchangeRate> ExchangeRates { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -96,6 +97,18 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => new { e.Currency, e.IsActive });
             });
             
+            // Notification configurations
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.Customer)
+                      .WithMany(e => e.Notifications)
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => new { e.CustomerId, e.IsRead });
+                entity.HasIndex(e => e.CreatedAt);
+            });
+
             // Seed initial exchange rates
             var seedDate = new DateTime(2025, 8, 18, 12, 0, 0, DateTimeKind.Utc);
             modelBuilder.Entity<ExchangeRate>().HasData(

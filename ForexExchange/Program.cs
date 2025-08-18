@@ -19,6 +19,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IOcrService, OpenRouterOcrService>();
 builder.Services.AddScoped<ITransactionSettlementService, TransactionSettlementService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IBankStatementService, BankStatementService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 var app = builder.Build();
 

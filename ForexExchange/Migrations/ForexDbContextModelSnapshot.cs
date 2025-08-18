@@ -147,6 +147,52 @@ namespace ForexExchange.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ForexExchange.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("RelatedEntityId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CustomerId", "IsRead");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("ForexExchange.Models.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -332,6 +378,17 @@ namespace ForexExchange.Migrations
                     b.ToTable("Transactions");
                 });
 
+            modelBuilder.Entity("ForexExchange.Models.Notification", b =>
+                {
+                    b.HasOne("ForexExchange.Models.Customer", "Customer")
+                        .WithMany("Notifications")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
             modelBuilder.Entity("ForexExchange.Models.Order", b =>
                 {
                     b.HasOne("ForexExchange.Models.Customer", "Customer")
@@ -406,6 +463,8 @@ namespace ForexExchange.Migrations
             modelBuilder.Entity("ForexExchange.Models.Customer", b =>
                 {
                     b.Navigation("BuyTransactions");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("Orders");
 

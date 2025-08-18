@@ -1,0 +1,334 @@
+@model ForexExchange.Controllers.FinancialReport
+@{
+    ViewData["Title"] = "گزارش مالی";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">گزارش مالی</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Form -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label for="fromDate" class="form-label">از تاریخ</label>
+                                <input type="date" class="form-control" id="fromDate" name="fromDate" value="@Model.FromDate.ToString("yyyy-MM-dd")">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="toDate" class="form-label">تا تاریخ</label>
+                                <input type="date" class="form-control" id="toDate" name="toDate" value="@Model.ToDate.ToString("yyyy-MM-dd")">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="customerId" class="form-label">مشتری</label>
+                                <select class="form-control" id="customerId" name="customerId">
+                                    <option value="">همه مشتریان</option>
+                                    @foreach (var customer in ViewBag.Customers)
+                                    {
+                                        <option value="@customer.Id">@customer.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="currency" class="form-label">نوع ارز</label>
+                                <select class="form-control" id="currency" name="currency">
+                                    <option value="">همه ارزها</option>
+                                    <option value="1">دلار آمریکا (USD)</option>
+                                    <option value="2">یورو (EUR)</option>
+                                    <option value="3">درهم امارات (AED)</option>
+                                    <option value="4">ریال عمان (OMR)</option>
+                                    <option value="5">لیر ترکیه (TRY)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">اعمال فیلتر</button>
+                                <a href="@Url.Action("ExportFinancial")?fromDate=@Model.FromDate.ToString("yyyy-MM-dd")&toDate=@Model.ToDate.ToString("yyyy-MM-dd")" 
+                                   class="btn btn-success">دانلود CSV</a>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.TotalTransactions.ToString("N0")</h4>
+                                            <p>کل تراکنش‌ها</p>
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-exchange-alt fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.CompletedTransactions.ToString("N0")</h4>
+                                            <p>تراکنش‌های تکمیل شده</p>
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-check-circle fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.TotalVolumeInToman.ToString("N0")</h4>
+                                            <p>حجم کل (تومان)</p>
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-coins fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4>@Model.TotalCommissionEarned.ToString("N0")</h4>
+                                            <p>کل کمیسیون</p>
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-percent fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>حجم روزانه</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="dailyVolumeChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>تفکیک ارزها</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="currencyBreakdownChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Currency Breakdown Table -->
+                    @if (Model.CurrencyBreakdown.Any())
+                    {
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>تفکیک ارزها</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>نوع ارز</th>
+                                                <th>تعداد تراکنش</th>
+                                                <th>حجم کل</th>
+                                                <th>ارزش به تومان</th>
+                                                <th>میانگین نرخ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var currency in Model.CurrencyBreakdown)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        @switch (currency.Currency)
+                                                        {
+                                                            case ForexExchange.Models.CurrencyType.USD:
+                                                                <span class="badge bg-primary">دلار آمریکا</span>
+                                                                break;
+                                                            case ForexExchange.Models.CurrencyType.EUR:
+                                                                <span class="badge bg-info">یورو</span>
+                                                                break;
+                                                            case ForexExchange.Models.CurrencyType.AED:
+                                                                <span class="badge bg-success">درهم امارات</span>
+                                                                break;
+                                                            case ForexExchange.Models.CurrencyType.OMR:
+                                                                <span class="badge bg-warning">ریال عمان</span>
+                                                                break;
+                                                            case ForexExchange.Models.CurrencyType.TRY:
+                                                                <span class="badge bg-danger">لیر ترکیه</span>
+                                                                break;
+                                                        }
+                                                    </td>
+                                                    <td>@currency.TransactionCount.ToString("N0")</td>
+                                                    <td>@currency.TotalVolume.ToString("N2")</td>
+                                                    <td>@currency.TotalValueInToman.ToString("N0")</td>
+                                                    <td>@currency.AverageRate.ToString("N0")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Recent Transactions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>تراکنش‌های اخیر</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>شناسه</th>
+                                            <th>تاریخ</th>
+                                            <th>خریدار</th>
+                                            <th>فروشنده</th>
+                                            <th>نوع ارز</th>
+                                            <th>مقدار</th>
+                                            <th>نرخ</th>
+                                            <th>کل (تومان)</th>
+                                            <th>وضعیت</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var transaction in Model.Transactions.Take(10))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a href="@Url.Action("Details", "Settlements", new { id = transaction.Id })">
+                                                        #@transaction.Id
+                                                    </a>
+                                                </td>
+                                                <td>@transaction.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                                <td>@transaction.BuyerCustomer.FullName</td>
+                                                <td>@transaction.SellerCustomer.FullName</td>
+                                                <td>@transaction.Currency</td>
+                                                <td>@transaction.Amount.ToString("N2")</td>
+                                                <td>@transaction.Rate.ToString("N0")</td>
+                                                <td>@transaction.TotalInToman.ToString("N0")</td>
+                                                <td>
+                                                    @switch (transaction.Status)
+                                                    {
+                                                        case ForexExchange.Models.TransactionStatus.Pending:
+                                                            <span class="badge bg-warning">در انتظار</span>
+                                                            break;
+                                                        case ForexExchange.Models.TransactionStatus.PaymentUploaded:
+                                                            <span class="badge bg-info">رسید آپلود شده</span>
+                                                            break;
+                                                        case ForexExchange.Models.TransactionStatus.ReceiptConfirmed:
+                                                            <span class="badge bg-primary">رسید تأیید شده</span>
+                                                            break;
+                                                        case ForexExchange.Models.TransactionStatus.Completed:
+                                                            <span class="badge bg-success">تکمیل شده</span>
+                                                            break;
+                                                        case ForexExchange.Models.TransactionStatus.Failed:
+                                                            <span class="badge bg-danger">ناموفق</span>
+                                                            break;
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Daily Volume Chart
+        const dailyCtx = document.getElementById('dailyVolumeChart').getContext('2d');
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.DailyBreakdown.Select(d => $"'{d.Date:MM/dd}'")))],
+                datasets: [{
+                    label: 'حجم روزانه (تومان)',
+                    data: [@string.Join(",", Model.DailyBreakdown.Select(d => d.TotalVolumeInToman))],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('fa-IR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Currency Breakdown Chart
+        const currencyCtx = document.getElementById('currencyBreakdownChart').getContext('2d');
+        new Chart(currencyCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.CurrencyBreakdown.Select(c => $"'{c.Currency}'")))],
+                datasets: [{
+                    data: [@string.Join(",", Model.CurrencyBreakdown.Select(c => c.TotalValueInToman))],
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    </script>
+}

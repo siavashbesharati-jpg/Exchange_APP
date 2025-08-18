@@ -32,5 +32,6 @@ namespace ForexExchange.Models
         public ICollection<Transaction> BuyTransactions { get; set; } = new List<Transaction>();
         public ICollection<Transaction> SellTransactions { get; set; } = new List<Transaction>();
         public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
+        public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     }
 }

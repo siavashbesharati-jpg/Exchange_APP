@@ -1,0 +1,215 @@
+@{
+    ViewData["Title"] = "پردازش گردش حساب";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">پردازش گردش حساب بانکی</h3>
+                    <p class="text-muted">آپلود و تحلیل ۱۰ گردش آخر حساب مشتری</p>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form method="post" enctype="multipart/form-data" asp-action="Process">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="customerId" class="form-label">انتخاب مشتری <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="customerId" name="customerId" required>
+                                        <option value="">-- انتخاب مشتری --</option>
+                                        @foreach (var customer in ViewBag.Customers)
+                                        {
+                                            <option value="@customer.Id">@customer.FullName - @customer.PhoneNumber</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="bankStatementImage" class="form-label">تصویر گردش حساب <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="bankStatementImage" name="bankStatementImage" 
+                                           accept="image/*" required>
+                                    <div class="form-text">فرمت‌های پشتیبانی شده: JPG, PNG, GIF (حداکثر ۱۰ مگابایت)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary" id="processBtn">
+                                    <i class="fas fa-cogs me-2"></i>پردازش گردش حساب
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Preview Section -->
+                    <div id="imagePreview" class="mt-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>پیش‌نمایش تصویر</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <img id="previewImg" class="img-fluid" style="max-height: 400px;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Transactions Section -->
+                    <div id="customerTransactions" class="mt-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>تراکنش‌های در انتظار مشتری</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="transactionsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>شناسه</th>
+                                                <th>مبلغ (تومان)</th>
+                                                <th>نوع ارز</th>
+                                                <th>تاریخ ایجاد</th>
+                                                <th>وضعیت</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>راهنمای استفاده</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>مراحل پردازش:</h6>
+                            <ol>
+                                <li>مشتری مورد نظر را انتخاب کنید</li>
+                                <li>تصویر گردش حساب بانکی را آپلود کنید</li>
+                                <li>سیستم به صورت خودکار متن را استخراج می‌کند</li>
+                                <li>تراکنش‌ها با سیستم تطبیق داده می‌شوند</li>
+                                <li>نتایج برای تأیید نهایی نمایش داده می‌شوند</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>نکات مهم:</h6>
+                            <ul>
+                                <li>تصویر باید واضح و خوانا باشد</li>
+                                <li>حجم فایل نباید بیشتر از ۱۰ مگابایت باشد</li>
+                                <li>بهترین نتایج با تصاویر JPG یا PNG حاصل می‌شود</li>
+                                <li>گردش حساب باید شامل ۱۰ تراکنش اخیر باشد</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Image preview
+            $('#bankStatementImage').on('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#previewImg').attr('src', e.target.result);
+                        $('#imagePreview').show();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Customer selection change
+            $('#customerId').on('change', function() {
+                const customerId = $(this).val();
+                if (customerId) {
+                    loadCustomerTransactions(customerId);
+                } else {
+                    $('#customerTransactions').hide();
+                }
+            });
+
+            // Form submission
+            $('#processBtn').on('click', function() {
+                $(this).html('<i class="fas fa-spinner fa-spin me-2"></i>در حال پردازش...');
+                $(this).prop('disabled', true);
+            });
+        });
+
+        function loadCustomerTransactions(customerId) {
+            $.get('@Url.Action("GetCustomerTransactions")', { customerId: customerId })
+                .done(function(data) {
+                    const tbody = $('#transactionsTable tbody');
+                    tbody.empty();
+                    
+                    if (data.length === 0) {
+                        tbody.append('<tr><td colspan="5" class="text-center">تراکنش در انتظاری یافت نشد</td></tr>');
+                    } else {
+                        data.forEach(function(transaction) {
+                            const statusBadge = getStatusBadge(transaction.status);
+                            tbody.append(`
+                                <tr>
+                                    <td>#${transaction.id}</td>
+                                    <td>${transaction.amount.toLocaleString('fa-IR')}</td>
+                                    <td>${transaction.currency}</td>
+                                    <td>${transaction.createdAt}</td>
+                                    <td>${statusBadge}</td>
+                                </tr>
+                            `);
+                        });
+                    }
+                    
+                    $('#customerTransactions').show();
+                })
+                .fail(function() {
+                    alert('خطا در بارگذاری تراکنش‌های مشتری');
+                });
+        }
+
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'Pending':
+                    return '<span class="badge bg-warning">در انتظار</span>';
+                case 'PaymentUploaded':
+                    return '<span class="badge bg-info">رسید آپلود شده</span>';
+                case 'ReceiptConfirmed':
+                    return '<span class="badge bg-primary">رسید تأیید شده</span>';
+                default:
+                    return `<span class="badge bg-secondary">${status}</span>`;
+            }
+        }
+    </script>
+}

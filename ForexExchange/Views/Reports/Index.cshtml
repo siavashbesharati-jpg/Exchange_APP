@@ -1,0 +1,147 @@
+@{
+    ViewData["Title"] = "گزارشات";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2>سیستم گزارشات</h2>
+            <p class="text-muted">گزارشات مالی و تحلیلی سیستم صرافی</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Financial Reports -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-chart-line fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">گزارش مالی</h5>
+                    <p class="card-text">گزارش جامع تراکنش‌ها، حجم معاملات و درآمد کمیسیون</p>
+                    <a href="@Url.Action("Financial")" class="btn btn-primary">مشاهده گزارش</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Activity -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-success mb-3">
+                        <i class="fas fa-users fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">فعالیت مشتریان</h5>
+                    <p class="card-text">تحلیل فعالیت مشتریان و حجم معاملات هر مشتری</p>
+                    <a href="@Url.Action("CustomerActivity")" class="btn btn-success">مشاهده گزارش</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Book -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-info mb-3">
+                        <i class="fas fa-book fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">دفتر سفارشات</h5>
+                    <p class="card-text">وضعیت سفارشات باز و عمق بازار</p>
+                    <a href="@Url.Action("OrderBook")" class="btn btn-info">مشاهده گزارش</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commission Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-3">
+                        <i class="fas fa-percentage fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">گزارش کمیسیون</h5>
+                    <p class="card-text">تحلیل درآمد کمیسیون و کارمزد معاملات</p>
+                    <a href="@Url.Action("Commission")" class="btn btn-warning">مشاهده گزارش</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Settlement Queue -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-secondary mb-3">
+                        <i class="fas fa-clock fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">صف تسویه</h5>
+                    <p class="card-text">تراکنش‌های در انتظار تسویه</p>
+                    <a href="@Url.Action("Queue", "Settlements")" class="btn btn-secondary">مشاهده صف</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exchange Rates -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-dark mb-3">
+                        <i class="fas fa-exchange-alt fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">نرخ‌های ارز</h5>
+                    <p class="card-text">مدیریت نرخ‌های خرید و فروش ارز</p>
+                    <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-dark">مدیریت نرخ‌ها</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>آمار سریع امروز</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4 class="text-primary" id="todayTransactions">-</h4>
+                            <p>تراکنش‌های امروز</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success" id="todayVolume">-</h4>
+                            <p>حجم امروز (تومان)</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning" id="pendingSettlements">-</h4>
+                            <p>تسویه‌های در انتظار</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-info" id="activeCustomers">-</h4>
+                            <p>مشتریان فعال</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Load quick stats
+        $(document).ready(function() {
+            loadQuickStats();
+        });
+
+        function loadQuickStats() {
+            // You can implement AJAX calls to load real-time stats
+            // For now, using placeholder values
+            $('#todayTransactions').text('12');
+            $('#todayVolume').text('150,000,000');
+            $('#pendingSettlements').text('3');
+            $('#activeCustomers').text('45');
+        }
+    </script>
+}
