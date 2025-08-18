@@ -7,6 +7,11 @@ namespace ForexExchange.Models
         public ForexDbContext(DbContextOptions<ForexDbContext> options) : base(options)
         {
         }
+
+        public ForexDbContext()
+        {
+            
+        }
         
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set; }
@@ -53,12 +58,12 @@ namespace ForexExchange.Models
                       .OnDelete(DeleteBehavior.Restrict);
                       
                 entity.HasOne(e => e.BuyerCustomer)
-                      .WithMany(e => e.Transactions)
+                      .WithMany(e => e.BuyTransactions)
                       .HasForeignKey(e => e.BuyerCustomerId)
                       .OnDelete(DeleteBehavior.Restrict);
                       
                 entity.HasOne(e => e.SellerCustomer)
-                      .WithMany()
+                      .WithMany(e => e.SellTransactions)
                       .HasForeignKey(e => e.SellerCustomerId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
@@ -69,7 +74,7 @@ namespace ForexExchange.Models
                 entity.HasKey(e => e.Id);
                 
                 entity.HasOne(e => e.Customer)
-                      .WithMany()
+                      .WithMany(e => e.Receipts)
                       .HasForeignKey(e => e.CustomerId)
                       .OnDelete(DeleteBehavior.Restrict);
                       
@@ -92,12 +97,13 @@ namespace ForexExchange.Models
             });
             
             // Seed initial exchange rates
+            var seedDate = new DateTime(2025, 8, 18, 12, 0, 0, DateTimeKind.Utc);
             modelBuilder.Entity<ExchangeRate>().HasData(
-                new ExchangeRate { Id = 1, Currency = CurrencyType.USD, BuyRate = 68000, SellRate = 69000, IsActive = true },
-                new ExchangeRate { Id = 2, Currency = CurrencyType.EUR, BuyRate = 72000, SellRate = 73000, IsActive = true },
-                new ExchangeRate { Id = 3, Currency = CurrencyType.AED, BuyRate = 18500, SellRate = 19000, IsActive = true },
-                new ExchangeRate { Id = 4, Currency = CurrencyType.OMR, BuyRate = 177000, SellRate = 179000, IsActive = true },
-                new ExchangeRate { Id = 5, Currency = CurrencyType.TRY, BuyRate = 1950, SellRate = 2050, IsActive = true }
+                new ExchangeRate { Id = 1, Currency = CurrencyType.USD, BuyRate = 68000, SellRate = 69000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 2, Currency = CurrencyType.EUR, BuyRate = 72000, SellRate = 73000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 3, Currency = CurrencyType.AED, BuyRate = 18500, SellRate = 19000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 4, Currency = CurrencyType.OMR, BuyRate = 177000, SellRate = 179000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 5, Currency = CurrencyType.TRY, BuyRate = 1950, SellRate = 2050, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
             );
         }
     }

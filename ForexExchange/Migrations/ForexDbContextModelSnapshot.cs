@@ -102,7 +102,7 @@ namespace ForexExchange.Migrations
                             Currency = 1,
                             IsActive = true,
                             SellRate = 69000m,
-                            UpdatedAt = new DateTime(2025, 8, 18, 9, 21, 23, 62, DateTimeKind.Local).AddTicks(5243),
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
                         new
@@ -112,7 +112,7 @@ namespace ForexExchange.Migrations
                             Currency = 2,
                             IsActive = true,
                             SellRate = 73000m,
-                            UpdatedAt = new DateTime(2025, 8, 18, 9, 21, 23, 64, DateTimeKind.Local).AddTicks(9872),
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
                         new
@@ -122,7 +122,7 @@ namespace ForexExchange.Migrations
                             Currency = 3,
                             IsActive = true,
                             SellRate = 19000m,
-                            UpdatedAt = new DateTime(2025, 8, 18, 9, 21, 23, 65, DateTimeKind.Local).AddTicks(10),
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
                         new
@@ -132,7 +132,7 @@ namespace ForexExchange.Migrations
                             Currency = 4,
                             IsActive = true,
                             SellRate = 179000m,
-                            UpdatedAt = new DateTime(2025, 8, 18, 9, 21, 23, 65, DateTimeKind.Local).AddTicks(14),
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
                         new
@@ -142,7 +142,7 @@ namespace ForexExchange.Migrations
                             Currency = 5,
                             IsActive = true,
                             SellRate = 2050m,
-                            UpdatedAt = new DateTime(2025, 8, 18, 9, 21, 23, 65, DateTimeKind.Local).AddTicks(20),
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         });
                 });
@@ -227,6 +227,9 @@ namespace ForexExchange.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("OcrText")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("OrderId")
                         .HasColumnType("INTEGER");
 
@@ -249,6 +252,9 @@ namespace ForexExchange.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("VerifiedAt")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -340,7 +346,7 @@ namespace ForexExchange.Migrations
             modelBuilder.Entity("ForexExchange.Models.Receipt", b =>
                 {
                     b.HasOne("ForexExchange.Models.Customer", "Customer")
-                        .WithMany()
+                        .WithMany("Receipts")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -371,7 +377,7 @@ namespace ForexExchange.Migrations
                         .IsRequired();
 
                     b.HasOne("ForexExchange.Models.Customer", "BuyerCustomer")
-                        .WithMany("Transactions")
+                        .WithMany("BuyTransactions")
                         .HasForeignKey("BuyerCustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -383,7 +389,7 @@ namespace ForexExchange.Migrations
                         .IsRequired();
 
                     b.HasOne("ForexExchange.Models.Customer", "SellerCustomer")
-                        .WithMany()
+                        .WithMany("SellTransactions")
                         .HasForeignKey("SellerCustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -399,9 +405,13 @@ namespace ForexExchange.Migrations
 
             modelBuilder.Entity("ForexExchange.Models.Customer", b =>
                 {
+                    b.Navigation("BuyTransactions");
+
                     b.Navigation("Orders");
 
-                    b.Navigation("Transactions");
+                    b.Navigation("Receipts");
+
+                    b.Navigation("SellTransactions");
                 });
 
             modelBuilder.Entity("ForexExchange.Models.Order", b =>

@@ -1,0 +1,216 @@
+@model ForexExchange.Models.Customer
+
+@{
+    ViewData["Title"] = "جزئیات مشتری";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">جزئیات مشتری</h1>
+                <div>
+                    <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                    <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">پروفایل کامل</a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">اطلاعات شخصی</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>نام کامل:</strong></div>
+                        <div class="col-sm-8">@Model.FullName</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>شماره تلفن:</strong></div>
+                        <div class="col-sm-8">@Model.PhoneNumber</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>ایمیل:</strong></div>
+                        <div class="col-sm-8">@Model.Email</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>کد ملی:</strong></div>
+                        <div class="col-sm-8">@Model.NationalId</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>تاریخ عضویت:</strong></div>
+                        <div class="col-sm-8">@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>وضعیت:</strong></div>
+                        <div class="col-sm-8">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">فعال</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">غیرفعال</span>
+                            }
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Address))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>آدرس:</strong></div>
+                            <div class="col-sm-8">@Model.Address</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">خلاصه فعالیت</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Orders.Count</h4>
+                                    <p class="mb-0">کل سفارش‌ها</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h4>@(Model.BuyTransactions.Count + Model.SellTransactions.Count)</h4>
+                                    <p class="mb-0">کل تراکنش‌ها</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Receipts.Count</h4>
+                                    <p class="mb-0">رسیدهای آپلود شده</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h4>@Model.Orders.Count(o => o.Status == ForexExchange.Models.OrderStatus.Open)</h4>
+                                    <p class="mb-0">سفارش‌های باز</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">
+                            <i class="fas fa-user-circle"></i> مشاهده پروفایل کامل
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    @if (Model.Orders.Any() || Model.BuyTransactions.Any() || Model.SellTransactions.Any())
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">آخرین فعالیت‌ها</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Recent Orders -->
+                            @if (Model.Orders.Any())
+                            {
+                                <div class="col-md-4">
+                                    <h6>آخرین سفارش‌ها</h6>
+                                    @foreach (var order in Model.Orders.OrderByDescending(o => o.CreatedAt).Take(3))
+                                    {
+                                        <div class="border rounded p-2 mb-2">
+                                            <small>
+                                                <strong>#@order.Id</strong> - 
+                                                @(order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")
+                                                @order.Amount.ToString("N0") @order.Currency
+                                                <br>
+                                                <span class="text-muted">@order.CreatedAt.ToString("MM/dd HH:mm")</span>
+                                            </small>
+                                        </div>
+                                    }
+                                    <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id" class="btn btn-sm btn-outline-primary">مشاهده همه</a>
+                                </div>
+                            }
+
+                            <!-- Recent Transactions -->
+                            @{
+                                var recentTransactions = Model.BuyTransactions.Concat(Model.SellTransactions)
+                                    .OrderByDescending(t => t.CreatedAt)
+                                    .Take(3)
+                                    .ToList();
+                            }
+                            @if (recentTransactions.Any())
+                            {
+                                <div class="col-md-4">
+                                    <h6>آخرین تراکنش‌ها</h6>
+                                    @foreach (var transaction in recentTransactions)
+                                    {
+                                        <div class="border rounded p-2 mb-2">
+                                            <small>
+                                                <strong>#@transaction.Id</strong> - 
+                                                @(transaction.BuyerCustomerId == Model.Id ? "خرید" : "فروش")
+                                                @transaction.Amount.ToString("N0") @transaction.Currency
+                                                <br>
+                                                <span class="text-muted">@transaction.CreatedAt.ToString("MM/dd HH:mm")</span>
+                                            </small>
+                                        </div>
+                                    }
+                                    <a asp-controller="Settlements" asp-action="Index" class="btn btn-sm btn-outline-success">مشاهده همه</a>
+                                </div>
+                            }
+
+                            <!-- Recent Receipts -->
+                            @if (Model.Receipts.Any())
+                            {
+                                <div class="col-md-4">
+                                    <h6>آخرین رسیدها</h6>
+                                    @foreach (var receipt in Model.Receipts.OrderByDescending(r => r.UploadedAt).Take(3))
+                                    {
+                                        <div class="border rounded p-2 mb-2">
+                                            <small>
+                                                <strong>#@receipt.Id</strong> - 
+                                                @(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "پرداخت" : "گردش حساب")
+                                                @if (receipt.IsVerified)
+                                                {
+                                                    <span class="badge bg-success">✓</span>
+                                                }
+                                                <br>
+                                                <span class="text-muted">@receipt.UploadedAt.ToString("MM/dd HH:mm")</span>
+                                            </small>
+                                        </div>
+                                    }
+                                    <a asp-controller="Receipts" asp-action="Index" class="btn btn-sm btn-outline-info">مشاهده همه</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

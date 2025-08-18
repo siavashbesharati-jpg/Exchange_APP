@@ -18,7 +18,7 @@ namespace ForexExchange.Models
         [Column(TypeName = "decimal(18,4)")]
         public decimal SellRate { get; set; } // نرخ فروش
         
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime UpdatedAt { get; set; }
         
         [Required]
         [StringLength(50)]

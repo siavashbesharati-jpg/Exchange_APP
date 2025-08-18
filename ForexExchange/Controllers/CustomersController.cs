@@ -35,8 +35,12 @@ namespace ForexExchange.Controllers
             }
 
             var customer = await _context.Customers
-                .Include(c => c.Orders)
-                .Include(c => c.Transactions)
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.SellerCustomer)
+                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.BuyerCustomer)
+                .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (customer == null)
@@ -44,6 +48,47 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
+            return View(customer);
+        }
+
+        // GET: Customers/Profile/5 - Comprehensive customer profile
+        public async Task<IActionResult> Profile(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var customer = await _context.Customers
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.SellerCustomer)
+                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.BuyerCustomer)
+                .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (customer == null)
+            {
+                return NotFound();
+            }
+
+            // Calculate customer statistics
+            var stats = new CustomerProfileStats
+            {
+                TotalOrders = customer.Orders.Count,
+                CompletedOrders = customer.Orders.Count(o => o.Status == OrderStatus.Completed),
+                PendingOrders = customer.Orders.Count(o => o.Status == OrderStatus.Open),
+                TotalTransactions = customer.BuyTransactions.Count + customer.SellTransactions.Count,
+                CompletedTransactions = customer.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + 
+                                     customer.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
+                TotalReceipts = customer.Receipts.Count,
+                VerifiedReceipts = customer.Receipts.Count(r => r.IsVerified),
+                TotalVolumeInToman = customer.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.TotalInToman),
+                RegistrationDays = (DateTime.Now - customer.CreatedAt).Days
+            };
+
+            ViewBag.CustomerStats = stats;
             return View(customer);
         }
 

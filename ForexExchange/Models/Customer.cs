@@ -29,6 +29,8 @@ namespace ForexExchange.Models
         
         // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
-        public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+        public ICollection<Transaction> BuyTransactions { get; set; } = new List<Transaction>();
+        public ICollection<Transaction> SellTransactions { get; set; } = new List<Transaction>();
+        public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
     }
 }
