@@ -38,12 +38,43 @@
         <div class="col-md-3">
             <div class="card text-center bg-info text-white">
                 <div class="card-body">
-                    <h5 class="card-title">نرخ‌های فعال</h5>
-                    <h2 class="card-text">@(ViewBag.ExchangeRates?.Count ?? 0)</h2>
+                    <h5 class="card-title">مشتریان فعال</h5>
+                    <h2 class="card-text">@ViewBag.ActiveCustomers</h2>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Settlement Queue Alert -->
+    @{
+        var pendingSettlements = ViewBag.PendingSettlements as List<ForexExchange.Models.Transaction>;
+    }
+    @if (pendingSettlements?.Any() == true)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        توجه: تسویه‌های در انتظار
+                    </h5>
+                    <p class="mb-2">
+                        <strong>@pendingSettlements.Count</strong> تراکنش در انتظار تسویه است.
+                        @{
+                            var urgentCount = pendingSettlements.Count(t => (DateTime.Now - t.CreatedAt).TotalHours > 24);
+                        }
+                        @if (urgentCount > 0)
+                        {
+                            <span class="badge bg-danger ms-2">@urgentCount فوری</span>
+                        }
+                    </p>
+                    <a asp-controller="Settlements" asp-action="Queue" class="btn btn-warning">
+                        مدیریت صف تسویه
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
 
     <div class="row">
         <!-- Exchange Rates -->

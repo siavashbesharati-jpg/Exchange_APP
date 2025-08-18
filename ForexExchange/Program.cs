@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,11 @@ builder.Services.AddDbContext<ForexDbContext>(options =>
 
 // Add HttpClient for OpenRouter API
 builder.Services.AddHttpClient();
+
+// Add Services
+builder.Services.AddScoped<IOcrService, OpenRouterOcrService>();
+builder.Services.AddScoped<ITransactionSettlementService, TransactionSettlementService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 

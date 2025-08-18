@@ -1,0 +1,462 @@
+@model ForexExchange.Models.Transaction
+
+@{
+    ViewData["Title"] = "جزئیات تسویه";
+    var calculation = ViewBag.SettlementCalculation as ForexExchange.Services.SettlementCalculation;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">جزئیات تسویه تراکنش #@Model.Id</h1>
+                <div>
+                    <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                    @if (Model.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                    {
+                        <form asp-action="Complete" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-success"
+                                onclick="return confirm('آیا مطمئن هستید که می‌خواهید این تراکنش را تکمیل کنید؟')">
+                                تکمیل تراکنش
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Transaction Status & Progress -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">وضعیت تراکنش</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>وضعیت فعلی:</h6>
+                            @if (Model.Status == ForexExchange.Models.TransactionStatus.Pending)
+                            {
+                                <span class="badge bg-secondary fs-6">در انتظار آغاز تسویه</span>
+                            }
+                            else if (Model.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded)
+                            {
+                                <span class="badge bg-info fs-6">در انتظار آپلود رسید خریدار</span>
+                            }
+                            else if (Model.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                            {
+                                <span class="badge bg-warning fs-6">در انتظار انتقال فروشنده</span>
+                            }
+                            else if (Model.Status == ForexExchange.Models.TransactionStatus.Completed)
+                            {
+                                <span class="badge bg-success fs-6">تکمیل شده</span>
+                            }
+                            else if (Model.Status == ForexExchange.Models.TransactionStatus.Failed)
+                            {
+                                <span class="badge bg-danger fs-6">ناموفق</span>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <h6>مراحل تسویه:</h6>
+                            <div class="progress-steps">
+                                <div
+                                    class="step @(Model.Status >= ForexExchange.Models.TransactionStatus.PaymentUploaded ? "completed" : "")">
+                                    <i class="fas fa-play"></i> آغاز تسویه
+                                </div>
+                                <div
+                                    class="step @(Model.Status >= ForexExchange.Models.TransactionStatus.ReceiptConfirmed ? "completed" : "")">
+                                    <i class="fas fa-receipt"></i> تأیید رسید خریدار
+                                </div>
+                                <div
+                                    class="step @(Model.Status >= ForexExchange.Models.TransactionStatus.Completed ? "completed" : "")">
+                                    <i class="fas fa-check"></i> تکمیل
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Details -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">اطلاعات تراکنش</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-5"><strong>شماره تراکنش:</strong></div>
+                        <div class="col-sm-7">#@Model.Id</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-5"><strong>تاریخ ایجاد:</strong></div>
+                        <div class="col-sm-7">@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-5"><strong>نوع ارز:</strong></div>
+                        <div class="col-sm-7">@Model.Currency</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-5"><strong>مبلغ:</strong></div>
+                        <div class="col-sm-7 fw-bold text-primary">@Model.Amount.ToString("N0") @Model.Currency</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-5"><strong>نرخ:</strong></div>
+                        <div class="col-sm-7">@Model.Rate.ToString("N0") تومان</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-5"><strong>مجموع (تومان):</strong></div>
+                        <div class="col-sm-7 fw-bold text-success">@Model.TotalInToman.ToString("N0") تومان</div>
+                    </div>
+                    @if (Model.CompletedAt.HasValue)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-sm-5"><strong>تاریخ تکمیل:</strong></div>
+                            <div class="col-sm-7">@Model.CompletedAt.Value.ToString("yyyy/MM/dd HH:mm:ss")</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-sm-5"><strong>توضیحات:</strong></div>
+                            <div class="col-sm-7">@Model.Notes</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Settlement Calculation -->
+        @if (calculation != null)
+        {
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">محاسبات تسویه</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-sm-6"><strong>مبلغ ناخالص:</strong></div>
+                            <div class="col-sm-6">@calculation.GrossAmount.ToString("N0") تومان</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-6">کمیسیون (@(calculation.CommissionRate * 100)%):</div>
+                            <div class="col-sm-6 text-danger">-@calculation.CommissionAmount.ToString("N0") تومان</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-6">کارمزد صرافی:</div>
+                            <div class="col-sm-6 text-danger">-@calculation.ExchangeFee.ToString("N0") تومان</div>
+                        </div>
+                        <hr>
+                        <div class="row mb-2">
+                            <div class="col-sm-6"><strong>خریدار پرداخت می‌کند:</strong></div>
+                            <div class="col-sm-6 fw-bold text-primary">@calculation.BuyerTotalPayment.ToString("N0") تومان
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-6"><strong>فروشنده دریافت می‌کند:</strong></div>
+                            <div class="col-sm-6 fw-bold text-success">@calculation.SellerNetReceived.ToString("N0") تومان
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Customer Information -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">خریدار</h5>
+                </div>
+                <div class="card-body">
+                    <h6>
+                        <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.BuyerCustomerId">
+                            @Model.BuyerCustomer?.FullName
+                        </a>
+                    </h6>
+                    <p class="mb-1"><strong>ایمیل:</strong> @Model.BuyerCustomer?.Email</p>
+                    <p class="mb-1"><strong>تلفن:</strong> @Model.BuyerCustomer?.PhoneNumber</p>
+                    @if (!string.IsNullOrEmpty(Model.BuyerBankAccount))
+                    {
+                        <p class="mb-1"><strong>حساب بانکی:</strong> @Model.BuyerBankAccount</p>
+                    }
+                    <p class="mb-0">
+                        <strong>سفارش:</strong>
+                        <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.BuyOrderId">
+                            #@Model.BuyOrderId
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">فروشنده</h5>
+                </div>
+                <div class="card-body">
+                    <h6>
+                        <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.SellerCustomerId">
+                            @Model.SellerCustomer?.FullName
+                        </a>
+                    </h6>
+                    <p class="mb-1"><strong>ایمیل:</strong> @Model.SellerCustomer?.Email</p>
+                    <p class="mb-1"><strong>تلفن:</strong> @Model.SellerCustomer?.PhoneNumber</p>
+                    @if (!string.IsNullOrEmpty(Model.SellerBankAccount))
+                    {
+                        <p class="mb-1"><strong>حساب بانکی:</strong> @Model.SellerBankAccount</p>
+                    }
+                    <p class="mb-0">
+                        <strong>سفارش:</strong>
+                        <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.SellOrderId">
+                            #@Model.SellOrderId
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Management -->
+    @if (Model.Receipts?.Any() == true)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">رسیدهای مرتبط</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>شماره</th>
+                                        <th>مشتری</th>
+                                        <th>نوع</th>
+                                        <th>مبلغ</th>
+                                        <th>شماره پیگیری</th>
+                                        <th>تاریخ آپلود</th>
+                                        <th>وضعیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var receipt in Model.Receipts)
+                                    {
+                                        <tr>
+                                            <td>#@receipt.Id</td>
+                                            <td>@receipt.Customer?.FullName</td>
+                                            <td>
+                                                @if (receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt)
+                                                {
+                                                    <span class="badge bg-primary">رسید پرداخت</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-info">گردش حساب</span>
+                                                }
+                                            </td>
+                                            <td>@receipt.ParsedAmount</td>
+                                            <td>@receipt.ParsedReferenceId</td>
+                                            <td>@receipt.UploadedAt.ToString("MM/dd HH:mm")</td>
+                                            <td>
+                                                @if (receipt.IsVerified)
+                                                {
+                                                    <span class="badge bg-success">تأیید شده</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">در انتظار</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <a asp-controller="Receipts" asp-action="Details" asp-route-id="@receipt.Id"
+                                                    class="btn btn-sm btn-outline-primary">جزئیات</a>
+                                                @if (receipt.IsVerified && Model.Status ==
+                                                                                        ForexExchange.Models.TransactionStatus.PaymentUploaded)
+                                                {
+                                                    <form asp-action="ConfirmBuyerPayment" method="post" style="display: inline;">
+                                                        <input type="hidden" name="transactionId" value="@Model.Id">
+                                                        <input type="hidden" name="receiptId" value="@receipt.Id">
+                                                        <button type="submit" class="btn btn-sm btn-success">تأیید پرداخت</button>
+                                                    </form>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">عملیات تسویه</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Status == ForexExchange.Models.TransactionStatus.Pending)
+                    {
+                        <form asp-action="Initiate" asp-route-id="@Model.Id" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-primary"
+                                onclick="return confirm('آیا مطمئن هستید که می‌خواهید فرآیند تسویه را آغاز کنید؟')">
+                                آغاز فرآیند تسویه
+                            </button>
+                        </form>
+                    }
+
+                    @if (Model.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                    {
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal"
+                            data-bs-target="#confirmSellerModal">
+                            تأیید انتقال فروشنده
+                        </button>
+                    }
+
+                    @if (Model.Status != ForexExchange.Models.TransactionStatus.Completed && Model.Status !=
+                                        ForexExchange.Models.TransactionStatus.Failed)
+                    {
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#failModal">
+                            ثبت ناموفق بودن
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Seller Payment Modal -->
+<div class="modal fade" id="confirmSellerModal" tabindex="-1" aria-labelledby="confirmSellerModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="ConfirmSellerPayment" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmSellerModalLabel">تأیید انتقال فروشنده</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="transactionId" value="@Model.Id">
+
+                    <div class="mb-3">
+                        <label for="bankReference" class="form-label">شماره مرجع بانکی</label>
+                        <input type="text" class="form-control" id="bankReference" name="bankReference" required
+                            placeholder="شماره مرجع انتقال بانکی را وارد کنید">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">توضیحات</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                            placeholder="توضیحات اضافی در مورد انتقال..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-success">تأیید انتقال</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Fail Transaction Modal -->
+<div class="modal fade" id="failModal" tabindex="-1" aria-labelledby="failModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Fail" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="failModalLabel">ثبت ناموفق بودن تراکنش</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="transactionId" value="@Model.Id">
+
+                    <div class="alert alert-warning">
+                        <strong>توجه:</strong> با ثبت ناموفق بودن تراکنش، سفارشات مرتبط به حالت قبلی بازگردانده خواهند
+                        شد.
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">دلیل ناموفق بودن</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="4" required
+                            placeholder="دلیل ناموفق بودن تراکنش را وارد کنید..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-danger">ثبت ناموفق بودن</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            margin-right: 5px;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }
+
+        .step:last-child {
+            margin-right: 0;
+        }
+
+        .step.completed {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .step i {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

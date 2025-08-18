@@ -1,0 +1,209 @@
+@model IEnumerable<ForexExchange.Models.Transaction>
+
+@{
+    ViewData["Title"] = "مدیریت تسویه حساب";
+    var pendingSettlements = ViewBag.PendingSettlements as List<ForexExchange.Models.Transaction>;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">مدیریت تسویه حساب</h1>
+                <a asp-action="Queue" class="btn btn-warning">
+                    صف تسویه
+                    @if (pendingSettlements?.Count > 0)
+                    {
+                        <span class="badge bg-light text-dark ms-2">@pendingSettlements.Count</span>
+                    }
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <!-- Pending Settlements Summary -->
+    @if (pendingSettlements?.Any() == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-clock"></i> تسویه‌های در انتظار (@pendingSettlements.Count)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var item in pendingSettlements.Take(3))
+                            {
+                                <div class="col-md-4 mb-3">
+                                    <div class="border rounded p-3">
+                                        <h6>تراکنش #@item.Id</h6>
+                                        <p class="mb-1"><strong>مبلغ:</strong> @item.Amount.ToString("N0") @item.Currency</p>
+                                        <p class="mb-1"><strong>خریدار:</strong> @item.BuyerCustomer?.FullName</p>
+                                        <p class="mb-1"><strong>فروشنده:</strong> @item.SellerCustomer?.FullName</p>
+                                        <p class="mb-2">
+                                            <strong>وضعیت:</strong>
+                                            @if (item.Status == ForexExchange.Models.TransactionStatus.Pending)
+                                            {
+                                                <span class="badge bg-secondary">در انتظار</span>
+                                            }
+                                            else if (item.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded)
+                                            {
+                                                <span class="badge bg-info">رسید آپلود شده</span>
+                                            }
+                                            else if (item.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                                            {
+                                                <span class="badge bg-warning">رسید تأیید شده</span>
+                                            }
+                                        </p>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-primary">مدیریت</a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        @if (pendingSettlements.Count > 3)
+                        {
+                            <div class="text-center">
+                                <a asp-action="Queue" class="btn btn-outline-warning">مشاهده همه (@pendingSettlements.Count)</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- All Transactions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">تاریخچه تراکنش‌ها</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>شماره</th>
+                                        <th>تاریخ</th>
+                                        <th>خریدار</th>
+                                        <th>فروشنده</th>
+                                        <th>مبلغ</th>
+                                        <th>نرخ</th>
+                                        <th>مجموع (تومان)</th>
+                                        <th>وضعیت</th>
+                                        <th>رسیدها</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td>#@item.Id</td>
+                                            <td>@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td>
+                                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@item.BuyerCustomerId">
+                                                    @item.BuyerCustomer?.FullName
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@item.SellerCustomerId">
+                                                    @item.SellerCustomer?.FullName
+                                                </a>
+                                            </td>
+                                            <td>@item.Amount.ToString("N0") @item.Currency</td>
+                                            <td>@item.Rate.ToString("N0")</td>
+                                            <td>@item.TotalInToman.ToString("N0")</td>
+                                            <td>
+                                                @if (item.Status == ForexExchange.Models.TransactionStatus.Pending)
+                                                {
+                                                    <span class="badge bg-secondary">در انتظار</span>
+                                                }
+                                                else if (item.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded)
+                                                {
+                                                    <span class="badge bg-info">رسید آپلود شده</span>
+                                                }
+                                                else if (item.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                                                {
+                                                    <span class="badge bg-warning">رسید تأیید شده</span>
+                                                }
+                                                else if (item.Status == ForexExchange.Models.TransactionStatus.Completed)
+                                                {
+                                                    <span class="badge bg-success">تکمیل شده</span>
+                                                }
+                                                else if (item.Status == ForexExchange.Models.TransactionStatus.Failed)
+                                                {
+                                                    <span class="badge bg-danger">ناموفق</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (item.Receipts?.Any() == true)
+                                                {
+                                                    <span class="badge bg-primary">@item.Receipts.Count()</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
+                                                    @if (item.Status != ForexExchange.Models.TransactionStatus.Completed && item.Status != ForexExchange.Models.TransactionStatus.Failed)
+                                                    {
+                                                        @if (item.Status == ForexExchange.Models.TransactionStatus.Pending)
+                                                        {
+                                                            <form asp-action="Initiate" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                                <button type="submit" class="btn btn-sm btn-outline-success" 
+                                                                        onclick="return confirm('آیا مطمئن هستید که می‌خواهید فرآیند تسویه را آغاز کنید؟')">
+                                                                    آغاز تسویه
+                                                                </button>
+                                                            </form>
+                                                        }
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">هیچ تراکنشی یافت نشد.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

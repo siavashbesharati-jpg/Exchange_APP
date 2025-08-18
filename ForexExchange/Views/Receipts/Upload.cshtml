@@ -1,0 +1,257 @@
+@model object
+
+@{
+    ViewData["Title"] = "آپلود رسید";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">آپلود رسید پرداخت</h4>
+                </div>
+                <div class="card-body">
+                    
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Upload" method="post" enctype="multipart/form-data" id="uploadForm">
+                        
+                        <!-- File Upload Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">انتخاب فایل تصویر</h6>
+                                        <div class="mb-3">
+                                            <label for="receiptFile" class="form-label">فایل رسید *</label>
+                                            <input type="file" class="form-control" id="receiptFile" name="receiptFile" 
+                                                   accept="image/*" required onchange="previewImage(this)">
+                                            <div class="form-text">فرمت‌های مجاز: JPG, PNG, GIF (حداکثر ۵ مگابایت)</div>
+                                        </div>
+                                        
+                                        <!-- Image Preview -->
+                                        <div id="imagePreview" style="display: none;">
+                                            <label class="form-label">پیش‌نمایش تصویر:</label>
+                                            <div class="text-center">
+                                                <img id="previewImg" src="" alt="پیش‌نمایش" style="max-width: 100%; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Receipt Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="customerId" class="form-label">مشتری *</label>
+                                <select id="customerId" name="customerId" class="form-select" required>
+                                    <option value="">انتخاب مشتری</option>
+                                    @if (ViewBag.Customers != null)
+                                    {
+                                        @foreach (var customer in ViewBag.Customers)
+                                        {
+                                            <option value="@customer.Id">@customer.FullName - @customer.PhoneNumber</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="type" class="form-label">نوع رسید *</label>
+                                <select id="type" name="type" class="form-select" required>
+                                    <option value="">انتخاب نوع</option>
+                                    <option value="0">رسید پرداخت</option>
+                                    <option value="1">گردش حساب بانکی</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Related Order/Transaction -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="orderId" class="form-label">سفارش مرتبط (اختیاری)</label>
+                                <select id="orderId" name="orderId" class="form-select">
+                                    <option value="">انتخاب سفارش</option>
+                                    @if (ViewBag.OpenOrders != null)
+                                    {
+                                        @foreach (var order in ViewBag.OpenOrders)
+                                        {
+                                            var isSelected = ViewBag.SelectedOrderId != null && ViewBag.SelectedOrderId == order.Id;
+                                            <option value="@order.Id" selected="@isSelected">
+                                                سفارش #@order.Id - @order.Customer.FullName - @order.Amount.ToString("N0") @order.Currency
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="transactionId" class="form-label">تراکنش مرتبط (اختیاری)</label>
+                                <input type="number" id="transactionId" name="transactionId" class="form-control" 
+                                       value="@ViewBag.SelectedTransactionId" placeholder="شماره تراکنش">
+                            </div>
+                        </div>
+
+                        <!-- OCR Options -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="card-title mb-0">تنظیمات پردازش خودکار (OCR)</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="skipOcr" name="skipOcr" onchange="toggleManualFields()">
+                                            <label class="form-check-label" for="skipOcr">
+                                                <strong>عدم استفاده از OCR و وارد کردن دستی اطلاعات</strong>
+                                            </label>
+                                            <div class="form-text">اگر این گزینه را انتخاب کنید، اطلاعات رسید را به صورت دستی وارد کنید.</div>
+                                        </div>
+                                        
+                                        <div id="manualFields" style="display: none;">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label for="manualAmount" class="form-label">مبلغ (تومان)</label>
+                                                    <input type="text" id="manualAmount" name="manualAmount" class="form-control" 
+                                                           placeholder="مثال: 1000000">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="manualReference" class="form-label">شماره پیگیری</label>
+                                                    <input type="text" id="manualReference" name="manualReference" class="form-control" 
+                                                           placeholder="شماره مرجع یا پیگیری">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="ocrInfo" class="alert alert-info mt-3">
+                                            <i class="fas fa-info-circle"></i>
+                                            <strong>OCR فعال:</strong> سیستم به طور خودکار اطلاعات مبلغ، شماره پیگیری و تاریخ را از تصویر استخراج خواهد کرد.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">بازگشت به داشبورد</a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="fas fa-upload"></i> آپلود رسید
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Instructions Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">راهنمای آپلود رسید</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>نکات مهم:</h6>
+                            <ul class="small">
+                                <li>تصویر باید واضح و خوانا باشد</li>
+                                <li>از نور مناسب هنگام عکس‌گیری استفاده کنید</li>
+                                <li>تمام اطلاعات رسید در تصویر مشخص باشد</li>
+                                <li>فرمت‌های مجاز: JPG, PNG, GIF</li>
+                                <li>حداکثر حجم فایل: ۵ مگابایت</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>OCR (تشخیص خودکار متن):</h6>
+                            <ul class="small">
+                                <li>سیستم به طور خودکار مبلغ را تشخیص می‌دهد</li>
+                                <li>شماره پیگیری و مرجع استخراج می‌شود</li>
+                                <li>تاریخ تراکنش شناسایی می‌شود</li>
+                                <li>در صورت خطا، می‌توانید اطلاعات را دستی وارد کنید</li>
+                                <li>تمام اطلاعات قابل ویرایش هستند</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        function toggleManualFields() {
+            var skipOcr = document.getElementById('skipOcr').checked;
+            var manualFields = document.getElementById('manualFields');
+            var ocrInfo = document.getElementById('ocrInfo');
+            var submitBtn = document.getElementById('submitBtn');
+            
+            if (skipOcr) {
+                manualFields.style.display = 'block';
+                ocrInfo.style.display = 'none';
+                submitBtn.innerHTML = '<i class="fas fa-upload"></i> آپلود رسید (دستی)';
+            } else {
+                manualFields.style.display = 'none';
+                ocrInfo.style.display = 'block';
+                submitBtn.innerHTML = '<i class="fas fa-upload"></i> آپلود رسید (با OCR)';
+            }
+        }
+        
+        // Form validation
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            var fileInput = document.getElementById('receiptFile');
+            var file = fileInput.files[0];
+            
+            if (file) {
+                // Check file size (5MB limit)
+                if (file.size > 5 * 1024 * 1024) {
+                    e.preventDefault();
+                    alert('حجم فایل نباید بیشتر از ۵ مگابایت باشد.');
+                    return false;
+                }
+                
+                // Check file type
+                var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (!allowedTypes.includes(file.type.toLowerCase())) {
+                    e.preventDefault();
+                    alert('فقط فایل‌های تصویری (JPG, PNG, GIF) مجاز هستند.');
+                    return false;
+                }
+            }
+            
+            // Show loading state
+            var submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال آپلود...';
+        });
+
+        // Auto-select customer if order is pre-selected
+        @if (ViewBag.SelectedOrder != null)
+        {
+            <text>
+            document.getElementById('customerId').value = '@ViewBag.SelectedOrder.CustomerId';
+            </text>
+        }
+    </script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

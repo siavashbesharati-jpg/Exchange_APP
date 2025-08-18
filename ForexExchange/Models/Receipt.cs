@@ -35,6 +35,7 @@ namespace ForexExchange.Models
         
         // OCR extracted data
         public string? ExtractedText { get; set; }
+        public string? OcrText { get; set; } // Full OCR text
         public string? ParsedAmount { get; set; }
         public string? ParsedReferenceId { get; set; }
         public string? ParsedDate { get; set; }
@@ -43,6 +44,7 @@ namespace ForexExchange.Models
         public DateTime UploadedAt { get; set; } = DateTime.Now;
         
         public bool IsVerified { get; set; } = false;
+        public DateTime? VerifiedAt { get; set; }
         
         [StringLength(500)]
         public string? Notes { get; set; }
