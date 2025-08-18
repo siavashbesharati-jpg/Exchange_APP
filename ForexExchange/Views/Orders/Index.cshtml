@@ -1,0 +1,151 @@
+@model IEnumerable<ForexExchange.Models.Order>
+
+@{
+    ViewData["Title"] = "مدیریت سفارش‌ها";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">مدیریت سفارش‌ها</h1>
+                <a asp-action="Create" class="btn btn-primary">ثبت سفارش جدید</a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">لیست سفارش‌ها</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>شماره سفارش</th>
+                                        <th>مشتری</th>
+                                        <th>نوع سفارش</th>
+                                        <th>ارز</th>
+                                        <th>مبلغ</th>
+                                        <th>نرخ</th>
+                                        <th>مجموع (تومان)</th>
+                                        <th>وضعیت</th>
+                                        <th>تاریخ ثبت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td>@item.Id</td>
+                                            <td>@item.Customer.FullName</td>
+                                            <td>
+                                                @if (item.OrderType == ForexExchange.Models.OrderType.Buy)
+                                                {
+                                                    <span class="badge bg-success">خرید</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">فروش</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @switch (item.Currency)
+                                                {
+                                                    case ForexExchange.Models.CurrencyType.USD:
+                                                        <span class="badge bg-primary">دلار آمریکا</span>
+                                                        break;
+                                                    case ForexExchange.Models.CurrencyType.EUR:
+                                                        <span class="badge bg-success">یورو</span>
+                                                        break;
+                                                    case ForexExchange.Models.CurrencyType.AED:
+                                                        <span class="badge bg-info">درهم امارات</span>
+                                                        break;
+                                                    case ForexExchange.Models.CurrencyType.OMR:
+                                                        <span class="badge bg-warning">ریال عمان</span>
+                                                        break;
+                                                    case ForexExchange.Models.CurrencyType.TRY:
+                                                        <span class="badge bg-danger">لیر ترکیه</span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td>@item.Amount.ToString("N2")</td>
+                                            <td>@item.Rate.ToString("N0")</td>
+                                            <td>@item.TotalInToman.ToString("N0")</td>
+                                            <td>
+                                                @switch (item.Status)
+                                                {
+                                                    case ForexExchange.Models.OrderStatus.Open:
+                                                        <span class="badge bg-warning">باز</span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.Matched:
+                                                        <span class="badge bg-info">مچ شده</span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.PartiallyFilled:
+                                                        <span class="badge bg-secondary">نیمه تکمیل</span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.Completed:
+                                                        <span class="badge bg-success">تکمیل شده</span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.Cancelled:
+                                                        <span class="badge bg-dark">لغو شده</span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td>@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
+                                                    @if (item.Status == ForexExchange.Models.OrderStatus.Open)
+                                                    {
+                                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">ویرایش</a>
+                                                        <form asp-action="Match" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                            <button type="submit" class="btn btn-sm btn-outline-success" 
+                                                                    onclick="return confirm('آیا می‌خواهید این سفارش را مچ کنید؟')">
+                                                                مچ کردن
+                                                            </button>
+                                                        </form>
+                                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">لغو</a>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <p class="text-muted">هیچ سفارشی موجود نیست.</p>
+                            <a asp-action="Create" class="btn btn-primary">ثبت اولین سفارش</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
