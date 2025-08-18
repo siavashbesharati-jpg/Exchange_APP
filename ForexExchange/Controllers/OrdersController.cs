@@ -37,12 +37,36 @@ namespace ForexExchange.Controllers
         // GET: Orders
         public async Task<IActionResult> Index()
         {
-            var orders = await _context.Orders
-                .Include(o => o.Customer)
-                .OrderByDescending(o => o.CreatedAt)
-                .ToListAsync();
+            var isAdminOrStaff = await IsAdminOrStaffAsync();
+            
+            if (isAdminOrStaff)
+            {
+                // Admin/Staff can see all orders
+                var orders = await _context.Orders
+                    .Include(o => o.Customer)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
 
-            return View(orders);
+                return View(orders);
+            }
+            else
+            {
+                // Customer can only see their own orders
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser?.CustomerId == null)
+                {
+                    // If customer doesn't have associated customer record, show empty list
+                    return View(new List<Order>());
+                }
+
+                var customerOrders = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Where(o => o.CustomerId == currentUser.CustomerId)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                return View(customerOrders);
+            }
         }
 
         // GET: Orders/Details/5
@@ -76,7 +100,26 @@ namespace ForexExchange.Controllers
                 .ToListAsync();
 
             ViewBag.ExchangeRates = exchangeRates;
-            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            
+            var isAdminOrStaff = await IsAdminOrStaffAsync();
+            
+            if (isAdminOrStaff)
+            {
+                // Admin/Staff can see all customers
+                ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+                ViewBag.IsAdminOrStaff = true;
+            }
+            else
+            {
+                // Customer can only create orders for themselves
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser?.CustomerId != null)
+                {
+                    var customer = await _context.Customers.FindAsync(currentUser.CustomerId);
+                    ViewBag.CurrentCustomer = customer;
+                }
+                ViewBag.IsAdminOrStaff = false;
+            }
 
             return View();
         }
@@ -86,6 +129,32 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Order order)
         {
+            var isAdminOrStaff = await IsAdminOrStaffAsync();
+            
+            // Handle customer assignment based on user role
+            if (!isAdminOrStaff)
+            {
+                // For customers, force the order to be for themselves
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser?.CustomerId == null)
+                {
+                    ModelState.AddModelError("", "خطا در شناسایی مشتری. لطفاً مجدداً وارد شوید.");
+                    await LoadCreateViewData();
+                    return View(order);
+                }
+                order.CustomerId = currentUser.CustomerId.Value;
+            }
+            else
+            {
+                // Admin/Staff must select a customer
+                if (order.CustomerId == 0)
+                {
+                    ModelState.AddModelError("CustomerId", "انتخاب مشتری الزامی است.");
+                    await LoadCreateViewData();
+                    return View(order);
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 // Get the current exchange rate
@@ -296,7 +365,26 @@ namespace ForexExchange.Controllers
                 .ToListAsync();
 
             ViewBag.ExchangeRates = exchangeRates;
-            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            
+            var isAdminOrStaff = await IsAdminOrStaffAsync();
+            
+            if (isAdminOrStaff)
+            {
+                // Admin/Staff can see all customers
+                ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+                ViewBag.IsAdminOrStaff = true;
+            }
+            else
+            {
+                // Customer can only create orders for themselves
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser?.CustomerId != null)
+                {
+                    var customer = await _context.Customers.FindAsync(currentUser.CustomerId);
+                    ViewBag.CurrentCustomer = customer;
+                }
+                ViewBag.IsAdminOrStaff = false;
+            }
         }
     }
 }

@@ -16,20 +16,38 @@
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
                         
                         <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label asp-for="CustomerId" class="form-label">انتخاب مشتری</label>
-                                <select asp-for="CustomerId" class="form-select" required>
-                                    <option value="">یک مشتری انتخاب کنید</option>
-                                    @if (ViewBag.Customers != null)
-                                    {
-                                        @foreach (var customer in ViewBag.Customers)
+                            @if (ViewBag.IsAdminOrStaff == true)
+                            {
+                                <div class="col-md-6">
+                                    <label asp-for="CustomerId" class="form-label">انتخاب مشتری</label>
+                                    <select asp-for="CustomerId" class="form-select" required>
+                                        <option value="">یک مشتری انتخاب کنید</option>
+                                        @if (ViewBag.Customers != null)
                                         {
-                                            <option value="@customer.Id">@customer.FullName - @customer.PhoneNumber</option>
+                                            @foreach (var customer in ViewBag.Customers)
+                                            {
+                                                <option value="@customer.Id">@customer.FullName - @customer.PhoneNumber</option>
+                                            }
                                         }
+                                    </select>
+                                    <span asp-validation-for="CustomerId" class="text-danger"></span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">مشتری</label>
+                                    @if (ViewBag.CurrentCustomer != null)
+                                    {
+                                        <input type="text" class="form-control" value="@ViewBag.CurrentCustomer.FullName - @ViewBag.CurrentCustomer.PhoneNumber" readonly />
+                                        <input asp-for="CustomerId" type="hidden" value="@ViewBag.CurrentCustomer.Id" />
                                     }
-                                </select>
-                                <span asp-validation-for="CustomerId" class="text-danger"></span>
-                            </div>
+                                    else
+                                    {
+                                        <div class="alert alert-danger">خطا در شناسایی مشتری. لطفاً مجدداً وارد شوید.</div>
+                                    }
+                                </div>
+                            }
                             
                             <div class="col-md-6">
                                 <label asp-for="OrderType" class="form-label">نوع سفارش</label>

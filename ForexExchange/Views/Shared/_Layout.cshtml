@@ -38,42 +38,73 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">داشبورد</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Create">ثبت سفارش</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">سفارش‌ها</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Customers" asp-action="Index">مشتریان</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
-                                تسویه حساب
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Settlements" asp-action="Index">مدیریت تسویه</a></li>
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Settlements" asp-action="Queue">صف تسویه</a></li>
-                                <li><a class="dropdown-item" asp-area="" asp-controller="BankStatements" asp-action="Index">پردازش گردش حساب</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Receipts" asp-action="Index">رسیدها</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
-                                گزارشات
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="Index">داشبورد گزارشات</a></li>
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="Financial">گزارش مالی</a></li>
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="CustomerActivity">فعالیت مشتریان</a></li>
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="Commission">گزارش کمیسیون</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates" asp-action="Index">نرخ ارز</a>
-                        </li>
+                        
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+                            {
+                                <!-- Admin/Staff Menu Items -->
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Create">ثبت سفارش</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">سفارش‌ها</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Customers" asp-action="Index">مشتریان</a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                                        تسویه حساب
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="Settlements" asp-action="Index">مدیریت تسویه</a></li>
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="Settlements" asp-action="Queue">صف تسویه</a></li>
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="BankStatements" asp-action="Index">پردازش گردش حساب</a></li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Receipts" asp-action="Index">رسیدها</a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                                        گزارشات
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="Index">داشبورد گزارشات</a></li>
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="Financial">گزارش مالی</a></li>
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="CustomerActivity">فعالیت مشتریان</a></li>
+                                        <li><a class="dropdown-item" asp-area="" asp-controller="Reports" asp-action="Commission">گزارش کمیسیون</a></li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates" asp-action="Index">نرخ ارز</a>
+                                </li>
+                            }
+                            else if (User.IsInRole("Customer"))
+                            {
+                                <!-- Customer Menu Items -->
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Create">ثبت سفارش</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">سفارش‌های من</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates" asp-action="Index">نرخ ارز</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Profile">پروفایل من</a>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <!-- Public Menu Items -->
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates" asp-action="Index">نرخ ارز</a>
+                            </li>
+                        }
                     </ul>
                     
                     <!-- Authentication Links -->

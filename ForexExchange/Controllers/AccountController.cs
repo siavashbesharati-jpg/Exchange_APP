@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using ForexExchange.Models;
 
@@ -11,15 +12,18 @@ namespace ForexExchange.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ForexDbContext _context;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<IdentityRole> roleManager,
+            ForexDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+            _context = context;
         }
 
         // GET: /Account/Register
@@ -35,16 +39,44 @@ namespace ForexExchange.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Check if email already exists
+                var existingUserByEmail = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUserByEmail != null)
+                {
+                    ModelState.AddModelError("Email", "کاربری با این ایمیل قبلاً ثبت نام کرده است.");
+                    return View(model);
+                }
+
+                // Check if phone number already exists
+                var existingUserByPhone = await _userManager.Users
+                    .FirstOrDefaultAsync(u => u.PhoneNumber == model.PhoneNumber);
+                if (existingUserByPhone != null)
+                {
+                    ModelState.AddModelError("PhoneNumber", "کاربری با این شماره تلفن قبلاً ثبت نام کرده است.");
+                    return View(model);
+                }
+
+                // Check if a customer with this phone number already exists
+                var existingCustomer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.PhoneNumber == model.PhoneNumber && c.IsActive);
+                if (existingCustomer != null)
+                {
+                    ModelState.AddModelError("PhoneNumber", "مشتری با این شماره تلفن در سیستم موجود است.");
+                    return View(model);
+                }
+
                 var user = new ApplicationUser
                 {
                     UserName = model.Email,
                     Email = model.Email,
+                    PhoneNumber = model.PhoneNumber,
                     FullName = model.FullName,
                     NationalId = model.NationalId,
                     Address = model.Address,
                     Role = UserRole.Customer,
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    EmailConfirmed = true // Auto-confirm for now
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
@@ -59,6 +91,25 @@ namespace ForexExchange.Controllers
 
                     // Add user to Customer role
                     await _userManager.AddToRoleAsync(user, "Customer");
+
+                    // Create corresponding Customer entity
+                    var customer = new Customer
+                    {
+                        FullName = model.FullName,
+                        PhoneNumber = model.PhoneNumber,
+                        Email = model.Email,
+                        NationalId = model.NationalId ?? string.Empty,
+                        Address = model.Address ?? string.Empty,
+                        CreatedAt = DateTime.Now,
+                        IsActive = true
+                    };
+
+                    _context.Customers.Add(customer);
+                    await _context.SaveChangesAsync();
+
+                    // Link the user to the customer
+                    user.CustomerId = customer.Id;
+                    await _userManager.UpdateAsync(user);
 
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return RedirectToAction("Index", "Home");

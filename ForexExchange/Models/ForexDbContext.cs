@@ -113,6 +113,7 @@ namespace ForexExchange.Models
             // ApplicationUser configurations
             modelBuilder.Entity<ApplicationUser>(entity =>
             {
+                entity.HasIndex(e => e.PhoneNumber).IsUnique();
                 entity.HasOne(e => e.Customer)
                       .WithOne()
                       .HasForeignKey<ApplicationUser>(e => e.CustomerId)

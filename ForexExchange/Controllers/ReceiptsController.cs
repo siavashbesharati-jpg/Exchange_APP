@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
@@ -6,6 +7,7 @@ using System.Text.Json;
 
 namespace ForexExchange.Controllers
 {
+    [Authorize(Roles = "Admin,Manager,Staff")]
     public class ReceiptsController : Controller
     {
         private readonly ForexDbContext _context;

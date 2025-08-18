@@ -13,6 +13,11 @@ namespace ForexExchange.Models
         [Display(Name = "ایمیل")]
         public string Email { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "شماره تلفن الزامی است")]
+        [Display(Name = "شماره تلفن")]
+        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "رمز عبور الزامی است")]
         [DataType(DataType.Password)]
         [Display(Name = "رمز عبور")]

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 
@@ -189,6 +190,77 @@ namespace ForexExchange.Controllers
                 .ToListAsync();
 
             return Json(rates);
+        }
+
+        // GET: ExchangeRates/Manage
+        [Authorize(Roles = "Admin,Manager,Staff")]
+        public async Task<IActionResult> Manage()
+        {
+            var exchangeRates = await _context.ExchangeRates
+                .Where(r => r.IsActive)
+                .OrderBy(r => r.Currency)
+                .ToListAsync();
+
+            return View(exchangeRates);
+        }
+
+        // POST: ExchangeRates/UpdateAll
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Staff")]
+        public async Task<IActionResult> UpdateAll(Dictionary<int, decimal> buyRates, Dictionary<int, decimal> sellRates)
+        {
+            if (buyRates == null || sellRates == null)
+            {
+                TempData["ErrorMessage"] = "داده‌های ورودی نامعتبر است.";
+                return RedirectToAction(nameof(Manage));
+            }
+
+            foreach (var currencyType in Enum.GetValues(typeof(CurrencyType)).Cast<CurrencyType>())
+            {
+                var currencyKey = (int)currencyType;
+                
+                if (buyRates.ContainsKey(currencyKey) && sellRates.ContainsKey(currencyKey))
+                {
+                    var buyRate = buyRates[currencyKey];
+                    var sellRate = sellRates[currencyKey];
+
+                    if (sellRate <= buyRate)
+                    {
+                        TempData["ErrorMessage"] = $"نرخ فروش {currencyType} باید بیشتر از نرخ خرید باشد.";
+                        return RedirectToAction(nameof(Manage));
+                    }
+
+                    var existingRate = await _context.ExchangeRates
+                        .FirstOrDefaultAsync(r => r.Currency == currencyType && r.IsActive);
+
+                    if (existingRate != null)
+                    {
+                        existingRate.BuyRate = buyRate;
+                        existingRate.SellRate = sellRate;
+                        existingRate.UpdatedAt = DateTime.UtcNow;
+                        existingRate.UpdatedBy = User.Identity?.Name ?? "System";
+                        _context.Update(existingRate);
+                    }
+                    else
+                    {
+                        var newRate = new ExchangeRate
+                        {
+                            Currency = currencyType,
+                            BuyRate = buyRate,
+                            SellRate = sellRate,
+                            IsActive = true,
+                            UpdatedAt = DateTime.UtcNow,
+                            UpdatedBy = User.Identity?.Name ?? "System"
+                        };
+                        _context.Add(newRate);
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["SuccessMessage"] = "نرخ‌های ارز با موفقیت بروزرسانی شدند.";
+            return RedirectToAction(nameof(Index));
         }
 
         private bool ExchangeRateExists(int id)
