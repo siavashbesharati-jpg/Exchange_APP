@@ -1,0 +1,149 @@
+@model ForexExchange.Models.Customer
+
+@{
+    ViewData["Title"] = "ویرایش مشتری";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">ویرایش اطلاعات مشتری</h4>
+                    <small class="text-muted">کد مشتری: @Model.Id</small>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input asp-for="Id" type="hidden" />
+                        <input asp-for="CreatedAt" type="hidden" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="FullName" class="form-label">نام و نام خانوادگی *</label>
+                                <input asp-for="FullName" type="text" class="form-control" required />
+                                <span asp-validation-for="FullName" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label">شماره تلفن *</label>
+                                <input asp-for="PhoneNumber" type="tel" class="form-control" placeholder="09xxxxxxxxx" required />
+                                <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label">ایمیل</label>
+                                <input asp-for="Email" type="email" class="form-control" placeholder="example@email.com" />
+                                <span asp-validation-for="Email" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label asp-for="NationalId" class="form-label">کد ملی</label>
+                                <input asp-for="NationalId" type="text" class="form-control" placeholder="کد ملی 10 رقمی" maxlength="10" />
+                                <span asp-validation-for="NationalId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label">آدرس</label>
+                            <textarea asp-for="Address" class="form-control" rows="3" placeholder="آدرس کامل..."></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsActive" class="form-check-label">
+                                    مشتری فعال است
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> تاریخ عضویت: @Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+                            </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info">مشاهده جزئیات</a>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> ذخیره تغییرات
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Customer Statistics Card -->
+            @if (Model.Orders.Any() || Model.BuyTransactions.Any() || Model.SellTransactions.Any())
+            {
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">خلاصه فعالیت مشتری</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="border-end">
+                                    <h4 class="text-primary">@Model.Orders.Count</h4>
+                                    <small class="text-muted">سفارش ثبت شده</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="border-end">
+                                    <h4 class="text-success">@Model.BuyTransactions.Count</h4>
+                                    <small class="text-muted">تراکنش خرید</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h4 class="text-warning">@Model.SellTransactions.Count</h4>
+                                <small class="text-muted">تراکنش فروش</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script>
+        // Phone number validation
+        document.querySelector('input[name="PhoneNumber"]').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (value.length > 11) {
+                value = value.substring(0, 11);
+            }
+            e.target.value = value;
+        });
+        
+        // National ID validation
+        document.querySelector('input[name="NationalId"]').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+            e.target.value = value;
+        });
+
+        // Show confirmation before saving
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!confirm('آیا از ذخیره تغییرات اطمینان دارید؟')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+}

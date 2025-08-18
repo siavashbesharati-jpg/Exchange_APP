@@ -1,18 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 
 namespace ForexExchange.Controllers
 {
+    [Authorize] // All actions require authentication
     public class OrdersController : Controller
     {
         private readonly ForexDbContext _context;
         private readonly ILogger<OrdersController> _logger;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public OrdersController(ForexDbContext context, ILogger<OrdersController> logger)
+        public OrdersController(ForexDbContext context, ILogger<OrdersController> logger, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _logger = logger;
+            _userManager = userManager;
+        }
+
+        // Helper method to check if user is admin or staff
+        private async Task<bool> IsAdminOrStaffAsync()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            return user != null && (user.Role == UserRole.Admin || user.Role == UserRole.Operator || user.Role == UserRole.Manager);
+        }
+
+        // Helper method to get current user's customer ID
+        private async Task<int?> GetCurrentCustomerIdAsync()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            return user?.CustomerId;
         }
 
         // GET: Orders
