@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using System.Globalization;
 
 namespace ForexExchange.Controllers
 {
+    [Authorize(Roles = "Admin,Staff")]
     public class ReportsController : Controller
     {
         private readonly ForexDbContext _context;

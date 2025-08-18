@@ -1,0 +1,63 @@
+@model ProfileViewModel
+@{
+    ViewData["Title"] = "پروفایل کاربری";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">پروفایل کاربری</h3>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Message != null)
+                    {
+                        <div class="alert alert-success">@ViewBag.Message</div>
+                    }
+
+                    <form asp-action="Profile" method="post">
+                        <div asp-validation-summary="All" class="text-danger"></div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label">نام و نام خانوادگی</label>
+                            <input asp-for="FullName" class="form-control" required />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">ایمیل</label>
+                            <input asp-for="Email" class="form-control" type="email" readonly />
+                            <small class="form-text text-muted">ایمیل قابل تغییر نیست</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NationalId" class="form-label">کد ملی</label>
+                            <input asp-for="NationalId" class="form-control" />
+                            <span asp-validation-for="NationalId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label">آدرس</label>
+                            <textarea asp-for="Address" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Role" class="form-label">نقش کاربری</label>
+                            <input asp-for="Role" class="form-control" readonly />
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">به‌روزرسانی</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

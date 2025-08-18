@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace ForexExchange.Models
 {
-    public class ForexDbContext : DbContext
+    public class ForexDbContext : IdentityDbContext<ApplicationUser>
     {
         public ForexDbContext(DbContextOptions<ForexDbContext> options) : base(options)
         {
@@ -107,6 +108,15 @@ namespace ForexExchange.Models
                       .OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(e => new { e.CustomerId, e.IsRead });
                 entity.HasIndex(e => e.CreatedAt);
+            });
+            
+            // ApplicationUser configurations
+            modelBuilder.Entity<ApplicationUser>(entity =>
+            {
+                entity.HasOne(e => e.Customer)
+                      .WithOne()
+                      .HasForeignKey<ApplicationUser>(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Seed initial exchange rates
