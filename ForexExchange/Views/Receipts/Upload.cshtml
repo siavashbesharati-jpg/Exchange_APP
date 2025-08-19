@@ -13,6 +13,212 @@
                 </div>
                 <div class="card-body">
                     
+                    @if (ViewBag.IsTransactionSpecific == true)
+                    {
+                        <div class="alert alert-info mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-link fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1">آپلود رسید برای تراکنش خاص</h6>
+                                    <p class="mb-0">
+                                        شما در حال آپلود رسید برای تراکنش شماره <strong>@ViewBag.SelectedTransactionId</strong> هستید.
+                                        اطلاعات مشتری و تراکنش به صورت خودکار از تراکنش انتخاب شده‌اند.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Details Card -->
+                        @if (ViewBag.SelectedTransaction != null)
+                        {
+                            var transaction = ViewBag.SelectedTransaction as ForexExchange.Models.Transaction;
+                            <div class="card mb-4 border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-exchange-alt me-2"></i>
+                                        جزئیات تراکنش #@transaction.Id
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <!-- Transaction Basic Info -->
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary mb-3">اطلاعات کلی تراکنش</h6>
+                                            <table class="table table-sm table-borderless">
+                                                <tr>
+                                                    <td class="fw-bold text-muted">شماره تراکنش:</td>
+                                                    <td>#@transaction.Id</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold text-muted">ارز:</td>
+                                                    <td>
+                                                        <span class="badge bg-info">@transaction.Currency</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold text-muted">مقدار:</td>
+                                                    <td class="fw-bold">@transaction.Amount.ToString("N2")</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold text-muted">نرخ:</td>
+                                                    <td class="fw-bold text-success">@transaction.Rate.ToString("N0") ریال</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold text-muted">مجموع (تومان):</td>
+                                                    <td class="fw-bold text-danger">@transaction.TotalInToman.ToString("N0")</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold text-muted">وضعیت:</td>
+                                                    <td>
+                                                        @switch(transaction.Status)
+                                                        {
+                                                            case ForexExchange.Models.TransactionStatus.Pending:
+                                                                <span class="badge bg-warning">در انتظار</span>
+                                                                break;
+                                                            case ForexExchange.Models.TransactionStatus.PaymentUploaded:
+                                                                <span class="badge bg-info">رسید آپلود شده</span>
+                                                                break;
+                                                            case ForexExchange.Models.TransactionStatus.ReceiptConfirmed:
+                                                                <span class="badge bg-primary">رسید تأیید شده</span>
+                                                                break;
+                                                            case ForexExchange.Models.TransactionStatus.Completed:
+                                                                <span class="badge bg-success">تکمیل شده</span>
+                                                                break;
+                                                            case ForexExchange.Models.TransactionStatus.Failed:
+                                                                <span class="badge bg-danger">ناموفق</span>
+                                                                break;
+                                                        }
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold text-muted">تاریخ ایجاد:</td>
+                                                    <td>@transaction.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+
+                                        <!-- Customer & Order Info -->
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary mb-3">اطلاعات مشتریان و سفارشات</h6>
+                                            
+                                            <!-- Buyer Information -->
+                                            <div class="mb-3">
+                                                <h6 class="text-success mb-2">
+                                                    <i class="fas fa-user-plus me-1"></i>
+                                                    خریدار (مشتری انتخاب شده)
+                                                </h6>
+                                                <div class="bg-light p-2 rounded">
+                                                    <strong>@transaction.BuyerCustomer.FullName</strong><br>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-phone me-1"></i>@transaction.BuyerCustomer.PhoneNumber
+                                                    </small>
+                                                    @if (!string.IsNullOrEmpty(transaction.BuyerCustomer.NationalId))
+                                                    {
+                                                        <br><small class="text-muted">
+                                                            <i class="fas fa-id-card me-1"></i>@transaction.BuyerCustomer.NationalId
+                                                        </small>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            <!-- Seller Information -->
+                                            <div class="mb-3">
+                                                <h6 class="text-warning mb-2">
+                                                    <i class="fas fa-user-minus me-1"></i>
+                                                    فروشنده
+                                                </h6>
+                                                <div class="bg-light p-2 rounded">
+                                                    <strong>@transaction.SellerCustomer.FullName</strong><br>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-phone me-1"></i>@transaction.SellerCustomer.PhoneNumber
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            <!-- Order Information -->
+                                            <div class="mb-3">
+                                                <h6 class="text-info mb-2">
+                                                    <i class="fas fa-shopping-cart me-1"></i>
+                                                    سفارش خرید (انتخاب شده)
+                                                </h6>
+                                                <div class="bg-light p-2 rounded">
+                                                    <strong>سفارش #@transaction.BuyOrderId</strong><br>
+                                                    <small class="text-muted">
+                                                        مقدار: @transaction.BuyOrder.Amount.ToString("N2") @transaction.BuyOrder.Currency
+                                                    </small><br>
+                                                    <small class="text-muted">
+                                                        وضعیت: 
+                                                        @switch(transaction.BuyOrder.Status)
+                                                        {
+                                                            case ForexExchange.Models.OrderStatus.Open:
+                                                                <span class="badge bg-primary">باز</span>
+                                                                break;
+                                                            case ForexExchange.Models.OrderStatus.Matched:
+                                                                <span class="badge bg-info">مچ شده</span>
+                                                                break;
+                                                            case ForexExchange.Models.OrderStatus.PartiallyFilled:
+                                                                <span class="badge bg-warning">نیمه تکمیل</span>
+                                                                break;
+                                                            case ForexExchange.Models.OrderStatus.Completed:
+                                                                <span class="badge bg-success">تکمیل شده</span>
+                                                                break;
+                                                            case ForexExchange.Models.OrderStatus.Cancelled:
+                                                                <span class="badge bg-danger">لغو شده</span>
+                                                                break;
+                                                        }
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            @if (!string.IsNullOrEmpty(transaction.Notes))
+                                            {
+                                                <div class="mb-3">
+                                                    <h6 class="text-secondary mb-2">
+                                                        <i class="fas fa-sticky-note me-1"></i>
+                                                        یادداشت‌ها
+                                                    </h6>
+                                                    <div class="bg-light p-2 rounded">
+                                                        <small>@transaction.Notes</small>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(transaction.BuyerBankAccount) || !string.IsNullOrEmpty(transaction.SellerBankAccount))
+                                    {
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <h6 class="text-primary mb-3">اطلاعات حساب‌های بانکی</h6>
+                                                <div class="row">
+                                                    @if (!string.IsNullOrEmpty(transaction.BuyerBankAccount))
+                                                    {
+                                                        <div class="col-md-6">
+                                                            <div class="bg-light p-2 rounded">
+                                                                <strong class="text-success">حساب خریدار:</strong><br>
+                                                                <code>@transaction.BuyerBankAccount</code>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    @if (!string.IsNullOrEmpty(transaction.SellerBankAccount))
+                                                    {
+                                                        <div class="col-md-6">
+                                                            <div class="bg-light p-2 rounded">
+                                                                <strong class="text-warning">حساب فروشنده:</strong><br>
+                                                                <code>@transaction.SellerBankAccount</code>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    
                     @if (TempData["SuccessMessage"] != null)
                     {
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -52,16 +258,37 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="customerId" class="form-label">مشتری *</label>
-                                <select id="customerId" name="customerId" class="form-select" required>
-                                    <option value="">انتخاب مشتری</option>
-                                    @if (ViewBag.Customers != null)
-                                    {
-                                        @foreach (var customer in ViewBag.Customers)
+                                @if (ViewBag.IsTransactionSpecific == true)
+                                {
+                                    <!-- Disabled customer dropdown when coming from transaction -->
+                                    <select id="customerId" name="customerId" class="form-select" required disabled>
+                                        @if (ViewBag.SelectedCustomer != null)
                                         {
-                                            <option value="@customer.Id">@customer.FullName - @customer.PhoneNumber</option>
+                                            <option value="@ViewBag.SelectedCustomerId" selected>
+                                                @ViewBag.SelectedCustomer.FullName - @ViewBag.SelectedCustomer.PhoneNumber
+                                            </option>
                                         }
-                                    }
-                                </select>
+                                    </select>
+                                    <!-- Hidden field to ensure the value is posted -->
+                                    <input type="hidden" name="customerId" value="@ViewBag.SelectedCustomerId" />
+                                    <div class="form-text text-info">
+                                        <i class="fas fa-info-circle"></i> مشتری از تراکنش انتخاب شده تعیین شده است
+                                    </div>
+                                }
+                                else
+                                {
+                                    <!-- Normal customer dropdown -->
+                                    <select id="customerId" name="customerId" class="form-select" required>
+                                        <option value="">انتخاب مشتری</option>
+                                        @if (ViewBag.Customers != null)
+                                        {
+                                            @foreach (var customer in ViewBag.Customers)
+                                            {
+                                                <option value="@customer.Id">@customer.FullName - @customer.PhoneNumber</option>
+                                            }
+                                        }
+                                    </select>
+                                }
                             </div>
                             
                             <div class="col-md-6">
@@ -78,25 +305,59 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="orderId" class="form-label">سفارش مرتبط (اختیاری)</label>
-                                <select id="orderId" name="orderId" class="form-select">
-                                    <option value="">انتخاب سفارش</option>
-                                    @if (ViewBag.OpenOrders != null)
-                                    {
-                                        @foreach (var order in ViewBag.OpenOrders)
+                                @if (ViewBag.IsTransactionSpecific == true)
+                                {
+                                    <!-- Disabled order dropdown when coming from transaction -->
+                                    <select id="orderId" name="orderId" class="form-select" disabled>
+                                        @if (ViewBag.SelectedOrder != null)
                                         {
-                                            var isSelected = ViewBag.SelectedOrderId != null && ViewBag.SelectedOrderId == order.Id;
-                                            <option value="@order.Id" selected="@isSelected">
-                                                سفارش #@order.Id - @order.Customer.FullName - @order.Amount.ToString("N0") @order.Currency
+                                            <option value="@ViewBag.SelectedOrderId" selected>
+                                                سفارش #@ViewBag.SelectedOrderId - @ViewBag.SelectedOrder.Customer.FullName - @ViewBag.SelectedOrder.Amount.ToString("N0") @ViewBag.SelectedOrder.Currency
                                             </option>
                                         }
-                                    }
-                                </select>
+                                    </select>
+                                    <!-- Hidden field to ensure the value is posted -->
+                                    <input type="hidden" name="orderId" value="@ViewBag.SelectedOrderId" />
+                                    <div class="form-text text-info">
+                                        <i class="fas fa-info-circle"></i> سفارش از تراکنش انتخاب شده تعیین شده است
+                                    </div>
+                                }
+                                else
+                                {
+                                    <!-- Normal order dropdown -->
+                                    <select id="orderId" name="orderId" class="form-select">
+                                        <option value="">انتخاب سفارش</option>
+                                        @if (ViewBag.OpenOrders != null)
+                                        {
+                                            @foreach (var order in ViewBag.OpenOrders)
+                                            {
+                                                var isSelected = ViewBag.SelectedOrderId != null && ViewBag.SelectedOrderId == order.Id;
+                                                <option value="@order.Id" selected="@isSelected">
+                                                    سفارش #@order.Id - @order.Customer.FullName - @order.Amount.ToString("N0") @order.Currency
+                                                </option>
+                                            }
+                                        }
+                                    </select>
+                                }
                             </div>
                             
                             <div class="col-md-6">
                                 <label for="transactionId" class="form-label">تراکنش مرتبط (اختیاری)</label>
-                                <input type="number" id="transactionId" name="transactionId" class="form-control" 
-                                       value="@ViewBag.SelectedTransactionId" placeholder="شماره تراکنش">
+                                @if (ViewBag.IsTransactionSpecific == true)
+                                {
+                                    <!-- Disabled transaction field when coming from transaction -->
+                                    <input type="number" id="transactionId" name="transactionId" class="form-control" 
+                                           value="@ViewBag.SelectedTransactionId" readonly disabled>
+                                    <div class="form-text text-info">
+                                        <i class="fas fa-info-circle"></i> شماره تراکنش ثابت است
+                                    </div>
+                                }
+                                else
+                                {
+                                    <!-- Normal transaction field -->
+                                    <input type="number" id="transactionId" name="transactionId" class="form-control" 
+                                           value="@ViewBag.SelectedTransactionId" placeholder="شماره تراکنش">
+                                }
                             </div>
                         </div>
 

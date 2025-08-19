@@ -65,6 +65,9 @@ namespace ForexExchange.Controllers
                 .Where(o => o.Status != OrderStatus.Cancelled)
                 .ToListAsync();
 
+            // Flag to indicate if coming from settlement details (transaction-specific upload)
+            ViewBag.IsTransactionSpecific = transactionId.HasValue;
+
             if (orderId.HasValue)
             {
                 ViewBag.SelectedOrderId = orderId.Value;
@@ -78,8 +81,25 @@ namespace ForexExchange.Controllers
                 var transaction = await _context.Transactions
                     .Include(t => t.BuyerCustomer)
                     .Include(t => t.SellerCustomer)
+                    .Include(t => t.BuyOrder)
+                    .ThenInclude(o => o.Customer)
+                    .Include(t => t.SellOrder)
+                    .ThenInclude(o => o.Customer)
                     .FirstOrDefaultAsync(t => t.Id == transactionId.Value);
-                ViewBag.SelectedTransaction = transaction;
+                
+                if (transaction != null)
+                {
+                    ViewBag.SelectedTransaction = transaction;
+                    
+                    // Set the customer based on transaction type
+                    // For receipt uploads from settlements, we typically use the buyer customer
+                    ViewBag.SelectedCustomerId = transaction.BuyerCustomerId;
+                    ViewBag.SelectedCustomer = transaction.BuyerCustomer;
+                    
+                    // Set the buy order as the primary order for the receipt
+                    ViewBag.SelectedOrderId = transaction.BuyOrderId;
+                    ViewBag.SelectedOrder = transaction.BuyOrder;
+                }
             }
 
             return View();
@@ -367,6 +387,9 @@ namespace ForexExchange.Controllers
                 .Where(o => o.Status != OrderStatus.Cancelled)
                 .ToListAsync();
 
+            // Flag to indicate if coming from settlement details (transaction-specific upload)
+            ViewBag.IsTransactionSpecific = transactionId.HasValue;
+
             if (orderId.HasValue)
             {
                 ViewBag.SelectedOrderId = orderId.Value;
@@ -380,8 +403,25 @@ namespace ForexExchange.Controllers
                 var transaction = await _context.Transactions
                     .Include(t => t.BuyerCustomer)
                     .Include(t => t.SellerCustomer)
+                    .Include(t => t.BuyOrder)
+                    .ThenInclude(o => o.Customer)
+                    .Include(t => t.SellOrder)
+                    .ThenInclude(o => o.Customer)
                     .FirstOrDefaultAsync(t => t.Id == transactionId.Value);
-                ViewBag.SelectedTransaction = transaction;
+                
+                if (transaction != null)
+                {
+                    ViewBag.SelectedTransaction = transaction;
+                    
+                    // Set the customer based on transaction type
+                    // For receipt uploads from settlements, we typically use the buyer customer
+                    ViewBag.SelectedCustomerId = transaction.BuyerCustomerId;
+                    ViewBag.SelectedCustomer = transaction.BuyerCustomer;
+                    
+                    // Set the buy order as the primary order for the receipt
+                    ViewBag.SelectedOrderId = transaction.BuyOrderId;
+                    ViewBag.SelectedOrder = transaction.BuyOrder;
+                }
             }
         }
 
