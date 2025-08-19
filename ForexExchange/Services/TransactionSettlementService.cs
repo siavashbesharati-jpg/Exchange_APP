@@ -8,19 +8,18 @@ namespace ForexExchange.Services
         private readonly ForexDbContext _context;
         private readonly ILogger<TransactionSettlementService> _logger;
         private readonly IEmailService _emailService;
-        
-        // Settlement configuration
-        private const decimal DefaultCommissionRate = 0.005m; // 0.5%
-        private const decimal ExchangeFeeRate = 0.002m; // 0.2%
+        private readonly ISettingsService _settingsService;
         
         public TransactionSettlementService(
             ForexDbContext context, 
             ILogger<TransactionSettlementService> logger,
-            IEmailService emailService)
+            IEmailService emailService,
+            ISettingsService settingsService)
         {
             _context = context;
             _logger = logger;
             _emailService = emailService;
+            _settingsService = settingsService;
         }
 
         public async Task<Transaction> CreateTransactionAsync(Order buyOrder, Order sellOrder, decimal matchedAmount)
@@ -295,17 +294,18 @@ namespace ForexExchange.Services
 
         public async Task<SettlementCalculation> CalculateSettlementAsync(Transaction transaction)
         {
-            await Task.CompletedTask; // For async interface compliance
-
             var grossAmount = transaction.TotalInToman;
-            var commissionAmount = grossAmount * DefaultCommissionRate;
-            var exchangeFee = grossAmount * ExchangeFeeRate;
+            var commissionRate = await _settingsService.GetCommissionRateAsync();
+            var exchangeFeeRate = await _settingsService.GetExchangeFeeRateAsync();
+            
+            var commissionAmount = grossAmount * commissionRate;
+            var exchangeFee = grossAmount * exchangeFeeRate;
             var netAmount = grossAmount - commissionAmount - exchangeFee;
 
             return new SettlementCalculation
             {
                 GrossAmount = grossAmount,
-                CommissionRate = DefaultCommissionRate,
+                CommissionRate = commissionRate,
                 CommissionAmount = commissionAmount,
                 ExchangeFee = exchangeFee,
                 NetAmount = netAmount,

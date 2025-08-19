@@ -409,6 +409,175 @@ namespace ForexExchange.Migrations
                     b.ToTable("Receipts");
                 });
 
+            modelBuilder.Entity("ForexExchange.Models.SystemSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SettingKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SettingValue")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SettingKey")
+                        .IsUnique();
+
+                    b.ToTable("SystemSettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "نرخ کمیسیون به درصد",
+                            IsActive = true,
+                            SettingKey = "COMMISSION_RATE",
+                            SettingValue = "0.5",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "کارمزد تبدیل ارز به درصد",
+                            IsActive = true,
+                            SettingKey = "EXCHANGE_FEE_RATE",
+                            SettingValue = "0.2",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "حداقل مبلغ تراکنش به تومان",
+                            IsActive = true,
+                            SettingKey = "MIN_TRANSACTION_AMOUNT",
+                            SettingValue = "10000",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "حداکثر مبلغ تراکنش به تومان",
+                            IsActive = true,
+                            SettingKey = "MAX_TRANSACTION_AMOUNT",
+                            SettingValue = "1000000000",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "محدودیت تراکنش روزانه به تومان",
+                            IsActive = true,
+                            SettingKey = "DAILY_TRANSACTION_LIMIT",
+                            SettingValue = "5000000000",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "bool",
+                            Description = "حالت تعمیرات سیستم",
+                            IsActive = true,
+                            SettingKey = "SYSTEM_MAINTENANCE",
+                            SettingValue = "false",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "string",
+                            Description = "ارز پیش‌فرض سیستم",
+                            IsActive = true,
+                            SettingKey = "DEFAULT_CURRENCY",
+                            SettingValue = "USD",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "int",
+                            Description = "بازه بروزرسانی نرخ ارز به دقیقه",
+                            IsActive = true,
+                            SettingKey = "RATE_UPDATE_INTERVAL",
+                            SettingValue = "60",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "bool",
+                            Description = "فعال‌سازی سیستم اعلان‌ها",
+                            IsActive = true,
+                            SettingKey = "NOTIFICATION_ENABLED",
+                            SettingValue = "true",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "bool",
+                            Description = "فعال‌سازی پشتیبان‌گیری خودکار",
+                            IsActive = true,
+                            SettingKey = "BACKUP_ENABLED",
+                            SettingValue = "true",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        });
+                });
+
             modelBuilder.Entity("ForexExchange.Models.Transaction", b =>
                 {
                     b.Property<int>("Id")

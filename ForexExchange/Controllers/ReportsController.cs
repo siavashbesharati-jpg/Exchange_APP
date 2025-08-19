@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Services;
 using System.Globalization;
 
 namespace ForexExchange.Controllers
@@ -11,11 +12,13 @@ namespace ForexExchange.Controllers
     {
         private readonly ForexDbContext _context;
         private readonly ILogger<ReportsController> _logger;
+        private readonly ISettingsService _settingsService;
 
-        public ReportsController(ForexDbContext context, ILogger<ReportsController> logger)
+        public ReportsController(ForexDbContext context, ILogger<ReportsController> logger, ISettingsService settingsService)
         {
             _context = context;
             _logger = logger;
+            _settingsService = settingsService;
         }
 
         // GET: Reports
@@ -205,8 +208,9 @@ namespace ForexExchange.Controllers
                 .Include(t => t.SellerCustomer)
                 .ToListAsync();
 
-            const decimal commissionRate = 0.005m; // 0.5%
-            const decimal exchangeFeeRate = 0.002m; // 0.2%
+            // Get dynamic rates from settings
+            var commissionRate = await _settingsService.GetCommissionRateAsync();
+            var exchangeFeeRate = await _settingsService.GetExchangeFeeRateAsync();
 
             var commissionReport = new CommissionReport
             {

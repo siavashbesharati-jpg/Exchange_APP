@@ -72,7 +72,7 @@ namespace ForexExchange.Services
 
         private async Task CreateAdminUserAsync()
         {
-            const string adminEmail = "admin@iranexpedia.com";
+            const string adminEmail = "admin";
             const string adminPassword = "123";
 
             var adminUser = await _userManager.FindByEmailAsync(adminEmail);
@@ -346,7 +346,7 @@ namespace ForexExchange.Services
                         CustomerId = customer.Id
                     };
 
-                    var result = await _userManager.CreateAsync(user, "Customer123!");
+                    var result = await _userManager.CreateAsync(user, "123");
                     if (result.Succeeded)
                     {
                         await _userManager.AddToRoleAsync(user, "Customer");
