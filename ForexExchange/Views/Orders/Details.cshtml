@@ -161,28 +161,39 @@
                                         <thead>
                                             <tr>
                                                 <th>شناسه</th>
-                                                <th>نوع</th>
+                                                <th>طرف معامله</th>
+                                                <th>نوع معامله شما</th>
+                                                <th>نوع معامله طرف مقابل</th>
                                                 <th>مقدار</th>
                                                 <th>نرخ</th>
                                                 <th>مجموع</th>
                                                 <th>وضعیت</th>
                                                 <th>تاریخ</th>
+                                                <th>جزئیات طرف مقابل</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach (var transaction in Model.Transactions)
                                             {
+                                                var isThisBuyOrder = transaction.BuyOrderId == Model.Id;
+                                                var counterpartOrder = isThisBuyOrder ? transaction.SellOrder : transaction.BuyOrder;
+                                                var counterpartCustomer = isThisBuyOrder ? transaction.SellerCustomer : transaction.BuyerCustomer;
+                                                var thisOrderType = isThisBuyOrder ? "خرید" : "فروش";
+                                                var counterpartOrderType = isThisBuyOrder ? "فروش" : "خرید";
+                                                var thisOrderBadgeClass = isThisBuyOrder ? "bg-success" : "bg-danger";
+                                                var counterpartOrderBadgeClass = isThisBuyOrder ? "bg-danger" : "bg-success";
+                                                
                                                 <tr>
                                                     <td>@transaction.Id</td>
                                                     <td>
-                                                        @if (Model.OrderType == ForexExchange.Models.OrderType.Buy)
-                                                        {
-                                                            <span class="badge bg-success">خرید</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-danger">فروش</span>
-                                                        }
+                                                        <strong>@counterpartCustomer.FullName</strong>
+                                                        <br><small class="text-muted">@counterpartCustomer.PhoneNumber</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge @thisOrderBadgeClass">@thisOrderType</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge @counterpartOrderBadgeClass">@counterpartOrderType</span>
                                                     </td>
                                                     <td>@transaction.Amount.ToString("N2")</td>
                                                     <td>@transaction.Rate.ToString("N0")</td>
@@ -207,11 +218,37 @@
                                                         </span>
                                                     </td>
                                                     <td>@transaction.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                                    <td>
+                                                        <div class="small">
+                                                            <strong>سفارش #@counterpartOrder.Id</strong>
+                                                            <br>نرخ: @counterpartOrder.Rate.ToString("N0")
+                                                            <br>مقدار کل: @counterpartOrder.Amount.ToString("N2")
+                                                            <br>
+                                                            <a href="@Url.Action("Details", "Orders", new { id = counterpartOrder.Id })" 
+                                                               class="btn btn-xs btn-outline-info btn-sm mt-1">
+                                                                <i class="fas fa-eye"></i> مشاهده سفارش
+                                                            </a>
+                                                           
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             }
                                         </tbody>
                                     </table>
                                 </div>
+                                
+                                @if (Model.Transactions.Any())
+                                {
+                                    <div class="alert alert-info mt-3">
+                                        <h6><i class="fas fa-info-circle"></i> راهنمای تراکنش‌ها:</h6>
+                                        <ul class="mb-0">
+                                            <li><strong>طرف معامله:</strong> مشتری طرف مقابل شما در این تراکنش</li>
+                                            <li><strong>نوع معامله شما:</strong> نوع سفارش شما (خرید یا فروش)</li>
+                                            <li><strong>نوع معامله طرف مقابل:</strong> نوع سفارش طرف مقابل (مکمل شما)</li>
+                                            <li><strong>جزئیات طرف مقابل:</strong> اطلاعات سفارش و لینک به پروفایل طرف مقابل</li>
+                                        </ul>
+                                    </div>
+                                }
                             </div>
                         </div>
                     }

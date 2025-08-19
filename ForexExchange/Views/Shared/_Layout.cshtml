@@ -34,142 +34,41 @@
 
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">سامانه صرافی ایران
-                    اکسپدیا</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
-                    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="تغییر منو">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home"
-                                asp-action="Index">داشبورد</a>
+        <div class="container-fluid py-3">
+            <div class="d-flex justify-content-end">
+                <ul class="navbar-nav flex-row">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
+                                خوش آمدید، @User.Identity.Name
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Profile">پروفایل کاربری</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="dropdown-item">خروج</button>
+                                    </form>
+                                </li>
+                            </ul>
                         </li>
-
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
-                            {
-                                <!-- Admin/Staff Menu Items -->
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Create">ثبت
-                                        سفارش</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders"
-                                        asp-action="Index">سفارش‌ها</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Customers"
-                                        asp-action="Index">مشتریان</a>
-                                </li>
-                                <li class="nav-item ">
-                                    <a class="nav-link  text-dark" asp-controller="Settlements"
-                                                asp-action="Index" role="button">
-                                        تسویه حساب
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Receipts"
-                                        asp-action="Index">رسیدها</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link  text-dark" asp-controller="Reports" asp-action="Index" role="button">
-                                        گزارشات
-                                    </a>
-                                    
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates"
-                                        asp-action="Index">نرخ ارز</a>
-                                </li>
-                                @if (User.IsInRole("Admin"))
-                                {
-                                    <li class="nav-item">
-                                        <a class="nav-link text-dark" asp-area="" asp-controller="Settings"
-                                            asp-action="Index">تنظیمات سیستم</a>
-                                    </li>
-                                }
-                            }
-                            else if (User.IsInRole("Customer"))
-                            {
-                                <!-- Customer Menu Items -->
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Create">ثبت
-                                        سفارش</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders"
-                                        asp-action="Index">سفارش‌های من</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="CustomerTransactions"
-                                        asp-action="Index">تراکنش‌های من</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates"
-                                        asp-action="Index">نرخ ارز</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Account"
-                                        asp-action="Profile">پروفایل من</a>
-                                </li>
-                            }
-                        }
-                        else
-                        {
-                            <!-- Public Menu Items -->
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates"
-                                    asp-action="Index">نرخ ارز</a>
-                            </li>
-                        }
-                    </ul>
-
-                    <!-- Authentication Links -->
-                    <ul class="navbar-nav">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-dark" href="#" role="button"
-                                    data-bs-toggle="dropdown">
-                                    خوش آمدید، @User.Identity.Name
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" asp-area="" asp-controller="Account"
-                                            asp-action="Profile">پروفایل کاربری</a></li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li>
-                                        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post"
-                                            class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="dropdown-item">خروج</button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Account"
-                                    asp-action="Login">ورود</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Register">ثبت
-                                    نام</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">ورود</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Register">ثبت نام</a>
+                        </li>
+                    }
+                </ul>
             </div>
-        </nav>
+        </div>
     </header>
+    
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

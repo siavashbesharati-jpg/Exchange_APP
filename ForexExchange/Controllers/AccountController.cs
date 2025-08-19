@@ -128,7 +128,7 @@ namespace ForexExchange.Controllers
                     await _userManager.UpdateAsync(user);
 
                     await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToAction("Dashboard", "Home");
                 }
 
                 foreach (var error in result.Errors)
@@ -191,7 +191,7 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Dashboard", "Home");
         }
 
         // GET: /Account/Profile
@@ -259,7 +259,7 @@ namespace ForexExchange.Controllers
             }
             else
             {
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Dashboard", "Home");
             }
         }
     }

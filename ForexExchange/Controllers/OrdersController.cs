@@ -206,6 +206,22 @@ namespace ForexExchange.Controllers
                 .Include(o => o.Receipts)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            if (order != null && order.Transactions.Any())
+            {
+                // Load the related customers and orders for transactions separately
+                var transactionIds = order.Transactions.Select(t => t.Id).ToList();
+                
+                await _context.Transactions
+                    .Where(t => transactionIds.Contains(t.Id))
+                    .Include(t => t.BuyerCustomer)
+                    .Include(t => t.SellerCustomer)
+                    .Include(t => t.BuyOrder)
+                        .ThenInclude(bo => bo.Customer)
+                    .Include(t => t.SellOrder)
+                        .ThenInclude(so => so.Customer)
+                    .LoadAsync();
+            }
+
             if (order == null)
             {
                 return NotFound();
