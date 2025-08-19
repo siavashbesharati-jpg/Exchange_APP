@@ -44,7 +44,7 @@
                                     <td>
                                         @if (Model.Customer != null)
                                         {
-                                            <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.Customer.Id">
+                                            <a asp-controller="Customers" asp-action="Profile" asp-route-id="@Model.Customer.Id">
                                                 @Model.Customer.FullName
                                             </a>
                                             <br><small class="text-muted">@Model.Customer.PhoneNumber</small>
@@ -323,7 +323,9 @@
                                                     var transactionRate = Model.OrderType == ForexExchange.Models.OrderType.Buy ? availableOrder.Rate : availableOrder.Rate;
                                                     
                                                     <tr>
-                                                        <td>@availableOrder.Customer?.FullName</td>
+                                                       
+                                                        <td> <a asp-action="Profile" asp-controller="Customers" asp-route-id="@availableOrder.Customer?.Id">@availableOrder.Customer?.FullName </a>
+                                                        </td>
                                                         <td>
                                                             @if (availableOrder.OrderType == ForexExchange.Models.OrderType.Buy)
                                                             {
@@ -332,7 +334,8 @@
                                                             else
                                                             {
                                                                 <span class="badge bg-danger">فروش</span>
-                                                            }
+                                                       
+                                                           }
                                                         </td>
                                                         <td>@availableOrder.Amount.ToString("N2")</td>
                                                         <td class="fw-bold text-primary">@remainingAmount.ToString("N2")</td>
