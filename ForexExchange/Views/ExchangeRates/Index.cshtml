@@ -12,8 +12,10 @@
                 @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
                 {
                     <div>
-                        <a asp-action="Create" class="btn btn-primary">افزودن نرخ جدید</a>
                         <a asp-action="Manage" class="btn btn-success">مدیریت ارزها</a>
+                        <button type="button" class="btn btn-info" onclick="updateFromWeb()" title="بروزرسانی خودکار از وب">
+                            <i class="fas fa-globe"></i> بروزرسانی از وب
+                        </button>
                     </div>
                 }
             </div>
@@ -124,3 +126,29 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden form for web update -->
+@if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
+{
+    <form id="webUpdateForm" asp-action="UpdateFromWeb" method="post" style="display: none;">
+        @Html.AntiForgeryToken()
+    </form>
+}
+
+@section Scripts {
+    <script>
+        // Function to update rates from web
+        function updateFromWeb() {
+            if (confirm('آیا می‌خواهید نرخ‌ها را از وب بروزرسانی کنید؟\nاین عمل ممکن است چند دقیقه طول بکشد.')) {
+                // Show loading indicator
+                var button = event.target;
+                var originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال بروزرسانی...';
+                button.disabled = true;
+
+                // Submit the hidden form
+                document.getElementById('webUpdateForm').submit();
+            }
+        }
+    </script>
+}

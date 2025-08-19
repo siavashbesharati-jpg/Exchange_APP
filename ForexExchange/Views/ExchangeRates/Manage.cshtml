@@ -101,10 +101,18 @@
                         </div>
                         
                         <div class="text-center">
-                            <button type="submit" class="btn btn-success" onclick="return confirm('آیا می‌خواهید تمام نرخ‌ها را بروزرسانی کنید؟')">
+                            <button type="submit" class="btn btn-success me-2" onclick="return confirm('آیا می‌خواهید تمام نرخ‌ها را بروزرسانی کنید؟')">
                                 بروزرسانی همه نرخ‌ها
                             </button>
+                            <button type="button" class="btn btn-primary" onclick="updateFromWeb()" title="بروزرسانی خودکار از وب">
+                                <i class="fas fa-globe"></i> بروزرسانی از وب
+                            </button>
                         </div>
+                    </form>
+                    
+                    <!-- Hidden form for web update -->
+                    <form id="webUpdateForm" asp-action="UpdateFromWeb" method="post" style="display: none;">
+                        @Html.AntiForgeryToken()
                     </form>
                 </div>
             </div>
@@ -213,5 +221,19 @@
                 }
             });
         });
+
+        // Function to update rates from web
+        function updateFromWeb() {
+            if (confirm('آیا می‌خواهید نرخ‌ها را از وب بروزرسانی کنید؟\nاین عمل ممکن است چند دقیقه طول بکشد.')) {
+                // Show loading indicator
+                var button = event.target;
+                var originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال بروزرسانی...';
+                button.disabled = true;
+
+                // Submit the hidden form
+                document.getElementById('webUpdateForm').submit();
+            }
+        }
     </script>
 }

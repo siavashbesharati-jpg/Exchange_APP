@@ -50,6 +50,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBankStatementService, BankStatementService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDataSeedService, DataSeedService>();
+builder.Services.AddScoped<IWebScrapingService, WebScrapingService>();
 
 var app = builder.Build();
 

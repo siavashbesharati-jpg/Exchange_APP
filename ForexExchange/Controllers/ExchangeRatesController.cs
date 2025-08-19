@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Services;
 
 namespace ForexExchange.Controllers
 {
@@ -9,11 +10,13 @@ namespace ForexExchange.Controllers
     {
         private readonly ForexDbContext _context;
         private readonly ILogger<ExchangeRatesController> _logger;
+        private readonly IWebScrapingService _webScrapingService;
 
-        public ExchangeRatesController(ForexDbContext context, ILogger<ExchangeRatesController> logger)
+        public ExchangeRatesController(ForexDbContext context, ILogger<ExchangeRatesController> logger, IWebScrapingService webScrapingService)
         {
             _context = context;
             _logger = logger;
+            _webScrapingService = webScrapingService;
         }
 
         // GET: ExchangeRates
@@ -261,6 +264,112 @@ namespace ForexExchange.Controllers
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "نرخ‌های ارز با موفقیت بروزرسانی شدند.";
             return RedirectToAction(nameof(Index));
+        }
+
+        // POST: ExchangeRates/UpdateFromWeb
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,Staff")]
+        public async Task<IActionResult> UpdateFromWeb()
+        {
+            try
+            {
+                _logger.LogInformation("Starting web scraping update for exchange rates");
+                var webRates = await _webScrapingService.GetExchangeRatesFromWebAsync();
+                
+                if (!webRates.Any())
+                {
+                    TempData["ErrorMessage"] = "هیچ نرخی از وب دریافت نشد. لطفاً اتصال اینترنت و دسترسی به سایت را بررسی کنید.";
+                    return RedirectToAction(nameof(Manage));
+                }
+
+                int updatedCount = 0;
+                var errors = new List<string>();
+
+                foreach (var (currency, rates) in webRates)
+                {
+                    try
+                    {
+                        if (rates.SellRate <= rates.BuyRate)
+                        {
+                            errors.Add($"نرخ‌های دریافت شده برای {GetCurrencyDisplayName(currency)} نامعتبر است (نرخ فروش باید بیشتر از نرخ خرید باشد)");
+                            continue;
+                        }
+
+                        var existingRate = await _context.ExchangeRates
+                            .FirstOrDefaultAsync(r => r.Currency == currency && r.IsActive);
+
+                        if (existingRate != null)
+                        {
+                            existingRate.BuyRate = rates.BuyRate;
+                            existingRate.SellRate = rates.SellRate;
+                            existingRate.UpdatedAt = DateTime.UtcNow;
+                            existingRate.UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)";
+                            _context.Update(existingRate);
+                        }
+                        else
+                        {
+                            var newRate = new ExchangeRate
+                            {
+                                Currency = currency,
+                                BuyRate = rates.BuyRate,
+                                SellRate = rates.SellRate,
+                                IsActive = true,
+                                UpdatedAt = DateTime.UtcNow,
+                                UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)"
+                            };
+                            _context.Add(newRate);
+                        }
+
+                        updatedCount++;
+                        _logger.LogInformation("Updated {Currency}: Buy={BuyRate}, Sell={SellRate}", 
+                            currency, rates.BuyRate, rates.SellRate);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error updating currency {Currency}", currency);
+                        errors.Add($"خطا در بروزرسانی {GetCurrencyDisplayName(currency)}");
+                    }
+                }
+
+                if (updatedCount > 0)
+                {
+                    await _context.SaveChangesAsync();
+                    
+                    var successMessage = $"{updatedCount} نرخ ارز از وب بروزرسانی شد.";
+                    if (errors.Any())
+                    {
+                        successMessage += $" خطاها: {string.Join(", ", errors)}";
+                    }
+                    TempData["SuccessMessage"] = successMessage;
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = errors.Any() ? 
+                        $"هیچ نرخی بروزرسانی نشد. خطاها: {string.Join(", ", errors)}" :
+                        "هیچ نرخی از وب دریافت نشد.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during web scraping update");
+                TempData["ErrorMessage"] = "خطا در بروزرسانی نرخ‌ها از وب. لطفاً دوباره تلاش کنید.";
+            }
+
+            return RedirectToAction(nameof(Manage));
+        }
+
+        private string GetCurrencyDisplayName(CurrencyType currency)
+        {
+            return currency switch
+            {
+                CurrencyType.USD => "دلار آمریکا",
+                CurrencyType.EUR => "یورو",
+                CurrencyType.AED => "درهم امارات",
+                CurrencyType.OMR => "ریال عمان",
+                CurrencyType.TRY => "لیر ترکیه",
+                _ => currency.ToString()
+            };
         }
 
         private bool ExchangeRateExists(int id)
