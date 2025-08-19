@@ -137,8 +137,10 @@ namespace ForexExchange.Controllers
                     TotalVolumeInToman = c.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.TotalInToman),
                     LastActivityDate = c.Orders.Any() ? c.Orders.Max(o => o.CreatedAt) : c.CreatedAt
                 })
-                .OrderByDescending(c => c.TotalVolumeInToman)
                 .ToListAsync();
+
+            // Apply client-side sorting for decimal field (TotalVolumeInToman)
+            customerActivity = customerActivity.OrderByDescending(c => c.TotalVolumeInToman).ToList();
 
             ViewBag.FromDate = fromDate;
             ViewBag.ToDate = toDate;
@@ -158,10 +160,16 @@ namespace ForexExchange.Controllers
                 query = query.Where(o => o.Currency == currency);
             }
 
+            // Load data first, then sort client-side for decimal fields
             var orders = await query
                 .OrderBy(o => o.OrderType)
-                .ThenByDescending(o => o.Rate)
                 .ToListAsync();
+
+            // Apply client-side sorting for decimal field (Rate)
+            orders = orders
+                .OrderBy(o => o.OrderType)
+                .ThenByDescending(o => o.Rate)
+                .ToList();
 
             var orderBook = orders
                 .GroupBy(o => new { o.Currency, o.OrderType })
@@ -169,6 +177,7 @@ namespace ForexExchange.Controllers
                 {
                     Currency = g.Key.Currency,
                     OrderType = g.Key.OrderType,
+                    // Client-side sorting for decimal Rate field
                     Orders = g.OrderBy(o => o.OrderType == OrderType.Buy ? -o.Rate : o.Rate).ToList(),
                     TotalVolume = g.Sum(o => o.Amount - o.FilledAmount),
                     AverageRate = g.Average(o => o.Rate),
