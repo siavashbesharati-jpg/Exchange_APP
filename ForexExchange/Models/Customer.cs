@@ -21,13 +21,11 @@ namespace ForexExchange.Models
         public string NationalId { get; set; } = string.Empty;
         
         [StringLength(200)]
-        public string Address { get; set; } = string.Empty;
-        
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        
-        public bool IsActive { get; set; } = true;
-        
-        // Navigation properties
+    public string Address { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    public bool IsActive { get; set; } = true;        // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         public ICollection<Transaction> BuyTransactions { get; set; } = new List<Transaction>();
         public ICollection<Transaction> SellTransactions { get; set; } = new List<Transaction>();

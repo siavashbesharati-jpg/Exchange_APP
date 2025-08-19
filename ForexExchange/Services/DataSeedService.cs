@@ -106,7 +106,7 @@ namespace ForexExchange.Services
                     FullName = "مدیر سیستم",
                     Role = UserRole.Admin,
                     IsActive = true,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     EmailConfirmed = true,
                     PhoneNumber = adminPhone
                 };
@@ -156,7 +156,7 @@ namespace ForexExchange.Services
                         BuyRate = rate.Value.BuyRate,
                         SellRate = rate.Value.SellRate,
                         IsActive = true,
-                        UpdatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = "WebScraping-System"
                     });
                 }
@@ -192,7 +192,7 @@ namespace ForexExchange.Services
                     BuyRate = 65000,
                     SellRate = 64000,
                     IsActive = true,
-                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.Now,
                     UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
@@ -201,7 +201,7 @@ namespace ForexExchange.Services
                     BuyRate = 70000,
                     SellRate = 69000,
                     IsActive = true,
-                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.Now,
                     UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
@@ -210,7 +210,7 @@ namespace ForexExchange.Services
                     BuyRate = 17500,
                     SellRate = 17000,
                     IsActive = true,
-                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.Now,
                     UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
@@ -219,7 +219,7 @@ namespace ForexExchange.Services
                     BuyRate = 168000,
                     SellRate = 166000,
                     IsActive = true,
-                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.Now,
                     UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
@@ -228,7 +228,7 @@ namespace ForexExchange.Services
                     BuyRate = 1900,
                     SellRate = 1800,
                     IsActive = true,
-                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.Now,
                     UpdatedBy = "System-Fallback"
                 }
             };
@@ -305,7 +305,7 @@ namespace ForexExchange.Services
                         FullName = userData.FullName,
                         Role = userData.Role,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.Now,
                         EmailConfirmed = true
                     };
 
@@ -351,7 +351,7 @@ namespace ForexExchange.Services
                     PhoneNumber = data.Phone,
                     NationalId = data.NationalId,
                     Address = data.Address,
-                    CreatedAt = DateTime.UtcNow.AddDays(-new Random().Next(1, 365)),
+                    CreatedAt = DateTime.Now.AddDays(-new Random().Next(1, 365)),
                     IsActive = true
                 };
 
@@ -378,7 +378,7 @@ namespace ForexExchange.Services
                         Address = data.Address,
                         Role = UserRole.Customer,
                         IsActive = true,
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.Now,
                         EmailConfirmed = true,
                         CustomerId = customer.Id
                     };
@@ -431,8 +431,8 @@ namespace ForexExchange.Services
                     TotalInToman = amount * rate,
                     OrderType = orderType,
                     Status = status,
-                    CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 30)),
-                    UpdatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 5)),
+                    CreatedAt = DateTime.Now.AddDays(-random.Next(1, 30)),
+                    UpdatedAt = DateTime.Now.AddDays(-random.Next(0, 5)),
                     Notes = i % 3 == 0 ? $"سفارش شماره {i + 1} - {(orderType == OrderType.Buy ? "خرید" : "فروش")} {currency}" : null,
                     FilledAmount = 0
                 };

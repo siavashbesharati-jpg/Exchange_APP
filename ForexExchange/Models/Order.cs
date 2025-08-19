@@ -59,7 +59,7 @@ namespace ForexExchange.Models
         [Required]
         public OrderStatus Status { get; set; } = OrderStatus.Open;
         
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         
         [StringLength(500)]

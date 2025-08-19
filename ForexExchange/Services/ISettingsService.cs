@@ -65,8 +65,8 @@ namespace ForexExchange.Services
                         SettingValue = value?.ToString() ?? string.Empty,
                         Description = description,
                         DataType = GetDataType<T>(),
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = updatedBy,
                         IsActive = true
                     };
@@ -75,7 +75,7 @@ namespace ForexExchange.Services
                 else
                 {
                     setting.SettingValue = value?.ToString() ?? string.Empty;
-                    setting.UpdatedAt = DateTime.UtcNow;
+                    setting.UpdatedAt = DateTime.Now;
                     setting.UpdatedBy = updatedBy;
                     if (!string.IsNullOrEmpty(description))
                     {

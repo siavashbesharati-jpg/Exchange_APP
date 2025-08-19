@@ -341,7 +341,7 @@ namespace ForexExchange.Controllers
                 // Calculate rate and total based on order type
                 order.Rate = order.OrderType == OrderType.Buy ? exchangeRate.SellRate : exchangeRate.BuyRate;
                 order.TotalInToman = order.Amount * order.Rate;
-                order.CreatedAt = DateTime.UtcNow;
+                order.CreatedAt = DateTime.Now;
                 order.Status = OrderStatus.Open;
 
                 _context.Add(order);
@@ -387,7 +387,7 @@ namespace ForexExchange.Controllers
             {
                 try
                 {
-                    order.UpdatedAt = DateTime.UtcNow;
+                    order.UpdatedAt = DateTime.Now;
                     _context.Update(order);
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = "سفارش با موفقیت بروزرسانی شد.";
@@ -438,7 +438,7 @@ namespace ForexExchange.Controllers
             if (order != null)
             {
                 order.Status = OrderStatus.Cancelled;
-                order.UpdatedAt = DateTime.UtcNow;
+                order.UpdatedAt = DateTime.Now;
                 _context.Update(order);
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = "سفارش لغو شد.";
@@ -525,7 +525,7 @@ namespace ForexExchange.Controllers
                 Rate = transactionRate,
                 TotalInToman = matchAmount * transactionRate,
                 Status = TransactionStatus.Pending,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now
             };
 
             _context.Transactions.Add(transaction);
@@ -544,8 +544,8 @@ namespace ForexExchange.Controllers
             else
                 matchingOrder.Status = OrderStatus.PartiallyFilled;
 
-            order.UpdatedAt = DateTime.UtcNow;
-            matchingOrder.UpdatedAt = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.Now;
+            matchingOrder.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 

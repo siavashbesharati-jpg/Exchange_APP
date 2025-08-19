@@ -1,0 +1,228 @@
+@model ForexExchange.Models.SystemSettingsViewModel
+
+@{
+    ViewData["Title"] = "تنظیمات سیستم";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-cog text-primary"></i>
+            تنظیمات سیستم
+        </h2>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="Index" method="post" class="row g-4">
+        @Html.AntiForgeryToken()
+        
+        <!-- Financial Settings Card -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-money-bill-wave"></i>
+                        تنظیمات مالی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="CommissionRate" class="form-label">نرخ کمیسیون (درصد)</label>
+                        <div class="input-group">
+                            <input asp-for="CommissionRate" class="form-control" type="number" step="0.01" min="0" max="100" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <span asp-validation-for="CommissionRate" class="text-danger small"></span>
+                        <div class="form-text">کمیسیون پیش‌فرض برای تراکنش‌ها</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ExchangeFeeRate" class="form-label">کارمزد تبدیل ارز (درصد)</label>
+                        <div class="input-group">
+                            <input asp-for="ExchangeFeeRate" class="form-control" type="number" step="0.01" min="0" max="100" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <span asp-validation-for="ExchangeFeeRate" class="text-danger small"></span>
+                        <div class="form-text">کارمزد تبدیل ارز</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MinTransactionAmount" class="form-label">حداقل مبلغ تراکنش (تومان)</label>
+                        <div class="input-group">
+                            <input asp-for="MinTransactionAmount" class="form-control" type="number" min="0" />
+                            <span class="input-group-text">تومان</span>
+                        </div>
+                        <span asp-validation-for="MinTransactionAmount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="MaxTransactionAmount" class="form-label">حداکثر مبلغ تراکنش (تومان)</label>
+                        <div class="input-group">
+                            <input asp-for="MaxTransactionAmount" class="form-control" type="number" min="0" />
+                            <span class="input-group-text">تومان</span>
+                        </div>
+                        <span asp-validation-for="MaxTransactionAmount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="DailyTransactionLimit" class="form-label">محدودیت تراکنش روزانه (تومان)</label>
+                        <div class="input-group">
+                            <input asp-for="DailyTransactionLimit" class="form-control" type="number" min="0" />
+                            <span class="input-group-text">تومان</span>
+                        </div>
+                        <span asp-validation-for="DailyTransactionLimit" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Settings Card -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs"></i>
+                        تنظیمات سیستم
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="DefaultCurrency" class="form-label">ارز پیش‌فرض</label>
+                        <select asp-for="DefaultCurrency" class="form-select">
+                            <option value="USD">دلار آمریکا (USD)</option>
+                            <option value="EUR">یورو (EUR)</option>
+                            <option value="AED">درهم امارات (AED)</option>
+                            <option value="OMR">ریال عمان (OMR)</option>
+                            <option value="TRY">لیر ترکیه (TRY)</option>
+                        </select>
+                        <span asp-validation-for="DefaultCurrency" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="RateUpdateInterval" class="form-label">بازه بروزرسانی نرخ ارز (دقیقه)</label>
+                        <div class="input-group">
+                            <input asp-for="RateUpdateInterval" class="form-control" type="number" min="1" max="1440" />
+                            <span class="input-group-text">دقیقه</span>
+                        </div>
+                        <span asp-validation-for="RateUpdateInterval" class="text-danger small"></span>
+                        <div class="form-text">فاصله زمانی بروزرسانی خودکار نرخ ارز</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="SystemMaintenance" class="form-check-input" type="checkbox" />
+                            <label asp-for="SystemMaintenance" class="form-check-label">
+                                حالت تعمیرات سیستم
+                            </label>
+                        </div>
+                        <span asp-validation-for="SystemMaintenance" class="text-danger small"></span>
+                        <div class="form-text">فعال‌سازی حالت تعمیرات سیستم</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="NotificationEnabled" class="form-check-input" type="checkbox" />
+                            <label asp-for="NotificationEnabled" class="form-check-label">
+                                فعال‌سازی اعلان‌ها
+                            </label>
+                        </div>
+                        <span asp-validation-for="NotificationEnabled" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input asp-for="BackupEnabled" class="form-check-input" type="checkbox" />
+                            <label asp-for="BackupEnabled" class="form-check-label">
+                                فعال‌سازی پشتیبان‌گیری خودکار
+                            </label>
+                        </div>
+                        <span asp-validation-for="BackupEnabled" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save"></i>
+                        ذخیره تنظیمات
+                    </button>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary btn-lg ms-2">
+                        <i class="fas fa-times"></i>
+                        انصراف
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            // Format numbers with thousand separators
+            $('input[type="number"]').on('input', function() {
+                var value = $(this).val().replace(/,/g, '');
+                if (!isNaN(value) && value !== '') {
+                    // Add thousand separators for display
+                    $(this).attr('data-value', value);
+                }
+            });
+
+            // Currency selection change handler
+            $('#DefaultCurrency').on('change', function() {
+                var currency = $(this).val();
+                showToast('ارز پیش‌فرض به ' + currency + ' تغییر یافت', 'info');
+            });
+
+            // System maintenance toggle handler
+            $('#SystemMaintenance').on('change', function() {
+                if ($(this).is(':checked')) {
+                    showConfirmDialog('هشدار', 'آیا از فعال‌سازی حالت تعمیرات سیستم اطمینان دارید؟ در این حالت دسترسی کاربران محدود خواهد شد.');
+                }
+            });
+        });
+
+        function showToast(message, type) {
+            // Simple toast notification
+            var alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+            var toast = $('<div class="alert ' + alertClass + ' alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;">' +
+                '<span>' + message + '</span>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>');
+            $('body').append(toast);
+            setTimeout(function() {
+                toast.alert('close');
+            }, 3000);
+        }
+
+        function showConfirmDialog(title, message) {
+            if (confirm(title + '\n\n' + message)) {
+                return true;
+            } else {
+                $('#SystemMaintenance').prop('checked', false);
+                return false;
+            }
+        }
+    </script>
+}

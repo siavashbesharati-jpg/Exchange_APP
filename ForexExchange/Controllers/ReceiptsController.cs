@@ -146,7 +146,7 @@ namespace ForexExchange.Controllers
                     FileName = receiptFile.FileName,
                     ContentType = receiptFile.ContentType,
                     ImageData = imageData,
-                    UploadedAt = DateTime.UtcNow,
+                    UploadedAt = DateTime.Now,
                     IsVerified = false
                 };
 
@@ -216,7 +216,7 @@ namespace ForexExchange.Controllers
             }
 
             receipt.IsVerified = true;
-            receipt.VerifiedAt = DateTime.UtcNow;
+            receipt.VerifiedAt = DateTime.Now;
             receipt.ParsedAmount = verifiedAmount ?? receipt.ParsedAmount;
             receipt.ParsedReferenceId = verifiedReference ?? receipt.ParsedReferenceId;
             receipt.Notes = notes;

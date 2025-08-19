@@ -31,8 +31,8 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Financial(DateTime? fromDate, DateTime? toDate, int? customerId, CurrencyType? currency)
         {
             // Default to last 30 days if no dates provided
-            fromDate ??= DateTime.UtcNow.AddDays(-30).Date;
-            toDate ??= DateTime.UtcNow.Date;
+            fromDate ??= DateTime.Now.AddDays(-30).Date;
+            toDate ??= DateTime.Now.Date;
 
             // Ensure fromDate starts at beginning of day and toDate includes the entire day
             var fromDateTime = fromDate.Value.Date;
@@ -117,8 +117,8 @@ namespace ForexExchange.Controllers
         // GET: Reports/CustomerActivity
         public async Task<IActionResult> CustomerActivity(DateTime? fromDate, DateTime? toDate)
         {
-            fromDate ??= DateTime.UtcNow.AddDays(-30).Date;
-            toDate ??= DateTime.UtcNow.Date;
+            fromDate ??= DateTime.Now.AddDays(-30).Date;
+            toDate ??= DateTime.Now.Date;
 
             // Ensure fromDate starts at beginning of day and toDate includes the entire day
             var fromDateTime = fromDate.Value.Date;
@@ -194,8 +194,8 @@ namespace ForexExchange.Controllers
         // GET: Reports/Commission
         public async Task<IActionResult> Commission(DateTime? fromDate, DateTime? toDate)
         {
-            fromDate ??= DateTime.UtcNow.AddDays(-30).Date;
-            toDate ??= DateTime.UtcNow.Date;
+            fromDate ??= DateTime.Now.AddDays(-30).Date;
+            toDate ??= DateTime.Now.Date;
 
             // Ensure fromDate starts at beginning of day and toDate includes the entire day
             var fromDateTime = fromDate.Value.Date;
@@ -243,8 +243,8 @@ namespace ForexExchange.Controllers
         [HttpGet]
         public async Task<IActionResult> ExportFinancial(DateTime? fromDate, DateTime? toDate, int? customerId, CurrencyType? currency)
         {
-            fromDate ??= DateTime.UtcNow.AddDays(-30);
-            toDate ??= DateTime.UtcNow;
+            fromDate ??= DateTime.Now.AddDays(-30);
+            toDate ??= DateTime.Now;
 
             var query = _context.Transactions
                 .Include(t => t.BuyerCustomer)

@@ -54,7 +54,7 @@ namespace ForexExchange.Controllers
                     _context.Update(existingRate);
                 }
 
-                exchangeRate.UpdatedAt = DateTime.UtcNow;
+                exchangeRate.UpdatedAt = DateTime.Now;
                 exchangeRate.UpdatedBy = "Admin"; // In a real app, this would be the current user
                 exchangeRate.IsActive = true;
 
@@ -97,7 +97,7 @@ namespace ForexExchange.Controllers
             {
                 try
                 {
-                    exchangeRate.UpdatedAt = DateTime.UtcNow;
+                    exchangeRate.UpdatedAt = DateTime.Now;
                     exchangeRate.UpdatedBy = "Admin"; // In a real app, this would be the current user
                     
                     _context.Update(exchangeRate);
@@ -156,7 +156,7 @@ namespace ForexExchange.Controllers
                                 Currency = currency,
                                 BuyRate = buyRate,
                                 SellRate = sellRate,
-                                UpdatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.Now,
                                 UpdatedBy = "Admin",
                                 IsActive = true
                             };
@@ -241,7 +241,7 @@ namespace ForexExchange.Controllers
                     {
                         existingRate.BuyRate = buyRate;
                         existingRate.SellRate = sellRate;
-                        existingRate.UpdatedAt = DateTime.UtcNow;
+                        existingRate.UpdatedAt = DateTime.Now;
                         existingRate.UpdatedBy = User.Identity?.Name ?? "System";
                         _context.Update(existingRate);
                     }
@@ -253,7 +253,7 @@ namespace ForexExchange.Controllers
                             BuyRate = buyRate,
                             SellRate = sellRate,
                             IsActive = true,
-                            UpdatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.Now,
                             UpdatedBy = User.Identity?.Name ?? "System"
                         };
                         _context.Add(newRate);
@@ -303,7 +303,7 @@ namespace ForexExchange.Controllers
                         {
                             existingRate.BuyRate = rates.BuyRate;
                             existingRate.SellRate = rates.SellRate;
-                            existingRate.UpdatedAt = DateTime.UtcNow;
+                            existingRate.UpdatedAt = DateTime.Now;
                             existingRate.UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)";
                             _context.Update(existingRate);
                         }
@@ -315,7 +315,7 @@ namespace ForexExchange.Controllers
                                 BuyRate = rates.BuyRate,
                                 SellRate = rates.SellRate,
                                 IsActive = true,
-                                UpdatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.Now,
                                 UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)"
                             };
                             _context.Add(newRate);

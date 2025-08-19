@@ -41,7 +41,7 @@ namespace ForexExchange.Models
         public string? ParsedDate { get; set; }
         public string? ParsedAccountNumber { get; set; }
         
-        public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UploadedAt { get; set; } = DateTime.Now;
         
         public bool IsVerified { get; set; } = false;
         public DateTime? VerifiedAt { get; set; }

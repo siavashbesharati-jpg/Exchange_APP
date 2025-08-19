@@ -44,12 +44,10 @@ namespace ForexExchange.Models
         public decimal TotalInToman { get; set; }
         
         [Required]
-        public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
-        
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? CompletedAt { get; set; }
-        
-        [StringLength(100)]
+    public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
+
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime? CompletedAt { get; set; }        [StringLength(100)]
         public string? BuyerBankAccount { get; set; }
         
         [StringLength(100)]

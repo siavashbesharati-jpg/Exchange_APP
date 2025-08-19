@@ -38,7 +38,7 @@ public class HomeController : Controller
         // Basic statistics (public)
         var totalActiveOrders = await _context.Orders
             .CountAsync(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled);
-        var today = DateTime.UtcNow.Date;
+        var today = DateTime.Now.Date;
         var completedTransactionsToday = await _context.Transactions
             .CountAsync(t => t.Status == TransactionStatus.Completed && t.CreatedAt.Date == today);
 
