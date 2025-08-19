@@ -52,7 +52,7 @@ namespace ForexExchange.Services
                     Rate = rate,
                     TotalInToman = totalInToman,
                     Status = TransactionStatus.Pending,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 _context.Transactions.Add(transaction);
@@ -71,8 +71,8 @@ namespace ForexExchange.Services
                 else
                     sellOrder.Status = OrderStatus.PartiallyFilled;
 
-                buyOrder.UpdatedAt = DateTime.Now;
-                sellOrder.UpdatedAt = DateTime.Now;
+                buyOrder.UpdatedAt = DateTime.UtcNow;
+                sellOrder.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
                 await dbTransaction.CommitAsync();
@@ -214,7 +214,7 @@ namespace ForexExchange.Services
 
                 // Complete the transaction
                 transaction.Status = TransactionStatus.Completed;
-                transaction.CompletedAt = DateTime.Now;
+                transaction.CompletedAt = DateTime.UtcNow;
                 transaction.Notes = "تراکنش با موفقیت تکمیل شد";
 
                 await _context.SaveChangesAsync();
@@ -259,7 +259,7 @@ namespace ForexExchange.Services
                 // Mark transaction as failed
                 transaction.Status = TransactionStatus.Failed;
                 transaction.Notes = $"تراکنش ناموفق: {reason}";
-                transaction.CompletedAt = DateTime.Now;
+                transaction.CompletedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
                 await dbTransaction.CommitAsync();

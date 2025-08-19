@@ -209,7 +209,7 @@
                                                     <span class="badge bg-warning">نیمه تکمیل</span>
                                                 }
                                             </td>
-                                            <td>@order.CreatedAt.ToString("yyyy/MM/dd")</td>
+                                            <td>@order.CreatedAt.ToPersianDateTextify()</td>
                                             <td>
                                                 @if (User.Identity?.IsAuthenticated == true)
                                                 {

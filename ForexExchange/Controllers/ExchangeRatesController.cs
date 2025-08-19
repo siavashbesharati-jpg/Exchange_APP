@@ -54,7 +54,7 @@ namespace ForexExchange.Controllers
                     _context.Update(existingRate);
                 }
 
-                exchangeRate.UpdatedAt = DateTime.Now;
+                exchangeRate.UpdatedAt = DateTime.UtcNow;
                 exchangeRate.UpdatedBy = "Admin"; // In a real app, this would be the current user
                 exchangeRate.IsActive = true;
 
@@ -97,7 +97,7 @@ namespace ForexExchange.Controllers
             {
                 try
                 {
-                    exchangeRate.UpdatedAt = DateTime.Now;
+                    exchangeRate.UpdatedAt = DateTime.UtcNow;
                     exchangeRate.UpdatedBy = "Admin"; // In a real app, this would be the current user
                     
                     _context.Update(exchangeRate);
@@ -156,7 +156,7 @@ namespace ForexExchange.Controllers
                                 Currency = currency,
                                 BuyRate = buyRate,
                                 SellRate = sellRate,
-                                UpdatedAt = DateTime.Now,
+                                UpdatedAt = DateTime.UtcNow,
                                 UpdatedBy = "Admin",
                                 IsActive = true
                             };

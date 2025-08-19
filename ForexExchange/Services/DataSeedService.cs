@@ -15,17 +15,20 @@ namespace ForexExchange.Services
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ForexDbContext _context;
         private readonly ILogger<DataSeedService> _logger;
+        private readonly IWebScrapingService _webScrapingService;
 
         public DataSeedService(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             ForexDbContext context,
-            ILogger<DataSeedService> logger)
+            ILogger<DataSeedService> logger,
+            IWebScrapingService webScrapingService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _context = context;
             _logger = logger;
+            _webScrapingService = webScrapingService;
         }
 
         public async Task SeedDataAsync()
@@ -116,7 +119,50 @@ namespace ForexExchange.Services
                 return;
             }
 
-            _logger.LogInformation("Seeding exchange rates...");
+            _logger.LogInformation("Seeding exchange rates using web scraping...");
+
+            try
+            {
+                // Get real-time rates from web scraping service
+                var webRates = await _webScrapingService.GetExchangeRatesFromWebAsync();
+                
+                var exchangeRates = new List<ExchangeRate>();
+
+                foreach (var rate in webRates)
+                {
+                    exchangeRates.Add(new ExchangeRate
+                    {
+                        Currency = rate.Key,
+                        BuyRate = rate.Value.BuyRate,
+                        SellRate = rate.Value.SellRate,
+                        IsActive = true,
+                        UpdatedAt = DateTime.UtcNow,
+                        UpdatedBy = "WebScraping-System"
+                    });
+                }
+
+                if (exchangeRates.Any())
+                {
+                    _context.ExchangeRates.AddRange(exchangeRates);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"Successfully seeded {exchangeRates.Count} exchange rates from web scraping");
+                }
+                else
+                {
+                    _logger.LogWarning("No rates received from web scraping, using fallback rates");
+                    await SeedFallbackExchangeRatesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get rates from web scraping, using fallback rates");
+                await SeedFallbackExchangeRatesAsync();
+            }
+        }
+
+        private async Task SeedFallbackExchangeRatesAsync()
+        {
+            _logger.LogInformation("Seeding fallback exchange rates...");
 
             var exchangeRates = new[]
             {
@@ -126,8 +172,8 @@ namespace ForexExchange.Services
                     BuyRate = 65000,
                     SellRate = 64000,
                     IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System"
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
                 {
@@ -135,8 +181,8 @@ namespace ForexExchange.Services
                     BuyRate = 70000,
                     SellRate = 69000,
                     IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System"
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
                 {
@@ -144,8 +190,8 @@ namespace ForexExchange.Services
                     BuyRate = 17500,
                     SellRate = 17000,
                     IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System"
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
                 {
@@ -153,8 +199,8 @@ namespace ForexExchange.Services
                     BuyRate = 168000,
                     SellRate = 166000,
                     IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System"
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "System-Fallback"
                 },
                 new ExchangeRate
                 {
@@ -162,15 +208,15 @@ namespace ForexExchange.Services
                     BuyRate = 1900,
                     SellRate = 1800,
                     IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System"
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedBy = "System-Fallback"
                 }
             };
 
             _context.ExchangeRates.AddRange(exchangeRates);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Successfully seeded {exchangeRates.Length} exchange rates");
+            _logger.LogInformation($"Successfully seeded {exchangeRates.Length} fallback exchange rates");
         }
 
         private async Task SeedSampleDataAsync()
@@ -274,7 +320,7 @@ namespace ForexExchange.Services
                     PhoneNumber = data.Phone,
                     NationalId = data.NationalId,
                     Address = data.Address,
-                    CreatedAt = DateTime.Now.AddDays(-new Random().Next(1, 365)),
+                    CreatedAt = DateTime.UtcNow.AddDays(-new Random().Next(1, 365)),
                     IsActive = true
                 };
 
@@ -342,8 +388,8 @@ namespace ForexExchange.Services
                     TotalInToman = amount * rate,
                     OrderType = orderType,
                     Status = status,
-                    CreatedAt = DateTime.Now.AddDays(-random.Next(1, 30)),
-                    UpdatedAt = DateTime.Now.AddDays(-random.Next(0, 5)),
+                    CreatedAt = DateTime.UtcNow.AddDays(-random.Next(1, 30)),
+                    UpdatedAt = DateTime.UtcNow.AddDays(-random.Next(0, 5)),
                     Notes = i % 3 == 0 ? $"سفارش شماره {i + 1} - {(orderType == OrderType.Buy ? "خرید" : "فروش")} {currency}" : null,
                     FilledAmount = 0
                 };

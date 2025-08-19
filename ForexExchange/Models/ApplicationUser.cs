@@ -15,7 +15,7 @@ namespace ForexExchange.Models
         [StringLength(200)]
         public string? Address { get; set; }
         
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         public bool IsActive { get; set; } = true;
         
