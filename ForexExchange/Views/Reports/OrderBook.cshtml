@@ -1,0 +1,209 @@
+@model IEnumerable<ForexExchange.Controllers.OrderBookReport>
+
+@{
+    ViewData["Title"] = "دفتر سفارشات";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">دفتر سفارشات</h1>
+                <a asp-action="Index" class="btn btn-secondary">بازگشت به گزارشات</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="OrderBook" method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">ارز:</label>
+                            <select name="currency" class="form-select">
+                                <option value="">همه ارزها</option>
+                                <option value="USD" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "USD")">دلار آمریکا (USD)</option>
+                                <option value="EUR" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "EUR")">یورو (EUR)</option>
+                                <option value="AED" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "AED")">درهم امارات (AED)</option>
+                                <option value="OMR" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "OMR")">ریال عمان (OMR)</option>
+                                <option value="TRY" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "TRY")">لیر ترکیه (TRY)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">نمایش دفتر سفارشات</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    @if (Model.Any())
+    {
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">کل سفارشات فعال</h5>
+                        <h2 class="mb-0">@Model.Sum(r => r.OrderCount)</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title">سفارشات خرید</h5>
+                        <h2 class="mb-0">@Model.Where(r => r.OrderType == ForexExchange.Models.OrderType.Buy).Sum(r => r.OrderCount)</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-danger">
+                    <div class="card-body">
+                        <h5 class="card-title">سفارشات فروش</h5>
+                        <h2 class="mb-0">@Model.Where(r => r.OrderType == ForexExchange.Models.OrderType.Sell).Sum(r => r.OrderCount)</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <h5 class="card-title">کل حجم</h5>
+                        <h2 class="mb-0">@Model.Sum(r => r.TotalVolume).ToString("N0")</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Order Book by Currency -->
+    @if (Model.Any())
+    {
+        var currencyGroups = Model.GroupBy(r => r.Currency);
+        
+        @foreach (var currencyGroup in currencyGroups)
+        {
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                @(currencyGroup.Key switch {
+                                    ForexExchange.Models.CurrencyType.USD => "دلار آمریکا (USD)",
+                                    ForexExchange.Models.CurrencyType.EUR => "یورو (EUR)",
+                                    ForexExchange.Models.CurrencyType.AED => "درهم امارات (AED)",
+                                    ForexExchange.Models.CurrencyType.OMR => "ریال عمان (OMR)",
+                                    ForexExchange.Models.CurrencyType.TRY => "لیر ترکیه (TRY)",
+                                    _ => currencyGroup.Key.ToString()
+                                })
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                @foreach (var orderBookReport in currencyGroup.OrderBy(r => r.OrderType))
+                                {
+                                    <div class="col-md-6">
+                                        <div class="card @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "border-success" : "border-danger")">
+                                            <div class="card-header @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "bg-success" : "bg-danger") text-white">
+                                                <h6 class="mb-0">
+                                                    @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "سفارشات خرید" : "سفارشات فروش")
+                                                    <span class="badge @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "bg-light text-success" : "bg-light text-danger")">
+                                                        @orderBookReport.OrderCount سفارش
+                                                    </span>
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <small class="text-muted">کل حجم:</small>
+                                                        <div><strong>@orderBookReport.TotalVolume.ToString("N2")</strong></div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <small class="text-muted">میانگین نرخ:</small>
+                                                        <div><strong>@orderBookReport.AverageRate.ToString("N0")</strong> تومان</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                @if (orderBookReport.Orders.Any())
+                                                {
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>مشتری</th>
+                                                                    <th>مقدار</th>
+                                                                    <th>باقیمانده</th>
+                                                                    <th>نرخ</th>
+                                                                    <th>تاریخ</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach (var order in orderBookReport.Orders.Take(10))
+                                                                {
+                                                                    var remainingAmount = order.Amount - order.FilledAmount;
+                                                                    
+                                                                    <tr>
+                                                                        <td>
+                                                                            <small>@order.Customer?.FullName</small>
+                                                                        </td>
+                                                                        <td>@order.Amount.ToString("N2")</td>
+                                                                        <td class="fw-bold">@remainingAmount.ToString("N2")</td>
+                                                                        <td>@order.Rate.ToString("N0")</td>
+                                                                        <td>
+                                                                            <small>@order.CreatedAt.ToString("MM/dd HH:mm")</small>
+                                                                        </td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    
+                                                    @if (orderBookReport.Orders.Count > 10)
+                                                    {
+                                                        <div class="text-muted small text-center">
+                                                            ... و @(orderBookReport.Orders.Count - 10) سفارش دیگر
+                                                        </div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <div class="text-center text-muted">
+                                                        <i class="fas fa-inbox"></i>
+                                                        <div>سفارشی موجود نیست</div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i>
+                    هیچ سفارش فعالی یافت نشد.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .table-sm th, .table-sm td {
+        padding: 0.3rem;
+    }
+</style>

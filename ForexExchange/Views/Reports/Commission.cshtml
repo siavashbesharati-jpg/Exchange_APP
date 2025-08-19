@@ -1,0 +1,291 @@
+@model ForexExchange.Controllers.CommissionReport
+
+@{
+    ViewData["Title"] = "گزارش کمیسیون‌ها";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">گزارش کمیسیون‌ها و درآمدها</h1>
+                <a asp-action="Index" class="btn btn-secondary">بازگشت به گزارشات</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Commission" method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">از تاریخ:</label>
+                            <input type="date" name="fromDate" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">تا تاریخ:</label>
+                            <input type="date" name="toDate" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="form-control" />
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">نمایش گزارش</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">کل تراکنش‌ها</h5>
+                    <h2 class="mb-0">@Model.TotalTransactions</h2>
+                    <small>در بازه زمانی انتخاب شده</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">کل حجم معاملات</h5>
+                    <h2 class="mb-0">@Model.TotalVolumeInToman.ToString("N0")</h2>
+                    <small>تومان</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">کل کمیسیون</h5>
+                    <h2 class="mb-0">@Model.TotalCommissionEarned.ToString("N0")</h2>
+                    <small>تومان</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">هزینه صرافی</h5>
+                    <h2 class="mb-0">@Model.TotalExchangeFeesEarned.ToString("N0")</h2>
+                    <small>تومان</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">آمار کلی</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>میانگین ارزش تراکنش:</strong></td>
+                            <td class="text-end">@Model.AverageTransactionValue.ToString("N0") تومان</td>
+                        </tr>
+                        <tr>
+                            <td><strong>کل درآمد (کمیسیون + هزینه):</strong></td>
+                            <td class="text-end text-success"><strong>@((Model.TotalCommissionEarned + Model.TotalExchangeFeesEarned).ToString("N0")) تومان</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>درصد کمیسیون از کل حجم:</strong></td>
+                            <td class="text-end">
+                                @if (Model.TotalVolumeInToman > 0)
+                                {
+                                    <text>@((Model.TotalCommissionEarned / Model.TotalVolumeInToman * 100).ToString("F2"))%</text>
+                                }
+                                else
+                                {
+                                    <span>0%</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>میانگین کمیسیون روزانه:</strong></td>
+                            <td class="text-end">
+                                @if (Model.DailyCommissions.Any())
+                                {
+                                    <text>@(Model.DailyCommissions.Average(d => d.CommissionEarned).ToString("N0")) تومان</text>
+                                }
+                                else
+                                {
+                                    <span>0 تومان</span>
+                                }
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">نمودار روند درآمد</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.DailyCommissions.Any())
+                    {
+                        <canvas id="commissionChart" width="400" height="200"></canvas>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted">
+                            <i class="fas fa-chart-line fa-3x"></i>
+                            <div class="mt-2">داده‌ای برای نمایش نمودار موجود نیست</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Commission Details -->
+    @if (Model.DailyCommissions.Any())
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">جزئیات کمیسیون روزانه</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>تاریخ</th>
+                                        <th>تعداد تراکنش</th>
+                                        <th>حجم کل (تومان)</th>
+                                        <th>کمیسیون (تومان)</th>
+                                        <th>هزینه صرافی (تومان)</th>
+                                        <th>کل درآمد (تومان)</th>
+                                        <th>درصد کمیسیون</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var daily in Model.DailyCommissions.OrderByDescending(d => d.Date))
+                                    {
+                                        var totalRevenue = daily.CommissionEarned + daily.ExchangeFeesEarned;
+                                        var commissionPercentage = daily.TotalVolume > 0 ? (daily.CommissionEarned / daily.TotalVolume * 100) : 0;
+                                        
+                                        <tr>
+                                            <td>
+                                                <strong>@daily.Date.ToString("yyyy/MM/dd")</strong>
+                                                <br><small class="text-muted">@daily.Date.ToString("dddd", new System.Globalization.CultureInfo("fa-IR"))</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@daily.TransactionCount</span>
+                                            </td>
+                                            <td>@daily.TotalVolume.ToString("N0")</td>
+                                            <td class="text-success">@daily.CommissionEarned.ToString("N0")</td>
+                                            <td class="text-info">@daily.ExchangeFeesEarned.ToString("N0")</td>
+                                            <td class="text-primary"><strong>@totalRevenue.ToString("N0")</strong></td>
+                                            <td>
+                                                <span class="badge bg-secondary">@commissionPercentage.ToString("F2")%</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-primary">
+                                        <th>مجموع</th>
+                                        <th><span class="badge bg-primary">@Model.TotalTransactions</span></th>
+                                        <th>@Model.TotalVolumeInToman.ToString("N0")</th>
+                                        <th class="text-success">@Model.TotalCommissionEarned.ToString("N0")</th>
+                                        <th class="text-info">@Model.TotalExchangeFeesEarned.ToString("N0")</th>
+                                        <th class="text-primary"><strong>@((Model.TotalCommissionEarned + Model.TotalExchangeFeesEarned).ToString("N0"))</strong></th>
+                                        <th>
+                                            <span class="badge bg-secondary">
+                                                @if (Model.TotalVolumeInToman > 0)
+                                                {
+                                                    <text>@((Model.TotalCommissionEarned / Model.TotalVolumeInToman * 100).ToString("F2"))%</text>
+                                                }
+                                                else
+                                                {
+                                                    <span>0%</span>
+                                                }
+                                            </span>
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i>
+                    هیچ کمیسیونی در بازه زمانی انتخاب شده یافت نشد.
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model.DailyCommissions.Any())
+{
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('commissionChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.DailyCommissions.OrderBy(d => d.Date).Select(d => $"'{d.Date:MM/dd}'")))],
+                datasets: [{
+                    label: 'کمیسیون روزانه (تومان)',
+                    data: [@string.Join(",", Model.DailyCommissions.OrderBy(d => d.Date).Select(d => d.CommissionEarned))],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1
+                }, {
+                    label: 'هزینه صرافی (تومان)',
+                    data: [@string.Join(",", Model.DailyCommissions.OrderBy(d => d.Date).Select(d => d.ExchangeFeesEarned))],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'روند درآمد روزانه'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                return new Intl.NumberFormat('fa-IR').format(value) + ' تومان';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
+
+<style>
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .table th {
+        white-space: nowrap;
+    }
+</style>
