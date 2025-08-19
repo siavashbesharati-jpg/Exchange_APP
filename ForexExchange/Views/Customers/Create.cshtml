@@ -1,4 +1,4 @@
-@model ForexExchange.Models.Customer
+@model ForexExchange.Models.CustomerCreateViewModel
 
 @{
     ViewData["Title"] = "ثبت مشتری جدید";
@@ -6,7 +6,7 @@
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title mb-0">ثبت مشتری جدید</h4>
@@ -31,8 +31,8 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label asp-for="Email" class="form-label">ایمیل</label>
-                                <input asp-for="Email" type="email" class="form-control" placeholder="example@email.com" />
+                                <label asp-for="Email" class="form-label">ایمیل (اختیاری)</label>
+                                <input asp-for="Email" type="text" class="form-control" placeholder="example@email.com" />
                                 <span asp-validation-for="Email" class="text-danger"></span>
                             </div>
                             
@@ -40,6 +40,20 @@
                                 <label asp-for="NationalId" class="form-label">کد ملی</label>
                                 <input asp-for="NationalId" type="text" class="form-control" placeholder="کد ملی 10 رقمی" maxlength="10" />
                                 <span asp-validation-for="NationalId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Password" class="form-label">رمز عبور *</label>
+                                <input asp-for="Password" type="password" class="form-control" required />
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label asp-for="ConfirmPassword" class="form-label">تکرار رمز عبور *</label>
+                                <input asp-for="ConfirmPassword" type="password" class="form-control" required />
+                                <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
                             </div>
                         </div>
 
@@ -60,7 +74,7 @@
 
                         <div class="d-flex justify-content-between">
                             <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
-                            <button type="submit" class="btn btn-primary">ثبت مشتری</button>
+                            <button type="submit" class="btn btn-primary">ثبت مشتری و حساب کاربری</button>
                         </div>
                     </form>
                 </div>
@@ -83,12 +97,53 @@
         });
         
         // National ID validation
-        document.querySelector('input[name="NationalId"]').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-            if (value.length > 10) {
-                value = value.substring(0, 10);
+        var nationalIdInput = document.querySelector('input[name="NationalId"]');
+        if (nationalIdInput) {
+            nationalIdInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                if (value.length > 10) {
+                    value = value.substring(0, 10);
+                }
+                e.target.value = value;
+            });
+        }
+        
+        // Password confirmation validation
+        document.querySelector('input[name="ConfirmPassword"]').addEventListener('input', function(e) {
+            var password = document.querySelector('input[name="Password"]').value;
+            var confirmPassword = e.target.value;
+            
+            if (password !== confirmPassword) {
+                e.target.setCustomValidity('رمز عبور و تکرار آن باید یکسان باشند');
+            } else {
+                e.target.setCustomValidity('');
             }
-            e.target.value = value;
         });
+
+        // Email validation - make it optional with custom regex
+        document.querySelector('input[name="Email"]').addEventListener('input', function(e) {
+            var email = e.target.value.trim();
+            
+            // If email is empty, it's valid (optional)
+            if (email === '') {
+                e.target.setCustomValidity('');
+                return;
+            }
+            
+            // If email has value, validate with regex
+            var emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            if (!emailRegex.test(email)) {
+                e.target.setCustomValidity('فرمت ایمیل صحیح نیست');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+
+        // Remove all validation attributes from email field to make it truly optional
+        var emailField = document.querySelector('input[name="Email"]');
+        emailField.removeAttribute('required');
+        emailField.removeAttribute('data-val-required');
+        emailField.removeAttribute('data-val-email');
+        emailField.removeAttribute('data-val-email-msg');
     </script>
 }

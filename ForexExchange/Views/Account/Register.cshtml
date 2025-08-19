@@ -21,8 +21,8 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="Email" class="form-label">ایمیل</label>
-                            <input asp-for="Email" class="form-control" type="email" required />
+                            <label asp-for="Email" class="form-label">ایمیل (اختیاری)</label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="example@email.com" />
                             <span asp-validation-for="Email" class="text-danger"></span>
                         </div>
 
@@ -91,5 +91,27 @@
             }
             e.target.value = value;
         });
+
+        // Email validation - make it optional
+        document.querySelector('input[name="Email"]').addEventListener('input', function(e) {
+            var email = e.target.value.trim();
+            
+            // If email is empty, it's valid (optional)
+            if (email === '') {
+                e.target.setCustomValidity('');
+                return;
+            }
+            
+            // If email has value, use HTML5 validation
+            if (e.target.validity.typeMismatch) {
+                e.target.setCustomValidity('فرمت ایمیل صحیح نیست');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+
+        // Remove required attribute from email field to make it truly optional
+        document.querySelector('input[name="Email"]').removeAttribute('required');
+        document.querySelector('input[name="Email"]').removeAttribute('data-val-required');
     </script>
 }

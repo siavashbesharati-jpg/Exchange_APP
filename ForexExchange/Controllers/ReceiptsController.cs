@@ -160,6 +160,18 @@ namespace ForexExchange.Controllers
                 _context.Add(receipt);
                 await _context.SaveChangesAsync();
 
+                // Update transaction status when receipt is uploaded
+                if (transactionId.HasValue)
+                {
+                    var transaction = await _context.Transactions.FindAsync(transactionId.Value);
+                    if (transaction != null && transaction.Status == TransactionStatus.Pending)
+                    {
+                        transaction.Status = TransactionStatus.PaymentUploaded;
+                        _context.Update(transaction);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
                 TempData["SuccessMessage"] = "رسید با موفقیت آپلود شد.";
                 return RedirectToAction(nameof(Details), new { id = receipt.Id });
             }
@@ -196,16 +208,127 @@ namespace ForexExchange.Controllers
             if (receipt.TransactionId.HasValue)
             {
                 var transaction = await _context.Transactions.FindAsync(receipt.TransactionId.Value);
-                if (transaction != null && transaction.Status == TransactionStatus.Pending)
+                if (transaction != null && transaction.Status == TransactionStatus.PaymentUploaded)
                 {
-                    transaction.Status = TransactionStatus.PaymentUploaded;
-                    _context.Update(transaction);
-                    await _context.SaveChangesAsync();
+                    // Keep transaction in PaymentUploaded status until explicit confirmation
+                    // Don't auto-progress to ReceiptConfirmed here
+                    _logger.LogInformation($"Receipt {id} verified for transaction {transaction.Id}. Awaiting payment confirmation.");
                 }
             }
 
             TempData["SuccessMessage"] = "رسید تأیید شد.";
             return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // GET: Receipts/Edit/5
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var receipt = await _context.Receipts
+                .Include(r => r.Customer)
+                .Include(r => r.Order)
+                .Include(r => r.Transaction)
+                .FirstOrDefaultAsync(r => r.Id == id);
+            
+            if (receipt == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            ViewBag.Orders = await _context.Orders
+                .Include(o => o.Customer)
+                .Where(o => o.Status != OrderStatus.Cancelled)
+                .ToListAsync();
+            ViewBag.Transactions = await _context.Transactions
+                .Include(t => t.BuyerCustomer)
+                .Include(t => t.SellerCustomer)
+                .ToListAsync();
+
+            return View(receipt);
+        }
+
+        // POST: Receipts/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Receipt receipt, IFormFile? newReceiptFile)
+        {
+            if (id != receipt.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var existingReceipt = await _context.Receipts.FindAsync(id);
+                    if (existingReceipt == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // Update editable fields
+                    existingReceipt.CustomerId = receipt.CustomerId;
+                    existingReceipt.OrderId = receipt.OrderId;
+                    existingReceipt.TransactionId = receipt.TransactionId;
+                    existingReceipt.Type = receipt.Type;
+                    existingReceipt.ParsedAmount = receipt.ParsedAmount;
+                    existingReceipt.ParsedReferenceId = receipt.ParsedReferenceId;
+                    existingReceipt.ParsedDate = receipt.ParsedDate;
+                    existingReceipt.ParsedAccountNumber = receipt.ParsedAccountNumber;
+                    existingReceipt.Notes = receipt.Notes;
+
+                    // Handle new file upload if provided
+                    if (newReceiptFile != null && newReceiptFile.Length > 0)
+                    {
+                        var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
+                        if (allowedTypes.Contains(newReceiptFile.ContentType.ToLower()))
+                        {
+                            using (var memoryStream = new MemoryStream())
+                            {
+                                await newReceiptFile.CopyToAsync(memoryStream);
+                                existingReceipt.ImageData = memoryStream.ToArray();
+                                existingReceipt.FileName = newReceiptFile.FileName;
+                                existingReceipt.ContentType = newReceiptFile.ContentType;
+                            }
+                        }
+                    }
+
+                    _context.Update(existingReceipt);
+                    await _context.SaveChangesAsync();
+                    
+                    TempData["SuccessMessage"] = "رسید با موفقیت بروزرسانی شد.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ReceiptExists(receipt.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+
+            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            ViewBag.Orders = await _context.Orders
+                .Include(o => o.Customer)
+                .Where(o => o.Status != OrderStatus.Cancelled)
+                .ToListAsync();
+            ViewBag.Transactions = await _context.Transactions
+                .Include(t => t.BuyerCustomer)
+                .Include(t => t.SellerCustomer)
+                .ToListAsync();
+
+            return View(receipt);
         }
 
         // GET: Receipts/Image/5
@@ -260,6 +383,11 @@ namespace ForexExchange.Controllers
                     .FirstOrDefaultAsync(t => t.Id == transactionId.Value);
                 ViewBag.SelectedTransaction = transaction;
             }
+        }
+
+        private bool ReceiptExists(int id)
+        {
+            return _context.Receipts.Any(e => e.Id == id);
         }
     }
 }

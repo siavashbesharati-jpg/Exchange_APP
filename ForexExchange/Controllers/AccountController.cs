@@ -37,14 +37,30 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
+            // Remove any email validation errors from ModelState first
+            ModelState.Remove("Email");
+            
+            // Custom email validation - validate format only if email is provided
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                var emailAttribute = new System.ComponentModel.DataAnnotations.EmailAddressAttribute();
+                if (!emailAttribute.IsValid(model.Email))
+                {
+                    ModelState.AddModelError("Email", "فرمت ایمیل صحیح نیست");
+                }
+            }
+
             if (ModelState.IsValid)
             {
-                // Check if email already exists
-                var existingUserByEmail = await _userManager.FindByEmailAsync(model.Email);
-                if (existingUserByEmail != null)
+                // Check if email already exists (only if email is provided)
+                if (!string.IsNullOrWhiteSpace(model.Email))
                 {
-                    ModelState.AddModelError("Email", "کاربری با این ایمیل قبلاً ثبت نام کرده است.");
-                    return View(model);
+                    var existingUserByEmail = await _userManager.FindByEmailAsync(model.Email);
+                    if (existingUserByEmail != null)
+                    {
+                        ModelState.AddModelError("Email", "کاربری با این ایمیل قبلاً ثبت نام کرده است.");
+                        return View(model);
+                    }
                 }
 
                 // Check if phone number already exists
@@ -67,8 +83,8 @@ namespace ForexExchange.Controllers
 
                 var user = new ApplicationUser
                 {
-                    UserName = model.Email,
-                    Email = model.Email,
+                    UserName = model.PhoneNumber, // Always use phone number as username
+                    Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email,
                     PhoneNumber = model.PhoneNumber,
                     FullName = model.FullName,
                     NationalId = model.NationalId,
@@ -76,7 +92,7 @@ namespace ForexExchange.Controllers
                     Role = UserRole.Customer,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
-                    EmailConfirmed = true // Auto-confirm for now
+                    EmailConfirmed = !string.IsNullOrWhiteSpace(model.Email)
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
@@ -97,7 +113,7 @@ namespace ForexExchange.Controllers
                     {
                         FullName = model.FullName,
                         PhoneNumber = model.PhoneNumber,
-                        Email = model.Email,
+                        Email = model.Email ?? string.Empty,
                         NationalId = model.NationalId ?? string.Empty,
                         Address = model.Address ?? string.Empty,
                         CreatedAt = DateTime.Now,
@@ -140,20 +156,29 @@ namespace ForexExchange.Controllers
 
             if (ModelState.IsValid)
             {
-                var result = await _signInManager.PasswordSignInAsync(
-                    model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
+                // Find user by phone number
+                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == model.PhoneNumber);
+                if (user != null)
+                {
+                    var result = await _signInManager.PasswordSignInAsync(
+                        user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true);
 
-                if (result.Succeeded)
-                {
-                    return RedirectToLocal(returnUrl);
-                }
-                if (result.IsLockedOut)
-                {
-                    ModelState.AddModelError(string.Empty, "حساب کاربری شما به دلیل تلاش‌های ناموفق زیاد قفل شده است.");
+                    if (result.Succeeded)
+                    {
+                        return RedirectToLocal(returnUrl);
+                    }
+                    if (result.IsLockedOut)
+                    {
+                        ModelState.AddModelError(string.Empty, "حساب کاربری شما به دلیل تلاش‌های ناموفق زیاد قفل شده است.");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, "شماره تلفن یا رمز عبور اشتباه است.");
+                    }
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "ایمیل یا رمز عبور اشتباه است.");
+                    ModelState.AddModelError(string.Empty, "شماره تلفن یا رمز عبور اشتباه است.");
                 }
             }
 

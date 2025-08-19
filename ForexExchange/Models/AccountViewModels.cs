@@ -8,10 +8,8 @@ namespace ForexExchange.Models
         [Display(Name = "نام و نام خانوادگی")]
         public string FullName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "ایمیل الزامی است")]
-        [EmailAddress(ErrorMessage = "فرمت ایمیل صحیح نیست")]
-        [Display(Name = "ایمیل")]
-        public string Email { get; set; } = string.Empty;
+        [Display(Name = "ایمیل (اختیاری)")]
+        public string? Email { get; set; }
 
         [Required(ErrorMessage = "شماره تلفن الزامی است")]
         [Display(Name = "شماره تلفن")]
@@ -38,10 +36,10 @@ namespace ForexExchange.Models
 
     public class LoginViewModel
     {
-        [Required(ErrorMessage = "ایمیل الزامی است")]
-        [EmailAddress(ErrorMessage = "فرمت ایمیل صحیح نیست")]
-        [Display(Name = "ایمیل")]
-        public string Email { get; set; } = string.Empty;
+        [Required(ErrorMessage = "شماره تلفن الزامی است")]
+        [Display(Name = "شماره تلفن")]
+        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
+        public string PhoneNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "رمز عبور الزامی است")]
         [DataType(DataType.Password)]
@@ -69,5 +67,82 @@ namespace ForexExchange.Models
 
         [Display(Name = "نقش کاربری")]
         public string Role { get; set; } = string.Empty;
+    }
+
+    public class CustomerCreateViewModel
+    {
+        [Required(ErrorMessage = "نام و نام خانوادگی الزامی است")]
+        [Display(Name = "نام و نام خانوادگی")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Display(Name = "ایمیل (اختیاری)")]
+       
+        public string? Email { get; set; }
+
+        [Required(ErrorMessage = "شماره تلفن الزامی است")]
+        [Display(Name = "شماره تلفن")]
+        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "رمز عبور الزامی است")]
+        [DataType(DataType.Password)]
+        [Display(Name = "رمز عبور")]
+        [StringLength(100, ErrorMessage = "رمز عبور باید حداقل {2} کاراکتر باشد", MinimumLength = 6)]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "تکرار رمز عبور الزامی است")]
+        [DataType(DataType.Password)]
+        [Display(Name = "تکرار رمز عبور")]
+        [Compare("Password", ErrorMessage = "رمز عبور و تکرار آن باید یکسان باشند")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [Display(Name = "کد ملی")]
+        [StringLength(10, ErrorMessage = "کد ملی باید 10 رقم باشد", MinimumLength = 10)]
+        public string? NationalId { get; set; }
+
+        [Display(Name = "آدرس")]
+        public string? Address { get; set; }
+
+        [Display(Name = "فعال")]
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class CustomerEditViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "نام و نام خانوادگی الزامی است")]
+        [Display(Name = "نام و نام خانوادگی")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Display(Name = "ایمیل (اختیاری)")]
+        public string? Email { get; set; }
+
+        [Required(ErrorMessage = "شماره تلفن الزامی است")]
+        [Display(Name = "شماره تلفن")]
+        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "رمز عبور جدید (اختیاری)")]
+        [StringLength(100, ErrorMessage = "رمز عبور باید حداقل {2} کاراکتر باشد", MinimumLength = 6)]
+        public string? NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "تکرار رمز عبور جدید")]
+        [Compare("NewPassword", ErrorMessage = "رمز عبور و تکرار آن باید یکسان باشند")]
+        public string? ConfirmNewPassword { get; set; }
+
+        [Display(Name = "کد ملی")]
+        [StringLength(10, ErrorMessage = "کد ملی باید 10 رقم باشد", MinimumLength = 10)]
+        public string? NationalId { get; set; }
+
+        [Display(Name = "آدرس")]
+        public string? Address { get; set; }
+
+        [Display(Name = "فعال")]
+        public bool IsActive { get; set; } = true;
+
+        public DateTime CreatedAt { get; set; }
     }
 }

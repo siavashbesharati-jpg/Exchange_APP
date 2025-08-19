@@ -10,7 +10,7 @@ builder.Services.AddControllersWithViews();
 
 // Add Entity Framework
 builder.Services.AddDbContext<ForexDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ??
                      "Data Source=ForexExchange.db"));
 
 // Add Identity
@@ -22,10 +22,14 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
-    
+
     // User requirements
-    options.User.RequireUniqueEmail = true;
-    
+    options.User.RequireUniqueEmail = false;
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+
+    // Sign in requirements
+    options.SignIn.RequireConfirmedEmail = false;
+
     // Lockout settings
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(30);
     options.Lockout.MaxFailedAccessAttempts = 5;
@@ -54,7 +58,7 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ForexDbContext>();
     dbContext.Database.EnsureCreated();
-    
+
     // Seed initial data
     var dataSeedService = scope.ServiceProvider.GetRequiredService<IDataSeedService>();
     await dataSeedService.SeedDataAsync();

@@ -59,7 +59,7 @@
                             }
                             else if (Model.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded)
                             {
-                                <span class="badge bg-info fs-6">در انتظار آپلود رسید خریدار</span>
+                                <span class="badge bg-info fs-6">رسید آپلود شده - نیاز به تأیید</span>
                             }
                             else if (Model.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
                             {
@@ -73,6 +73,48 @@
                             {
                                 <span class="badge bg-danger fs-6">ناموفق</span>
                             }
+                            
+                            <!-- Next Action Required -->
+                            <div class="mt-3">
+                                @if (Model.Status == ForexExchange.Models.TransactionStatus.Pending)
+                                {
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> 
+                                        <strong>عمل بعدی:</strong> برای آغاز فرآیند تسویه، دکمه "آغاز فرآیند تسویه" را کلیک کنید.
+                                    </div>
+                                }
+                                else if (Model.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded)
+                                {
+                                    @if (Model.Receipts?.Any(r => !r.IsVerified) == true)
+                                    {
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> 
+                                            <strong>عمل بعدی:</strong> ابتدا رسیدهای آپلود شده را تأیید کنید، سپس پرداخت خریدار را تأیید نمایید.
+                                        </div>
+                                    }
+                                    else if (Model.Receipts?.Any(r => r.IsVerified) == true)
+                                    {
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-check-circle"></i> 
+                                            <strong>عمل بعدی:</strong> رسیدها تأیید شده‌اند. اکنون "تأیید پرداخت" را کلیک کنید.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-upload"></i> 
+                                            <strong>عمل بعدی:</strong> رسید پرداخت خریدار را آپلود کنید.
+                                        </div>
+                                    }
+                                }
+                                else if (Model.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-money-bill-transfer"></i> 
+                                        <strong>عمل بعدی:</strong> انتقال ارز به فروشنده را تأیید کنید.
+                                    </div>
+                                }
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <h6>مراحل تسویه:</h6>
@@ -296,14 +338,28 @@
                                             <td>
                                                 <a asp-controller="Receipts" asp-action="Details" asp-route-id="@receipt.Id"
                                                     class="btn btn-sm btn-outline-primary">جزئیات</a>
-                                                @if (receipt.IsVerified && Model.Status ==
-                                                                                        ForexExchange.Models.TransactionStatus.PaymentUploaded)
+                                                
+                                                @if (!receipt.IsVerified)
                                                 {
-                                                    <form asp-action="ConfirmBuyerPayment" method="post" style="display: inline;">
-                                                        <input type="hidden" name="transactionId" value="@Model.Id">
-                                                        <input type="hidden" name="receiptId" value="@receipt.Id">
-                                                        <button type="submit" class="btn btn-sm btn-success">تأیید پرداخت</button>
-                                                    </form>
+                                                    <a asp-controller="Receipts" asp-action="Edit" asp-route-id="@receipt.Id"
+                                                        class="btn btn-sm btn-outline-warning">ویرایش</a>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-success" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#verifyReceiptModal_@receipt.Id">
+                                                        تأیید رسید
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    @if (Model.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded || Model.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                                                    {
+                                                        <form asp-action="ConfirmBuyerPayment" method="post" style="display: inline;">
+                                                            <input type="hidden" name="transactionId" value="@Model.Id">
+                                                            <input type="hidden" name="receiptId" value="@receipt.Id">
+                                                            <button type="submit" class="btn btn-sm btn-success">تأیید پرداخت</button>
+                                                        </form>
+                                                    }
                                                 }
                                             </td>
                                         </tr>
@@ -343,6 +399,12 @@
                         </button>
                     }
 
+                    <!-- Upload Receipt Button -->
+                    <a asp-controller="Receipts" asp-action="Upload" asp-route-transactionId="@Model.Id" 
+                       class="btn btn-info">
+                        آپلود رسید
+                    </a>
+
                     @if (Model.Status != ForexExchange.Models.TransactionStatus.Completed && Model.Status !=
                                         ForexExchange.Models.TransactionStatus.Failed)
                     {
@@ -355,6 +417,57 @@
         </div>
     </div>
 </div>
+
+<!-- Receipt Verification Modals -->
+@if (Model.Receipts?.Any() == true)
+{
+    @foreach (var receipt in Model.Receipts.Where(r => !r.IsVerified))
+    {
+        <div class="modal fade" id="verifyReceiptModal_@receipt.Id" tabindex="-1" aria-labelledby="verifyReceiptModalLabel_@receipt.Id" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form asp-controller="Receipts" asp-action="Verify" method="post">
+                        <input type="hidden" name="id" value="@receipt.Id">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="verifyReceiptModalLabel_@receipt.Id">تأیید رسید #@receipt.Id</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="verifiedAmount_@receipt.Id" class="form-label">مبلغ تأیید شده</label>
+                                <input type="text" class="form-control" id="verifiedAmount_@receipt.Id" name="verifiedAmount" 
+                                       value="@receipt.ParsedAmount" placeholder="مبلغ صحیح را وارد کنید">
+                            </div>
+                            <div class="mb-3">
+                                <label for="verifiedReference_@receipt.Id" class="form-label">شماره پیگیری تأیید شده</label>
+                                <input type="text" class="form-control" id="verifiedReference_@receipt.Id" name="verifiedReference" 
+                                       value="@receipt.ParsedReferenceId" placeholder="شماره پیگیری صحیح را وارد کنید">
+                            </div>
+                            <div class="mb-3">
+                                <label for="notes_@receipt.Id" class="form-label">توضیحات</label>
+                                <textarea class="form-control" id="notes_@receipt.Id" name="notes" rows="3" 
+                                          placeholder="توضیحات مربوط به تأیید رسید...">@receipt.Notes</textarea>
+                            </div>
+                            @if (receipt.ImageData != null && receipt.ImageData.Length > 0)
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label">تصویر رسید</label>
+                                    <div class="border rounded p-2">
+                                        <img src="@Url.Action("Image", "Receipts", new { id = receipt.Id })" alt="Receipt" class="img-fluid" style="max-height: 150px;">
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                            <button type="submit" class="btn btn-success">تأیید رسید</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+}
 
 <!-- Confirm Seller Payment Modal -->
 <div class="modal fade" id="confirmSellerModal" tabindex="-1" aria-labelledby="confirmSellerModalLabel"

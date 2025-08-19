@@ -28,7 +28,14 @@
                                     <option value="">همه مشتریان</option>
                                     @foreach (var customer in ViewBag.Customers)
                                     {
-                                        <option value="@customer.Id">@customer.Name</option>
+                                        @if (ViewBag.SelectedCustomerId?.ToString() == customer.Id.ToString())
+                                        {
+                                            <option value="@customer.Id" selected>@customer.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@customer.Id">@customer.Name</option>
+                                        }
                                     }
                                 </select>
                             </div>
@@ -36,11 +43,49 @@
                                 <label for="currency" class="form-label">نوع ارز</label>
                                 <select class="form-control" id="currency" name="currency">
                                     <option value="">همه ارزها</option>
-                                    <option value="1">دلار آمریکا (USD)</option>
-                                    <option value="2">یورو (EUR)</option>
-                                    <option value="3">درهم امارات (AED)</option>
-                                    <option value="4">ریال عمان (OMR)</option>
-                                    <option value="5">لیر ترکیه (TRY)</option>
+                                    @{
+                                        var selectedCurrency = ViewBag.SelectedCurrency?.ToString();
+                                    }
+                                    @if (selectedCurrency == "1")
+                                    {
+                                        <option value="1" selected>دلار آمریکا (USD)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="1">دلار آمریکا (USD)</option>
+                                    }
+                                    @if (selectedCurrency == "2")
+                                    {
+                                        <option value="2" selected>یورو (EUR)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="2">یورو (EUR)</option>
+                                    }
+                                    @if (selectedCurrency == "3")
+                                    {
+                                        <option value="3" selected>درهم امارات (AED)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="3">درهم امارات (AED)</option>
+                                    }
+                                    @if (selectedCurrency == "4")
+                                    {
+                                        <option value="4" selected>ریال عمان (OMR)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="4">ریال عمان (OMR)</option>
+                                    }
+                                    @if (selectedCurrency == "5")
+                                    {
+                                        <option value="5" selected>لیر ترکیه (TRY)</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="5">لیر ترکیه (TRY)</option>
+                                    }
                                 </select>
                             </div>
                         </div>

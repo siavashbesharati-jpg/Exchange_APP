@@ -1,0 +1,240 @@
+@model ForexExchange.Models.Order
+
+@{
+    ViewData["Title"] = "ویرایش سفارش";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">ویرایش سفارش #@Model.Id</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <input asp-for="Id" type="hidden" />
+                        <input asp-for="CreatedAt" type="hidden" />
+                        
+                        <div class="row mb-3">
+                            @if (ViewBag.IsAdminOrStaff == true)
+                            {
+                                <div class="col-md-6">
+                                    <label asp-for="CustomerId" class="form-label">انتخاب مشتری</label>
+                                    <select asp-for="CustomerId" class="form-select" required>
+                                        <option value="">یک مشتری انتخاب کنید</option>
+                                        @if (ViewBag.Customers != null)
+                                        {
+                                            @foreach (var customer in ViewBag.Customers)
+                                            {
+                                                <option value="@customer.Id" selected="@(customer.Id == Model.CustomerId)">@customer.FullName - @customer.PhoneNumber</option>
+                                            }
+                                        }
+                                    </select>
+                                    <span asp-validation-for="CustomerId" class="text-danger"></span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">مشتری</label>
+                                    @if (ViewBag.CurrentCustomer != null)
+                                    {
+                                        <input type="text" class="form-control" value="@ViewBag.CurrentCustomer.FullName - @ViewBag.CurrentCustomer.PhoneNumber" readonly />
+                                        <input asp-for="CustomerId" type="hidden" value="@ViewBag.CurrentCustomer.Id" />
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-danger">خطا در شناسایی مشتری. لطفاً مجدداً وارد شوید.</div>
+                                    }
+                                </div>
+                            }
+                            
+                            <div class="col-md-6">
+                                <label asp-for="OrderType" class="form-label">نوع سفارش</label>
+                                <select asp-for="OrderType" class="form-select" required>
+                                    <option value="">انتخاب کنید</option>
+                                    <option value="0" selected="@(Model.OrderType == ForexExchange.Models.OrderType.Buy)">خرید</option>
+                                    <option value="1" selected="@(Model.OrderType == ForexExchange.Models.OrderType.Sell)">فروش</option>
+                                </select>
+                                <span asp-validation-for="OrderType" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Currency" class="form-label">نوع ارز</label>
+                                <select asp-for="Currency" class="form-select" id="currencySelect" required>
+                                    <option value="">انتخاب کنید</option>
+                                    <option value="1" selected="@(Model.Currency == ForexExchange.Models.CurrencyType.USD)">دلار آمریکا (USD)</option>
+                                    <option value="2" selected="@(Model.Currency == ForexExchange.Models.CurrencyType.EUR)">یورو (EUR)</option>
+                                    <option value="3" selected="@(Model.Currency == ForexExchange.Models.CurrencyType.AED)">درهم امارات (AED)</option>
+                                    <option value="4" selected="@(Model.Currency == ForexExchange.Models.CurrencyType.OMR)">ریال عمان (OMR)</option>
+                                    <option value="5" selected="@(Model.Currency == ForexExchange.Models.CurrencyType.TRY)">لیر ترکیه (TRY)</option>
+                                </select>
+                                <span asp-validation-for="Currency" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label asp-for="Amount" class="form-label">مبلغ</label>
+                                <input asp-for="Amount" type="number" class="form-control" step="0.01" min="0" id="amountInput" required />
+                                <span asp-validation-for="Amount" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Rate" class="form-label">نرخ</label>
+                                <input asp-for="Rate" type="number" class="form-control" step="0.01" min="0" />
+                                <span asp-validation-for="Rate" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label asp-for="Status" class="form-label">وضعیت</label>
+                                <select asp-for="Status" class="form-select">
+                                    <option value="0" selected="@(Model.Status == ForexExchange.Models.OrderStatus.Open)">باز</option>
+                                    <option value="1" selected="@(Model.Status == ForexExchange.Models.OrderStatus.Matched)">مچ شده</option>
+                                    <option value="2" selected="@(Model.Status == ForexExchange.Models.OrderStatus.PartiallyFilled)">نیمه تکمیل</option>
+                                    <option value="3" selected="@(Model.Status == ForexExchange.Models.OrderStatus.Completed)">تکمیل شده</option>
+                                    <option value="4" selected="@(Model.Status == ForexExchange.Models.OrderStatus.Cancelled)">لغو شده</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="FilledAmount" class="form-label">مبلغ تکمیل شده</label>
+                                <input asp-for="FilledAmount" type="number" class="form-control" step="0.01" min="0" />
+                                <span asp-validation-for="FilledAmount" class="text-danger"></span>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label asp-for="TotalInToman" class="form-label">کل به تومان</label>
+                                <input asp-for="TotalInToman" type="number" class="form-control" step="0.01" min="0" />
+                                <span asp-validation-for="TotalInToman" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Exchange Rate Display -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">نرخ‌های ارز فعلی:</h6>
+                                        <div class="row" id="exchangeRates">
+                                            @if (ViewBag.ExchangeRates != null)
+                                            {
+                                                @foreach (var rate in ViewBag.ExchangeRates)
+                                                {
+                                                    <div class="col-md-4 mb-2" data-currency="@((int)rate.Currency)">
+                                                        <div class="small">
+                                                            <strong>
+                                                                @switch (rate.Currency)
+                                                                {
+                                                                    case ForexExchange.Models.CurrencyType.USD:
+                                                                        @("دلار آمریکا")
+                                                                        break;
+                                                                    case ForexExchange.Models.CurrencyType.EUR:
+                                                                        @("یورو")
+                                                                        break;
+                                                                    case ForexExchange.Models.CurrencyType.AED:
+                                                                        @("درهم امارات")
+                                                                        break;
+                                                                    case ForexExchange.Models.CurrencyType.OMR:
+                                                                        @("ریال عمان")
+                                                                        break;
+                                                                    case ForexExchange.Models.CurrencyType.TRY:
+                                                                        @("لیر ترکیه")
+                                                                        break;
+                                                                }
+                                                            </strong><br>
+                                                            خرید: <span class="text-success">@rate.BuyRate.ToString("N0")</span><br>
+                                                            فروش: <span class="text-danger">@rate.SellRate.ToString("N0")</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calculation Result -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info" id="calculationResult" style="display: none;">
+                                    <h6>محاسبه خودکار:</h6>
+                                    <p id="calculationText"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">توضیحات (اختیاری)</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="توضیحات اضافی در مورد سفارش...">@Model.Notes</textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                            <button type="submit" class="btn btn-primary">بروزرسانی سفارش</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Exchange rates data from ViewBag
+        var exchangeRates = @Html.Raw(Json.Serialize(ViewBag.ExchangeRates));
+        
+        function updateCalculation() {
+            var currency = document.getElementById('currencySelect').value;
+            var amount = document.getElementById('amountInput').value;
+            var orderType = document.querySelector('select[name="OrderType"]').value;
+            
+            if (currency && amount && orderType) {
+                var rate = exchangeRates.find(r => r.currency == currency);
+                if (rate) {
+                    var rateValue = orderType == '0' ? rate.buyRate : rate.sellRate; // 0 = Buy, 1 = Sell
+                    var total = amount * rateValue;
+                    var orderTypeText = orderType == '0' ? 'خرید' : 'فروش';
+                    
+                    var currencyName = '';
+                    switch(parseInt(currency)) {
+                        case 1: currencyName = 'دلار آمریکا'; break;
+                        case 2: currencyName = 'یورو'; break;
+                        case 3: currencyName = 'درهم امارات'; break;
+                        case 4: currencyName = 'ریال عمان'; break;
+                        case 5: currencyName = 'لیر ترکیه'; break;
+                    }
+                    
+                    document.getElementById('calculationText').innerHTML = 
+                        `${orderTypeText} ${parseFloat(amount).toLocaleString()} ${currencyName} به نرخ ${rateValue.toLocaleString()} تومان = <strong>${total.toLocaleString()} تومان</strong>`;
+                    document.getElementById('calculationResult').style.display = 'block';
+                } else {
+                    document.getElementById('calculationResult').style.display = 'none';
+                }
+            } else {
+                document.getElementById('calculationResult').style.display = 'none';
+            }
+        }
+        
+        // Add event listeners
+        document.getElementById('currencySelect').addEventListener('change', updateCalculation);
+        document.getElementById('amountInput').addEventListener('input', updateCalculation);
+        document.querySelector('select[name="OrderType"]').addEventListener('change', updateCalculation);
+        
+        // Initial calculation on page load
+        updateCalculation();
+    </script>
+}

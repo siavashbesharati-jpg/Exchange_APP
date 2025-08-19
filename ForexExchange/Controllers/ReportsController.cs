@@ -28,15 +28,19 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Financial(DateTime? fromDate, DateTime? toDate, int? customerId, CurrencyType? currency)
         {
             // Default to last 30 days if no dates provided
-            fromDate ??= DateTime.Now.AddDays(-30);
-            toDate ??= DateTime.Now;
+            fromDate ??= DateTime.Now.AddDays(-30).Date;
+            toDate ??= DateTime.Now.Date;
+
+            // Ensure fromDate starts at beginning of day and toDate includes the entire day
+            var fromDateTime = fromDate.Value.Date;
+            var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
 
             var query = _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
                 .Include(t => t.BuyOrder)
                 .Include(t => t.SellOrder)
-                .Where(t => t.CreatedAt >= fromDate && t.CreatedAt <= toDate);
+                .Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime);
 
             if (customerId.HasValue)
             {
@@ -100,19 +104,27 @@ namespace ForexExchange.Controllers
                 .Select(c => new { Id = c.Id, Name = c.FullName })
                 .ToListAsync();
 
+            // Preserve filter values in ViewBag
+            ViewBag.SelectedCustomerId = customerId;
+            ViewBag.SelectedCurrency = currency;
+
             return View(report);
         }
 
         // GET: Reports/CustomerActivity
         public async Task<IActionResult> CustomerActivity(DateTime? fromDate, DateTime? toDate)
         {
-            fromDate ??= DateTime.Now.AddDays(-30);
-            toDate ??= DateTime.Now;
+            fromDate ??= DateTime.Now.AddDays(-30).Date;
+            toDate ??= DateTime.Now.Date;
+
+            // Ensure fromDate starts at beginning of day and toDate includes the entire day
+            var fromDateTime = fromDate.Value.Date;
+            var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
 
             var customerActivity = await _context.Customers
-                .Include(c => c.Orders.Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate))
-                .Include(c => c.BuyTransactions.Where(t => t.CreatedAt >= fromDate && t.CreatedAt <= toDate))
-                .Include(c => c.SellTransactions.Where(t => t.CreatedAt >= fromDate && t.CreatedAt <= toDate))
+                .Include(c => c.Orders.Where(o => o.CreatedAt >= fromDateTime && o.CreatedAt <= toDateTime))
+                .Include(c => c.BuyTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
+                .Include(c => c.SellTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
                 .Where(c => c.IsActive)
                 .Select(c => new CustomerActivityReport
                 {
@@ -170,12 +182,16 @@ namespace ForexExchange.Controllers
         // GET: Reports/Commission
         public async Task<IActionResult> Commission(DateTime? fromDate, DateTime? toDate)
         {
-            fromDate ??= DateTime.Now.AddDays(-30);
-            toDate ??= DateTime.Now;
+            fromDate ??= DateTime.Now.AddDays(-30).Date;
+            toDate ??= DateTime.Now.Date;
+
+            // Ensure fromDate starts at beginning of day and toDate includes the entire day
+            var fromDateTime = fromDate.Value.Date;
+            var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
 
             var completedTransactions = await _context.Transactions
                 .Where(t => t.Status == TransactionStatus.Completed && 
-                           t.CompletedAt >= fromDate && t.CompletedAt <= toDate)
+                           t.CompletedAt >= fromDateTime && t.CompletedAt <= toDateTime)
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
                 .ToListAsync();

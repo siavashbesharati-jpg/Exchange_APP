@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using ForexExchange.Models;
 
 namespace ForexExchange.Controllers
@@ -9,11 +10,16 @@ namespace ForexExchange.Controllers
     public class CustomersController : Controller
     {
         private readonly ForexDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<CustomersController> _logger;
 
-        public CustomersController(ForexDbContext context, ILogger<CustomersController> logger)
+        public CustomersController(
+            ForexDbContext context,
+            UserManager<ApplicationUser> userManager,
+            ILogger<CustomersController> logger)
         {
             _context = context;
+            _userManager = userManager;
             _logger = logger;
         }
 
@@ -82,7 +88,7 @@ namespace ForexExchange.Controllers
                 CompletedOrders = customer.Orders.Count(o => o.Status == OrderStatus.Completed),
                 PendingOrders = customer.Orders.Count(o => o.Status == OrderStatus.Open),
                 TotalTransactions = customer.BuyTransactions.Count + customer.SellTransactions.Count,
-                CompletedTransactions = customer.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + 
+                CompletedTransactions = customer.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) +
                                      customer.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
                 TotalReceipts = customer.Receipts.Count,
                 VerifiedReceipts = customer.Receipts.Count(r => r.IsVerified),
@@ -97,36 +103,101 @@ namespace ForexExchange.Controllers
         // GET: Customers/Create
         public IActionResult Create()
         {
-            return View();
+            return View(new CustomerCreateViewModel());
         }
 
         // POST: Customers/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Customer customer)
+        public async Task<IActionResult> Create(CustomerCreateViewModel model)
         {
+            // Remove any email validation errors from ModelState first
+            ModelState.Remove("Email");
+            
+            // Custom email validation - validate format only if email is provided
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                var emailAttribute = new System.ComponentModel.DataAnnotations.EmailAddressAttribute();
+                if (!emailAttribute.IsValid(model.Email))
+                {
+                    ModelState.AddModelError("Email", "فرمت ایمیل صحیح نیست");
+                }
+            }
+
             if (ModelState.IsValid)
             {
+                // Check if email exists only if email is provided
+                if (!string.IsNullOrWhiteSpace(model.Email))
+                {
+                    var existingUser = await _userManager.FindByEmailAsync(model.Email!);
+                    if (existingUser != null)
+                    {
+                        ModelState.AddModelError("Email", "کاربری با این ایمیل قبلاً ثبت شده است.");
+                        return View(model);
+                    }
+                }
+
                 // Check if phone number already exists
                 var existingCustomer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.PhoneNumber == customer.PhoneNumber && c.IsActive);
+                    .FirstOrDefaultAsync(c => c.PhoneNumber == model.PhoneNumber && c.IsActive);
 
                 if (existingCustomer != null)
                 {
                     ModelState.AddModelError("PhoneNumber", "مشتری با این شماره تلفن قبلاً ثبت شده است.");
-                    return View(customer);
+                    return View(model);
                 }
 
-                customer.CreatedAt = DateTime.Now;
-                customer.IsActive = true;
+                // Create Customer entity
+                var customer = new Customer
+                {
+                    FullName = model.FullName,
+                    Email = model.Email ?? string.Empty,
+                    PhoneNumber = model.PhoneNumber,
+                    NationalId = model.NationalId ?? string.Empty,
+                    Address = model.Address ?? string.Empty,
+                    CreatedAt = DateTime.Now,
+                    IsActive = model.IsActive
+                };
 
                 _context.Add(customer);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "مشتری با موفقیت ثبت شد.";
-                return RedirectToAction(nameof(Details), new { id = customer.Id });
+                // Create corresponding ApplicationUser
+                var user = new ApplicationUser
+                {
+                    UserName = model.PhoneNumber, // Use phone number as username instead of email
+                    Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email,
+                    PhoneNumber = model.PhoneNumber,
+                    FullName = model.FullName,
+                    NationalId = model.NationalId ?? string.Empty,
+                    Address = model.Address ?? string.Empty,
+                    Role = UserRole.Customer,
+                    IsActive = model.IsActive,
+                    CreatedAt = DateTime.UtcNow,
+                    EmailConfirmed = !string.IsNullOrWhiteSpace(model.Email),
+                    CustomerId = customer.Id
+                };
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(user, "Customer");
+                    TempData["SuccessMessage"] = "مشتری و حساب کاربری با موفقیت ایجاد شد.";
+                    return RedirectToAction(nameof(Details), new { id = customer.Id });
+                }
+                else
+                {
+                    // If user creation failed, remove the customer
+                    _context.Remove(customer);
+                    await _context.SaveChangesAsync();
+
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                }
             }
-            return View(customer);
+            return View(model);
         }
 
         // GET: Customers/Edit/5
@@ -142,41 +213,126 @@ namespace ForexExchange.Controllers
             {
                 return NotFound();
             }
-            return View(customer);
+
+            var model = new CustomerEditViewModel
+            {
+                Id = customer.Id,
+                FullName = customer.FullName,
+                Email = customer.Email,
+                PhoneNumber = customer.PhoneNumber,
+                NationalId = customer.NationalId,
+                Address = customer.Address,
+                IsActive = customer.IsActive
+            };
+
+            return View(model);
         }
 
         // POST: Customers/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Customer customer)
+        public async Task<IActionResult> Edit(int id, CustomerEditViewModel model)
         {
-            if (id != customer.Id)
+            if (id != model.Id)
             {
                 return NotFound();
+            }
+
+            // Remove any email validation errors from ModelState first
+            ModelState.Remove("Email");
+            
+            // Custom email validation - validate format only if email is provided
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                var emailAttribute = new System.ComponentModel.DataAnnotations.EmailAddressAttribute();
+                if (!emailAttribute.IsValid(model.Email))
+                {
+                    ModelState.AddModelError("Email", "فرمت ایمیل صحیح نیست");
+                }
             }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    // Check if phone number already exists for another customer
-                    var existingCustomer = await _context.Customers
-                        .FirstOrDefaultAsync(c => c.PhoneNumber == customer.PhoneNumber && 
-                                           c.Id != customer.Id && c.IsActive);
-
-                    if (existingCustomer != null)
+                    var customer = await _context.Customers.FindAsync(id);
+                    if (customer == null)
                     {
-                        ModelState.AddModelError("PhoneNumber", "مشتری دیگری با این شماره تلفن موجود است.");
-                        return View(customer);
+                        return NotFound();
                     }
 
+                    // Check if email changed and if new email exists (only if email is provided)
+                    if (customer.Email != model.Email && !string.IsNullOrWhiteSpace(model.Email))
+                    {
+                        var existingUser = await _userManager.FindByEmailAsync(model.Email!);
+                        if (existingUser != null && existingUser.CustomerId != customer.Id)
+                        {
+                            ModelState.AddModelError("Email", "کاربری با این ایمیل قبلاً ثبت شده است.");
+                            return View(model);
+                        }
+                    }
+
+                    // Check if phone number changed and if new phone exists
+                    if (customer.PhoneNumber != model.PhoneNumber)
+                    {
+                        var existingCustomer = await _context.Customers
+                            .FirstOrDefaultAsync(c => c.PhoneNumber == model.PhoneNumber && c.IsActive && c.Id != id);
+
+                        if (existingCustomer != null)
+                        {
+                            ModelState.AddModelError("PhoneNumber", "مشتری با این شماره تلفن قبلاً ثبت شده است.");
+                            return View(model);
+                        }
+                    }
+
+                    // Update customer entity
+                    customer.FullName = model.FullName;
+                    customer.Email = model.Email ?? string.Empty;
+                    customer.PhoneNumber = model.PhoneNumber;
+                    customer.NationalId = model.NationalId ?? string.Empty;
+                    customer.Address = model.Address ?? string.Empty;
+                    customer.IsActive = model.IsActive;
+
                     _context.Update(customer);
+
+                    // Update corresponding ApplicationUser
+                    var user = await _userManager.Users.FirstOrDefaultAsync(u => u.CustomerId == customer.Id);
+                    if (user != null)
+                    {
+                        user.UserName = model.PhoneNumber; // Always use phone number as username
+                        user.Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email;
+                        user.PhoneNumber = model.PhoneNumber;
+                        user.FullName = model.FullName;
+                        user.NationalId = model.NationalId ?? string.Empty;
+                        user.Address = model.Address ?? string.Empty;
+                        user.IsActive = model.IsActive;
+                        user.EmailConfirmed = !string.IsNullOrWhiteSpace(model.Email);
+
+                        await _userManager.UpdateAsync(user);
+
+                        // Update password if provided
+                        if (!string.IsNullOrEmpty(model.NewPassword))
+                        {
+                            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                            var passwordResult = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+                            if (!passwordResult.Succeeded)
+                            {
+                                foreach (var error in passwordResult.Errors)
+                                {
+                                    ModelState.AddModelError(string.Empty, $"خطا در تغییر رمز عبور: {error.Description}");
+                                }
+                                return View(model);
+                            }
+                        }
+                    }
+
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "اطلاعات مشتری با موفقیت بروزرسانی شد.";
+                    TempData["SuccessMessage"] = "اطلاعات مشتری با موفقیت به‌روزرسانی شد.";
+                    return RedirectToAction(nameof(Details), new { id = customer.Id });
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!CustomerExists(customer.Id))
+                    if (!CustomerExists(model.Id))
                     {
                         return NotFound();
                     }
@@ -185,9 +341,8 @@ namespace ForexExchange.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
             }
-            return View(customer);
+            return View(model);
         }
 
         // GET: Customers/Delete/5
@@ -236,10 +391,11 @@ namespace ForexExchange.Controllers
             }
 
             var customers = await _context.Customers
-                .Where(c => c.IsActive && 
+                .Where(c => c.IsActive &&
                            (c.FullName.Contains(term) || c.PhoneNumber.Contains(term)))
-                .Select(c => new { 
-                    id = c.Id, 
+                .Select(c => new
+                {
+                    id = c.Id,
                     text = $"{c.FullName} - {c.PhoneNumber}"
                 })
                 .Take(10)

@@ -13,9 +13,14 @@
                     <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
                     @if (!Model.IsVerified)
                     {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#verifyModal">
                             تأیید رسید
                         </button>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success fs-6">تأیید شده</span>
                     }
                 </div>
             </div>
