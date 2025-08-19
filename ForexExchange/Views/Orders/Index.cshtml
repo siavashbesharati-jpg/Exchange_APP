@@ -85,6 +85,7 @@
                                     <input type="hidden" name="orderTypeFilter" value="@ViewData["OrderTypeFilter"]" />
                                     <input type="hidden" name="currencyFilter" value="@ViewData["CurrencyFilter"]" />
                                     <input type="hidden" name="statusFilter" value="@ViewData["StatusFilter"]" />
+                                    <input type="hidden" name="customerFilter" value="@ViewData["CustomerFilter"]" />
                                     <button type="submit" class="btn btn-outline-secondary">جستجو</button>
                                 </div>
                             </form>
@@ -93,15 +94,28 @@
                             @if (!String.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()) || 
                                  !String.IsNullOrEmpty(ViewData["OrderTypeFilter"]?.ToString()) ||
                                  !String.IsNullOrEmpty(ViewData["CurrencyFilter"]?.ToString()) ||
-                                 !String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()))
+                                 !String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()) ||
+                                 !String.IsNullOrEmpty(ViewData["CustomerFilter"]?.ToString()))
                             {
                                 <div class="d-flex flex-wrap gap-2">
                                     <span class="badge bg-secondary">فیلترهای فعال:</span>
                                     @if (!String.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
                                     {
                                         <span class="badge bg-info">
-                                            نام: @ViewData["CurrentFilter"]
+                                            جستجو: @ViewData["CurrentFilter"]
                                             <a asp-action="Index" class="text-white ms-1" style="text-decoration: none;">×</a>
+                                        </span>
+                                    }
+                                    @if (!String.IsNullOrEmpty(ViewData["CustomerFilter"]?.ToString()))
+                                    {
+                                        <span class="badge bg-info">
+                                            مشتری: @ViewData["CustomerFilter"]
+                                            <a asp-action="Index" 
+                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                               class="text-white ms-1" style="text-decoration: none;">×</a>
                                         </span>
                                     }
                                     @if (!String.IsNullOrEmpty(ViewData["OrderTypeFilter"]?.ToString()))
@@ -110,6 +124,7 @@
                                             نوع: @ViewData["OrderTypeFilter"]
                                             <a asp-action="Index" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                class="text-white ms-1" style="text-decoration: none;">×</a>
@@ -121,6 +136,7 @@
                                             ارز: @ViewData["CurrencyFilter"]
                                             <a asp-action="Index"
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                class="text-white ms-1" style="text-decoration: none;">×</a>
@@ -132,6 +148,7 @@
                                             وضعیت: @ViewData["StatusFilter"]
                                             <a asp-action="Index"
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                class="text-white ms-1" style="text-decoration: none;">×</a>
@@ -153,6 +170,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["IdSortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -176,6 +194,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["CustomerSortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -199,6 +218,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["OrderTypeSortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -222,6 +242,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["CurrencySortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -245,6 +266,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["AmountSortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -268,6 +290,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["RateSortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -292,6 +315,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["StatusSortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -315,6 +339,7 @@
                                             <a asp-action="Index" 
                                                asp-route-sortOrder="@ViewData["DateSortParm"]" 
                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
@@ -342,11 +367,22 @@
                                     {
                                         <tr>
                                             <td>@item.Id</td>
-                                            <td>@item.Customer.FullName</td>
+                                            <td>
+                                                <a asp-action="Index"
+                                                   asp-route-customerFilter="@item.Customer.FullName"
+                                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                   asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                   asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                   asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                   class="text-decoration-none text-primary fw-bold">
+                                                    @item.Customer.FullName
+                                                </a>
+                                            </td>
                                             <td>
                                                 <a asp-action="Index"
                                                    asp-route-orderTypeFilter="@item.OrderType"
                                                    asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                   asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                    asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                    asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                    class="text-decoration-none">
@@ -364,6 +400,7 @@
                                                 <a asp-action="Index"
                                                    asp-route-currencyFilter="@item.Currency"
                                                    asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                   asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                    asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                    asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                    class="text-decoration-none">
@@ -394,6 +431,7 @@
                                                 <a asp-action="Index"
                                                    asp-route-statusFilter="@item.Status"
                                                    asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                   asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                                    asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
                                                    asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                    class="text-decoration-none">

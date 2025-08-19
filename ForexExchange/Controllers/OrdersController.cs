@@ -36,7 +36,7 @@ namespace ForexExchange.Controllers
 
         // GET: Orders
         public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, 
-            string orderTypeFilter, string currencyFilter, string statusFilter)
+            string orderTypeFilter, string currencyFilter, string statusFilter, string customerFilter)
         {
             ViewData["CurrentSort"] = sortOrder;
             ViewData["IdSortParm"] = String.IsNullOrEmpty(sortOrder) ? "id_desc" : "";
@@ -57,6 +57,7 @@ namespace ForexExchange.Controllers
             ViewData["OrderTypeFilter"] = orderTypeFilter;
             ViewData["CurrencyFilter"] = currencyFilter;
             ViewData["StatusFilter"] = statusFilter;
+            ViewData["CustomerFilter"] = customerFilter;
 
             var isAdminOrStaff = await IsAdminOrStaffAsync();
             IQueryable<Order> ordersQuery;
@@ -81,10 +82,15 @@ namespace ForexExchange.Controllers
                     .Where(o => o.CustomerId == currentUser.CustomerId);
             }
 
-            // Apply filters
+            // Apply filtering only - no sorting at database level for decimal fields
             if (!String.IsNullOrEmpty(currentFilter))
             {
                 ordersQuery = ordersQuery.Where(o => o.Customer.FullName.Contains(currentFilter));
+            }
+
+            if (!String.IsNullOrEmpty(customerFilter))
+            {
+                ordersQuery = ordersQuery.Where(o => o.Customer.FullName == customerFilter);
             }
 
             if (!String.IsNullOrEmpty(orderTypeFilter))
@@ -111,60 +117,78 @@ namespace ForexExchange.Controllers
                 }
             }
 
-            // Apply sorting
+            // Apply database-level sorting only for non-decimal fields
+            // Load data first, then apply all sorting client-side
+            List<Order> orders;
+            
+            // For non-decimal fields, we can sort at database level for better performance
+            if (sortOrder?.Contains("Amount") == true || sortOrder?.Contains("Rate") == true)
+            {
+                // Load all data first for decimal sorting
+                orders = await ordersQuery.ToListAsync();
+            }
+            else
+            {
+                // Apply non-decimal sorting at database level
+                switch (sortOrder)
+                {
+                    case "id_desc":
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.Id);
+                        break;
+                    case "Customer":
+                        ordersQuery = ordersQuery.OrderBy(o => o.Customer.FullName);
+                        break;
+                    case "customer_desc":
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.Customer.FullName);
+                        break;
+                    case "OrderType":
+                        ordersQuery = ordersQuery.OrderBy(o => o.OrderType);
+                        break;
+                    case "ordertype_desc":
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.OrderType);
+                        break;
+                    case "Currency":
+                        ordersQuery = ordersQuery.OrderBy(o => o.Currency);
+                        break;
+                    case "currency_desc":
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.Currency);
+                        break;
+                    case "Status":
+                        ordersQuery = ordersQuery.OrderBy(o => o.Status);
+                        break;
+                    case "status_desc":
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.Status);
+                        break;
+                    case "Date":
+                        ordersQuery = ordersQuery.OrderBy(o => o.CreatedAt);
+                        break;
+                    case "date_desc":
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.CreatedAt);
+                        break;
+                    default:
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.CreatedAt);
+                        break;
+                }
+                orders = await ordersQuery.ToListAsync();
+            }
+
+            // Apply client-side sorting for decimal fields
             switch (sortOrder)
             {
-                case "id_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.Id);
-                    break;
-                case "Customer":
-                    ordersQuery = ordersQuery.OrderBy(o => o.Customer.FullName);
-                    break;
-                case "customer_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.Customer.FullName);
-                    break;
-                case "OrderType":
-                    ordersQuery = ordersQuery.OrderBy(o => o.OrderType);
-                    break;
-                case "ordertype_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.OrderType);
-                    break;
-                case "Currency":
-                    ordersQuery = ordersQuery.OrderBy(o => o.Currency);
-                    break;
-                case "currency_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.Currency);
-                    break;
                 case "Amount":
-                    ordersQuery = ordersQuery.OrderBy(o => o.Amount);
+                    orders = orders.OrderBy(o => o.Amount).ToList();
                     break;
                 case "amount_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.Amount);
+                    orders = orders.OrderByDescending(o => o.Amount).ToList();
                     break;
                 case "Rate":
-                    ordersQuery = ordersQuery.OrderBy(o => o.Rate);
+                    orders = orders.OrderBy(o => o.Rate).ToList();
                     break;
                 case "rate_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.Rate);
-                    break;
-                case "Status":
-                    ordersQuery = ordersQuery.OrderBy(o => o.Status);
-                    break;
-                case "status_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.Status);
-                    break;
-                case "Date":
-                    ordersQuery = ordersQuery.OrderBy(o => o.CreatedAt);
-                    break;
-                case "date_desc":
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.CreatedAt);
-                    break;
-                default:
-                    ordersQuery = ordersQuery.OrderByDescending(o => o.CreatedAt);
+                    orders = orders.OrderByDescending(o => o.Rate).ToList();
                     break;
             }
 
-            var orders = await ordersQuery.ToListAsync();
             return View(orders);
         }
 
