@@ -72,23 +72,43 @@ namespace ForexExchange.Services
 
         private async Task CreateAdminUserAsync()
         {
-            const string adminEmail = "admin";
-            const string adminPassword = "123";
+            const string adminEmail = "admin@iranexpedia.ir";
+            const string adminPhone = "09120674032";
+            const string adminPassword = "123456"; // Changed to 6 characters
 
+            // Check if admin exists by email first (for existing installations)
             var adminUser = await _userManager.FindByEmailAsync(adminEmail);
+            
+            // If found with email username, update it to use phone number
+            if (adminUser != null && adminUser.UserName == adminEmail)
+            {
+                adminUser.UserName = adminPhone;
+                var updateResult = await _userManager.UpdateAsync(adminUser);
+                if (updateResult.Succeeded)
+                {
+                    _logger.LogInformation($"Updated existing admin user to use phone number as username: {adminPhone}");
+                }
+                return;
+            }
+
+            // Check if admin exists by phone number
+            if (adminUser == null)
+            {
+                adminUser = await _userManager.FindByNameAsync(adminPhone);
+            }
 
             if (adminUser == null)
             {
                 adminUser = new ApplicationUser
                 {
-                    UserName = adminEmail,
+                    UserName = adminPhone, // Use phone as username for login
                     Email = adminEmail,
                     FullName = "مدیر سیستم",
                     Role = UserRole.Admin,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                     EmailConfirmed = true,
-                    PhoneNumber = "09120674032"
+                    PhoneNumber = adminPhone
                 };
 
                 var result = await _userManager.CreateAsync(adminUser, adminPassword);
@@ -96,7 +116,7 @@ namespace ForexExchange.Services
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(adminUser, "Admin");
-                    _logger.LogInformation($"Admin user created successfully with email: {adminEmail}");
+                    _logger.LogInformation($"Admin user created successfully with username: {adminPhone} and email: {adminEmail}");
                 }
                 else
                 {
@@ -271,9 +291,15 @@ namespace ForexExchange.Services
                 var existingUser = await _userManager.FindByEmailAsync(userData.Email);
                 if (existingUser == null)
                 {
+                    // Also check by phone number (username)
+                    existingUser = await _userManager.FindByNameAsync(userData.Phone);
+                }
+
+                if (existingUser == null)
+                {
                     var user = new ApplicationUser
                     {
-                        UserName = userData.Email,
+                        UserName = userData.Phone, // Use phone as username for consistency
                         Email = userData.Email,
                         PhoneNumber = userData.Phone,
                         FullName = userData.FullName,
@@ -288,7 +314,12 @@ namespace ForexExchange.Services
                     {
                         var roleName = userData.Role == UserRole.Manager ? "Admin" : "Staff";
                         await _userManager.AddToRoleAsync(user, roleName);
-                        _logger.LogInformation($"Staff user created: {userData.Email}");
+                        _logger.LogInformation($"Staff user created: {userData.Phone} ({userData.FullName})");
+                    }
+                    else
+                    {
+                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        _logger.LogError($"Failed to create staff user {userData.Phone}: {errors}");
                     }
                 }
             }
@@ -331,9 +362,15 @@ namespace ForexExchange.Services
                 var existingUser = await _userManager.FindByEmailAsync(data.Email);
                 if (existingUser == null)
                 {
+                    // Also check by phone number (username)
+                    existingUser = await _userManager.FindByNameAsync(data.Phone);
+                }
+
+                if (existingUser == null)
+                {
                     var user = new ApplicationUser
                     {
-                        UserName = data.Email,
+                        UserName = data.Phone, // Use phone as username for login
                         Email = data.Email,
                         PhoneNumber = data.Phone,
                         FullName = data.FullName,
@@ -346,10 +383,16 @@ namespace ForexExchange.Services
                         CustomerId = customer.Id
                     };
 
-                    var result = await _userManager.CreateAsync(user, "123");
+                    var result = await _userManager.CreateAsync(user, "123456"); // Changed to 6 characters
                     if (result.Succeeded)
                     {
                         await _userManager.AddToRoleAsync(user, "Customer");
+                        _logger.LogInformation($"Customer user created: {data.Phone} ({data.FullName})");
+                    }
+                    else
+                    {
+                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        _logger.LogError($"Failed to create customer user {data.Phone}: {errors}");
                     }
                 }
             }

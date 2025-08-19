@@ -25,7 +25,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
     // User requirements
     options.User.RequireUniqueEmail = false;
-    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+"; // Allow phone numbers
 
     // Sign in requirements
     options.SignIn.RequireConfirmedEmail = false;
