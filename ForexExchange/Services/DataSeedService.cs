@@ -195,7 +195,7 @@ namespace ForexExchange.Services
 
 
             // Seed Transactions
-            /** await SeedTransactionsAsync();
+            await SeedTransactionsAsync();
             await _context.SaveChangesAsync(); // Save transactions before receipts
             
             // Seed Receipts
@@ -205,12 +205,13 @@ namespace ForexExchange.Services
             // Seed Notifications
             await SeedNotificationsAsync();
 
-            await _context.SaveChangesAsync(); **/
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Sample data seeding completed");
         }
 
-        private async Task SeedStaffUsersAsync()
+        private async Task
+        SeedStaffUsersAsync()
         {
             var staffUsers = new[]
             {

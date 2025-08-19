@@ -21,37 +21,30 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        // Get current exchange rates
+        // Get current exchange rates (public information)
         var exchangeRates = await _context.ExchangeRates
             .Where(r => r.IsActive)
+            .OrderBy(r => r.Currency)
             .ToListAsync();
 
-        // Get recent orders
-        var recentOrders = await _context.Orders
+        // Get open and partially filled orders (public information for transparency)
+        var availableOrders = await _context.Orders
             .Include(o => o.Customer)
+            .Where(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled)
             .OrderByDescending(o => o.CreatedAt)
-            .Take(10)
+            .Take(20)
             .ToListAsync();
 
-        // Get pending settlements
-        var pendingSettlements = await _settlementService.GetPendingSettlementsAsync();
-
-        // Get statistics
-        var totalOrders = await _context.Orders.CountAsync();
-        var completedTransactions = await _context.Transactions
-            .CountAsync(t => t.Status == TransactionStatus.Completed);
-        var pendingOrders = await _context.Orders
-            .CountAsync(o => o.Status == OrderStatus.Open);
-        var activeCustomers = await _context.Customers
-            .CountAsync(c => c.IsActive);
+        // Basic statistics (public)
+        var totalActiveOrders = await _context.Orders
+            .CountAsync(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled);
+        var completedTransactionsToday = await _context.Transactions
+            .CountAsync(t => t.Status == TransactionStatus.Completed && t.CreatedAt.Date == DateTime.Today);
 
         ViewBag.ExchangeRates = exchangeRates;
-        ViewBag.RecentOrders = recentOrders;
-        ViewBag.PendingSettlements = pendingSettlements;
-        ViewBag.TotalOrders = totalOrders;
-        ViewBag.CompletedTransactions = completedTransactions;
-        ViewBag.PendingOrders = pendingOrders;
-        ViewBag.ActiveCustomers = activeCustomers;
+        ViewBag.AvailableOrders = availableOrders;
+        ViewBag.TotalActiveOrders = totalActiveOrders;
+        ViewBag.CompletedTransactionsToday = completedTransactionsToday;
 
         return View();
     }

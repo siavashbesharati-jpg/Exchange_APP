@@ -1,128 +1,165 @@
 ﻿@{
-    ViewData["Title"] = "داشبورد اصلی";
+    ViewData["Title"] = "سامانه صرافی ایران اکسپدیا";
+    var exchangeRates = ViewBag.ExchangeRates as List<ForexExchange.Models.ExchangeRate>;
+    var availableOrders = ViewBag.AvailableOrders as List<ForexExchange.Models.Order>;
 }
 
 <div class="container-fluid">
-    <div class="row">
+    <!-- Hero Section -->
+    <div class="row mb-5">
         <div class="col-12">
-            <h1 class="h3 mb-4">داشبورد سامانه صرافی ایران اکسپدیا</h1>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">کل سفارش‌ها</h5>
-                    <h2 class="card-text">@ViewBag.TotalOrders</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">تراکنش‌های تکمیل شده</h5>
-                    <h2 class="card-text">@ViewBag.CompletedTransactions</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">سفارش‌های در انتظار</h5>
-                    <h2 class="card-text">@ViewBag.PendingOrders</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">مشتریان فعال</h5>
-                    <h2 class="card-text">@ViewBag.ActiveCustomers</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settlement Queue Alert -->
-    @{
-        var pendingSettlements = ViewBag.PendingSettlements as List<ForexExchange.Models.Transaction>;
-    }
-    @if (pendingSettlements?.Any() == true)
-    {
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="alert alert-warning" role="alert">
-                    <h5 class="alert-heading">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        توجه: تسویه‌های در انتظار
-                    </h5>
-                    <p class="mb-2">
-                        <strong>@pendingSettlements.Count</strong> تراکنش در انتظار تسویه است.
-                        @{
-                            var urgentCount = pendingSettlements.Count(t => (DateTime.Now - t.CreatedAt).TotalHours > 24);
-                        }
-                        @if (urgentCount > 0)
-                        {
-                            <span class="badge bg-danger ms-2">@urgentCount فوری</span>
-                        }
+            <div class="jumbotron bg-primary text-white p-5 rounded">
+                <div class="text-center">
+                    <h1 class="display-4">
+                        <i class="fas fa-exchange-alt me-3"></i>
+                        سامانه صرافی ایران اکسپدیا
+                    </h1>
+                    <p class="lead mt-3">
+                        خرید و فروش ارز با بهترین نرخ‌ها و بالاترین سطح امنیت
                     </p>
-                    <a asp-controller="Settlements" asp-action="Queue" class="btn btn-warning">
-                        مدیریت صف تسویه
-                    </a>
+                    <hr class="my-4 bg-white">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="h4">@ViewBag.TotalActiveOrders</div>
+                            <small>سفارش‌های فعال</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h4">@ViewBag.CompletedTransactionsToday</div>
+                            <small>تراکنش‌های امروز</small>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h4">@(exchangeRates?.Count ?? 0)</div>
+                            <small>ارزهای موجود</small>
+                        </div>
+                    </div>
+
+                    @if (!User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="mt-4">
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-light btn-lg me-3">
+                                <i class="fas fa-user-plus me-2"></i>
+                                ثبت نام
+                            </a>
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                ورود
+                            </a>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
-    }
+    </div>
 
-    <div class="row">
-        <!-- Exchange Rates -->
-        <div class="col-md-6">
+    <!-- Exchange Rates Section -->
+    <div class="row mb-4">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">نرخ‌های ارز فعلی</h5>
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            نرخ‌های ارز روز
+                        </h5>
+                        @if (exchangeRates != null && exchangeRates.Any())
+                        {
+                            <small class="text-white-50">
+                                <i class="fas fa-clock me-1"></i>
+                                آخرین بروزرسانی: @exchangeRates.First().UpdatedAt.ToString("yyyy/MM/dd HH:mm")
+                            </small>
+                        }
+                    </div>
                 </div>
                 <div class="card-body">
-                    @if (ViewBag.ExchangeRates != null)
+                    @if (exchangeRates != null && exchangeRates.Any())
                     {
                         <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
+                            <table class="table table-hover table-striped">
+                                <thead class="table-dark">
                                     <tr>
-                                        <th>ارز</th>
-                                        <th>نرخ خرید</th>
-                                        <th>نرخ فروش</th>
-                                        <th>آخرین بروزرسانی</th>
+                                        <th class="text-center">
+                                            <i class="fas fa-coins me-1"></i>
+                                            ارز
+                                        </th>
+                                        <th class="text-center">
+                                            <i class="fas fa-arrow-down me-1 text-success"></i>
+                                            نرخ خرید (تومان)
+                                        </th>
+                                        <th class="text-center">
+                                            <i class="fas fa-arrow-up me-1 text-danger"></i>
+                                            نرخ فروش (تومان)
+                                        </th>
+                                        <th class="text-center">
+                                            <i class="fas fa-chart-line me-1"></i>
+                                            تفاوت نرخ
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var rate in ViewBag.ExchangeRates)
+                                    @foreach (var rate in exchangeRates)
                                     {
                                         <tr>
-                                            <td>
-                                                @switch (rate.Currency)
-                                                {
-                                                    case ForexExchange.Models.CurrencyType.USD:
-                                                        <span class="badge bg-primary">دلار آمریکا</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.EUR:
-                                                        <span class="badge bg-success">یورو</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.AED:
-                                                        <span class="badge bg-info">درهم امارات</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.OMR:
-                                                        <span class="badge bg-warning">ریال عمان</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.TRY:
-                                                        <span class="badge bg-danger">لیر ترکیه</span>
-                                                        break;
-                                                }
+                                            <td class="text-center">
+                                                <div class="d-flex align-items-center justify-content-center">
+                                                    @switch (rate.Currency)
+                                                    {
+                                                        case ForexExchange.Models.CurrencyType.USD:
+                                                            <i class="fas fa-dollar-sign text-success me-2"></i>
+                                                            <span class="fw-bold">دلار آمریکا</span>
+                                                            <span class="badge bg-success ms-2">USD</span>
+                                                            break;
+                                                        case ForexExchange.Models.CurrencyType.EUR:
+                                                            <i class="fas fa-euro-sign text-primary me-2"></i>
+                                                            <span class="fw-bold">یورو</span>
+                                                            <span class="badge bg-primary ms-2">EUR</span>
+                                                            break;
+                                                        case ForexExchange.Models.CurrencyType.AED:
+                                                            <i class="fas fa-coins text-warning me-2"></i>
+                                                            <span class="fw-bold">درهم امارات</span>
+                                                            <span class="badge bg-warning ms-2">AED</span>
+                                                            break;
+                                                        case ForexExchange.Models.CurrencyType.OMR:
+                                                            <i class="fas fa-coins text-info me-2"></i>
+                                                            <span class="fw-bold">ریال عمان</span>
+                                                            <span class="badge bg-info ms-2">OMR</span>
+                                                            break;
+                                                        case ForexExchange.Models.CurrencyType.TRY:
+                                                            <i class="fas fa-lira-sign text-danger me-2"></i>
+                                                            <span class="fw-bold">لیر ترکیه</span>
+                                                            <span class="badge bg-danger ms-2">TRY</span>
+                                                            break;
+                                                        default:
+                                                            <i class="fas fa-money-bill text-secondary me-2"></i>
+                                                            <span class="fw-bold">@rate.Currency</span>
+                                                            <span class="badge bg-secondary ms-2">@rate.Currency</span>
+                                                            break;
+                                                    }
+                                                </div>
                                             </td>
-                                            <td>@rate.BuyRate.ToString("N0") تومان</td>
-                                            <td>@rate.SellRate.ToString("N0") تومان</td>
-                                            <td>@rate.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td class="text-center">
+                                                <span class="h6 text-success fw-bold">
+                                                    @rate.BuyRate.ToString("N0")
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="h6 text-danger fw-bold">
+                                                    @rate.SellRate.ToString("N0")
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                @{
+                                                    var difference = rate.SellRate - rate.BuyRate;
+                                                    var percentDiff = (difference / rate.BuyRate) * 100;
+                                                }
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <span class="fw-bold text-info">
+                                                        @difference.ToString("N0")
+                                                    </span>
+                                                    <small class="text-muted">
+                                                        (@percentDiff.ToString("F2")%)
+                                                    </small>
+                                                </div>
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -131,133 +168,256 @@
                     }
                     else
                     {
-                        <p class="text-muted">هیچ نرخ ارزی موجود نیست.</p>
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">نرخ‌های ارز در حال بارگذاری...</h5>
+                        </div>
                     }
-                </div>
-                <div class="card-footer">
-                    <a asp-controller="ExchangeRates" asp-action="Index" class="btn btn-sm btn-outline-primary">مدیریت نرخ‌ها</a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Recent Orders -->
-        <div class="col-md-6">
+    <!-- Available Orders Section -->
+    <div class="row mb-4">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">آخرین سفارش‌ها</h5>
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            سفارش‌های باز و قابل معامله
+                        </h5>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a asp-controller="Orders" asp-action="Create" class="btn btn-light btn-sm">
+                                <i class="fas fa-plus me-1"></i>
+                                ثبت سفارش جدید
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-light btn-sm">
+                                <i class="fas fa-sign-in-alt me-1"></i>
+                                ورود برای معامله
+                            </a>
+                        }
+                    </div>
                 </div>
                 <div class="card-body">
-                    @if (ViewBag.RecentOrders != null && ViewBag.RecentOrders.Count > 0)
+                    @if (availableOrders != null && availableOrders.Any())
                     {
                         <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
+                            <table class="table table-hover">
+                                <thead class="table-dark">
                                     <tr>
-                                        <th>مشتری</th>
-                                        <th>نوع</th>
-                                        <th>مبلغ</th>
+                                        <th>نوع سفارش</th>
+                                        <th>ارز</th>
+                                        <th>مقدار</th>
+                                        <th>نرخ پیشنهادی</th>
+                                        <th>کل (تومان)</th>
                                         <th>وضعیت</th>
-                                        <th>تاریخ</th>
+                                        <th>تاریخ ثبت</th>
+                                        <th>عملیات</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var order in ViewBag.RecentOrders)
+                                    @foreach (var order in availableOrders)
                                     {
                                         <tr>
-                                            <td>@order.Customer.FullName</td>
                                             <td>
                                                 @if (order.OrderType == ForexExchange.Models.OrderType.Buy)
                                                 {
-                                                    <span class="badge bg-success">خرید</span>
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-arrow-down me-1"></i>خرید
+                                                    </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-danger">فروش</span>
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-arrow-up me-1"></i>فروش
+                                                    </span>
                                                 }
                                             </td>
-                                            <td>@order.Amount.ToString("N0") @order.Currency</td>
                                             <td>
-                                                @switch (order.Status)
+                                                <span class="badge bg-primary">@order.Currency</span>
+                                            </td>
+                                            <td class="fw-bold">@order.Amount.ToString("N2")</td>
+                                            <td class="text-success fw-bold">@order.Rate.ToString("N0")</td>
+                                            <td class="text-danger fw-bold">@order.TotalInToman.ToString("N0")</td>
+                                            <td>
+                                                @if (order.Status == ForexExchange.Models.OrderStatus.Open)
                                                 {
-                                                    case ForexExchange.Models.OrderStatus.Open:
-                                                        <span class="badge bg-warning">باز</span>
-                                                        break;
-                                                    case ForexExchange.Models.OrderStatus.Matched:
-                                                        <span class="badge bg-info">مچ شده</span>
-                                                        break;
-                                                    case ForexExchange.Models.OrderStatus.Completed:
-                                                        <span class="badge bg-success">تکمیل شده</span>
-                                                        break;
-                                                    case ForexExchange.Models.OrderStatus.Cancelled:
-                                                        <span class="badge bg-secondary">لغو شده</span>
-                                                        break;
+                                                    <span class="badge bg-primary">باز</span>
+                                                }
+                                                else if (order.Status == ForexExchange.Models.OrderStatus.PartiallyFilled)
+                                                {
+                                                    <span class="badge bg-warning">نیمه تکمیل</span>
                                                 }
                                             </td>
-                                            <td>@order.CreatedAt.ToString("MM/dd HH:mm")</td>
+                                            <td>@order.CreatedAt.ToString("yyyy/MM/dd")</td>
+                                            <td>
+                                                @if (User.Identity?.IsAuthenticated == true)
+                                                {
+                                                    <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id"
+                                                        class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye me-1"></i>
+                                                        جزئیات
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-controller="Account" asp-action="Login"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                        <i class="fas fa-sign-in-alt me-1"></i>
+                                                        ورود
+                                                    </a>
+                                                }
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
                         </div>
+
+                        <div class="text-center mt-3">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <a asp-controller="Orders" asp-action="Index" class="btn btn-primary">
+                                    <i class="fas fa-list me-1"></i>
+                                    مشاهده همه سفارش‌ها
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    برای مشاهده کامل سفارش‌ها و شرکت در معاملات، لطفاً وارد حساب کاربری خود شوید.
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
-                        <p class="text-muted">هیچ سفارشی موجود نیست.</p>
+                        <div class="text-center py-5">
+                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">در حال حاضر سفارش باز و قابل معامله‌ای وجود ندارد</h5>
+                            <p class="text-muted">سفارش جدید ثبت کنید تا سایر کاربران بتوانند با شما معامله کنند.</p>
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <a asp-controller="Orders" asp-action="Create" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>
+                                    ثبت اولین سفارش
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Account" asp-action="Register" class="btn btn-primary">
+                                    <i class="fas fa-user-plus me-1"></i>
+                                    ثبت نام و شروع معامله
+                                </a>
+                            }
+                        </div>
                     }
-                </div>
-                <div class="card-footer">
-                    <a asp-controller="Orders" asp-action="Index" class="btn btn-sm btn-outline-primary">مشاهده همه سفارش‌ها</a>
-                    <a asp-controller="Orders" asp-action="Create" class="btn btn-sm btn-primary">ثبت سفارش جدید</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">عملیات سریع</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <div class="d-grid">
-                                <a asp-controller="Orders" asp-action="Create" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> ثبت سفارش جدید
-                                </a>
+    <!-- Features Section for Non-Authenticated Users -->
+    @if (!User.Identity?.IsAuthenticated == true)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-star me-2"></i>
+                            ویژگی‌های سامانه
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="feature-icon mb-3">
+                                    <i class="fas fa-shield-alt fa-3x text-success"></i>
+                                </div>
+                                <h6>امنیت بالا</h6>
+                                <p class="text-muted small">تمامی معاملات با بالاترین سطح امنیت انجام می‌شود</p>
                             </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="d-grid">
-                                <a asp-controller="Customers" asp-action="Create" class="btn btn-success">
-                                    <i class="fas fa-user-plus"></i> مشتری جدید
-                                </a>
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="feature-icon mb-3">
+                                    <i class="fas fa-clock fa-3x text-primary"></i>
+                                </div>
+                                <h6>سرعت بالا</h6>
+                                <p class="text-muted small">تسویه سریع و آنی تراکنش‌ها</p>
                             </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="d-grid">
-                                <a asp-controller="Receipts" asp-action="Upload" class="btn btn-info">
-                                    <i class="fas fa-upload"></i> آپلود رسید
-                                </a>
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="feature-icon mb-3">
+                                    <i class="fas fa-chart-line fa-3x text-warning"></i>
+                                </div>
+                                <h6>نرخ‌های رقابتی</h6>
+                                <p class="text-muted small">بهترین نرخ‌های خرید و فروش در بازار</p>
                             </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <div class="d-grid">
-                                <a asp-controller="Reports" asp-action="Index" class="btn btn-warning">
-                                    <i class="fas fa-chart-bar"></i> گزارش‌ها
-                                </a>
+                            <div class="col-md-3 text-center mb-3">
+                                <div class="feature-icon mb-3">
+                                    <i class="fas fa-headset fa-3x text-info"></i>
+                                </div>
+                                <h6>پشتیبانی ۲۴/۷</h6>
+                                <p class="text-muted small">تیم پشتیبانی ما همیشه در خدمت شماست</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
-@section Scripts {
-    <!-- Font Awesome for icons -->
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
-}
+<style>
+    .jumbotron {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+
+    .currency-icon {
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .rate-info {
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+    }
+
+    .feature-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .feature-icon:hover {
+        transform: translateY(-5px);
+    }
+
+    .jumbotron {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+
+    .currency-icon {
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .rate-info {
+        border-top: 1px solid #eee;
+        padding-top: 10px;
+    }
+
+    .feature-icon {
+        transition: transform 0.3s ease;
+    }
+</style>
