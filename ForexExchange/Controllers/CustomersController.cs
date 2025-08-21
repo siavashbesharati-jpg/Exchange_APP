@@ -44,10 +44,21 @@ namespace ForexExchange.Controllers
 
             var customer = await _context.Customers
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.FromCurrency)
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.ToCurrency)
                 .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
                     .ThenInclude(t => t.SellerCustomer)
+                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.FromCurrency)
+                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.ToCurrency)
                 .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
                     .ThenInclude(t => t.BuyerCustomer)
+                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.FromCurrency)
+                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.ToCurrency)
                 .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
@@ -69,10 +80,21 @@ namespace ForexExchange.Controllers
 
             var customer = await _context.Customers
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.FromCurrency)
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.ToCurrency)
                 .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
                     .ThenInclude(t => t.SellerCustomer)
+                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.FromCurrency)
+                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.ToCurrency)
                 .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
                     .ThenInclude(t => t.BuyerCustomer)
+                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.FromCurrency)
+                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                    .ThenInclude(t => t.ToCurrency)
                 .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
                 .FirstOrDefaultAsync(m => m.Id == id);
 

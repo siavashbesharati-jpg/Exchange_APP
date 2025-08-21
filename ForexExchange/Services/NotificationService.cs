@@ -38,7 +38,7 @@ namespace ForexExchange.Services
                 var customer = await _context.Customers.FindAsync(order.CustomerId);
                 if (customer == null) return;
 
-                var message = $"سفارش {GetOrderTypeText(order.OrderType)} شما برای {order.Amount:N0} {GetCurrencyText(order.Currency)} " +
+                var message = $"سفارش {GetOrderTypeText(order.OrderType)} شما برای {order.Amount:N0} {GetCurrencyName(order.FromCurrency)} " +
                              $"با نرخ {order.Rate:N0} تومان ثبت شد.";
 
                 await CreateNotificationAsync(
@@ -75,7 +75,7 @@ namespace ForexExchange.Services
                 if (buyer != null)
                 {
                     var buyerMessage = $"سفارش خرید شما با فروشنده ای تطبیق یافت. " +
-                                     $"مبلغ: {transaction.Amount:N2} {GetCurrencyText(transaction.Currency)} " +
+                                     $"مبلغ: {transaction.Amount:N2} {GetCurrencyName(transaction.FromCurrency)} " +
                                      $"به نرخ {transaction.Rate:N0} تومان. " +
                                      $"کل قابل پرداخت: {transaction.TotalInToman:N0} تومان.";
 
@@ -94,7 +94,7 @@ namespace ForexExchange.Services
                 if (seller != null)
                 {
                     var sellerMessage = $"سفارش فروش شما با خریداری تطبیق یافت. " +
-                                      $"مبلغ: {transaction.Amount:N2} {GetCurrencyText(transaction.Currency)} " +
+                                      $"مبلغ: {transaction.Amount:N2} {GetCurrencyName(transaction.FromCurrency)} " +
                                       $"به نرخ {transaction.Rate:N0} تومان. " +
                                       $"کل دریافتی: {transaction.TotalInToman:N0} تومان.";
 
@@ -344,17 +344,23 @@ namespace ForexExchange.Services
             };
         }
 
-        private string GetCurrencyText(CurrencyType currency)
+        private string GetCurrencyText(string currencyCode)
         {
-            return currency switch
+            return currencyCode switch
             {
-                CurrencyType.USD => "دلار آمریکا",
-                CurrencyType.EUR => "یورو",
-                CurrencyType.AED => "درهم امارات",
-                CurrencyType.OMR => "ریال عمان",
-                CurrencyType.TRY => "لیر ترکیه",
-                _ => currency.ToString()
+                "USD" => "دلار آمریکا",
+                "EUR" => "یورو",
+                "AED" => "درهم امارات",
+                "OMR" => "ریال عمان",
+                "TRY" => "لیر ترکیه",
+                "IRR" => "ریال ایران",
+                _ => currencyCode
             };
+        }
+
+        private string GetCurrencyName(Currency? currency)
+        {
+            return currency?.PersianName ?? "نامشخص";
         }
 
         private string GetReceiptTypeText(ReceiptType receiptType)

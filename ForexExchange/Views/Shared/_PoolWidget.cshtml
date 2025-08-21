@@ -31,18 +31,21 @@
                             <div class="card-body text-center">
                                 <h5 class="card-title">
                                     <span class="currency-flag">
-                                        @switch (pool.Currency)
-                                        {
-                                            case ForexExchange.Models.CurrencyType.Toman: <span>🇮🇷</span> break;
-                                            case ForexExchange.Models.CurrencyType.USD: <span>🇺🇸</span> break;
-                                            case ForexExchange.Models.CurrencyType.EUR: <span>🇪🇺</span> break;
-                                            case ForexExchange.Models.CurrencyType.AED: <span>🇦🇪</span> break;
-                                            case ForexExchange.Models.CurrencyType.OMR: <span>🇴🇲</span> break;
-                                            case ForexExchange.Models.CurrencyType.TRY: <span>🇹🇷</span> break;
-                                            default: <span>💱</span> break;
+                                        @{
+                                            var flagEmoji = pool.Currency?.Symbol switch
+                                            {
+                                                "IRR" or "TMN" => "🇮🇷",
+                                                "USD" => "🇺🇸",
+                                                "EUR" => "🇪🇺", 
+                                                "AED" => "🇦🇪",
+                                                "OMR" => "🇴🇲",
+                                                "TRY" => "🇹🇷",
+                                                _ => "💱"
+                                            };
                                         }
+                                        <span>@flagEmoji</span>
                                     </span>
-                                    @pool.Currency
+                                    @pool.Currency?.PersianName
                                 </h5>
                                 
                                 <div class="balance-display">

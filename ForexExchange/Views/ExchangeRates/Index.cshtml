@@ -68,24 +68,20 @@
                                     {
                                         <tr>
                                             <td>
-                                                @switch (item.Currency)
-                                                {
-                                                    case ForexExchange.Models.CurrencyType.USD:
-                                                        <span class="badge bg-primary">دلار آمریکا</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.EUR:
-                                                        <span class="badge bg-success">یورو</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.AED:
-                                                        <span class="badge bg-info">درهم امارات</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.OMR:
-                                                        <span class="badge bg-warning">ریال عمان</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.TRY:
-                                                        <span class="badge bg-danger">لیر ترکیه</span>
-                                                        break;
+                                                @{
+                                                    var currencySymbol = item.ToCurrency?.Symbol ?? "";
+                                                    var currencyName = item.ToCurrency?.PersianName ?? "نامشخص";
+                                                    var badgeClass = currencySymbol switch
+                                                    {
+                                                        "USD" => "bg-primary",
+                                                        "EUR" => "bg-success", 
+                                                        "AED" => "bg-info",
+                                                        "OMR" => "bg-warning",
+                                                        "TRY" => "bg-danger",
+                                                        _ => "bg-secondary"
+                                                    };
                                                 }
+                                                <span class="badge @badgeClass">@currencyName</span>
                                             </td>
                                             <td class="text-success fw-bold">@item.BuyRate.ToString("N0") تومان</td>
                                             <td class="text-danger fw-bold">@item.SellRate.ToString("N0") تومان</td>

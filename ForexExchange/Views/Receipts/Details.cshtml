@@ -183,7 +183,7 @@
                                 <h6><i class="fas fa-shopping-cart"></i> سفارش مرتبط</h6>
                                 <p class="mb-1"><strong>شماره سفارش:</strong> #@Model.Order.Id</p>
                                 <p class="mb-1"><strong>نوع:</strong> @(Model.Order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")</p>
-                                <p class="mb-1"><strong>مبلغ:</strong> @Model.Order.Amount.ToString("N0") @Model.Order.Currency</p>
+                                <p class="mb-1"><strong>مبلغ:</strong> @Model.Order.Amount.ToString("N0") @((Model.Order?.FromCurrency?.PersianName ?? Model.Order?.FromCurrency?.Code) ?? "")</p>
                                 <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.Order.Id" class="btn btn-sm btn-primary">مشاهده جزئیات سفارش</a>
                             </div>
                         }
@@ -193,7 +193,7 @@
                             <div class="alert alert-success">
                                 <h6><i class="fas fa-exchange-alt"></i> تراکنش مرتبط</h6>
                                 <p class="mb-1"><strong>شماره تراکنش:</strong> #@Model.Transaction.Id</p>
-                                <p class="mb-1"><strong>مبلغ:</strong> @Model.Transaction.Amount.ToString("N0") @Model.Transaction.Currency</p>
+                                <p class="mb-1"><strong>مبلغ:</strong> @Model.Transaction.Amount.ToString("N0") @((Model.Transaction?.FromCurrency?.PersianName ?? Model.Transaction?.FromCurrency?.Code) ?? "")</p>
                                 <p class="mb-1"><strong>وضعیت:</strong> @Model.Transaction.Status</p>
                                 <a asp-controller="Transactions" asp-action="Details" asp-route-id="@Model.Transaction.Id" class="btn btn-sm btn-success">مشاهده جزئیات تراکنش</a>
                             </div>

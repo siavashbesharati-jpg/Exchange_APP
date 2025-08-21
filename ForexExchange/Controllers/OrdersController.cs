@@ -1,44 +1,32 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using ForexExchange.Models;
+using System.Text.Json;
 using ForexExchange.Services;
+using ForexExchange.Models;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize] // All actions require authentication
+    [Authorize(Roles = "Admin,Manager,Staff")]
     public class OrdersController : Controller
     {
         private readonly ForexDbContext _context;
         private readonly ILogger<OrdersController> _logger;
-        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICurrencyPoolService _poolService;
 
-        public OrdersController(ForexDbContext context, ILogger<OrdersController> logger, UserManager<ApplicationUser> userManager, ICurrencyPoolService poolService)
+        public OrdersController(ForexDbContext context, ILogger<OrdersController> logger, ICurrencyPoolService poolService)
         {
             _context = context;
             _logger = logger;
-            _userManager = userManager;
             _poolService = poolService;
         }
 
-        // Helper method to check if user is admin or staff
-        private async Task<bool> IsAdminOrStaffAsync()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            return user != null && (user.Role == UserRole.Admin || user.Role == UserRole.Operator || user.Role == UserRole.Manager);
-        }
 
-        // Helper method to get current user's customer ID
-        private async Task<int?> GetCurrentCustomerIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            return user?.CustomerId;
-        }
+
+
 
         // GET: Orders
-        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, 
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString,
             string orderTypeFilter, string currencyFilter, string statusFilter, string customerFilter)
         {
             ViewData["CurrentSort"] = sortOrder;
@@ -62,28 +50,13 @@ namespace ForexExchange.Controllers
             ViewData["StatusFilter"] = statusFilter;
             ViewData["CustomerFilter"] = customerFilter;
 
-            var isAdminOrStaff = await IsAdminOrStaffAsync();
+
             IQueryable<Order> ordersQuery;
 
-            if (isAdminOrStaff)
-            {
-                // Admin/Staff can see all orders
-                ordersQuery = _context.Orders.Include(o => o.Customer);
-            }
-            else
-            {
-                // Customer can only see their own orders
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser?.CustomerId == null)
-                {
-                    // If customer doesn't have associated customer record, show empty list
-                    return View(new List<Order>());
-                }
 
-                ordersQuery = _context.Orders
-                    .Include(o => o.Customer)
-                    .Where(o => o.CustomerId == currentUser.CustomerId);
-            }
+            ordersQuery = _context.Orders.Include(o => o.Customer);
+
+
 
             // Apply filtering only - no sorting at database level for decimal fields
             if (!String.IsNullOrEmpty(currentFilter))
@@ -106,9 +79,15 @@ namespace ForexExchange.Controllers
 
             if (!String.IsNullOrEmpty(currencyFilter))
             {
-                if (Enum.TryParse<CurrencyType>(currencyFilter, out var currency))
+                // Try to parse currency filter as currency code or ID
+                if (int.TryParse(currencyFilter, out var currencyId))
                 {
-                    ordersQuery = ordersQuery.Where(o => o.Currency == currency);
+                    ordersQuery = ordersQuery.Where(o => o.FromCurrencyId == currencyId || o.ToCurrencyId == currencyId);
+                }
+                else
+                {
+                    // Filter by currency code
+                    ordersQuery = ordersQuery.Where(o => o.FromCurrency.Code == currencyFilter || o.ToCurrency.Code == currencyFilter);
                 }
             }
 
@@ -123,7 +102,7 @@ namespace ForexExchange.Controllers
             // Apply database-level sorting only for non-decimal fields
             // Load data first, then apply all sorting client-side
             List<Order> orders;
-            
+
             // For non-decimal fields, we can sort at database level for better performance
             if (sortOrder?.Contains("Amount") == true || sortOrder?.Contains("Rate") == true)
             {
@@ -151,10 +130,10 @@ namespace ForexExchange.Controllers
                         ordersQuery = ordersQuery.OrderByDescending(o => o.OrderType);
                         break;
                     case "Currency":
-                        ordersQuery = ordersQuery.OrderBy(o => o.Currency);
+                        ordersQuery = ordersQuery.OrderBy(o => o.FromCurrency.Code).ThenBy(o => o.ToCurrency.Code);
                         break;
                     case "currency_desc":
-                        ordersQuery = ordersQuery.OrderByDescending(o => o.Currency);
+                        ordersQuery = ordersQuery.OrderByDescending(o => o.FromCurrency.Code).ThenByDescending(o => o.ToCurrency.Code);
                         break;
                     case "Status":
                         ordersQuery = ordersQuery.OrderBy(o => o.Status);
@@ -213,7 +192,7 @@ namespace ForexExchange.Controllers
             {
                 // Load the related customers and orders for transactions separately
                 var transactionIds = order.Transactions.Select(t => t.Id).ToList();
-                
+
                 await _context.Transactions
                     .Where(t => transactionIds.Contains(t.Id))
                     .Include(t => t.BuyerCustomer)
@@ -235,8 +214,12 @@ namespace ForexExchange.Controllers
             {
                 var availableOrders = await _context.Orders
                     .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
                     .Where(o => (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled) &&
-                               o.Currency == order.Currency &&
+                               // Find complementary currency pairs
+                               ((o.FromCurrencyId == order.ToCurrencyId && o.ToCurrencyId == order.FromCurrencyId) ||
+                                (o.FromCurrencyId == order.FromCurrencyId && o.ToCurrencyId == order.ToCurrencyId)) &&
                                o.OrderType != order.OrderType &&
                                o.Id != order.Id &&
                                o.Amount > o.FilledAmount) // Only orders with remaining amount
@@ -263,32 +246,26 @@ namespace ForexExchange.Controllers
         // GET: Orders/Create
         public async Task<IActionResult> Create()
         {
-            // Get active exchange rates
+            // Get active exchange rates with currency navigation properties
             var exchangeRates = await _context.ExchangeRates
+                .Include(r => r.FromCurrency)
+                .Include(r => r.ToCurrency)
                 .Where(r => r.IsActive)
                 .ToListAsync();
 
             ViewBag.ExchangeRates = exchangeRates;
 
-            var isAdminOrStaff = await IsAdminOrStaffAsync();
+            // Get active currencies for dropdowns
+            var currencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
 
-            if (isAdminOrStaff)
-            {
-                // Admin/Staff can see all customers
-                ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
-                ViewBag.IsAdminOrStaff = true;
-            }
-            else
-            {
-                // Customer can only create orders for themselves
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser?.CustomerId != null)
-                {
-                    var customer = await _context.Customers.FindAsync(currentUser.CustomerId);
-                    ViewBag.CurrentCustomer = customer;
-                }
-                ViewBag.IsAdminOrStaff = false;
-            }
+            ViewBag.FromCurrencies = currencies;
+            ViewBag.ToCurrencies = currencies;
+
+            // Admin/Staff can see all customers
+            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
 
             return View();
         }
@@ -298,7 +275,6 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Order order)
         {
-            var isAdminOrStaff = await IsAdminOrStaffAsync();
 
             // Remove Customer navigation property from validation as we only need CustomerId
             ModelState.Remove("Customer");
@@ -318,54 +294,134 @@ namespace ForexExchange.Controllers
                 }
             }
 
-            // Handle customer assignment based on user role
-            if (!isAdminOrStaff)
+
+
+            // Admin/Staff must select a customer
+            if (order.CustomerId == 0)
             {
-                // For customers, force the order to be for themselves
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser?.CustomerId == null)
-                {
-                    ModelState.AddModelError("", "خطا در شناسایی مشتری. لطفاً مجدداً وارد شوید.");
-                    await LoadCreateViewData();
-                    return View(order);
-                }
-                order.CustomerId = currentUser.CustomerId.Value;
-            }
-            else
-            {
-                // Admin/Staff must select a customer
-                if (order.CustomerId == 0)
-                {
-                    ModelState.AddModelError("CustomerId", "انتخاب مشتری الزامی است.");
-                    await LoadCreateViewData();
-                    return View(order);
-                }
+                ModelState.AddModelError("CustomerId", "انتخاب مشتری الزامی است.");
+                await LoadCreateViewData();
+                return View(order);
             }
 
+
             // Debug: Log received order data
-            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, OrderType: {order.OrderType}, Currency: {order.Currency}, Amount: {order.Amount}");
+            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, OrderType: {order.OrderType}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, Amount: {order.Amount}");
+
+            // Validate currency pair
+            if (order.FromCurrencyId == order.ToCurrencyId)
+            {
+                ModelState.AddModelError("ToCurrencyId", "ارز مبدأ و مقصد نمی‌توانند یکسان باشند.");
+            }
 
             if (ModelState.IsValid)
             {
-                // Get the current exchange rate
-                var exchangeRate = await _context.ExchangeRates
-                    .FirstOrDefaultAsync(r => r.Currency == order.Currency && r.IsActive);
+                // Try to find direct exchange rate
+                var directRate = await _context.ExchangeRates
+                    .FirstOrDefaultAsync(r => r.FromCurrencyId == order.FromCurrencyId &&
+                                             r.ToCurrencyId == order.ToCurrencyId &&
+                                             r.IsActive);
 
-                if (exchangeRate == null)
+                decimal exchangeRate = 0;
+                string rateSource = "";
+
+                if (directRate != null)
                 {
-                    ModelState.AddModelError("Currency", "نرخ ارز مورد نظر موجود نیست.");
+                    exchangeRate = order.OrderType == OrderType.Buy ? directRate.SellRate : directRate.BuyRate;
+                    rateSource = "Direct";
+                }
+                else
+                {
+                    // Try reverse rate
+                    var reverseRate = await _context.ExchangeRates
+                        .FirstOrDefaultAsync(r => r.FromCurrencyId == order.ToCurrencyId &&
+                                                 r.ToCurrencyId == order.FromCurrencyId &&
+                                                 r.IsActive);
+
+                    if (reverseRate != null)
+                    {
+                        exchangeRate = order.OrderType == OrderType.Buy ?
+                            (1.0m / reverseRate.BuyRate) : (1.0m / reverseRate.SellRate);
+                        rateSource = "Reverse";
+                    }
+                    else
+                    {
+                        // Try cross-rate via IRR (base currency)
+                        var irrCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+
+                        if (irrCurrency != null)
+                        {
+                            var fromRate = await _context.ExchangeRates
+                                .FirstOrDefaultAsync(r => r.FromCurrencyId == irrCurrency.Id &&
+                                                         r.ToCurrencyId == order.FromCurrencyId && r.IsActive);
+                            var toRate = await _context.ExchangeRates
+                                .FirstOrDefaultAsync(r => r.FromCurrencyId == irrCurrency.Id &&
+                                                         r.ToCurrencyId == order.ToCurrencyId && r.IsActive);
+
+                            if (fromRate != null && toRate != null)
+                            {
+                                var fromToIrrRate = order.OrderType == OrderType.Buy ? fromRate.SellRate : fromRate.BuyRate;
+                                var irrToTargetRate = order.OrderType == OrderType.Buy ? toRate.BuyRate : toRate.SellRate;
+                                exchangeRate = irrToTargetRate / fromToIrrRate;
+                                rateSource = "Cross-rate";
+                            }
+                        }
+                    }
+                }
+
+                if (exchangeRate <= 0)
+                {
+                    ModelState.AddModelError("", "نرخ ارز برای این جفت ارز موجود نیست.");
                     await LoadCreateViewData();
                     return View(order);
                 }
 
-                // Calculate rate and total based on order type
-                order.Rate = order.OrderType == OrderType.Buy ? exchangeRate.SellRate : exchangeRate.BuyRate;
-                order.TotalInToman = order.Amount * order.Rate;
+                // Calculate total and set order properties
+                order.Rate = exchangeRate;
+                var totalValue = order.Amount * order.Rate;
+
+                // Calculate TotalInToman for reporting (approximate if not IRR-based)
+                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                if (baseCurrency != null)
+                {
+                    if (order.FromCurrencyId == baseCurrency.Id)
+                    {
+                        order.TotalInToman = order.Amount;
+                    }
+                    else if (order.ToCurrencyId == baseCurrency.Id)
+                    {
+                        order.TotalInToman = totalValue;
+                    }
+                    else
+                    {
+                        // Approximate IRR value using USD rate as base
+                        var usdCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "USD" && c.IsActive);
+                        if (usdCurrency != null)
+                        {
+                            var usdRate = await _context.ExchangeRates
+                                .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id &&
+                                                         r.ToCurrencyId == usdCurrency.Id && r.IsActive);
+                            order.TotalInToman = totalValue * (usdRate?.BuyRate ?? 65000);
+                        }
+                        else
+                        {
+                            order.TotalInToman = totalValue * 65000; // Default fallback
+                        }
+                    }
+                }
+                else
+                {
+                    order.TotalInToman = totalValue * 65000; // Default fallback
+                }
+
                 order.CreatedAt = DateTime.Now;
                 order.Status = OrderStatus.Open;
+                order.FilledAmount = 0;
 
                 _context.Add(order);
                 await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {exchangeRate} ({rateSource}), Total: {totalValue}");
 
                 TempData["SuccessMessage"] = "سفارش با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Details), new { id = order.Id });
@@ -485,8 +541,12 @@ namespace ForexExchange.Controllers
             // Find matching orders - only those with remaining amount to fill
             var matchingOrders = await _context.Orders
                 .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
                 .Where(o => (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled) &&
-                           o.Currency == order.Currency &&
+                           // Find complementary currency pairs
+                           ((o.FromCurrencyId == order.ToCurrencyId && o.ToCurrencyId == order.FromCurrencyId) ||
+                            (o.FromCurrencyId == order.FromCurrencyId && o.ToCurrencyId == order.ToCurrencyId)) &&
                            o.OrderType != order.OrderType &&
                            o.Id != order.Id &&
                            o.Amount > o.FilledAmount) // Ensure order has remaining amount
@@ -521,10 +581,10 @@ namespace ForexExchange.Controllers
             foreach (var matchingOrder in matchingOrders)
             {
                 if (remainingAmount <= 0) break; // Order fully filled
-                
+
                 var availableAmount = matchingOrder.Amount - matchingOrder.FilledAmount;
                 if (availableAmount <= 0) continue; // Skip fully filled orders
-                
+
                 var matchAmount = Math.Min(remainingAmount, availableAmount);
 
                 // Determine transaction rate - use the better rate for both parties
@@ -549,10 +609,13 @@ namespace ForexExchange.Controllers
                     SellOrderId = order.OrderType == OrderType.Sell ? order.Id : matchingOrder.Id,
                     BuyerCustomerId = order.OrderType == OrderType.Buy ? order.CustomerId : matchingOrder.CustomerId,
                     SellerCustomerId = order.OrderType == OrderType.Sell ? order.CustomerId : matchingOrder.CustomerId,
-                    Currency = order.Currency,
+                    FromCurrency = order.FromCurrency,
+                    ToCurrency = order.ToCurrency,
                     Amount = matchAmount,
                     Rate = transactionRate,
-                    TotalInToman = matchAmount * transactionRate,
+                    TotalAmount = matchAmount * transactionRate,
+                    TotalInToman = order.ToCurrency.IsBaseCurrency ? (matchAmount * transactionRate) :
+                                 (order.FromCurrency.IsBaseCurrency ? matchAmount : (matchAmount * transactionRate * 65000)), // Approximate conversion
                     Status = TransactionStatus.Pending,
                     CreatedAt = DateTime.Now
                 };
@@ -578,9 +641,9 @@ namespace ForexExchange.Controllers
 
                 remainingAmount -= matchAmount;
                 matchCount++;
-                
+
                 await _context.SaveChangesAsync();
-                
+
                 // Update currency pool after transaction creation
                 try
                 {
@@ -592,7 +655,7 @@ namespace ForexExchange.Controllers
                     _logger.LogError(poolEx, $"Failed to update currency pool for transaction {transaction.Id}");
                     // Don't fail the matching process for pool update errors
                 }
-                
+
                 createdTransactions.Add(transaction.Id);
             }
 
@@ -622,30 +685,26 @@ namespace ForexExchange.Controllers
         private async Task LoadCreateViewData()
         {
             var exchangeRates = await _context.ExchangeRates
+                .Include(r => r.FromCurrency)
+                .Include(r => r.ToCurrency)
                 .Where(r => r.IsActive)
                 .ToListAsync();
 
             ViewBag.ExchangeRates = exchangeRates;
 
-            var isAdminOrStaff = await IsAdminOrStaffAsync();
+            // Load active currencies for dropdown selections
+            var currencies = await _context.Currencies.Where(c => c.IsActive).ToListAsync();
+            ViewBag.Currencies = currencies;
+            ViewBag.FromCurrencies = currencies;
+            ViewBag.ToCurrencies = currencies;
 
-            if (isAdminOrStaff)
-            {
-                // Admin/Staff can see all customers
-                ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
-                ViewBag.IsAdminOrStaff = true;
-            }
-            else
-            {
-                // Customer can only create orders for themselves
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser?.CustomerId != null)
-                {
-                    var customer = await _context.Customers.FindAsync(currentUser.CustomerId);
-                    ViewBag.CurrentCustomer = customer;
-                }
-                ViewBag.IsAdminOrStaff = false;
-            }
+
+
+            // Admin/Staff can see all customers
+            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            ViewBag.IsAdminOrStaff = true;
+
+
         }
     }
 }

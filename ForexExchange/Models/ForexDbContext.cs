@@ -22,6 +22,7 @@ namespace ForexExchange.Models
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<SystemSettings> SystemSettings { get; set; }
         public DbSet<CurrencyPool> CurrencyPools { get; set; }
+        public DbSet<Currency> Currencies { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -97,7 +98,7 @@ namespace ForexExchange.Models
             modelBuilder.Entity<ExchangeRate>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => new { e.Currency, e.IsActive });
+                entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId, e.IsActive });
             });
             
             // Notification configurations
@@ -139,14 +140,37 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => e.RiskLevel);
             });
             
+            // Currency configurations
+            modelBuilder.Entity<Currency>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Code).IsUnique();
+                entity.Property(e => e.Code).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.PersianName).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Symbol).HasMaxLength(5);
+                entity.HasIndex(e => new { e.IsActive, e.DisplayOrder });
+            });
+            
             // ExchangeRate configurations - Updated for cross-currency support
             modelBuilder.Entity<ExchangeRate>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => new { e.FromCurrency, e.ToCurrency, e.IsActive }).IsUnique();
+                entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId, e.IsActive }).IsUnique();
                 entity.Property(e => e.BuyRate).HasColumnType("decimal(18,4)");
                 entity.Property(e => e.SellRate).HasColumnType("decimal(18,4)");
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
+                
+                // Configure foreign key relationships
+                entity.HasOne(e => e.FromCurrency)
+                      .WithMany()
+                      .HasForeignKey(e => e.FromCurrencyId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                      
+                entity.HasOne(e => e.ToCurrency)
+                      .WithMany()
+                      .HasForeignKey(e => e.ToCurrencyId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
             
             // Order configurations - Updated for cross-currency support
@@ -180,37 +204,37 @@ namespace ForexExchange.Models
             // Seed initial exchange rates
             var seedDate = new DateTime(2025, 8, 18, 12, 0, 0, DateTimeKind.Utc);
             
-            // Seed initial currency pools - now including all currencies including Toman
+            // Seed initial currency pools - now using Currency IDs instead of CurrencyType enum
             modelBuilder.Entity<CurrencyPool>().HasData(
-                new CurrencyPool { Id = 1, Currency = CurrencyType.Toman, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Iranian Toman pool - initial setup" },
-                new CurrencyPool { Id = 2, Currency = CurrencyType.USD, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "US Dollar pool - initial setup" },
-                new CurrencyPool { Id = 3, Currency = CurrencyType.EUR, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Euro pool - initial setup" },
-                new CurrencyPool { Id = 4, Currency = CurrencyType.AED, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "UAE Dirham pool - initial setup" },
-                new CurrencyPool { Id = 5, Currency = CurrencyType.OMR, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Omani Rial pool - initial setup" },
-                new CurrencyPool { Id = 6, Currency = CurrencyType.TRY, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Turkish Lira pool - initial setup" }
+                new CurrencyPool { Id = 1, CurrencyId = 1, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Iranian Rial pool - initial setup" },
+                new CurrencyPool { Id = 2, CurrencyId = 2, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "US Dollar pool - initial setup" },
+                new CurrencyPool { Id = 3, CurrencyId = 3, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Euro pool - initial setup" },
+                new CurrencyPool { Id = 4, CurrencyId = 4, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "UAE Dirham pool - initial setup" },
+                new CurrencyPool { Id = 5, CurrencyId = 5, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Omani Rial pool - initial setup" },
+                new CurrencyPool { Id = 6, CurrencyId = 6, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Turkish Lira pool - initial setup" }
             );
 
-            // Seed initial exchange rates - now with cross-currency pairs
+            // Seed initial exchange rates - now with Currency IDs and cross-currency pairs
             modelBuilder.Entity<ExchangeRate>().HasData(
-                // Toman to other currencies (legacy rates)
-                new ExchangeRate { Id = 1, FromCurrency = CurrencyType.Toman, ToCurrency = CurrencyType.USD, BuyRate = 68000, SellRate = 69000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 2, FromCurrency = CurrencyType.Toman, ToCurrency = CurrencyType.EUR, BuyRate = 72000, SellRate = 73000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 3, FromCurrency = CurrencyType.Toman, ToCurrency = CurrencyType.AED, BuyRate = 18500, SellRate = 19000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 4, FromCurrency = CurrencyType.Toman, ToCurrency = CurrencyType.OMR, BuyRate = 177000, SellRate = 179000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 5, FromCurrency = CurrencyType.Toman, ToCurrency = CurrencyType.TRY, BuyRate = 1950, SellRate = 2050, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                // IRR to other currencies (base currency rates)
+                new ExchangeRate { Id = 1, FromCurrencyId = 1, ToCurrencyId = 2, BuyRate = 68000, SellRate = 69000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 2, FromCurrencyId = 1, ToCurrencyId = 3, BuyRate = 72000, SellRate = 73000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 3, FromCurrencyId = 1, ToCurrencyId = 4, BuyRate = 18500, SellRate = 19000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 4, FromCurrencyId = 1, ToCurrencyId = 5, BuyRate = 177000, SellRate = 179000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 5, FromCurrencyId = 1, ToCurrencyId = 6, BuyRate = 1950, SellRate = 2050, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 
-                // Reverse rates (other currencies to Toman)
-                new ExchangeRate { Id = 6, FromCurrency = CurrencyType.USD, ToCurrency = CurrencyType.Toman, BuyRate = 1.0m/69000, SellRate = 1.0m/68000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 7, FromCurrency = CurrencyType.EUR, ToCurrency = CurrencyType.Toman, BuyRate = 1.0m/73000, SellRate = 1.0m/72000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 8, FromCurrency = CurrencyType.AED, ToCurrency = CurrencyType.Toman, BuyRate = 1.0m/19000, SellRate = 1.0m/18500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 9, FromCurrency = CurrencyType.OMR, ToCurrency = CurrencyType.Toman, BuyRate = 1.0m/179000, SellRate = 1.0m/177000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 10, FromCurrency = CurrencyType.TRY, ToCurrency = CurrencyType.Toman, BuyRate = 1.0m/2050, SellRate = 1.0m/1950, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                // Reverse rates (other currencies to IRR)
+                new ExchangeRate { Id = 6, FromCurrencyId = 2, ToCurrencyId = 1, BuyRate = 1.0m/69000, SellRate = 1.0m/68000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 7, FromCurrencyId = 3, ToCurrencyId = 1, BuyRate = 1.0m/73000, SellRate = 1.0m/72000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 8, FromCurrencyId = 4, ToCurrencyId = 1, BuyRate = 1.0m/19000, SellRate = 1.0m/18500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 9, FromCurrencyId = 5, ToCurrencyId = 1, BuyRate = 1.0m/179000, SellRate = 1.0m/177000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 10, FromCurrencyId = 6, ToCurrencyId = 1, BuyRate = 1.0m/2050, SellRate = 1.0m/1950, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 
                 // Sample cross-currency rates (USD to other currencies)
-                new ExchangeRate { Id = 11, FromCurrency = CurrencyType.USD, ToCurrency = CurrencyType.EUR, BuyRate = 0.92m, SellRate = 0.94m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 12, FromCurrency = CurrencyType.USD, ToCurrency = CurrencyType.AED, BuyRate = 3.67m, SellRate = 3.69m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 13, FromCurrency = CurrencyType.USD, ToCurrency = CurrencyType.OMR, BuyRate = 0.384m, SellRate = 0.386m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 14, FromCurrency = CurrencyType.USD, ToCurrency = CurrencyType.TRY, BuyRate = 34.5m, SellRate = 35.2m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
+                new ExchangeRate { Id = 11, FromCurrencyId = 2, ToCurrencyId = 3, BuyRate = 0.92m, SellRate = 0.94m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 12, FromCurrencyId = 2, ToCurrencyId = 4, BuyRate = 3.67m, SellRate = 3.69m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 13, FromCurrencyId = 2, ToCurrencyId = 5, BuyRate = 0.384m, SellRate = 0.386m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 14, FromCurrencyId = 2, ToCurrencyId = 6, BuyRate = 34.5m, SellRate = 35.2m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
             );
 
             // Seed initial system settings
@@ -225,6 +249,16 @@ namespace ForexExchange.Models
                 new SystemSettings { Id = 8, SettingKey = SettingKeys.RateUpdateInterval, SettingValue = "60", Description = "بازه بروزرسانی نرخ ارز به دقیقه", DataType = "int", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new SystemSettings { Id = 9, SettingKey = SettingKeys.NotificationEnabled, SettingValue = "true", Description = "فعال‌سازی سیستم اعلان‌ها", DataType = "bool", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new SystemSettings { Id = 10, SettingKey = SettingKeys.BackupEnabled, SettingValue = "true", Description = "فعال‌سازی پشتیبان‌گیری خودکار", DataType = "bool", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" }
+            );
+
+            // Seed currencies
+            modelBuilder.Entity<Currency>().HasData(
+                new Currency { Id = 1, Code = "IRR", Name = "Iranian Rial", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = seedDate },
+                new Currency { Id = 2, Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = seedDate },
+                new Currency { Id = 3, Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = seedDate },
+                new Currency { Id = 4, Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = seedDate },
+                new Currency { Id = 5, Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = seedDate },
+                new Currency { Id = 6, Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = seedDate }
             );
         }
     }

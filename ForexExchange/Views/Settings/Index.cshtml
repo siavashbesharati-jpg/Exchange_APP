@@ -102,15 +102,17 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label asp-for="DefaultCurrency" class="form-label">ارز پیش‌فرض</label>
-                        <select asp-for="DefaultCurrency" class="form-select">
-                            <option value="USD">دلار آمریکا (USD)</option>
-                            <option value="EUR">یورو (EUR)</option>
-                            <option value="AED">درهم امارات (AED)</option>
-                            <option value="OMR">ریال عمان (OMR)</option>
-                            <option value="TRY">لیر ترکیه (TRY)</option>
+                        <label asp-for="DefaultCurrencyCode" class="form-label">ارز پیش‌فرض</label>
+                        <select asp-for="DefaultCurrencyCode" class="form-select">
+                            @if (ViewBag.Currencies != null)
+                            {
+                                @foreach (var currency in ViewBag.Currencies)
+                                {
+                                    <option value="@currency.Symbol">@currency.PersianName (@currency.Symbol)</option>
+                                }
+                            }
                         </select>
-                        <span asp-validation-for="DefaultCurrency" class="text-danger small"></span>
+                        <span asp-validation-for="DefaultCurrencyCode" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
@@ -190,7 +192,7 @@
             });
 
             // Currency selection change handler
-            $('#DefaultCurrency').on('change', function() {
+            $('#DefaultCurrencyCode').on('change', function() {
                 var currency = $(this).val();
                 showToast('ارز پیش‌فرض به ' + currency + ' تغییر یافت', 'info');
             });

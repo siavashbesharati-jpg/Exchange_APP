@@ -32,8 +32,8 @@ namespace ForexExchange.Services
             try
             {
                 // Validate orders can be matched
-                if (buyOrder.Currency != sellOrder.Currency)
-                    throw new InvalidOperationException("نوع ارز سفارشات باید یکسان باشد");
+                if (buyOrder.FromCurrencyId != sellOrder.FromCurrencyId || buyOrder.ToCurrencyId != sellOrder.ToCurrencyId)
+                    throw new InvalidOperationException("جفت ارز سفارشات باید یکسان باشد");
                 
                 if (buyOrder.Rate < sellOrder.Rate)
                     throw new InvalidOperationException("نرخ خرید باید بیشتر یا مساوی نرخ فروش باشد");
@@ -49,7 +49,8 @@ namespace ForexExchange.Services
                     SellOrderId = sellOrder.Id,
                     BuyerCustomerId = buyOrder.CustomerId,
                     SellerCustomerId = sellOrder.CustomerId,
-                    Currency = buyOrder.Currency,
+                    FromCurrencyId = buyOrder.FromCurrencyId,
+                    ToCurrencyId = buyOrder.ToCurrencyId,
                     Amount = matchedAmount,
                     Rate = rate,
                     TotalInToman = totalInToman,

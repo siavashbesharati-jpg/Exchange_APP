@@ -142,7 +142,7 @@
                                             <small>
                                                 <strong>#@order.Id</strong> - 
                                                 @(order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")
-                                                @order.Amount.ToString("N0") @order.Currency
+                                                @order.Amount.ToString("N0") @order.FromCurrency?.PersianName <small class="text-muted">(@order.CurrencyPair)</small>
                                                 <br>
                                                 <span class="text-muted">@order.CreatedAt.ToString("MM/dd HH:mm")</span>
                                             </small>
@@ -169,7 +169,7 @@
                                             <small>
                                                 <strong>#@transaction.Id</strong> - 
                                                 @(transaction.BuyerCustomerId == Model.Id ? "خرید" : "فروش")
-                                                @transaction.Amount.ToString("N0") @transaction.Currency
+                                                @transaction.Amount.ToString("N0") @transaction.FromCurrency?.PersianName <small class="text-muted">(@transaction.CurrencyPair)</small>
                                                 <br>
                                                 <span class="text-muted">@transaction.CreatedAt.ToString("MM/dd HH:mm")</span>
                                             </small>

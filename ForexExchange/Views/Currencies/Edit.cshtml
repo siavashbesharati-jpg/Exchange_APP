@@ -1,0 +1,79 @@
+@model ForexExchange.Models.Currency
+@{
+    ViewData["Title"] = "ویرایش ارز";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">ویرایش ارز #@Model.Id</h4>
+                    <a asp-action="Index" class="btn btn-secondary">بازگشت</a>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Code" class="form-label">کد</label>
+                                <input asp-for="Code" class="form-control" maxlength="3" />
+                                <span asp-validation-for="Code" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Name" class="form-label">نام</label>
+                                <input asp-for="Name" class="form-control" />
+                                <span asp-validation-for="Name" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="PersianName" class="form-label">نام فارسی</label>
+                                <input asp-for="PersianName" class="form-control" />
+                                <span asp-validation-for="PersianName" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Symbol" class="form-label">نماد</label>
+                                <input asp-for="Symbol" class="form-control" />
+                                <span asp-validation-for="Symbol" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="DisplayOrder" class="form-label">ترتیب نمایش</label>
+                                <input asp-for="DisplayOrder" class="form-control" type="number" />
+                                <span asp-validation-for="DisplayOrder" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label d-block">وضعیت</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" asp-for="IsActive" />
+                                    <label class="form-check-label" asp-for="IsActive">فعال</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="IsBaseCurrency" />
+                                    <label class="form-check-label" asp-for="IsBaseCurrency">ارز پایه</label>
+                                    <div class="form-text">فقط یک ارز پایه در سیستم مجاز است.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">انصراف</a>
+                            <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

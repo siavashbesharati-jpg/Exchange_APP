@@ -64,16 +64,60 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>ارز:</strong></td>
+                                    <td><strong>جفت ارز:</strong></td>
                                     <td>
-                                        @(Model.Currency switch {
-                                            ForexExchange.Models.CurrencyType.USD => "دلار آمریکا (USD)",
-                                            ForexExchange.Models.CurrencyType.EUR => "یورو (EUR)",
-                                            ForexExchange.Models.CurrencyType.AED => "درهم امارات (AED)",
-                                            ForexExchange.Models.CurrencyType.OMR => "ریال عمان (OMR)",
-                                            ForexExchange.Models.CurrencyType.TRY => "لیر ترکیه (TRY)",
-                                            _ => Model.Currency.ToString()
-                                        })
+                                        <div class="d-flex align-items-center">
+                                            @{
+                                                string GetCurrencyDisplayName(ForexExchange.Models.Currency? currency)
+                                                {
+                                                    if (currency == null) return "نامشخص";
+                                                    return $"{currency.PersianName} ({currency.Symbol})";
+                                                }
+
+                                                string GetCurrencyBadgeClass(ForexExchange.Models.Currency? currency)
+                                                {
+                                                    if (currency == null) return "bg-light";
+                                                    return currency.Symbol switch
+                                                    {
+                                                        "IRR" or "TMN" => "bg-secondary",
+                                                        "USD" => "bg-primary",
+                                                        "EUR" => "bg-success",
+                                                        "AED" => "bg-info",
+                                                        "OMR" => "bg-warning",
+                                                        "TRY" => "bg-danger",
+                                                        _ => "bg-light"
+                                                    };
+                                                }
+                                            }
+                                            
+                                            <span class="badge @GetCurrencyBadgeClass(Model.FromCurrency) me-2">
+                                                @GetCurrencyDisplayName(Model.FromCurrency)
+                                            </span>
+                                            
+                                            <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                                            
+                                            <span class="badge @GetCurrencyBadgeClass(Model.ToCurrency)">
+                                                @GetCurrencyDisplayName(Model.ToCurrency)
+                                            </span>
+                                        </div>
+                                        
+                                        @if (Model.IsCrossCurrency)
+                                        {
+                                            <small class="text-muted d-block mt-2">
+                                                <i class="fas fa-exchange-alt"></i> تبادل ارز متقابل (غیر تومان)
+                                            </small>
+                                        }
+                                        
+                                        <small class="text-muted d-block mt-1">
+                                            @if (Model.OrderType == ForexExchange.Models.OrderType.Buy)
+                                            {
+                                                <span>خرید @GetCurrencyDisplayName(Model.ToCurrency) با @GetCurrencyDisplayName(Model.FromCurrency)</span>
+                                            }
+                                            else
+                                            {
+                                                <span>فروش @GetCurrencyDisplayName(Model.FromCurrency) به @GetCurrencyDisplayName(Model.ToCurrency)</span>
+                                            }
+                                        </small>
                                     </td>
                                 </tr>
                             </table>
@@ -82,20 +126,34 @@
                             <h6 class="text-muted">اطلاعات مالی</h6>
                             <table class="table table-borderless">
                                 <tr>
-                                    <td><strong>مقدار کل:</strong></td>
-                                    <td>@Model.Amount.ToString("N2")</td>
+                                    <td><strong>مقدار کل (ارز مبدأ):</strong></td>
+                                    <td>
+                                        @Model.Amount.ToString("N2")
+                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>مقدار تکمیل شده:</strong></td>
-                                    <td>@Model.FilledAmount.ToString("N2")</td>
+                                    <td>
+                                        @Model.FilledAmount.ToString("N2")
+                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>مقدار باقیمانده:</strong></td>
-                                    <td>@((Model.Amount - Model.FilledAmount).ToString("N2"))</td>
+                                    <td>
+                                        @((Model.Amount - Model.FilledAmount).ToString("N2"))
+                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                    </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>نرخ:</strong></td>
-                                    <td>@Model.Rate.ToString("N0") تومان</td>
+                                    <td><strong>نرخ تبدیل:</strong></td>
+                                    <td>
+                                        @Model.Rate.ToString("N4")
+                                        @((Model.ToCurrency?.PersianName ?? Model.ToCurrency?.Code) ?? "")
+                                        به ازای هر
+                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>مجموع (تومان):</strong></td>

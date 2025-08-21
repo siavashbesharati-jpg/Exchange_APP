@@ -28,7 +28,7 @@ namespace ForexExchange.Controllers
         }
 
         // GET: Reports/Financial
-        public async Task<IActionResult> Financial(DateTime? fromDate, DateTime? toDate, int? customerId, CurrencyType? currency)
+        public async Task<IActionResult> Financial(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId)
         {
             // Default to last 30 days if no dates provided
             fromDate ??= DateTime.Now.AddDays(-30).Date;
@@ -43,6 +43,8 @@ namespace ForexExchange.Controllers
                 .Include(t => t.SellerCustomer)
                 .Include(t => t.BuyOrder)
                 .Include(t => t.SellOrder)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime);
 
             if (customerId.HasValue)
@@ -50,9 +52,9 @@ namespace ForexExchange.Controllers
                 query = query.Where(t => t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId);
             }
 
-            if (currency.HasValue)
+            if (currencyId.HasValue)
             {
-                query = query.Where(t => t.Currency == currency);
+                query = query.Where(t => t.FromCurrencyId == currencyId || t.ToCurrencyId == currencyId);
             }
 
             var transactions = await query
@@ -78,10 +80,12 @@ namespace ForexExchange.Controllers
             // Currency breakdown
             report.CurrencyBreakdown = transactions
                 .Where(t => t.Status == TransactionStatus.Completed)
-                .GroupBy(t => t.Currency)
+                .GroupBy(t => t.FromCurrencyId)
                 .Select(g => new CurrencyVolumeReport
                 {
-                    Currency = g.Key,
+                    CurrencyId = g.Key,
+                    CurrencyCode = g.First().FromCurrency?.Code ?? "",
+                    CurrencyName = g.First().FromCurrency?.Name ?? "",
                     TotalVolume = g.Sum(t => t.Amount),
                     TransactionCount = g.Count(),
                     TotalValueInToman = g.Sum(t => t.TotalInToman),
@@ -107,9 +111,16 @@ namespace ForexExchange.Controllers
                 .Select(c => new { Id = c.Id, Name = c.FullName })
                 .ToListAsync();
 
+            // Load currencies for filter dropdown
+            ViewBag.Currencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.PersianName)
+                .Select(c => new { c.Id, c.Code, c.PersianName })
+                .ToListAsync();
+
             // Preserve filter values in ViewBag
             ViewBag.SelectedCustomerId = customerId;
-            ViewBag.SelectedCurrency = currency;
+            ViewBag.SelectedCurrencyId = currencyId;
 
             return View(report);
         }
@@ -152,16 +163,30 @@ namespace ForexExchange.Controllers
         }
 
         // GET: Reports/OrderBook
-        public async Task<IActionResult> OrderBook(CurrencyType? currency)
+        public async Task<IActionResult> OrderBook(int? currencyId, string? currency)
         {
             var query = _context.Orders
                 .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
                 .Where(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled);
 
-            if (currency.HasValue)
+            if (currencyId.HasValue)
             {
-                query = query.Where(o => o.Currency == currency);
+                query = query.Where(o => o.FromCurrencyId == currencyId || o.ToCurrencyId == currencyId);
             }
+            else if (!string.IsNullOrEmpty(currency))
+            {
+                query = query.Where(o => o.FromCurrency.Symbol == currency || o.ToCurrency.Symbol == currency);
+            }
+
+            // Load currencies for filter dropdown
+            ViewBag.Currencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.PersianName)
+                .ToListAsync();
+            
+            ViewBag.SelectedCurrency = currency;
 
             // Load data first, then sort client-side for decimal fields
             var orders = await query
@@ -175,10 +200,13 @@ namespace ForexExchange.Controllers
                 .ToList();
 
             var orderBook = orders
-                .GroupBy(o => new { o.Currency, o.OrderType })
+                .GroupBy(o => new { o.FromCurrencyId, o.ToCurrencyId, o.OrderType })
                 .Select(g => new OrderBookReport
                 {
-                    Currency = g.Key.Currency,
+                    FromCurrencyId = g.Key.FromCurrencyId,
+                    ToCurrencyId = g.Key.ToCurrencyId,
+                    FromCurrencyCode = g.First().FromCurrency?.Code ?? "",
+                    ToCurrencyCode = g.First().ToCurrency?.Code ?? "",
                     OrderType = g.Key.OrderType,
                     // Client-side sorting for decimal Rate field
                     Orders = g.OrderBy(o => o.OrderType == OrderType.Buy ? -o.Rate : o.Rate).ToList(),
@@ -241,7 +269,7 @@ namespace ForexExchange.Controllers
 
         // API: Export financial report to CSV
         [HttpGet]
-        public async Task<IActionResult> ExportFinancial(DateTime? fromDate, DateTime? toDate, int? customerId, CurrencyType? currency)
+        public async Task<IActionResult> ExportFinancial(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId)
         {
             fromDate ??= DateTime.Now.AddDays(-30);
             toDate ??= DateTime.Now;
@@ -249,6 +277,8 @@ namespace ForexExchange.Controllers
             var query = _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .Where(t => t.CreatedAt >= fromDate && t.CreatedAt <= toDate);
 
             if (customerId.HasValue)
@@ -256,9 +286,9 @@ namespace ForexExchange.Controllers
                 query = query.Where(t => t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId);
             }
 
-            if (currency.HasValue)
+            if (currencyId.HasValue)
             {
-                query = query.Where(t => t.Currency == currency);
+                query = query.Where(t => t.FromCurrencyId == currencyId || t.ToCurrencyId == currencyId);
             }
 
             var transactions = await query
@@ -282,7 +312,7 @@ namespace ForexExchange.Controllers
                               $"{transaction.CreatedAt:yyyy/MM/dd HH:mm}," +
                               $"{transaction.BuyerCustomer.FullName}," +
                               $"{transaction.SellerCustomer.FullName}," +
-                              $"{transaction.Currency}," +
+                              $"{transaction.FromCurrency?.Code}-{transaction.ToCurrency?.Code}," +
                               $"{transaction.Amount}," +
                               $"{transaction.Rate}," +
                               $"{transaction.TotalInToman}," +
@@ -325,7 +355,9 @@ namespace ForexExchange.Controllers
 
     public class CurrencyVolumeReport
     {
-        public CurrencyType Currency { get; set; }
+        public int CurrencyId { get; set; }
+        public string CurrencyCode { get; set; } = "";
+        public string CurrencyName { get; set; } = "";
         public decimal TotalVolume { get; set; }
         public int TransactionCount { get; set; }
         public decimal TotalValueInToman { get; set; }
@@ -352,7 +384,10 @@ namespace ForexExchange.Controllers
 
     public class OrderBookReport
     {
-        public CurrencyType Currency { get; set; }
+        public int FromCurrencyId { get; set; }
+        public int ToCurrencyId { get; set; }
+        public string FromCurrencyCode { get; set; } = "";
+        public string ToCurrencyCode { get; set; } = "";
         public OrderType OrderType { get; set; }
         public List<Order> Orders { get; set; } = new();
         public decimal TotalVolume { get; set; }

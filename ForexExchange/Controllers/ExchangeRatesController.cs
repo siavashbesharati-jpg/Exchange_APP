@@ -23,16 +23,29 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Index()
         {
             var exchangeRates = await _context.ExchangeRates
+                .Include(r => r.FromCurrency)
+                .Include(r => r.ToCurrency)
                 .Where(r => r.IsActive)
-                .OrderBy(r => r.Currency)
+                .OrderBy(r => r.FromCurrency.Code)
+                .ThenBy(r => r.ToCurrency.Code)
                 .ToListAsync();
 
             return View(exchangeRates);
         }
 
         // GET: ExchangeRates/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
+            ViewBag.FromCurrencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
+                
+            ViewBag.ToCurrencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
+                
             return View();
         }
 
@@ -43,9 +56,19 @@ namespace ForexExchange.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Check if rate already exists for this currency
+                // Validate that FromCurrency and ToCurrency are different
+                if (exchangeRate.FromCurrencyId == exchangeRate.ToCurrencyId)
+                {
+                    ModelState.AddModelError("", "ارز مبدأ و مقصد نمی‌توانند یکسان باشند.");
+                    await PopulateCurrencyDropdowns();
+                    return View(exchangeRate);
+                }
+
+                // Check if rate already exists for this currency pair
                 var existingRate = await _context.ExchangeRates
-                    .FirstOrDefaultAsync(r => r.Currency == exchangeRate.Currency && r.IsActive);
+                    .FirstOrDefaultAsync(r => r.FromCurrencyId == exchangeRate.FromCurrencyId && 
+                                            r.ToCurrencyId == exchangeRate.ToCurrencyId && 
+                                            r.IsActive);
 
                 if (existingRate != null)
                 {
@@ -64,6 +87,8 @@ namespace ForexExchange.Controllers
                 TempData["SuccessMessage"] = "نرخ ارز با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Index));
             }
+            
+            await PopulateCurrencyDropdowns();
             return View(exchangeRate);
         }
 
@@ -75,11 +100,17 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
-            var exchangeRate = await _context.ExchangeRates.FindAsync(id);
+            var exchangeRate = await _context.ExchangeRates
+                .Include(r => r.FromCurrency)
+                .Include(r => r.ToCurrency)
+                .FirstOrDefaultAsync(r => r.Id == id);
+                
             if (exchangeRate == null)
             {
                 return NotFound();
             }
+            
+            await PopulateCurrencyDropdowns();
             return View(exchangeRate);
         }
 
@@ -127,11 +158,19 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                foreach (var currency in Enum.GetValues<CurrencyType>())
+                // Update rates for base currency to foreign currencies
+                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                var foreignCurrencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency).ToListAsync();
+                
+                if (baseCurrency == null)
                 {
-                    if (currency == CurrencyType.Toman) continue; // Skip Toman as it's the base currency
-
-                    var currencyKey = ((int)currency).ToString();
+                    TempData["ErrorMessage"] = "ارز پایه پیدا نشد.";
+                    return RedirectToAction(nameof(Index));
+                }
+                
+                foreach (var currency in foreignCurrencies)
+                {
+                    var currencyKey = currency.Id.ToString();
                     
                     if (buyRates.ContainsKey(currencyKey) && sellRates.ContainsKey(currencyKey))
                     {
@@ -140,9 +179,11 @@ namespace ForexExchange.Controllers
 
                         if (buyRate > 0 && sellRate > 0)
                         {
-                            // Deactivate old rate
+                            // Deactivate old rate for this currency pair
                             var existingRate = await _context.ExchangeRates
-                                .FirstOrDefaultAsync(r => r.Currency == currency && r.IsActive);
+                                .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && 
+                                                        r.ToCurrencyId == currency.Id && 
+                                                        r.IsActive);
 
                             if (existingRate != null)
                             {
@@ -150,10 +191,11 @@ namespace ForexExchange.Controllers
                                 _context.Update(existingRate);
                             }
 
-                            // Create new rate
+                            // Create new rate from base currency to foreign currency
                             var newRate = new ExchangeRate
                             {
-                                Currency = currency,
+                                FromCurrencyId = baseCurrency.Id,
+                                ToCurrencyId = currency.Id,
                                 BuyRate = buyRate,
                                 SellRate = sellRate,
                                 UpdatedAt = DateTime.Now,
@@ -183,9 +225,12 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> GetCurrentRates()
         {
             var rates = await _context.ExchangeRates
+                .Include(r => r.FromCurrency)
+                .Include(r => r.ToCurrency)
                 .Where(r => r.IsActive)
                 .Select(r => new {
-                    currency = r.Currency,
+                    fromCurrency = r.FromCurrency.Code,
+                    toCurrency = r.ToCurrency.Code,
                     buyRate = r.BuyRate,
                     sellRate = r.SellRate,
                     updatedAt = r.UpdatedAt
@@ -200,8 +245,17 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Manage()
         {
             var exchangeRates = await _context.ExchangeRates
+                .Include(r => r.FromCurrency)
+                .Include(r => r.ToCurrency)
                 .Where(r => r.IsActive)
-                .OrderBy(r => r.Currency)
+                .OrderBy(r => r.FromCurrency.Code)
+                .ThenBy(r => r.ToCurrency.Code)
+                .ToListAsync();
+
+            ViewBag.Currencies = await _context.Currencies
+                .Where(c => c.IsActive && !c.IsBaseCurrency)
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new { c.Id, c.Code, c.PersianName })
                 .ToListAsync();
 
             return View(exchangeRates);
@@ -219,9 +273,21 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Manage));
             }
 
-            foreach (var currencyType in Enum.GetValues(typeof(CurrencyType)).Cast<CurrencyType>())
+            // Get base currency (IRR)
+            var baseCurrency = await _context.Currencies
+                .FirstOrDefaultAsync(c => c.IsBaseCurrency);
+            
+            if (baseCurrency == null)
             {
-                var currencyKey = (int)currencyType;
+                TempData["ErrorMessage"] = "ارز پایه (ریال) در پایگاه داده یافت نشد";
+                return RedirectToAction(nameof(Manage));
+            }
+
+            var currencies = await _context.Currencies.Where(c => c.IsActive).ToListAsync();
+
+            foreach (var currency in currencies)
+            {
+                var currencyKey = currency.Id;
                 
                 if (buyRates.ContainsKey(currencyKey) && sellRates.ContainsKey(currencyKey))
                 {
@@ -230,12 +296,12 @@ namespace ForexExchange.Controllers
 
                     if (sellRate <= buyRate)
                     {
-                        TempData["ErrorMessage"] = $"نرخ فروش {currencyType} باید بیشتر از نرخ خرید باشد.";
+                        TempData["ErrorMessage"] = $"نرخ فروش {currency.Name} باید بیشتر از نرخ خرید باشد.";
                         return RedirectToAction(nameof(Manage));
                     }
 
                     var existingRate = await _context.ExchangeRates
-                        .FirstOrDefaultAsync(r => r.Currency == currencyType && r.IsActive);
+                        .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.IsActive);
 
                     if (existingRate != null)
                     {
@@ -249,7 +315,8 @@ namespace ForexExchange.Controllers
                     {
                         var newRate = new ExchangeRate
                         {
-                            Currency = currencyType,
+                            FromCurrencyId = currency.Id,
+                            ToCurrencyId = baseCurrency.Id,
                             BuyRate = buyRate,
                             SellRate = sellRate,
                             IsActive = true,
@@ -277,6 +344,16 @@ namespace ForexExchange.Controllers
                 _logger.LogInformation("Starting web scraping update for exchange rates");
                 var webRates = await _webScrapingService.GetExchangeRatesFromWebAsync();
                 
+                // Get base currency (IRR)
+                var baseCurrency = await _context.Currencies
+                    .FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                
+                if (baseCurrency == null)
+                {
+                    TempData["ErrorMessage"] = "ارز پایه (ریال) در پایگاه داده یافت نشد";
+                    return RedirectToAction(nameof(Manage));
+                }
+
                 if (!webRates.Any())
                 {
                     TempData["ErrorMessage"] = "هیچ نرخی از وب دریافت نشد. لطفاً اتصال اینترنت و دسترسی به سایت را بررسی کنید.";
@@ -296,8 +373,17 @@ namespace ForexExchange.Controllers
                             continue;
                         }
 
+                        var currencyEntity = await _context.Currencies
+                            .FirstOrDefaultAsync(c => c.Code == currency);
+                        
+                        if (currencyEntity == null)
+                        {
+                            errors.Add($"ارز با کد {currency} در پایگاه داده یافت نشد");
+                            continue;
+                        }
+
                         var existingRate = await _context.ExchangeRates
-                            .FirstOrDefaultAsync(r => r.Currency == currency && r.IsActive);
+                            .FirstOrDefaultAsync(r => r.FromCurrencyId == currencyEntity.Id && r.IsActive);
 
                         if (existingRate != null)
                         {
@@ -311,7 +397,8 @@ namespace ForexExchange.Controllers
                         {
                             var newRate = new ExchangeRate
                             {
-                                Currency = currency,
+                                FromCurrencyId = currencyEntity.Id,
+                                ToCurrencyId = baseCurrency.Id,
                                 BuyRate = rates.BuyRate,
                                 SellRate = rates.SellRate,
                                 IsActive = true,
@@ -359,16 +446,30 @@ namespace ForexExchange.Controllers
             return RedirectToAction(nameof(Manage));
         }
 
-        private string GetCurrencyDisplayName(CurrencyType currency)
+        private async Task PopulateCurrencyDropdowns()
         {
-            return currency switch
+            ViewBag.FromCurrencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
+                
+            ViewBag.ToCurrencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
+        }
+
+        private string GetCurrencyDisplayName(string currencyCode)
+        {
+            return currencyCode switch
             {
-                CurrencyType.USD => "دلار آمریکا",
-                CurrencyType.EUR => "یورو",
-                CurrencyType.AED => "درهم امارات",
-                CurrencyType.OMR => "ریال عمان",
-                CurrencyType.TRY => "لیر ترکیه",
-                _ => currency.ToString()
+                "USD" => "دلار آمریکا",
+                "EUR" => "یورو",
+                "AED" => "درهم امارات",
+                "OMR" => "ریال عمان",
+                "TRY" => "لیر ترکیه",
+                "IRR" => "ریال ایران",
+                _ => currencyCode
             };
         }
 

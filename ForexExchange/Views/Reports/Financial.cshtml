@@ -40,51 +40,20 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="currency" class="form-label">نوع ارز</label>
-                                <select class="form-control" id="currency" name="currency">
+                                <label for="currencyId" class="form-label">نوع ارز</label>
+                                <select class="form-control" id="currencyId" name="currencyId">
                                     <option value="">همه ارزها</option>
                                     @{
-                                        var selectedCurrency = ViewBag.SelectedCurrency?.ToString();
+                                        int? selectedCurrencyId = ViewBag.SelectedCurrencyId as int?;
+                                        var currencies = ViewBag.Currencies as IEnumerable<dynamic>;
                                     }
-                                    @if (selectedCurrency == "1")
+                                    @if (currencies != null)
                                     {
-                                        <option value="1" selected>دلار آمریکا (USD)</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="1">دلار آمریکا (USD)</option>
-                                    }
-                                    @if (selectedCurrency == "2")
-                                    {
-                                        <option value="2" selected>یورو (EUR)</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="2">یورو (EUR)</option>
-                                    }
-                                    @if (selectedCurrency == "3")
-                                    {
-                                        <option value="3" selected>درهم امارات (AED)</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="3">درهم امارات (AED)</option>
-                                    }
-                                    @if (selectedCurrency == "4")
-                                    {
-                                        <option value="4" selected>ریال عمان (OMR)</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="4">ریال عمان (OMR)</option>
-                                    }
-                                    @if (selectedCurrency == "5")
-                                    {
-                                        <option value="5" selected>لیر ترکیه (TRY)</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="5">لیر ترکیه (TRY)</option>
+                                        foreach (var c in currencies)
+                                        {
+                                            var isSelected = selectedCurrencyId.HasValue && selectedCurrencyId.Value.ToString() == c.Id.ToString();
+                                            <option value="@c.Id" selected="@(isSelected ? "selected" : null)">@c.PersianName (@c.Code)</option>
+                                        }
                                     }
                                 </select>
                             </div>
@@ -210,24 +179,9 @@
                                             {
                                                 <tr>
                                                     <td>
-                                                        @switch (currency.Currency)
-                                                        {
-                                                            case ForexExchange.Models.CurrencyType.USD:
-                                                                <span class="badge bg-primary">دلار آمریکا</span>
-                                                                break;
-                                                            case ForexExchange.Models.CurrencyType.EUR:
-                                                                <span class="badge bg-info">یورو</span>
-                                                                break;
-                                                            case ForexExchange.Models.CurrencyType.AED:
-                                                                <span class="badge bg-success">درهم امارات</span>
-                                                                break;
-                                                            case ForexExchange.Models.CurrencyType.OMR:
-                                                                <span class="badge bg-warning">ریال عمان</span>
-                                                                break;
-                                                            case ForexExchange.Models.CurrencyType.TRY:
-                                                                <span class="badge bg-danger">لیر ترکیه</span>
-                                                                break;
-                                                        }
+                                                        <span class="badge @((currency.CurrencyCode ?? "").ToUpper() switch { "USD" => "bg-primary", "EUR" => "bg-info", "AED" => "bg-success", "OMR" => "bg-warning", "TRY" => "bg-danger", _ => "bg-secondary" })">
+                                                            @(!string.IsNullOrWhiteSpace(currency.CurrencyName) ? currency.CurrencyName : currency.CurrencyCode)
+                                                        </span>
                                                     </td>
                                                     <td>@currency.TransactionCount.ToString("N0")</td>
                                                     <td>@currency.TotalVolume.ToString("N2")</td>
@@ -275,7 +229,7 @@
                                                 <td>@transaction.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
                                                 <td>@transaction.BuyerCustomer.FullName</td>
                                                 <td>@transaction.SellerCustomer.FullName</td>
-                                                <td>@transaction.Currency</td>
+                                                <td>@transaction.CurrencyPair</td>
                                                 <td>@transaction.Amount.ToString("N2")</td>
                                                 <td>@transaction.Rate.ToString("N0")</td>
                                                 <td>@transaction.TotalInToman.ToString("N0")</td>
@@ -354,7 +308,7 @@
         new Chart(currencyCtx, {
             type: 'doughnut',
             data: {
-                labels: [@Html.Raw(string.Join(",", Model.CurrencyBreakdown.Select(c => $"'{c.Currency}'")))],
+                labels: [@Html.Raw(string.Join(",", Model.CurrencyBreakdown.Select(c => $"'{c.CurrencyCode}'")))],
                 datasets: [{
                     data: [@string.Join(",", Model.CurrencyBreakdown.Select(c => c.TotalValueInToman))],
                     backgroundColor: [

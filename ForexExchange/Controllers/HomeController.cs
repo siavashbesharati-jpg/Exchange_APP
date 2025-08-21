@@ -25,8 +25,11 @@ public class HomeController : Controller
     {
         // Get current exchange rates (public information)
         var exchangeRates = await _context.ExchangeRates
+            .Include(r => r.FromCurrency)
+            .Include(r => r.ToCurrency)
             .Where(r => r.IsActive)
-            .OrderBy(r => r.Currency)
+            .OrderBy(r => r.FromCurrency.Code)
+            .ThenBy(r => r.ToCurrency.Code)
             .ToListAsync();
 
         // Get open and partially filled orders (public information for transparency)

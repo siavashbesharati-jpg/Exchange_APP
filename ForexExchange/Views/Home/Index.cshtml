@@ -67,31 +67,35 @@
                                     <div class="card border-primary h-100">
                                         <div class="card-body text-center">
                                             <div class="currency-icon mb-2">
-                                                @switch (rate.Currency)
+                                                @{
+                                                    var currencySymbol = rate.ToCurrency?.Symbol ?? "";
+                                                    var currencyName = rate.ToCurrency?.PersianName ?? "نامشخص";
+                                                }
+                                                @switch (currencySymbol)
                                                 {
-                                                    case ForexExchange.Models.CurrencyType.USD:
+                                                    case "USD":
                                                         <i class="fas fa-dollar-sign text-success fa-2x"></i>
-                                                        <div class="fw-bold">دلار آمریکا</div>
+                                                        <div class="fw-bold">@currencyName</div>
                                                         break;
-                                                    case ForexExchange.Models.CurrencyType.EUR:
+                                                    case "EUR":
                                                         <i class="fas fa-euro-sign text-primary fa-2x"></i>
-                                                        <div class="fw-bold">یورو</div>
+                                                        <div class="fw-bold">@currencyName</div>
                                                         break;
-                                                    case ForexExchange.Models.CurrencyType.AED:
+                                                    case "AED":
                                                         <i class="fas fa-coins text-warning fa-2x"></i>
-                                                        <div class="fw-bold">درهم امارات</div>
+                                                        <div class="fw-bold">@currencyName</div>
                                                         break;
-                                                    case ForexExchange.Models.CurrencyType.OMR:
+                                                    case "OMR":
                                                         <i class="fas fa-coins text-info fa-2x"></i>
-                                                        <div class="fw-bold">ریال عمان</div>
+                                                        <div class="fw-bold">@currencyName</div>
                                                         break;
-                                                    case ForexExchange.Models.CurrencyType.TRY:
+                                                    case "TRY":
                                                         <i class="fas fa-lira-sign text-danger fa-2x"></i>
-                                                        <div class="fw-bold">لیر ترکیه</div>
+                                                        <div class="fw-bold">@currencyName</div>
                                                         break;
                                                     default:
                                                         <i class="fas fa-money-bill text-secondary fa-2x"></i>
-                                                        <div class="fw-bold">@rate.Currency</div>
+                                                        <div class="fw-bold">@currencyName</div>
                                                         break;
                                                 }
                                             </div>
@@ -138,14 +142,14 @@
                             <i class="fas fa-shopping-cart me-2"></i>
                             سفارش‌های باز و قابل معامله
                         </h5>
-                        @if (User.Identity?.IsAuthenticated == true)
+                        @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
                         {
                             <a asp-controller="Orders" asp-action="Create" class="btn btn-light btn-sm">
                                 <i class="fas fa-plus me-1"></i>
                                 ثبت سفارش جدید
                             </a>
                         }
-                        else
+                        else if (!(User.Identity?.IsAuthenticated == true))
                         {
                             <a asp-controller="Account" asp-action="Login" class="btn btn-light btn-sm">
                                 <i class="fas fa-sign-in-alt me-1"></i>
@@ -190,7 +194,7 @@
                                                 }
                                             </td>
                                             <td>
-                                                <span class="badge bg-primary">@order.Currency</span>
+                                                <span class="badge bg-primary">@order.FromCurrency?.Symbol</span>
                                             </td>
                                             <td class="fw-bold">@order.Amount.ToString("N2")</td>
                                             <td class="text-success fw-bold">@order.Rate.ToString("N0")</td>
@@ -231,7 +235,7 @@
                         </div>
 
                         <div class="text-center mt-3">
-                            @if (User.Identity?.IsAuthenticated == true)
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
                             {
                                 <a asp-controller="Orders" asp-action="Index" class="btn btn-primary">
                                     <i class="fas fa-list me-1"></i>
@@ -253,14 +257,14 @@
                             <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
                             <h5 class="text-muted">در حال حاضر سفارش باز و قابل معامله‌ای وجود ندارد</h5>
                             <p class="text-muted">سفارش جدید ثبت کنید تا سایر کاربران بتوانند با شما معامله کنند.</p>
-                            @if (User.Identity?.IsAuthenticated == true)
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
                             {
                                 <a asp-controller="Orders" asp-action="Create" class="btn btn-primary">
                                     <i class="fas fa-plus me-1"></i>
                                     ثبت اولین سفارش
                                 </a>
                             }
-                            else
+                            else if (!(User.Identity?.IsAuthenticated == true))
                             {
                                 <a asp-controller="Account" asp-action="Register" class="btn btn-primary">
                                     <i class="fas fa-user-plus me-1"></i>

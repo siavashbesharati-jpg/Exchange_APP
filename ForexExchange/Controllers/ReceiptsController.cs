@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using ForexExchange.Models;
 using ForexExchange.Services;
-using System.Text.Json;
 
 namespace ForexExchange.Controllers
 {
@@ -62,6 +62,8 @@ namespace ForexExchange.Controllers
             ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
             ViewBag.OpenOrders = await _context.Orders
                 .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
                 .Where(o => o.Status != OrderStatus.Cancelled)
                 .ToListAsync();
 
@@ -71,7 +73,11 @@ namespace ForexExchange.Controllers
             if (orderId.HasValue)
             {
                 ViewBag.SelectedOrderId = orderId.Value;
-                var order = await _context.Orders.Include(o => o.Customer).FirstOrDefaultAsync(o => o.Id == orderId.Value);
+                var order = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .FirstOrDefaultAsync(o => o.Id == orderId.Value);
                 ViewBag.SelectedOrder = order;
             }
 
@@ -81,10 +87,20 @@ namespace ForexExchange.Controllers
                 var transaction = await _context.Transactions
                     .Include(t => t.BuyerCustomer)
                     .Include(t => t.SellerCustomer)
+                    .Include(t => t.FromCurrency)
+                    .Include(t => t.ToCurrency)
                     .Include(t => t.BuyOrder)
                     .ThenInclude(o => o.Customer)
+                    .Include(t => t.BuyOrder)
+                    .ThenInclude(o => o.FromCurrency)
+                    .Include(t => t.BuyOrder)
+                    .ThenInclude(o => o.ToCurrency)
                     .Include(t => t.SellOrder)
                     .ThenInclude(o => o.Customer)
+                    .Include(t => t.SellOrder)
+                    .ThenInclude(o => o.FromCurrency)
+                    .Include(t => t.SellOrder)
+                    .ThenInclude(o => o.ToCurrency)
                     .FirstOrDefaultAsync(t => t.Id == transactionId.Value);
                 
                 if (transaction != null)
@@ -384,6 +400,8 @@ namespace ForexExchange.Controllers
             ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
             ViewBag.OpenOrders = await _context.Orders
                 .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
                 .Where(o => o.Status != OrderStatus.Cancelled)
                 .ToListAsync();
 
@@ -393,7 +411,11 @@ namespace ForexExchange.Controllers
             if (orderId.HasValue)
             {
                 ViewBag.SelectedOrderId = orderId.Value;
-                var order = await _context.Orders.Include(o => o.Customer).FirstOrDefaultAsync(o => o.Id == orderId.Value);
+                var order = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .FirstOrDefaultAsync(o => o.Id == orderId.Value);
                 ViewBag.SelectedOrder = order;
             }
 
@@ -403,10 +425,20 @@ namespace ForexExchange.Controllers
                 var transaction = await _context.Transactions
                     .Include(t => t.BuyerCustomer)
                     .Include(t => t.SellerCustomer)
+                    .Include(t => t.FromCurrency)
+                    .Include(t => t.ToCurrency)
                     .Include(t => t.BuyOrder)
                     .ThenInclude(o => o.Customer)
+                    .Include(t => t.BuyOrder)
+                    .ThenInclude(o => o.FromCurrency)
+                    .Include(t => t.BuyOrder)
+                    .ThenInclude(o => o.ToCurrency)
                     .Include(t => t.SellOrder)
                     .ThenInclude(o => o.Customer)
+                    .Include(t => t.SellOrder)
+                    .ThenInclude(o => o.FromCurrency)
+                    .Include(t => t.SellOrder)
+                    .ThenInclude(o => o.ToCurrency)
                     .FirstOrDefaultAsync(t => t.Id == transactionId.Value);
                 
                 if (transaction != null)

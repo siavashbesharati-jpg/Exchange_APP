@@ -247,7 +247,7 @@
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                class="text-decoration-none">
-                                                ارز
+                                                جفت ارز
                                                 @if (ViewData["CurrentSort"]?.ToString() == "Currency")
                                                 {
                                                     <i class="fas fa-sort-up"></i>
@@ -397,32 +397,42 @@
                                                 </a>
                                             </td>
                                             <td>
-                                                <a asp-action="Index"
-                                                   asp-route-currencyFilter="@item.Currency"
-                                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                   asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                   asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                                   asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                   class="text-decoration-none">
-                                                    @switch (item.Currency)
-                                                    {
-                                                        case ForexExchange.Models.CurrencyType.USD:
-                                                            <span class="badge bg-primary">دلار آمریکا</span>
-                                                            break;
-                                                        case ForexExchange.Models.CurrencyType.EUR:
-                                                            <span class="badge bg-success">یورو</span>
-                                                            break;
-                                                        case ForexExchange.Models.CurrencyType.AED:
-                                                            <span class="badge bg-info">درهم امارات</span>
-                                                            break;
-                                                        case ForexExchange.Models.CurrencyType.OMR:
-                                                            <span class="badge bg-warning">ریال عمان</span>
-                                                            break;
-                                                        case ForexExchange.Models.CurrencyType.TRY:
-                                                            <span class="badge bg-danger">لیر ترکیه</span>
-                                                            break;
+                                                <div class="d-flex align-items-center">
+                                                    @{
+                                                        string GetCurrencyName(ForexExchange.Models.Currency currency)
+                                                        {
+                                                            // Prefer PersianName from DB, otherwise fall back to Code; no hardcoded lists
+                                                            if (currency == null) return "N/A";
+                                                            return !string.IsNullOrWhiteSpace(currency.PersianName)
+                                                                ? currency.PersianName
+                                                                : (currency.Code ?? "N/A");
+                                                        }
+
+                                                        string GetCurrencyBadgeClass(ForexExchange.Models.Currency currency)
+                                                        {
+                                                            // Use DB-driven attributes for styling (base currency vs others)
+                                                            if (currency == null) return "bg-light";
+                                                            return currency.IsBaseCurrency ? "bg-secondary" : "bg-primary";
+                                                        }
                                                     }
-                                                </a>
+                                                    
+                                                    <span class="badge @GetCurrencyBadgeClass(item.FromCurrency) me-1">
+                                                        @GetCurrencyName(item.FromCurrency)
+                                                    </span>
+                                                    
+                                                    <i class="fas fa-arrow-right mx-1 text-muted"></i>
+                                                    
+                                                    <span class="badge @GetCurrencyBadgeClass(item.ToCurrency)">
+                                                        @GetCurrencyName(item.ToCurrency)
+                                                    </span>
+                                                </div>
+                                                
+                                                @if (item.IsCrossCurrency)
+                                                {
+                                                    <small class="text-muted d-block mt-1">
+                                                        <i class="fas fa-exchange-alt"></i> ارز متقابل
+                                                    </small>
+                                                }
                                             </td>
                                             <td>@item.Amount.ToString("N2")</td>
                                             <td>@item.Rate.ToString("N0")</td>

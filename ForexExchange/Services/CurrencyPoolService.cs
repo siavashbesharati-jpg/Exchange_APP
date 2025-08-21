@@ -22,13 +22,13 @@ namespace ForexExchange.Services
         /// Update pool balance after a transaction
         /// بروزرسانی موجودی استخر پس از تراکنش
         /// </summary>
-        public async Task<CurrencyPool> UpdatePoolAsync(CurrencyType currency, decimal amount, PoolTransactionType transactionType, decimal rate)
+        public async Task<CurrencyPool> UpdatePoolAsync(int currencyId, decimal amount, PoolTransactionType transactionType, decimal rate)
         {
-            var pool = await GetPoolAsync(currency);
+            var pool = await GetPoolAsync(currencyId);
             
             if (pool == null)
             {
-                pool = await CreatePoolAsync(currency);
+                pool = await CreatePoolAsync(currencyId);
             }
 
             // Update balances based on transaction type
@@ -69,7 +69,7 @@ namespace ForexExchange.Services
             _context.CurrencyPools.Update(pool);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Pool updated for {currency}: Balance={pool.Balance}, Type={transactionType}, Amount={amount}");
+            _logger.LogInformation($"Pool updated for currency ID {currencyId}: Balance={pool.Balance}, Type={transactionType}, Amount={amount}");
             
             return pool;
         }
@@ -78,10 +78,10 @@ namespace ForexExchange.Services
         /// Get current balance for a currency
         /// دریافت موجودی فعلی برای یک ارز
         /// </summary>
-        public async Task<decimal> GetPoolBalanceAsync(CurrencyType currency)
+        public async Task<decimal> GetPoolBalanceAsync(int currencyId)
         {
             var pool = await _context.CurrencyPools
-                .FirstOrDefaultAsync(p => p.Currency == currency && p.IsActive);
+                .FirstOrDefaultAsync(p => p.CurrencyId == currencyId && p.IsActive);
             
             return pool?.Balance ?? 0;
         }
@@ -90,10 +90,11 @@ namespace ForexExchange.Services
         /// Get pool details for a currency
         /// دریافت جزئیات استخر برای یک ارز
         /// </summary>
-        public async Task<CurrencyPool?> GetPoolAsync(CurrencyType currency)
+        public async Task<CurrencyPool?> GetPoolAsync(int currencyId)
         {
             return await _context.CurrencyPools
-                .FirstOrDefaultAsync(p => p.Currency == currency && p.IsActive);
+                .Include(p => p.Currency)
+                .FirstOrDefaultAsync(p => p.CurrencyId == currencyId && p.IsActive);
         }
 
         /// <summary>
@@ -103,8 +104,9 @@ namespace ForexExchange.Services
         public async Task<List<CurrencyPool>> GetAllPoolsAsync()
         {
             return await _context.CurrencyPools
+                .Include(p => p.Currency)
                 .Where(p => p.IsActive)
-                .OrderBy(p => p.Currency)
+                .OrderBy(p => p.Currency.DisplayOrder)
                 .ToListAsync();
         }
 
@@ -112,17 +114,24 @@ namespace ForexExchange.Services
         /// Initialize a new currency pool
         /// ایجاد استخر جدید برای یک ارز
         /// </summary>
-        public async Task<CurrencyPool> CreatePoolAsync(CurrencyType currency, decimal initialBalance = 0)
+        public async Task<CurrencyPool> CreatePoolAsync(int currencyId, decimal initialBalance = 0)
         {
-            var existingPool = await GetPoolAsync(currency);
+            var existingPool = await GetPoolAsync(currencyId);
             if (existingPool != null)
             {
                 return existingPool;
             }
 
+            var currency = await _context.Currencies.FindAsync(currencyId);
+            if (currency == null)
+            {
+                throw new ArgumentException($"Currency with ID {currencyId} not found");
+            }
+
             var pool = new CurrencyPool
             {
-                Currency = currency,
+                CurrencyId = currencyId,
+                CurrencyCode = currency.Code,
                 Balance = initialBalance,
                 TotalBought = initialBalance > 0 ? initialBalance : 0,
                 TotalSold = 0,
@@ -131,13 +140,13 @@ namespace ForexExchange.Services
                 LastUpdated = DateTime.Now,
                 RiskLevel = PoolRiskLevel.Low,
                 IsActive = true,
-                Notes = $"Auto-created pool for {currency}"
+                Notes = $"Auto-created pool for {currency.Name}"
             };
 
             _context.CurrencyPools.Add(pool);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Created new pool for {currency} with initial balance {initialBalance}");
+            _logger.LogInformation($"Created new pool for {currency.Code} with initial balance {initialBalance}");
             
             return pool;
         }
@@ -146,21 +155,22 @@ namespace ForexExchange.Services
         /// Calculate total portfolio value in specified currency
         /// محاسبه ارزش کل پورتفولیو در ارز مشخص شده
         /// </summary>
-        public async Task<decimal> CalculatePortfolioValueAsync(CurrencyType targetCurrency, Dictionary<string, decimal> exchangeRates)
+        public async Task<decimal> CalculatePortfolioValueAsync(string targetCurrencyCode, Dictionary<string, decimal> exchangeRates)
         {
             var pools = await GetAllPoolsAsync();
             decimal totalValue = 0;
 
             foreach (var pool in pools)
             {
-                if (pool.Currency == targetCurrency)
+                if (pool.Currency?.Code == targetCurrencyCode)
                 {
                     // Same currency - no conversion needed
                     totalValue += pool.Balance;
                 }
-                else if (exchangeRates.TryGetValue(pool.Currency.ToString(), out var rate))
+                else if (!string.IsNullOrEmpty(pool.Currency?.Code) && 
+                         exchangeRates.TryGetValue(pool.Currency.Code, out var rate))
                 {
-                    totalValue += pool.CalculateCurrentPositionValue(targetCurrency, rate);
+                    totalValue += pool.CalculateCurrentPositionValue(targetCurrencyCode, rate);
                 }
             }
 
@@ -174,9 +184,10 @@ namespace ForexExchange.Services
         public async Task<List<CurrencyPool>> GetHighRiskPoolsAsync(PoolRiskLevel riskLevel = PoolRiskLevel.High)
         {
             return await _context.CurrencyPools
+                .Include(p => p.Currency)
                 .Where(p => p.IsActive && p.RiskLevel >= riskLevel)
                 .OrderByDescending(p => p.RiskLevel)
-                .ThenBy(p => p.Currency)
+                .ThenBy(p => p.Currency.DisplayOrder)
                 .ToListAsync();
         }
 
@@ -214,19 +225,19 @@ namespace ForexExchange.Services
         /// Get pool performance statistics
         /// دریافت آمار عملکرد استخر
         /// </summary>
-        public async Task<PoolPerformance> GetPoolPerformanceAsync(CurrencyType currency, decimal currentRate)
+        public async Task<PoolPerformance> GetPoolPerformanceAsync(int currencyId, decimal currentRate)
         {
-            var pool = await GetPoolAsync(currency);
+            var pool = await GetPoolAsync(currencyId);
             if (pool == null)
             {
-                return new PoolPerformance { Currency = currency };
+                return new PoolPerformance { CurrencyCode = "Unknown" };
             }
 
             var performance = new PoolPerformance
             {
-                Currency = pool.Currency,
+                CurrencyCode = pool.Currency?.Code ?? "Unknown",
                 CurrentBalance = pool.Balance,
-                CurrentValue = pool.CalculateCurrentPositionValue(CurrencyType.Toman, currentRate),
+                CurrentValue = pool.CalculateCurrentPositionValue("IRR", currentRate),
                 NetProfitLoss = pool.CalculateNetProfitLoss(),
                 RiskLevel = pool.RiskLevel,
                 LastUpdated = pool.LastUpdated
@@ -248,15 +259,18 @@ namespace ForexExchange.Services
             var updatedPools = new List<CurrencyPool>();
 
             // For cross-currency transactions, we need to update both currency pools
-            var buyOrder = await _context.Orders.FindAsync(transaction.BuyOrderId);
+            var buyOrder = await _context.Orders
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .FirstOrDefaultAsync(o => o.Id == transaction.BuyOrderId);
             var sellOrder = await _context.Orders.FindAsync(transaction.SellOrderId);
 
             if (buyOrder != null && sellOrder != null)
             {
                 // Update pools based on the exchange perspective
                 // When a customer buys USD with Toman, exchange sells USD and buys Toman
-                var fromCurrencyPool = await UpdatePoolAsync(buyOrder.FromCurrency, transaction.Amount, PoolTransactionType.Sell, transaction.Rate);
-                var toCurrencyPool = await UpdatePoolAsync(buyOrder.ToCurrency, transaction.TotalAmount, PoolTransactionType.Buy, 1.0m);
+                var fromCurrencyPool = await UpdatePoolAsync(buyOrder.FromCurrencyId, transaction.Amount, PoolTransactionType.Sell, transaction.Rate);
+                var toCurrencyPool = await UpdatePoolAsync(buyOrder.ToCurrencyId, transaction.TotalAmount, PoolTransactionType.Buy, 1.0m);
 
                 updatedPools.Add(fromCurrencyPool);
                 if (toCurrencyPool.Id != fromCurrencyPool.Id)

@@ -3,15 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ForexExchange.Models
 {
-    public enum CurrencyType
-    {
-        Toman = 0,     // تومان
-        USD = 1,       // دلار آمریکا
-        EUR = 2,       // یورو
-        AED = 3,       // درهم امارات
-        OMR = 4,       // ریال عمان
-        TRY = 5        // لیر ترکیه
-    }
     
     public enum OrderType
     {
@@ -40,21 +31,21 @@ namespace ForexExchange.Models
         
         [Required]
         [Display(Name = "From Currency - از ارز")]
-        public CurrencyType FromCurrency { get; set; }
+        public int FromCurrencyId { get; set; }
         
         [Required]
         [Display(Name = "To Currency - به ارز")]
-        public CurrencyType ToCurrency { get; set; }
+        public int ToCurrencyId { get; set; }
         
         /// <summary>
-        /// Legacy field for backward compatibility - now maps to FromCurrency
-        /// فیلد قدیمی برای سازگاری - اکنون به FromCurrency نگاشت می‌شود
+        /// Legacy field for backward compatibility - now maps to FromCurrencyId
+        /// فیلد قدیمی برای سازگاری - اکنون به FromCurrencyId نگاشت می‌شود
         /// </summary>
         [Required]
-        public CurrencyType Currency 
+        public int CurrencyId 
         { 
-            get => FromCurrency; 
-            set => FromCurrency = value; 
+            get => FromCurrencyId; 
+            set => FromCurrencyId = value; 
         }
         
         [Required]
@@ -73,14 +64,14 @@ namespace ForexExchange.Models
         public decimal TotalAmount { get; set; }
         
         /// <summary>
-        /// Legacy field for backward compatibility - now calculated based on ToCurrency
-        /// فیلد قدیمی برای سازگاری - اکنون بر اساس ToCurrency محاسبه می‌شود
+        /// Legacy field for backward compatibility - now calculated based on ToCurrencyId
+        /// فیلد قدیمی برای سازگاری - اکنون بر اساس ToCurrencyId محاسبه می‌شود
         /// </summary>
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalInToman 
         { 
-            get => ToCurrency == CurrencyType.Toman ? TotalAmount : 0; 
-            set { if (ToCurrency == CurrencyType.Toman) TotalAmount = value; }
+            get => ToCurrency?.Code == "IRR" ? TotalAmount : 0; 
+            set { if (ToCurrency?.Code == "IRR") TotalAmount = value; }
         }
         
         [Column(TypeName = "decimal(18,2)")]
@@ -106,7 +97,7 @@ namespace ForexExchange.Models
         /// شناسه جفت ارز متقابل
         /// </summary>
         [Display(Name = "Currency Pair - جفت ارز")]
-        public string CurrencyPair => $"{FromCurrency}/{ToCurrency}";
+        public string CurrencyPair => $"{FromCurrency?.Code}/{ToCurrency?.Code}";
         
         /// <summary>
         /// Calculate remaining amount to be filled
@@ -115,13 +106,15 @@ namespace ForexExchange.Models
         public decimal RemainingAmount => Amount - FilledAmount;
         
         /// <summary>
-        /// Check if order is cross-currency (not involving Toman)
+        /// Check if order is cross-currency (not involving IRR/Toman)
         /// بررسی آیا سفارش متقابل است (شامل تومان نمی‌شود)
         /// </summary>
-        public bool IsCrossCurrency => FromCurrency != CurrencyType.Toman && ToCurrency != CurrencyType.Toman;
+        public bool IsCrossCurrency => FromCurrency?.Code != "IRR" && ToCurrency?.Code != "IRR";
         
         // Navigation properties
         public Customer Customer { get; set; } = null!;
+        public Currency FromCurrency { get; set; } = null!;
+        public Currency ToCurrency { get; set; } = null!;
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
     }

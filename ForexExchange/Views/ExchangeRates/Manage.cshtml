@@ -50,51 +50,48 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var currency in Enum.GetValues(typeof(ForexExchange.Models.CurrencyType)).Cast<ForexExchange.Models.CurrencyType>())
+                                    @{
+                                        var currencies = ViewBag.Currencies as IEnumerable<dynamic>;
+                                    }
+                                    @if (currencies != null)
                                     {
-                                        var currencyKey = (int)currency;
-                                        var currentRate = Model.FirstOrDefault(r => r.Currency == currency);
-                                        
-                                        <tr>
-                                            <td>
-                                                @switch (currency)
-                                                {
-                                                    case ForexExchange.Models.CurrencyType.USD:
-                                                        <span class="badge bg-primary">دلار آمریکا (USD)</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.EUR:
-                                                        <span class="badge bg-success">یورو (EUR)</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.AED:
-                                                        <span class="badge bg-info">درهم امارات (AED)</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.OMR:
-                                                        <span class="badge bg-warning">ریال عمان (OMR)</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.TRY:
-                                                        <span class="badge bg-danger">لیر ترکیه (TRY)</span>
-                                                        break;
-                                                }
-                                            </td>
-                                            <td>
-                                                <input name="buyRates[@currencyKey]" type="number" class="form-control" 
-                                                       value="@(currentRate?.BuyRate ?? 0)" step="0.01" min="0" required />
-                                            </td>
-                                            <td>
-                                                <input name="sellRates[@currencyKey]" type="number" class="form-control" 
-                                                       value="@(currentRate?.SellRate ?? 0)" step="0.01" min="0" required />
-                                            </td>
-                                            <td>
-                                                @if (currentRate != null)
-                                                {
-                                                    <small class="text-muted">@currentRate.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</small>
-                                                }
-                                                else
-                                                {
-                                                    <small class="text-muted">ثبت نشده</small>
-                                                }
-                                            </td>
-                                        </tr>
+                                        foreach (var c in currencies)
+                                        {
+                                            int currencyKey = c.Id;
+                                            var currentRate = Model.FirstOrDefault(r => r.FromCurrencyId == currencyKey);
+                                            string badgeClass = ((string)c.Code).ToUpper() switch
+                                            {
+                                                "USD" => "bg-primary",
+                                                "EUR" => "bg-success",
+                                                "AED" => "bg-info",
+                                                "OMR" => "bg-warning",
+                                                "TRY" => "bg-danger",
+                                                _ => "bg-secondary"
+                                            };
+                                            <tr>
+                                                <td>
+                                                    <span class="badge @badgeClass">@c.PersianName (@c.Code)</span>
+                                                </td>
+                                                <td>
+                                                    <input name="buyRates[@currencyKey]" type="number" class="form-control"
+                                                           value="@(currentRate?.BuyRate ?? 0)" step="0.01" min="0" required />
+                                                </td>
+                                                <td>
+                                                    <input name="sellRates[@currencyKey]" type="number" class="form-control"
+                                                           value="@(currentRate?.SellRate ?? 0)" step="0.01" min="0" required />
+                                                </td>
+                                                <td>
+                                                    @if (currentRate != null)
+                                                    {
+                                                        <small class="text-muted">@currentRate.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <small class="text-muted">ثبت نشده</small>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
                                     }
                                 </tbody>
                             </table>
@@ -146,34 +143,27 @@
                                 <tbody>
                                     @foreach (var item in Model)
                                     {
+                                        var code = item.FromCurrency?.Code?.ToUpper() ?? "";
+                                        string badgeClass = code switch
+                                        {
+                                            "USD" => "bg-primary",
+                                            "EUR" => "bg-success",
+                                            "AED" => "bg-info",
+                                            "OMR" => "bg-warning",
+                                            "TRY" => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
                                         <tr>
                                             <td>@item.Id</td>
                                             <td>
-                                                @switch (item.Currency)
-                                                {
-                                                    case ForexExchange.Models.CurrencyType.USD:
-                                                        <span class="badge bg-primary">دلار آمریکا</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.EUR:
-                                                        <span class="badge bg-success">یورو</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.AED:
-                                                        <span class="badge bg-info">درهم امارات</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.OMR:
-                                                        <span class="badge bg-warning">ریال عمان</span>
-                                                        break;
-                                                    case ForexExchange.Models.CurrencyType.TRY:
-                                                        <span class="badge bg-danger">لیر ترکیه</span>
-                                                        break;
-                                                }
+                                                <span class="badge @badgeClass">@((item.FromCurrency?.PersianName ?? item.FromCurrency?.Name) ?? code)</span>
                                             </td>
                                             <td class="text-success fw-bold">@item.BuyRate.ToString("N0") تومان</td>
                                             <td class="text-danger fw-bold">@item.SellRate.ToString("N0") تومان</td>
                                             <td>
                                                 @{
                                                     var difference = item.SellRate - item.BuyRate;
-                                                    var percentage = (difference / item.BuyRate) * 100;
+                                                    var percentage = item.BuyRate > 0 ? (difference / item.BuyRate) * 100 : 0;
                                                 }
                                                 <span class="badge bg-secondary">
                                                     @difference.ToString("N0") (@percentage.ToString("F1")%)

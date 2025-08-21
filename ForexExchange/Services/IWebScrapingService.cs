@@ -4,7 +4,8 @@ namespace ForexExchange.Services
 {
     public interface IWebScrapingService
     {
-        Task<Dictionary<CurrencyType, (decimal BuyRate, decimal SellRate)>> GetExchangeRatesFromWebAsync();
-        Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(CurrencyType currency);
+        Task<Dictionary<string, (decimal BuyRate, decimal SellRate)>> GetExchangeRatesFromWebAsync();
+        Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(Currency currency);
+        Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(string currencyCode);
     }
 }

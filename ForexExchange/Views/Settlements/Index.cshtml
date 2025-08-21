@@ -55,7 +55,7 @@
                                 <div class="col-md-4 mb-3">
                                     <div class="border rounded p-3">
                                         <h6>تراکنش #@item.Id</h6>
-                                        <p class="mb-1"><strong>مبلغ:</strong> @item.Amount.ToString("N0") @item.Currency</p>
+                                        <p class="mb-1"><strong>مبلغ:</strong> @item.Amount.ToString("N0") @item.FromCurrency?.PersianName <small class="text-muted">(@item.CurrencyPair)</small></p>
                                         <p class="mb-1"><strong>خریدار:</strong> @item.BuyerCustomer?.FullName</p>
                                         <p class="mb-1"><strong>فروشنده:</strong> @item.SellerCustomer?.FullName</p>
                                         <p class="mb-2">
@@ -132,7 +132,7 @@
                                                     @item.SellerCustomer?.FullName
                                                 </a>
                                             </td>
-                                            <td>@item.Amount.ToString("N0") @item.Currency</td>
+                                            <td>@item.Amount.ToString("N0") @item.FromCurrency?.PersianName <small class="text-muted">(@item.CurrencyPair)</small></td>
                                             <td>@item.Rate.ToString("N0")</td>
                                             <td>@item.TotalInToman.ToString("N0")</td>
                                             <td>

@@ -30,6 +30,8 @@ namespace ForexExchange.Controllers
             var allTransactions = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .Include(t => t.BuyOrder)
                 .Include(t => t.SellOrder)
                 .Include(t => t.Receipts)
@@ -47,6 +49,8 @@ namespace ForexExchange.Controllers
             var transaction = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .Include(t => t.BuyOrder)
                 .Include(t => t.SellOrder)
                 .Include(t => t.Receipts.Where(r => r.IsVerified))

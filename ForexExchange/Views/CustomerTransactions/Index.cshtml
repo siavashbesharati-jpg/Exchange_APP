@@ -59,7 +59,7 @@
                                     <tr>
                                         <th>شماره تراکنش</th>
                                         <th>نقش شما</th>
-                                        <th>ارز</th>
+                                        <th>جفت ارز</th>
                                         <th>مقدار</th>
                                         <th>نرخ</th>
                                         <th>مجموع (تومان)</th>
@@ -84,7 +84,7 @@
                                                 <span class="@roleClass">@role</span>
                                             </td>
                                             <td>
-                                                <span class="badge bg-info">@transaction.Currency</span>
+                                                <span class="badge bg-info">@transaction.CurrencyPair</span>
                                             </td>
                                             <td class="fw-bold">@transaction.Amount.ToString("N2")</td>
                                             <td class="text-success fw-bold">@transaction.Rate.ToString("N0")</td>
@@ -243,7 +243,7 @@
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>توجه:</strong> با تأیید انتقال، شما اعلام می‌کنید که مقدار 
-                            <strong class="text-primary">@transaction.Amount.ToString("N2") @transaction.Currency</strong>
+                            <strong class="text-primary">@transaction.Amount.ToString("N2") @transaction.FromCurrency?.PersianName <small class="text-muted">(@transaction.CurrencyPair)</small></strong>
                             را به حساب خریدار منتقل کرده‌اید.
                         </div>
                         
@@ -254,7 +254,7 @@
                             </div>
                             <div class="col-6">
                                 <small class="text-muted">مقدار قابل انتقال:</small><br>
-                                <strong class="text-primary">@transaction.Amount.ToString("N2") @transaction.Currency</strong>
+                                <strong class="text-primary">@transaction.Amount.ToString("N2") @transaction.FromCurrency?.PersianName <small class="text-muted">(@transaction.CurrencyPair)</small></strong>
                             </div>
                         </div>
                         

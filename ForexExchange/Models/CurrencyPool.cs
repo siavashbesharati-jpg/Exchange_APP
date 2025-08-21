@@ -18,27 +18,25 @@ namespace ForexExchange.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// Currency type from the enum (USD, EUR, AED, OMR, TRY, Toman)
-        /// نوع ارز از enum (دلار، یورو، درهم، ریال عمان، لیر، تومان)
+        /// Currency ID reference to the Currency table
+        /// شناسه ارز مرجع به جدول ارز
         /// </summary>
         [Required]
         [Display(Name = "Currency - ارز")]
-        public CurrencyType Currency { get; set; }
+        public int CurrencyId { get; set; }
+        
+        /// <summary>
+        /// Navigation property to Currency entity
+        /// خاصیت ناوبری به موجودیت ارز
+        /// </summary>
+        public Currency Currency { get; set; } = null!;
         
         /// <summary>
         /// Legacy string field for backward compatibility
         /// فیلد رشته قدیمی برای سازگاری
         /// </summary>
         [StringLength(3, MinimumLength = 3)]
-        public string CurrencyCode 
-        { 
-            get => Currency.ToString(); 
-            set 
-            { 
-                if (Enum.TryParse<CurrencyType>(value, out var currencyType))
-                    Currency = currencyType;
-            } 
-        }
+        public string CurrencyCode { get; set; } = string.Empty;
 
         /// <summary>
         /// Current balance in the pool for this currency
@@ -135,23 +133,23 @@ namespace ForexExchange.Models
         /// Calculate current position value in specified target currency
         /// محاسبه ارزش موقعیت فعلی در ارز هدف مشخص شده
         /// </summary>
-        /// <param name="targetCurrency">Target currency for valuation</param>
+        /// <param name="targetCurrencyCode">Target currency code for valuation (e.g., "IRR", "USD")</param>
         /// <param name="exchangeRate">Exchange rate from this currency to target currency</param>
         /// <returns>Current position value in target currency</returns>
-        public decimal CalculateCurrentPositionValue(CurrencyType targetCurrency, decimal exchangeRate)
+        public decimal CalculateCurrentPositionValue(string targetCurrencyCode, decimal exchangeRate)
         {
             return Balance * exchangeRate;
         }
         
         /// <summary>
-        /// Legacy method for backward compatibility - calculates value in Toman
-        /// روش قدیمی برای سازگاری - ارزش را به تومان محاسبه می‌کند
+        /// Legacy method for backward compatibility - calculates value in IRR/Toman
+        /// روش قدیمی برای سازگاری - ارزش را به ریال/تومان محاسبه می‌کند
         /// </summary>
-        /// <param name="currentRate">Current rate to Toman</param>
-        /// <returns>Current position value in Toman</returns>
+        /// <param name="currentRate">Current rate to IRR/Toman</param>
+        /// <returns>Current position value in IRR/Toman</returns>
         public decimal CalculateCurrentPositionValue(decimal currentRate)
         {
-            return CalculateCurrentPositionValue(CurrencyType.Toman, currentRate);
+            return CalculateCurrentPositionValue("IRR", currentRate);
         }
 
         /// <summary>

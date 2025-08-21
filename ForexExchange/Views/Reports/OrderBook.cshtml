@@ -24,11 +24,23 @@
                             <label class="form-label">ارز:</label>
                             <select name="currency" class="form-select">
                                 <option value="">همه ارزها</option>
-                                <option value="USD" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "USD")">دلار آمریکا (USD)</option>
-                                <option value="EUR" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "EUR")">یورو (EUR)</option>
-                                <option value="AED" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "AED")">درهم امارات (AED)</option>
-                                <option value="OMR" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "OMR")">ریال عمان (OMR)</option>
-                                <option value="TRY" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "TRY")">لیر ترکیه (TRY)</option>
+                                @if (ViewBag.Currencies != null)
+                                {
+                                    @foreach (var curr in ViewBag.Currencies)
+                                    {
+                                        <option value="@curr.Code" selected="@(ViewBag.SelectedCurrency == curr.Code)">
+                                            @curr.PersianName (@curr.Code)
+                                        </option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="USD" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "USD")">دلار آمریکا (USD)</option>
+                                    <option value="EUR" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "EUR")">یورو (EUR)</option>
+                                    <option value="AED" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "AED")">درهم امارات (AED)</option>
+                                    <option value="OMR" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "OMR")">ریال عمان (OMR)</option>
+                                    <option value="TRY" selected="@(ViewContext.HttpContext.Request.Query["currency"] == "TRY")">لیر ترکیه (TRY)</option>
+                                }
                             </select>
                         </div>
                         <div class="col-md-4 d-flex align-items-end">
@@ -82,7 +94,7 @@
     <!-- Order Book by Currency -->
     @if (Model.Any())
     {
-        var currencyGroups = Model.GroupBy(r => r.Currency);
+        var currencyGroups = Model.GroupBy(r => r.FromCurrencyCode);
         
         @foreach (var currencyGroup in currencyGroups)
         {
@@ -91,14 +103,19 @@
                     <div class="card">
                         <div class="card-header">
                             <h5 class="card-title mb-0">
-                                @(currencyGroup.Key switch {
-                                    ForexExchange.Models.CurrencyType.USD => "دلار آمریکا (USD)",
-                                    ForexExchange.Models.CurrencyType.EUR => "یورو (EUR)",
-                                    ForexExchange.Models.CurrencyType.AED => "درهم امارات (AED)",
-                                    ForexExchange.Models.CurrencyType.OMR => "ریال عمان (OMR)",
-                                    ForexExchange.Models.CurrencyType.TRY => "لیر ترکیه (TRY)",
-                                    _ => currencyGroup.Key.ToString()
-                                })
+                                @{
+                                    var currencyDisplay = currencyGroup.Key switch
+                                    {
+                                        "USD" => "دلار آمریکا (USD)",
+                                        "EUR" => "یورو (EUR)", 
+                                        "AED" => "درهم امارات (AED)",
+                                        "OMR" => "ریال عمان (OMR)",
+                                        "TRY" => "لیر ترکیه (TRY)",
+                                        "IRR" or "TMN" => "تومان (IRR)",
+                                        _ => $"{currencyGroup.Key}"
+                                    };
+                                }
+                                @currencyDisplay
                             </h5>
                         </div>
                         <div class="card-body">

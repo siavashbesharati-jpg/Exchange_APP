@@ -164,6 +164,8 @@ namespace ForexExchange.Controllers
             try
             {
                 var transactions = await _context.Transactions
+                    .Include(t => t.FromCurrency)
+                    .Include(t => t.ToCurrency)
                     .Where(t => (t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId) &&
                                (t.Status == TransactionStatus.Pending || 
                                 t.Status == TransactionStatus.PaymentUploaded ||
@@ -172,7 +174,8 @@ namespace ForexExchange.Controllers
                     {
                         id = t.Id,
                         amount = t.TotalInToman,
-                        currency = t.Currency.ToString(),
+                        fromCurrency = t.FromCurrency.Code,
+                        toCurrency = t.ToCurrency.Code,
                         createdAt = t.CreatedAt.ToString("yyyy/MM/dd"),
                         status = t.Status.ToString()
                     })

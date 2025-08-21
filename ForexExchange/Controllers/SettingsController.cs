@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using ForexExchange.Models;
 using ForexExchange.Services;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace ForexExchange.Controllers
 {
@@ -10,11 +11,13 @@ namespace ForexExchange.Controllers
     public class SettingsController : Controller
     {
         private readonly ISettingsService _settingsService;
+        private readonly ForexDbContext _context;
         private readonly ILogger<SettingsController> _logger;
 
-        public SettingsController(ISettingsService settingsService, ILogger<SettingsController> logger)
+        public SettingsController(ISettingsService settingsService, ForexDbContext context, ILogger<SettingsController> logger)
         {
             _settingsService = settingsService;
+            _context = context;
             _logger = logger;
         }
 
@@ -24,12 +27,30 @@ namespace ForexExchange.Controllers
             try
             {
                 var settings = await _settingsService.GetSystemSettingsAsync();
+                
+                // Load currencies for dropdown
+                ViewBag.Currencies = await _context.Currencies
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.PersianName)
+                    .ToListAsync();
+                
                 return View(settings);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading system settings");
                 TempData["ErrorMessage"] = "خطا در بارگیری تنظیمات سیستم.";
+                
+                // Load currencies even in error case
+                try
+                {
+                    ViewBag.Currencies = await _context.Currencies
+                        .Where(c => c.IsActive)
+                        .OrderBy(c => c.PersianName)
+                        .ToListAsync();
+                }
+                catch { /* ignore if currencies can't be loaded */ }
+                
                 return View(new SystemSettingsViewModel());
             }
         }
@@ -41,6 +62,16 @@ namespace ForexExchange.Controllers
         {
             if (!ModelState.IsValid)
             {
+                // Reload currencies for dropdown in case of validation errors
+                try
+                {
+                    ViewBag.Currencies = await _context.Currencies
+                        .Where(c => c.IsActive)
+                        .OrderBy(c => c.PersianName)
+                        .ToListAsync();
+                }
+                catch { /* ignore if currencies can't be loaded */ }
+                
                 return View(model);
             }
 
@@ -58,6 +89,17 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error updating system settings");
                 TempData["ErrorMessage"] = "خطا در بروزرسانی تنظیمات سیستم.";
+                
+                // Reload currencies for dropdown in case of error
+                try
+                {
+                    ViewBag.Currencies = await _context.Currencies
+                        .Where(c => c.IsActive)
+                        .OrderBy(c => c.PersianName)
+                        .ToListAsync();
+                }
+                catch { /* ignore if currencies can't be loaded */ }
+                
                 return View(model);
             }
         }

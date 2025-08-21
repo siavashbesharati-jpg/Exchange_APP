@@ -41,6 +41,8 @@ namespace ForexExchange.Services
                 // Create admin user
                 await CreateAdminUserAsync();
 
+                await CreatCurencies(); // usd ,toman , AED,OMR,EURO,LiRA
+
                 // Seed exchange rates first
                 await SeedExchangeRatesAsync();
 
@@ -54,6 +56,71 @@ namespace ForexExchange.Services
                 _logger.LogError(ex, "An error occurred while seeding data");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Seed default currencies if missing and enforce a single base currency (IRR)
+        /// </summary>
+        private async Task CreatCurencies()
+        {
+            // Desired defaults
+            var now = DateTime.Now;
+            var defaults = new List<Currency>
+            {
+                new Currency { Code = "IRR", Name = "Iranian Rial", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = now },
+                new Currency { Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = now },
+                new Currency { Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = now },
+                new Currency { Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = now },
+                new Currency { Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = now },
+                new Currency { Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = now },
+            };
+
+            // Fetch existing
+            var existing = await _context.Currencies.ToListAsync();
+
+            // Ensure IRR exists and is the only base currency
+            var irr = existing.FirstOrDefault(c => c.Code == "IRR");
+            if (irr == null)
+            {
+                irr = defaults.First(c => c.Code == "IRR");
+                _context.Currencies.Add(irr);
+                _logger.LogInformation("Seeded base currency IRR.");
+            }
+            else
+            {
+                if (!irr.IsBaseCurrency)
+                {
+                    irr.IsBaseCurrency = true;
+                    irr.IsActive = true;
+                }
+            }
+
+            // Clear base flag from any non-IRR currencies accidentally marked
+            foreach (var c in existing.Where(c => c.Code != "IRR" && c.IsBaseCurrency))
+            {
+                c.IsBaseCurrency = false;
+            }
+
+            // Add or update the rest of defaults
+            foreach (var d in defaults.Where(x => x.Code != "IRR"))
+            {
+                var curr = existing.FirstOrDefault(c => c.Code == d.Code);
+                if (curr == null)
+                {
+                    _context.Currencies.Add(d);
+                    _logger.LogInformation($"Seeded currency {d.Code}.");
+                }
+                else
+                {
+                    // Update display fields if empty to enrich data, keep existing non-empty values
+                    if (string.IsNullOrWhiteSpace(curr.Name)) curr.Name = d.Name;
+                    if (string.IsNullOrWhiteSpace(curr.PersianName)) curr.PersianName = d.PersianName;
+                    if (string.IsNullOrWhiteSpace(curr.Symbol)) curr.Symbol = d.Symbol;
+                    if (curr.DisplayOrder == 0) curr.DisplayOrder = d.DisplayOrder;
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         private async Task CreateRolesAsync()
@@ -148,11 +215,28 @@ namespace ForexExchange.Services
                 
                 var exchangeRates = new List<ExchangeRate>();
 
+                // Get base currency for exchange rate pairs
+                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                if (baseCurrency == null)
+                {
+                    _logger.LogError("Base currency not found in database");
+                    return;
+                }
+
                 foreach (var rate in webRates)
                 {
+                    // Look up currency by code
+                    var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == rate.Key);
+                    if (currency == null)
+                    {
+                        _logger.LogWarning($"Currency {rate.Key} not found in database, skipping");
+                        continue;
+                    }
+
                     exchangeRates.Add(new ExchangeRate
                     {
-                        Currency = rate.Key,
+                        FromCurrencyId = currency.Id,
+                        ToCurrencyId = baseCurrency.Id,
                         BuyRate = rate.Value.BuyRate,
                         SellRate = rate.Value.SellRate,
                         IsActive = true,
@@ -169,75 +253,18 @@ namespace ForexExchange.Services
                 }
                 else
                 {
-                    _logger.LogWarning("No rates received from web scraping, using fallback rates");
-                    await SeedFallbackExchangeRatesAsync();
+                    _logger.LogWarning("No rates received from web scraping, but ForexDbContext will handle rate seeding");
+                    // await SeedFallbackExchangeRatesAsync(); // Disabled - ForexDbContext handles seeding
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get rates from web scraping, using fallback rates");
-                await SeedFallbackExchangeRatesAsync();
+                _logger.LogError(ex, "Failed to get rates from web scraping, but ForexDbContext will handle rate seeding");
+                // await SeedFallbackExchangeRatesAsync(); // Disabled - ForexDbContext handles seeding
             }
         }
 
-        private async Task SeedFallbackExchangeRatesAsync()
-        {
-            _logger.LogInformation("Seeding fallback exchange rates...");
-
-            var exchangeRates = new[]
-            {
-                new ExchangeRate
-                {
-                    Currency = CurrencyType.USD,
-                    BuyRate = 65000,
-                    SellRate = 64000,
-                    IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System-Fallback"
-                },
-                new ExchangeRate
-                {
-                    Currency = CurrencyType.EUR,
-                    BuyRate = 70000,
-                    SellRate = 69000,
-                    IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System-Fallback"
-                },
-                new ExchangeRate
-                {
-                    Currency = CurrencyType.AED,
-                    BuyRate = 17500,
-                    SellRate = 17000,
-                    IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System-Fallback"
-                },
-                new ExchangeRate
-                {
-                    Currency = CurrencyType.OMR,
-                    BuyRate = 168000,
-                    SellRate = 166000,
-                    IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System-Fallback"
-                },
-                new ExchangeRate
-                {
-                    Currency = CurrencyType.TRY,
-                    BuyRate = 1900,
-                    SellRate = 1800,
-                    IsActive = true,
-                    UpdatedAt = DateTime.Now,
-                    UpdatedBy = "System-Fallback"
-                }
-            };
-
-            _context.ExchangeRates.AddRange(exchangeRates);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Successfully seeded {exchangeRates.Length} fallback exchange rates");
-        }
+       
 
         private async Task SeedSampleDataAsync()
         {
@@ -401,39 +428,132 @@ namespace ForexExchange.Services
         private async Task SeedOrdersAsync()
         {
             var customers = await _context.Customers.ToListAsync();
-            var exchangeRates = await _context.ExchangeRates.Where(r => r.IsActive).ToListAsync();
+            var exchangeRates = await _context.ExchangeRates
+                .Include(r => r.FromCurrency)
+                .Include(r => r.ToCurrency)
+                .Where(r => r.IsActive).ToListAsync();
+            var currencies = await _context.Currencies.Where(c => c.IsActive).ToListAsync();
+            var baseCurrency = currencies.FirstOrDefault(c => c.IsBaseCurrency);
+            var foreignCurrencies = currencies.Where(c => !c.IsBaseCurrency).ToList();
             var random = new Random();
 
-            var currencies = new[] { CurrencyType.USD, CurrencyType.EUR, CurrencyType.AED, CurrencyType.OMR, CurrencyType.TRY };
             var orderTypes = new[] { OrderType.Buy, OrderType.Sell };
-            // Create more Open orders to allow for better transaction matching
-            // var statuses = new[] { OrderStatus.Open, OrderStatus.Open, OrderStatus.Open, OrderStatus.Completed, OrderStatus.Cancelled, OrderStatus.PartiallyFilled };
 
             for (int i = 0; i < 50; i++) // Create 50 sample orders
             {
                 var customer = customers[random.Next(customers.Count)];
-                var currency = currencies[random.Next(currencies.Length)];
                 var orderType = orderTypes[random.Next(orderTypes.Length)];
                 var status = OrderStatus.Open;
 
-                var exchangeRate = exchangeRates.FirstOrDefault(r => r.Currency == currency);
-                if (exchangeRate == null) continue;
+                Currency fromCurrency, toCurrency;
+                
+                // Create diverse cross-currency scenarios with null checking
+                if (i < 20) // 40% Base currency-based trades (traditional)
+                {
+                    if (baseCurrency == null)
+                    {
+                        // Fallback if no base currency found
+                        fromCurrency = currencies.First();
+                        toCurrency = foreignCurrencies.First();
+                    }
+                    else
+                    {
+                        var foreignCurrency = foreignCurrencies[random.Next(foreignCurrencies.Count)];
+                        if (orderType == OrderType.Buy)
+                        {
+                            fromCurrency = baseCurrency;
+                            toCurrency = foreignCurrency;
+                        }
+                        else
+                        {
+                            fromCurrency = foreignCurrency;
+                            toCurrency = baseCurrency;
+                        }
+                    }
+                }
+                else if (i < 35) // 30% Cross-currency trades (USD-EUR, EUR-AED, etc.)
+                {
+                    var currency1 = foreignCurrencies[random.Next(foreignCurrencies.Count)];
+                    var currency2 = foreignCurrencies[random.Next(foreignCurrencies.Count)];
+                    while (currency2.Id == currency1.Id)
+                    {
+                        currency2 = foreignCurrencies[random.Next(foreignCurrencies.Count)];
+                    }
+                    fromCurrency = currency1;
+                    toCurrency = currency2;
+                }
+                else // 30% Mixed scenarios including base currency as target
+                {
+                    fromCurrency = foreignCurrencies[random.Next(foreignCurrencies.Count)];
+                    toCurrency = currencies[random.Next(currencies.Count)];
+                    while (toCurrency.Id == fromCurrency.Id)
+                    {
+                        toCurrency = currencies[random.Next(currencies.Count)];
+                    }
+                }
+
+                // Find appropriate exchange rate - prioritize direct rates, fallback to base currency conversion
+                var directRate = exchangeRates.FirstOrDefault(r => r.FromCurrencyId == fromCurrency.Id && r.ToCurrencyId == toCurrency.Id);
+                var reverseRate = exchangeRates.FirstOrDefault(r => r.FromCurrencyId == toCurrency.Id && r.ToCurrencyId == fromCurrency.Id);
+                
+                // For base currency conversion routes
+                var fromBaseCurrencyRate = baseCurrency != null ? 
+                    exchangeRates.FirstOrDefault(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == fromCurrency.Id) : null;
+                var toBaseCurrencyRate = baseCurrency != null ? 
+                    exchangeRates.FirstOrDefault(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == toCurrency.Id) : null;
+
+                decimal rate;
+                if (directRate != null)
+                {
+                    rate = orderType == OrderType.Buy ? directRate.SellRate : directRate.BuyRate;
+                }
+                else if (reverseRate != null)
+                {
+                    rate = orderType == OrderType.Buy ? (1.0m / reverseRate.BuyRate) : (1.0m / reverseRate.SellRate);
+                }
+                else if (fromBaseCurrencyRate != null && toBaseCurrencyRate != null && baseCurrency != null)
+                {
+                    // Cross-rate via base currency
+                    var fromToBaseRate = orderType == OrderType.Buy ? fromBaseCurrencyRate.BuyRate : fromBaseCurrencyRate.SellRate;
+                    var baseToTargetRate = orderType == OrderType.Buy ? toBaseCurrencyRate.SellRate : toBaseCurrencyRate.BuyRate;
+                    rate = baseToTargetRate / fromToBaseRate;
+                }
+                else
+                {
+                    // Fallback to simple conversion rates using currency codes
+                    var rateMapping = new Dictionary<string, decimal>
+                    {
+                        { "IRR", 1 },
+                        { "USD", 65000 },
+                        { "EUR", 70000 },
+                        { "AED", 17500 },
+                        { "OMR", 168000 },
+                        { "TRY", 1900 }
+                    };
+                    
+                    var fromRate = rateMapping.ContainsKey(fromCurrency.Code ?? "IRR") ? rateMapping[fromCurrency.Code ?? "IRR"] : 1;
+                    var toRate = rateMapping.ContainsKey(toCurrency.Code ?? "IRR") ? rateMapping[toCurrency.Code ?? "IRR"] : 1;
+                    rate = toRate / fromRate;
+                }
 
                 var amount = random.Next(100, 10000);
-                var rate = orderType == OrderType.Buy ? exchangeRate.SellRate : exchangeRate.BuyRate;
+                var totalValue = amount * rate;
 
                 var order = new Order
                 {
                     CustomerId = customer.Id,
-                    Currency = currency,
+                    FromCurrency = fromCurrency,
+                    ToCurrency = toCurrency,
                     Amount = amount,
                     Rate = rate,
-                    TotalInToman = amount * rate,
+                    TotalInToman = baseCurrency != null && fromCurrency.Id == baseCurrency.Id ? amount : 
+                                  (baseCurrency != null && toCurrency.Id == baseCurrency.Id ? totalValue : 
+                                   totalValue * 65000), // Approximate base currency value for reporting
                     OrderType = orderType,
                     Status = status,
                     CreatedAt = DateTime.Now.AddDays(-random.Next(1, 30)),
                     UpdatedAt = DateTime.Now.AddDays(-random.Next(0, 5)),
-                    Notes = i % 3 == 0 ? $"سفارش شماره {i + 1} - {(orderType == OrderType.Buy ? "خرید" : "فروش")} {currency}" : null,
+                    Notes = i % 3 == 0 ? $"سفارش شماره {i + 1} - {(orderType == OrderType.Buy ? "خرید" : "فروش")} {fromCurrency.Code ?? "N/A"} به {toCurrency.Code ?? "N/A"}" : null,
                     FilledAmount = 0
                 };
 
@@ -463,11 +583,27 @@ namespace ForexExchange.Services
             {
                 var buyOrder = buyOrders[i];
 
-                // Find a matching sell order for the same currency
-                var matchingSellOrders = sellOrders.Where(s => s.Currency == buyOrder.Currency && s.Id != buyOrder.Id).ToList();
+                // Find a matching sell order - either exact match or complementary cross-currency
+                var matchingSellOrders = sellOrders.Where(s => 
+                    s.Id != buyOrder.Id && 
+                    (
+                        // Exact currency pair match
+                        (s.FromCurrency == buyOrder.ToCurrency && s.ToCurrency == buyOrder.FromCurrency) ||
+                        // Same currency pair
+                        (s.FromCurrency == buyOrder.FromCurrency && s.ToCurrency == buyOrder.ToCurrency)
+                    )
+                ).ToList();
+
                 if (!matchingSellOrders.Any()) continue;
 
                 var sellOrder = matchingSellOrders[random.Next(matchingSellOrders.Count)];
+
+                // Determine transaction currencies
+                var fromCurrency = buyOrder.FromCurrency;
+                var toCurrency = buyOrder.ToCurrency;
+                var transactionAmount = Math.Min(buyOrder.Amount, sellOrder.Amount);
+                var transactionRate = (buyOrder.Rate + sellOrder.Rate) / 2;
+                var totalAmount = transactionAmount * transactionRate;
 
                 var transaction = new Transaction
                 {
@@ -475,15 +611,19 @@ namespace ForexExchange.Services
                     SellOrderId = sellOrder.Id,
                     BuyerCustomerId = buyOrder.CustomerId,
                     SellerCustomerId = sellOrder.CustomerId,
-                    Currency = buyOrder.Currency,
-                    Amount = Math.Min(buyOrder.Amount, sellOrder.Amount),
-                    Rate = (buyOrder.Rate + sellOrder.Rate) / 2,
-                    TotalInToman = Math.Min(buyOrder.TotalInToman, sellOrder.TotalInToman),
+                    FromCurrency = fromCurrency,
+                    ToCurrency = toCurrency,
+                    Amount = transactionAmount,
+                    Rate = transactionRate,
+                    TotalAmount = totalAmount,
+                    TotalInToman = fromCurrency.IsBaseCurrency ? transactionAmount :
+                                  (toCurrency.IsBaseCurrency ? totalAmount :
+                                   totalAmount * 65000), // Approximate base currency value
                     Status = statuses[random.Next(statuses.Length)],
                     CreatedAt = DateTime.Now.AddDays(-random.Next(1, 15)),
                     BuyerBankAccount = $"بانک ملی - {random.Next(100000, 999999)}",
                     SellerBankAccount = $"بانک صادرات - {random.Next(100000, 999999)}",
-                    Notes = $"تراکنش {transactionsCreated + 1} - تبدیل {buyOrder.Currency}"
+                    Notes = $"تراکنش {transactionsCreated + 1} - تبدیل {fromCurrency.Code ?? "N/A"} به {toCurrency.Code ?? "N/A"}"
                 };
 
                 if (transaction.Status == TransactionStatus.Completed)

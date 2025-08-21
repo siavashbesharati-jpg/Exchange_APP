@@ -1,6 +1,7 @@
 using ForexExchange.Models;
 using HtmlAgilityPack;
 using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 
 namespace ForexExchange.Services
 {
@@ -8,20 +9,14 @@ namespace ForexExchange.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<WebScrapingService> _logger;
+        private readonly ForexDbContext _context;
+        private const string BaseUrl = "https://alanchand.com/currencies-price/";
 
-        private readonly Dictionary<CurrencyType, string> _currencyUrls = new()
-        {
-            { CurrencyType.USD, "https://alanchand.com/currencies-price/usd" },
-            { CurrencyType.EUR, "https://alanchand.com/currencies-price/eur" },
-            { CurrencyType.AED, "https://alanchand.com/currencies-price/aed" },
-            { CurrencyType.OMR, "https://alanchand.com/currencies-price/omr" },
-            { CurrencyType.TRY, "https://alanchand.com/currencies-price/try" }
-        };
-
-        public WebScrapingService(HttpClient httpClient, ILogger<WebScrapingService> logger)
+        public WebScrapingService(HttpClient httpClient, ILogger<WebScrapingService> logger, ForexDbContext context)
         {
             _httpClient = httpClient;
             _logger = logger;
+            _context = context;
             
             // Configure HttpClient
             _httpClient.DefaultRequestHeaders.Add("User-Agent", 
@@ -29,41 +24,46 @@ namespace ForexExchange.Services
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
-        public async Task<Dictionary<CurrencyType, (decimal BuyRate, decimal SellRate)>> GetExchangeRatesFromWebAsync()
+        public async Task<Dictionary<string, (decimal BuyRate, decimal SellRate)>> GetExchangeRatesFromWebAsync()
         {
-            var results = new Dictionary<CurrencyType, (decimal BuyRate, decimal SellRate)>();
+            var results = new Dictionary<string, (decimal BuyRate, decimal SellRate)>();
 
-            foreach (var currency in _currencyUrls.Keys)
+            // Get active foreign currencies from database (excluding IRR/Toman)
+            var currencies = await _context.Currencies
+                .Where(c => c.IsActive && !c.IsBaseCurrency)
+                .ToListAsync();
+
+            foreach (var currency in currencies)
             {
                 try
                 {
                     var rates = await GetCurrencyRateAsync(currency);
                     if (rates.HasValue)
                     {
-                        results[currency] = rates.Value;
+                        results[currency.Code] = rates.Value;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to get exchange rate for {Currency}", currency);
+                    _logger.LogError(ex, "Failed to get exchange rate for {Currency}", currency.Code);
                 }
             }
 
             return results;
         }
 
-        public async Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(CurrencyType currency)
+        public async Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(Currency currency)
         {
-            if (!_currencyUrls.ContainsKey(currency))
-            {
-                _logger.LogWarning("No URL configured for currency {Currency}", currency);
-                return null;
-            }
+            return await GetCurrencyRateAsync(currency.Code);
+        }
 
+        public async Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(string currencyCode)
+        {
             try
             {
-                var url = _currencyUrls[currency];
-                _logger.LogInformation("Fetching exchange rate for {Currency} from {Url}", currency, url);
+                var lowerCurrencyCode = currencyCode.ToLower();
+                var url = BaseUrl + lowerCurrencyCode;
+                _logger.LogInformation("Fetching exchange rate for {Currency} from {Url}", currencyCode, url);
 
                 var response = await _httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
@@ -82,7 +82,7 @@ namespace ForexExchange.Services
                 if (buyRateNode == null || sellRateNode == null)
                 {
                     _logger.LogWarning("Could not find rate nodes for {Currency}. Buy node: {BuyNode}, Sell node: {SellNode}", 
-                        currency, buyRateNode != null, sellRateNode != null);
+                        currencyCode, buyRateNode != null, sellRateNode != null);
                     return null;
                 }
 
@@ -93,29 +93,29 @@ namespace ForexExchange.Services
                     decimal.TryParse(sellRateText, NumberStyles.Number, CultureInfo.InvariantCulture, out var sellRate))
                 {
                     _logger.LogInformation("Successfully extracted rates for {Currency}: Buy={BuyRate}, Sell={SellRate}", 
-                        currency, buyRate, sellRate);
+                        currencyCode, buyRate, sellRate);
                     return (buyRate, sellRate);
                 }
                 else
                 {
                     _logger.LogWarning("Failed to parse rates for {Currency}. Buy text: '{BuyText}', Sell text: '{SellText}'", 
-                        currency, buyRateText, sellRateText);
+                        currencyCode, buyRateText, sellRateText);
                     return null;
                 }
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "HTTP error while fetching exchange rate for {Currency}", currency);
+                _logger.LogError(ex, "HTTP error while fetching exchange rate for {Currency}", currencyCode);
                 return null;
             }
             catch (TaskCanceledException ex)
             {
-                _logger.LogError(ex, "Timeout while fetching exchange rate for {Currency}", currency);
+                _logger.LogError(ex, "Timeout while fetching exchange rate for {Currency}", currencyCode);
                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error while fetching exchange rate for {Currency}", currency);
+                _logger.LogError(ex, "Unexpected error while fetching exchange rate for {Currency}", currencyCode);
                 return null;
             }
         }

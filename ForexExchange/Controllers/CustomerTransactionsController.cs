@@ -37,6 +37,8 @@ namespace ForexExchange.Controllers
                 .Include(t => t.SellOrder)
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .Where(t => t.BuyerCustomerId == user.CustomerId || t.SellerCustomerId == user.CustomerId)
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
@@ -64,6 +66,8 @@ namespace ForexExchange.Controllers
                 .Include(t => t.SellOrder)
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .Include(t => t.Receipts)
                 .FirstOrDefaultAsync(t => t.Id == id && 
                     (t.BuyerCustomerId == user.CustomerId || t.SellerCustomerId == user.CustomerId));
@@ -94,6 +98,8 @@ namespace ForexExchange.Controllers
             var transaction = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .FirstOrDefaultAsync(t => t.Id == id && t.BuyerCustomerId == user.CustomerId);
 
             if (transaction == null)
@@ -154,6 +160,8 @@ namespace ForexExchange.Controllers
             var transaction = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
+                .Include(t => t.FromCurrency)
+                .Include(t => t.ToCurrency)
                 .FirstOrDefaultAsync(t => t.Id == id && t.SellerCustomerId == user.CustomerId);
 
             if (transaction == null)

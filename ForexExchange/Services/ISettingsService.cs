@@ -5,7 +5,7 @@ namespace ForexExchange.Services
 {
     public interface ISettingsService
     {
-        Task<T> GetSettingAsync<T>(string key, T defaultValue = default(T));
+        Task<T> GetSettingAsync<T>(string key, T defaultValue = default);
         Task SetSettingAsync<T>(string key, T value, string? description = null, string updatedBy = "System");
         Task<SystemSettingsViewModel> GetSystemSettingsAsync();
         Task UpdateSystemSettingsAsync(SystemSettingsViewModel settings, string updatedBy = "Admin");
@@ -28,7 +28,7 @@ namespace ForexExchange.Services
             _logger = logger;
         }
 
-        public async Task<T> GetSettingAsync<T>(string key, T defaultValue = default(T))
+        public async Task<T> GetSettingAsync<T>(string key, T defaultValue = default)
         {
             try
             {
@@ -104,7 +104,7 @@ namespace ForexExchange.Services
                 MaxTransactionAmount = await GetSettingAsync(SettingKeys.MaxTransactionAmount, 1000000000m),
                 DailyTransactionLimit = await GetSettingAsync(SettingKeys.DailyTransactionLimit, 5000000000m),
                 SystemMaintenance = await GetSettingAsync(SettingKeys.SystemMaintenance, false),
-                DefaultCurrency = Enum.TryParse<CurrencyType>(await GetSettingAsync(SettingKeys.DefaultCurrency, "USD"), out var currency) ? currency : CurrencyType.USD,
+                DefaultCurrencyCode = await GetSettingAsync(SettingKeys.DefaultCurrency, "USD"),
                 RateUpdateInterval = await GetSettingAsync(SettingKeys.RateUpdateInterval, 60),
                 NotificationEnabled = await GetSettingAsync(SettingKeys.NotificationEnabled, true),
                 BackupEnabled = await GetSettingAsync(SettingKeys.BackupEnabled, true)
@@ -119,7 +119,7 @@ namespace ForexExchange.Services
             await SetSettingAsync(SettingKeys.MaxTransactionAmount, settings.MaxTransactionAmount, "حداکثر مبلغ تراکنش به تومان", updatedBy);
             await SetSettingAsync(SettingKeys.DailyTransactionLimit, settings.DailyTransactionLimit, "محدودیت تراکنش روزانه به تومان", updatedBy);
             await SetSettingAsync(SettingKeys.SystemMaintenance, settings.SystemMaintenance, "حالت تعمیرات سیستم", updatedBy);
-            await SetSettingAsync(SettingKeys.DefaultCurrency, settings.DefaultCurrency.ToString(), "ارز پیش‌فرض سیستم", updatedBy);
+            await SetSettingAsync(SettingKeys.DefaultCurrency, settings.DefaultCurrencyCode, "کد ارز پیش‌فرض سیستم", updatedBy);
             await SetSettingAsync(SettingKeys.RateUpdateInterval, settings.RateUpdateInterval, "بازه بروزرسانی نرخ ارز به دقیقه", updatedBy);
             await SetSettingAsync(SettingKeys.NotificationEnabled, settings.NotificationEnabled, "فعال‌سازی سیستم اعلان‌ها", updatedBy);
             await SetSettingAsync(SettingKeys.BackupEnabled, settings.BackupEnabled, "فعال‌سازی پشتیبان‌گیری خودکار", updatedBy);

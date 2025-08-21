@@ -52,7 +52,7 @@
                                                 <tr>
                                                     <td class="fw-bold text-muted">ارز:</td>
                                                     <td>
-                                                        <span class="badge bg-info">@transaction.Currency</span>
+                                                        <span class="badge bg-info">@transaction.CurrencyPair</span>
                                                     </td>
                                                 </tr>
                                                 <tr>
@@ -144,7 +144,7 @@
                                                 <div class="bg-light p-2 rounded">
                                                     <strong>سفارش #@transaction.BuyOrderId</strong><br>
                                                     <small class="text-muted">
-                                                        مقدار: @transaction.BuyOrder.Amount.ToString("N2") @transaction.BuyOrder.Currency
+                                                        مقدار: @transaction.BuyOrder.Amount.ToString("N2") @transaction.BuyOrder.FromCurrency?.PersianName
                                                     </small><br>
                                                     <small class="text-muted">
                                                         وضعیت: 
@@ -312,7 +312,7 @@
                                         @if (ViewBag.SelectedOrder != null)
                                         {
                                             <option value="@ViewBag.SelectedOrderId" selected>
-                                                سفارش #@ViewBag.SelectedOrderId - @ViewBag.SelectedOrder.Customer.FullName - @ViewBag.SelectedOrder.Amount.ToString("N0") @ViewBag.SelectedOrder.Currency
+                                                سفارش #@ViewBag.SelectedOrderId - @ViewBag.SelectedOrder.Customer.FullName - @ViewBag.SelectedOrder.Amount.ToString("N0") @ViewBag.SelectedOrder.CurrencyPair
                                             </option>
                                         }
                                     </select>
@@ -333,7 +333,7 @@
                                             {
                                                 var isSelected = ViewBag.SelectedOrderId != null && ViewBag.SelectedOrderId == order.Id;
                                                 <option value="@order.Id" selected="@isSelected">
-                                                    سفارش #@order.Id - @order.Customer.FullName - @order.Amount.ToString("N0") @order.Currency
+                                                    سفارش #@order.Id - @order.Customer.FullName - @order.Amount.ToString("N0") @order.CurrencyPair
                                                 </option>
                                             }
                                         }

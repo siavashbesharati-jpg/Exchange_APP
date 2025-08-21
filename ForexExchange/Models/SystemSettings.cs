@@ -70,8 +70,9 @@ namespace ForexExchange.Models
         [Display(Name = "حالت تعمیرات سیستم")]
         public bool SystemMaintenance { get; set; }
 
-        [Display(Name = "ارز پیش‌فرض")]
-        public CurrencyType DefaultCurrency { get; set; }
+        [Display(Name = "کد ارز پیش‌فرض")]
+        [StringLength(3)]
+        public string DefaultCurrencyCode { get; set; } = "USD";
 
         [Display(Name = "بازه بروزرسانی نرخ (دقیقه)")]
         [Range(1, 1440, ErrorMessage = "بازه بروزرسانی باید بین 1 تا 1440 دقیقه باشد")]

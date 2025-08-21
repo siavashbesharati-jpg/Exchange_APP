@@ -164,6 +164,20 @@
                     </div>
                 </div>
 
+                <!-- Currency Management -->
+                <div class="col-lg-6 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="text-success mb-3">
+                                <i class="fas fa-money-bill-wave fa-3x"></i>
+                            </div>
+                            <h5 class="card-title">مدیریت ارزها</h5>
+                            <p class="card-text">ایجاد، مشاهده و ویرایش ارزها (بدون حذف؛ فقط فعال/غیرفعال)</p>
+                            <a href="@Url.Action("Index", "Currencies")" class="btn btn-success">مدیریت ارزها</a>
+                        </div>
+                    </div>
+                </div>
+
                 @if (User.IsInRole("Admin"))
                 {
                     <!-- System Settings (Admin Only) -->
@@ -186,53 +200,12 @@
         {
             <!-- Customer Dashboard -->
             
-            <!-- My Orders Section -->
+            <!-- Exchange Rates Section -->
             <div class="row mb-4">
                 <div class="col-12">
                     <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-shopping-cart text-primary me-2"></i>
-                        سفارشات من
-                    </h4>
-                </div>
-            </div>
-            
-            <div class="row mb-4">
-                <!-- Create Order -->
-                <div class="col-lg-6 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-success mb-3">
-                                <i class="fas fa-plus-circle fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">ثبت سفارش جدید</h5>
-                            <p class="card-text">خرید یا فروش ارز با بهترین نرخ‌ها</p>
-                            <a href="@Url.Action("Create", "Orders")" class="btn btn-success">ثبت سفارش</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- My Orders -->
-                <div class="col-lg-6 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-primary mb-3">
-                                <i class="fas fa-list fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">سفارشات من</h5>
-                            <p class="card-text">مشاهده وضعیت سفارشات ثبت شده</p>
-                            <a href="@Url.Action("Index", "Orders")" class="btn btn-primary">مشاهده سفارشات</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Transactions Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <hr class="my-4">
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-history text-info me-2"></i>
-                        تراکنش‌ها و حساب من
+                        <i class="fas fa-chart-line text-success me-2"></i>
+                        نرخ‌های ارز و حساب کاربری
                     </h4>
                 </div>
             </div>

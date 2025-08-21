@@ -195,7 +195,7 @@
                                             <tr>
                                                 <th>شماره</th>
                                                 <th>نوع</th>
-                                                <th>ارز</th>
+                                                <th>جفت ارز</th>
                                                 <th>مبلغ</th>
                                                 <th>نرخ</th>
                                                 <th>وضعیت</th>
@@ -218,7 +218,7 @@
                                                             <span class="badge bg-warning">فروش</span>
                                                         }
                                                     </td>
-                                                    <td>@order.Currency</td>
+                                                    <td>@order.CurrencyPair</td>
                                                     <td>@order.Amount.ToString("N0")</td>
                                                     <td>@order.Rate.ToString("N0")</td>
                                                     <td>
@@ -313,7 +313,10 @@
                                                             @transaction.BuyerCustomer?.FullName
                                                         }
                                                     </td>
-                                                    <td>@transaction.Amount.ToString("N0") @transaction.Currency</td>
+                                                    <td>
+                                                        @transaction.Amount.ToString("N0") @transaction.FromCurrency?.PersianName
+                                                        <small class="text-muted">(@transaction.CurrencyPair)</small>
+                                                    </td>
                                                     <td>
                                                         @if (transaction.Status == ForexExchange.Models.TransactionStatus.Completed)
                                                         {
@@ -411,7 +414,7 @@
                                         activities.Add(new { 
                                             Date = order.CreatedAt,
                                             Type = "سفارش",
-                                            Description = $"سفارش {(order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")} {order.Amount:N0} {order.Currency}",
+                                            Description = $"سفارش {(order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")} {order.Amount:N0} {order.FromCurrency?.PersianName} ({order.CurrencyPair})",
                                             Status = order.Status.ToString(),
                                             Icon = "fas fa-shopping-cart",
                                             Color = "primary"

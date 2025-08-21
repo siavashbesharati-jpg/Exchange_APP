@@ -12,31 +12,32 @@ namespace ForexExchange.Models
         public int Id { get; set; }
         
         /// <summary>
-        /// Base currency (what you're selling/from)
-        /// ارز پایه (آنچه می‌فروشید/از)
+        /// Base currency ID (what you're selling/from)
+        /// شناسه ارز پایه (آنچه می‌فروشید/از)
         /// </summary>
         [Required]
         [Display(Name = "From Currency - از ارز")]
-        public CurrencyType FromCurrency { get; set; }
+        public int FromCurrencyId { get; set; }
         
         /// <summary>
-        /// Quote currency (what you're buying/to)
-        /// ارز نقل قول (آنچه می‌خرید/به)
+        /// Quote currency ID (what you're buying/to)
+        /// شناسه ارز نقل قول (آنچه می‌خرید/به)
         /// </summary>
         [Required]
         [Display(Name = "To Currency - به ارز")]
-        public CurrencyType ToCurrency { get; set; }
+        public int ToCurrencyId { get; set; }
         
         /// <summary>
-        /// Legacy field for backward compatibility
-        /// فیلد قدیمی برای سازگاری
+        /// Navigation property for From Currency
+        /// خاصیت ناوبری برای ارز مبدأ
         /// </summary>
-        [Required]
-        public CurrencyType Currency 
-        { 
-            get => FromCurrency; 
-            set => FromCurrency = value; 
-        }
+        public Currency FromCurrency { get; set; } = null!;
+        
+        /// <summary>
+        /// Navigation property for To Currency
+        /// خاصیت ناوبری برای ارز مقصد
+        /// </summary>
+        public Currency ToCurrency { get; set; } = null!;
         
         [Required]
         [Column(TypeName = "decimal(18,4)")]
@@ -64,13 +65,13 @@ namespace ForexExchange.Models
         /// شناسه جفت ارز
         /// </summary>
         [Display(Name = "Currency Pair - جفت ارز")]
-        public string CurrencyPair => $"{FromCurrency}/{ToCurrency}";
+        public string CurrencyPair => $"{FromCurrency?.Code}/{ToCurrency?.Code}";
         
         /// <summary>
-        /// Check if this is a cross-currency rate (not involving Toman)
-        /// بررسی آیا این نرخ متقابل است (شامل تومان نمی‌شود)
+        /// Check if this is a cross-currency rate (not involving IRR)
+        /// بررسی آیا این نرخ متقابل است (شامل ریال نمی‌شود)
         /// </summary>
-        public bool IsCrossCurrency => FromCurrency != CurrencyType.Toman && ToCurrency != CurrencyType.Toman;
+        public bool IsCrossCurrency => FromCurrency?.Code != "IRR" && ToCurrency?.Code != "IRR";
         
         /// <summary>
         /// Calculate spread (difference between sell and buy rate)

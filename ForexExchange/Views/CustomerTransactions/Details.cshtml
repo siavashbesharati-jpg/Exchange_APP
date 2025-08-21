@@ -76,14 +76,14 @@
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-info">@Model.Currency</div>
-                                <small class="text-muted">نوع ارز</small>
+                                <div class="h4 text-info">@Model.CurrencyPair</div>
+                                <small class="text-muted">جفت ارز</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
                                 <div class="h4 text-success">@Model.Amount.ToString("N2")</div>
-                                <small class="text-muted">مقدار (@Model.Currency)</small>
+                                <small class="text-muted">مقدار (@Model.FromCurrency?.PersianName)</small>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -273,7 +273,7 @@
                         
                         <button type="button" class="btn btn-warning btn-lg" data-bs-toggle="modal" data-bs-target="#confirmTransferModal">
                             <i class="fas fa-paper-plane me-2"></i>
-                            تأیید انتقال ارز (@Model.Amount.ToString("N2") @Model.Currency)
+                            تأیید انتقال ارز (@Model.Amount.ToString("N2") @Model.FromCurrency?.PersianName)
                         </button>
                     </div>
                 </div>
@@ -481,7 +481,7 @@
                         </div>
                         <div class="col-md-6">
                             <strong>مقدار ارز دریافتی:</strong>
-                            <div class="h5 text-success">@Model.Amount.ToString("N2") @Model.Currency</div>
+                            <div class="h5 text-success">@Model.Amount.ToString("N2") @Model.FromCurrency?.PersianName <small class="text-muted">(@Model.CurrencyPair)</small></div>
                         </div>
                     </div>
                     
@@ -527,7 +527,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>مقدار ارز منتقل شده:</strong>
-                            <div class="h5 text-primary">@Model.Amount.ToString("N2") @Model.Currency</div>
+                            <div class="h5 text-primary">@Model.Amount.ToString("N2") @Model.FromCurrency?.PersianName <small class="text-muted">(@Model.CurrencyPair)</small></div>
                         </div>
                         <div class="col-md-6">
                             <strong>مبلغ دریافتی:</strong>
