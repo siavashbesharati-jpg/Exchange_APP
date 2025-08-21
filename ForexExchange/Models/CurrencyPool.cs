@@ -18,13 +18,27 @@ namespace ForexExchange.Models
         public int Id { get; set; }
 
         /// <summary>
-        /// Currency code (USD, EUR, GBP, etc.)
-        /// کد ارز (دلار، یورو، پوند و غیره)
+        /// Currency type from the enum (USD, EUR, AED, OMR, TRY, Toman)
+        /// نوع ارز از enum (دلار، یورو، درهم، ریال عمان، لیر، تومان)
         /// </summary>
         [Required]
-        [StringLength(3, MinimumLength = 3)]
         [Display(Name = "Currency - ارز")]
-        public string Currency { get; set; } = string.Empty;
+        public CurrencyType Currency { get; set; }
+        
+        /// <summary>
+        /// Legacy string field for backward compatibility
+        /// فیلد رشته قدیمی برای سازگاری
+        /// </summary>
+        [StringLength(3, MinimumLength = 3)]
+        public string CurrencyCode 
+        { 
+            get => Currency.ToString(); 
+            set 
+            { 
+                if (Enum.TryParse<CurrencyType>(value, out var currencyType))
+                    Currency = currencyType;
+            } 
+        }
 
         /// <summary>
         /// Current balance in the pool for this currency
@@ -118,14 +132,26 @@ namespace ForexExchange.Models
         }
 
         /// <summary>
-        /// Calculate current position value at given rate
-        /// محاسبه ارزش موقعیت فعلی در نرخ داده شده
+        /// Calculate current position value in specified target currency
+        /// محاسبه ارزش موقعیت فعلی در ارز هدف مشخص شده
         /// </summary>
-        /// <param name="currentRate">Current market rate</param>
+        /// <param name="targetCurrency">Target currency for valuation</param>
+        /// <param name="exchangeRate">Exchange rate from this currency to target currency</param>
+        /// <returns>Current position value in target currency</returns>
+        public decimal CalculateCurrentPositionValue(CurrencyType targetCurrency, decimal exchangeRate)
+        {
+            return Balance * exchangeRate;
+        }
+        
+        /// <summary>
+        /// Legacy method for backward compatibility - calculates value in Toman
+        /// روش قدیمی برای سازگاری - ارزش را به تومان محاسبه می‌کند
+        /// </summary>
+        /// <param name="currentRate">Current rate to Toman</param>
         /// <returns>Current position value in Toman</returns>
         public decimal CalculateCurrentPositionValue(decimal currentRate)
         {
-            return Balance * currentRate;
+            return CalculateCurrentPositionValue(CurrencyType.Toman, currentRate);
         }
 
         /// <summary>

@@ -12,28 +12,28 @@ namespace ForexExchange.Services
         /// Update pool balance after a transaction
         /// بروزرسانی موجودی استخر پس از تراکنش
         /// </summary>
-        /// <param name="currency">Currency code</param>
+        /// <param name="currency">Currency type</param>
         /// <param name="amount">Transaction amount</param>
         /// <param name="transactionType">Buy or Sell from exchange perspective</param>
         /// <param name="rate">Transaction rate</param>
         /// <returns>Updated pool</returns>
-        Task<CurrencyPool> UpdatePoolAsync(string currency, decimal amount, PoolTransactionType transactionType, decimal rate);
+        Task<CurrencyPool> UpdatePoolAsync(CurrencyType currency, decimal amount, PoolTransactionType transactionType, decimal rate);
 
         /// <summary>
         /// Get current balance for a currency
         /// دریافت موجودی فعلی برای یک ارز
         /// </summary>
-        /// <param name="currency">Currency code</param>
+        /// <param name="currency">Currency type</param>
         /// <returns>Current balance</returns>
-        Task<decimal> GetPoolBalanceAsync(string currency);
+        Task<decimal> GetPoolBalanceAsync(CurrencyType currency);
 
         /// <summary>
         /// Get pool details for a currency
         /// دریافت جزئیات استخر برای یک ارز
         /// </summary>
-        /// <param name="currency">Currency code</param>
+        /// <param name="currency">Currency type</param>
         /// <returns>Pool details or null if not found</returns>
-        Task<CurrencyPool?> GetPoolAsync(string currency);
+        Task<CurrencyPool?> GetPoolAsync(CurrencyType currency);
 
         /// <summary>
         /// Get all active currency pools
@@ -46,18 +46,19 @@ namespace ForexExchange.Services
         /// Initialize a new currency pool
         /// ایجاد استخر جدید برای یک ارز
         /// </summary>
-        /// <param name="currency">Currency code</param>
+        /// <param name="currency">Currency type</param>
         /// <param name="initialBalance">Initial balance (optional)</param>
         /// <returns>Created pool</returns>
-        Task<CurrencyPool> CreatePoolAsync(string currency, decimal initialBalance = 0);
+        Task<CurrencyPool> CreatePoolAsync(CurrencyType currency, decimal initialBalance = 0);
 
         /// <summary>
-        /// Calculate total portfolio value in Toman
-        /// محاسبه ارزش کل پورتفولیو به تومان
+        /// Calculate total portfolio value in specified currency
+        /// محاسبه ارزش کل پورتفولیو در ارز مشخص شده
         /// </summary>
+        /// <param name="targetCurrency">Target currency for valuation</param>
         /// <param name="exchangeRates">Current exchange rates</param>
         /// <returns>Total portfolio value</returns>
-        Task<decimal> CalculatePortfolioValueAsync(Dictionary<string, decimal> exchangeRates);
+        Task<decimal> CalculatePortfolioValueAsync(CurrencyType targetCurrency, Dictionary<string, decimal> exchangeRates);
 
         /// <summary>
         /// Get pools with high risk levels
@@ -80,10 +81,10 @@ namespace ForexExchange.Services
         /// Get pool performance statistics
         /// دریافت آمار عملکرد استخر
         /// </summary>
-        /// <param name="currency">Currency code</param>
+        /// <param name="currency">Currency type</param>
         /// <param name="currentRate">Current market rate</param>
         /// <returns>Pool performance data</returns>
-        Task<PoolPerformance> GetPoolPerformanceAsync(string currency, decimal currentRate);
+        Task<PoolPerformance> GetPoolPerformanceAsync(CurrencyType currency, decimal currentRate);
 
         /// <summary>
         /// Process transaction and update corresponding pools
@@ -119,7 +120,7 @@ namespace ForexExchange.Services
     /// </summary>
     public class PoolPerformance
     {
-        public string Currency { get; set; } = string.Empty;
+        public CurrencyType Currency { get; set; }
         public decimal CurrentBalance { get; set; }
         public decimal CurrentValue { get; set; }
         public decimal TotalProfit { get; set; }

@@ -127,7 +127,10 @@ namespace ForexExchange.Migrations
                     b.Property<decimal>("Balance")
                         .HasColumnType("decimal(18,8)");
 
-                    b.Property<string>("Currency")
+                    b.Property<int>("Currency")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CurrencyCode")
                         .IsRequired()
                         .HasMaxLength(3)
                         .HasColumnType("TEXT");
@@ -169,7 +172,21 @@ namespace ForexExchange.Migrations
                         {
                             Id = 1,
                             Balance = 0m,
-                            Currency = "USD",
+                            Currency = 0,
+                            CurrencyCode = "Toman",
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Iranian Toman pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Balance = 0m,
+                            Currency = 1,
+                            CurrencyCode = "USD",
                             IsActive = true,
                             LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             Notes = "US Dollar pool - initial setup",
@@ -179,9 +196,10 @@ namespace ForexExchange.Migrations
                         },
                         new
                         {
-                            Id = 2,
+                            Id = 3,
                             Balance = 0m,
-                            Currency = "EUR",
+                            Currency = 2,
+                            CurrencyCode = "EUR",
                             IsActive = true,
                             LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             Notes = "Euro pool - initial setup",
@@ -191,9 +209,10 @@ namespace ForexExchange.Migrations
                         },
                         new
                         {
-                            Id = 3,
+                            Id = 4,
                             Balance = 0m,
-                            Currency = "AED",
+                            Currency = 3,
+                            CurrencyCode = "AED",
                             IsActive = true,
                             LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             Notes = "UAE Dirham pool - initial setup",
@@ -203,9 +222,10 @@ namespace ForexExchange.Migrations
                         },
                         new
                         {
-                            Id = 4,
+                            Id = 5,
                             Balance = 0m,
-                            Currency = "OMR",
+                            Currency = 4,
+                            CurrencyCode = "OMR",
                             IsActive = true,
                             LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             Notes = "Omani Rial pool - initial setup",
@@ -215,9 +235,10 @@ namespace ForexExchange.Migrations
                         },
                         new
                         {
-                            Id = 5,
+                            Id = 6,
                             Balance = 0m,
-                            Currency = "TRY",
+                            Currency = 5,
+                            CurrencyCode = "TRY",
                             IsActive = true,
                             LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             Notes = "Turkish Lira pool - initial setup",
@@ -284,11 +305,17 @@ namespace ForexExchange.Migrations
                     b.Property<int>("Currency")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("FromCurrency")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("SellRate")
                         .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("ToCurrency")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -302,6 +329,9 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("Currency", "IsActive");
 
+                    b.HasIndex("FromCurrency", "ToCurrency", "IsActive")
+                        .IsUnique();
+
                     b.ToTable("ExchangeRates");
 
                     b.HasData(
@@ -309,9 +339,11 @@ namespace ForexExchange.Migrations
                         {
                             Id = 1,
                             BuyRate = 68000m,
-                            Currency = 1,
+                            Currency = 0,
+                            FromCurrency = 0,
                             IsActive = true,
                             SellRate = 69000m,
+                            ToCurrency = 1,
                             UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
@@ -319,9 +351,11 @@ namespace ForexExchange.Migrations
                         {
                             Id = 2,
                             BuyRate = 72000m,
-                            Currency = 2,
+                            Currency = 0,
+                            FromCurrency = 0,
                             IsActive = true,
                             SellRate = 73000m,
+                            ToCurrency = 2,
                             UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
@@ -329,9 +363,11 @@ namespace ForexExchange.Migrations
                         {
                             Id = 3,
                             BuyRate = 18500m,
-                            Currency = 3,
+                            Currency = 0,
+                            FromCurrency = 0,
                             IsActive = true,
                             SellRate = 19000m,
+                            ToCurrency = 3,
                             UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
@@ -339,9 +375,11 @@ namespace ForexExchange.Migrations
                         {
                             Id = 4,
                             BuyRate = 177000m,
-                            Currency = 4,
+                            Currency = 0,
+                            FromCurrency = 0,
                             IsActive = true,
                             SellRate = 179000m,
+                            ToCurrency = 4,
                             UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         },
@@ -349,9 +387,119 @@ namespace ForexExchange.Migrations
                         {
                             Id = 5,
                             BuyRate = 1950m,
-                            Currency = 5,
+                            Currency = 0,
+                            FromCurrency = 0,
                             IsActive = true,
                             SellRate = 2050m,
+                            ToCurrency = 5,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            BuyRate = 0.0000144927536231884057971014m,
+                            Currency = 1,
+                            FromCurrency = 1,
+                            IsActive = true,
+                            SellRate = 0.0000147058823529411764705882m,
+                            ToCurrency = 0,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            BuyRate = 0.000013698630136986301369863m,
+                            Currency = 2,
+                            FromCurrency = 2,
+                            IsActive = true,
+                            SellRate = 0.0000138888888888888888888889m,
+                            ToCurrency = 0,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            BuyRate = 0.0000526315789473684210526316m,
+                            Currency = 3,
+                            FromCurrency = 3,
+                            IsActive = true,
+                            SellRate = 0.0000540540540540540540540541m,
+                            ToCurrency = 0,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            BuyRate = 0.0000055865921787709497206704m,
+                            Currency = 4,
+                            FromCurrency = 4,
+                            IsActive = true,
+                            SellRate = 0.0000056497175141242937853107m,
+                            ToCurrency = 0,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            BuyRate = 0.000487804878048780487804878m,
+                            Currency = 5,
+                            FromCurrency = 5,
+                            IsActive = true,
+                            SellRate = 0.0005128205128205128205128205m,
+                            ToCurrency = 0,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            BuyRate = 0.92m,
+                            Currency = 1,
+                            FromCurrency = 1,
+                            IsActive = true,
+                            SellRate = 0.94m,
+                            ToCurrency = 2,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            BuyRate = 3.67m,
+                            Currency = 1,
+                            FromCurrency = 1,
+                            IsActive = true,
+                            SellRate = 3.69m,
+                            ToCurrency = 3,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            BuyRate = 0.384m,
+                            Currency = 1,
+                            FromCurrency = 1,
+                            IsActive = true,
+                            SellRate = 0.386m,
+                            ToCurrency = 4,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            BuyRate = 34.5m,
+                            Currency = 1,
+                            FromCurrency = 1,
+                            IsActive = true,
+                            SellRate = 35.2m,
+                            ToCurrency = 5,
                             UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
                             UpdatedBy = "System"
                         });
@@ -424,6 +572,9 @@ namespace ForexExchange.Migrations
                     b.Property<decimal>("FilledAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("FromCurrency")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
@@ -432,10 +583,16 @@ namespace ForexExchange.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal>("Rate")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("ToCurrency")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalInToman")
                         .HasColumnType("decimal(18,2)");
@@ -445,7 +602,13 @@ namespace ForexExchange.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("FromCurrency", "ToCurrency");
 
                     b.ToTable("Orders");
                 });
@@ -721,12 +884,15 @@ namespace ForexExchange.Migrations
                     b.Property<int>("Currency")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("FromCurrency")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<decimal>("Rate")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<int>("SellOrderId")
                         .HasColumnType("INTEGER");
@@ -740,6 +906,12 @@ namespace ForexExchange.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("ToCurrency")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalInToman")
                         .HasColumnType("decimal(18,2)");

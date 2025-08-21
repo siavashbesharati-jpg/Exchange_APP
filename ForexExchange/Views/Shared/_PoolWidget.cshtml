@@ -33,11 +33,12 @@
                                     <span class="currency-flag">
                                         @switch (pool.Currency)
                                         {
-                                            case "USD": <span>🇺🇸</span> break;
-                                            case "EUR": <span>🇪🇺</span> break;
-                                            case "AED": <span>🇦🇪</span> break;
-                                            case "OMR": <span>🇴🇲</span> break;
-                                            case "TRY": <span>🇹🇷</span> break;
+                                            case ForexExchange.Models.CurrencyType.Toman: <span>🇮🇷</span> break;
+                                            case ForexExchange.Models.CurrencyType.USD: <span>🇺🇸</span> break;
+                                            case ForexExchange.Models.CurrencyType.EUR: <span>🇪🇺</span> break;
+                                            case ForexExchange.Models.CurrencyType.AED: <span>🇦🇪</span> break;
+                                            case ForexExchange.Models.CurrencyType.OMR: <span>🇴🇲</span> break;
+                                            case ForexExchange.Models.CurrencyType.TRY: <span>🇹🇷</span> break;
                                             default: <span>💱</span> break;
                                         }
                                     </span>

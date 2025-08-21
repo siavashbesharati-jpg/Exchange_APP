@@ -39,31 +39,86 @@ namespace ForexExchange.Models
         public OrderType OrderType { get; set; }
         
         [Required]
-        public CurrencyType Currency { get; set; }
+        [Display(Name = "From Currency - از ارز")]
+        public CurrencyType FromCurrency { get; set; }
+        
+        [Required]
+        [Display(Name = "To Currency - به ارز")]
+        public CurrencyType ToCurrency { get; set; }
+        
+        /// <summary>
+        /// Legacy field for backward compatibility - now maps to FromCurrency
+        /// فیلد قدیمی برای سازگاری - اکنون به FromCurrency نگاشت می‌شود
+        /// </summary>
+        [Required]
+        public CurrencyType Currency 
+        { 
+            get => FromCurrency; 
+            set => FromCurrency = value; 
+        }
         
         [Required]
         [Column(TypeName = "decimal(18,2)")]
+        [Display(Name = "Amount - مقدار")]
         public decimal Amount { get; set; }
         
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(18,4)")]
+        [Display(Name = "Exchange Rate - نرخ تبدیل")]
         public decimal Rate { get; set; }
         
         [Required]
         [Column(TypeName = "decimal(18,2)")]
-        public decimal TotalInToman { get; set; }
+        [Display(Name = "Total Amount - مقدار کل")]
+        public decimal TotalAmount { get; set; }
+        
+        /// <summary>
+        /// Legacy field for backward compatibility - now calculated based on ToCurrency
+        /// فیلد قدیمی برای سازگاری - اکنون بر اساس ToCurrency محاسبه می‌شود
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalInToman 
+        { 
+            get => ToCurrency == CurrencyType.Toman ? TotalAmount : 0; 
+            set { if (ToCurrency == CurrencyType.Toman) TotalAmount = value; }
+        }
         
         [Column(TypeName = "decimal(18,2)")]
+        [Display(Name = "Filled Amount - مقدار تکمیل شده")]
         public decimal FilledAmount { get; set; } = 0;
         
         [Required]
+        [Display(Name = "Status - وضعیت")]
         public OrderStatus Status { get; set; } = OrderStatus.Open;
         
+        [Display(Name = "Created At - تاریخ ایجاد")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        
+        [Display(Name = "Updated At - تاریخ بروزرسانی")]
         public DateTime? UpdatedAt { get; set; }
         
         [StringLength(500)]
+        [Display(Name = "Notes - یادداشت‌ها")]
         public string? Notes { get; set; }
+        
+        /// <summary>
+        /// Cross-currency pair identifier (e.g., "USD/EUR", "AED/TRY")
+        /// شناسه جفت ارز متقابل
+        /// </summary>
+        [Display(Name = "Currency Pair - جفت ارز")]
+        public string CurrencyPair => $"{FromCurrency}/{ToCurrency}";
+        
+        /// <summary>
+        /// Calculate remaining amount to be filled
+        /// محاسبه مقدار باقی‌مانده برای تکمیل
+        /// </summary>
+        public decimal RemainingAmount => Amount - FilledAmount;
+        
+        /// <summary>
+        /// Check if order is cross-currency (not involving Toman)
+        /// بررسی آیا سفارش متقابل است (شامل تومان نمی‌شود)
+        /// </summary>
+        public bool IsCrossCurrency => FromCurrency != CurrencyType.Toman && ToCurrency != CurrencyType.Toman;
         
         // Navigation properties
         public Customer Customer { get; set; } = null!;
