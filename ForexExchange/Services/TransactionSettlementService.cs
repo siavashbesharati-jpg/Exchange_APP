@@ -9,17 +9,20 @@ namespace ForexExchange.Services
         private readonly ILogger<TransactionSettlementService> _logger;
         private readonly IEmailService _emailService;
         private readonly ISettingsService _settingsService;
+        private readonly ICurrencyPoolService _poolService;
         
         public TransactionSettlementService(
             ForexDbContext context, 
             ILogger<TransactionSettlementService> logger,
             IEmailService emailService,
-            ISettingsService settingsService)
+            ISettingsService settingsService,
+            ICurrencyPoolService poolService)
         {
             _context = context;
             _logger = logger;
             _emailService = emailService;
             _settingsService = settingsService;
+            _poolService = poolService;
         }
 
         public async Task<Transaction> CreateTransactionAsync(Order buyOrder, Order sellOrder, decimal matchedAmount)
@@ -74,6 +77,19 @@ namespace ForexExchange.Services
                 sellOrder.UpdatedAt = DateTime.Now;
 
                 await _context.SaveChangesAsync();
+
+                // Update currency pool after transaction creation
+                try
+                {
+                    await _poolService.ProcessTransactionAsync(transaction);
+                    _logger.LogInformation($"Currency pool updated for transaction {transaction.Id}");
+                }
+                catch (Exception poolEx)
+                {
+                    _logger.LogError(poolEx, $"Failed to update currency pool for transaction {transaction.Id}");
+                    // Don't fail the entire transaction for pool update errors
+                }
+
                 await dbTransaction.CommitAsync();
 
                 _logger.LogInformation($"Transaction {transaction.Id} created for matched orders {buyOrder.Id} and {sellOrder.Id}");

@@ -11,12 +11,14 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private readonly ForexDbContext _context;
     private readonly ITransactionSettlementService _settlementService;
+    private readonly ICurrencyPoolService _poolService;
 
-    public HomeController(ILogger<HomeController> logger, ForexDbContext context, ITransactionSettlementService settlementService)
+    public HomeController(ILogger<HomeController> logger, ForexDbContext context, ITransactionSettlementService settlementService, ICurrencyPoolService poolService)
     {
         _logger = logger;
         _context = context;
         _settlementService = settlementService;
+        _poolService = poolService;
     }
 
     public async Task<IActionResult> Index()
@@ -50,9 +52,19 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult Dashboard()
+    public async Task<IActionResult> Dashboard()
     {
+        // Get currency pools for the widget
+        var pools = await _poolService.GetAllPoolsAsync();
+        ViewBag.CurrencyPools = pools;
+        
         return View();
+    }
+
+    public async Task<IActionResult> PoolWidget()
+    {
+        var pools = await _poolService.GetAllPoolsAsync();
+        return PartialView("_PoolWidget", pools);
     }
 
     public IActionResult Privacy()

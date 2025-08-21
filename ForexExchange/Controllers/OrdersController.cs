@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Services;
 
 namespace ForexExchange.Controllers
 {
@@ -12,12 +13,14 @@ namespace ForexExchange.Controllers
         private readonly ForexDbContext _context;
         private readonly ILogger<OrdersController> _logger;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ICurrencyPoolService _poolService;
 
-        public OrdersController(ForexDbContext context, ILogger<OrdersController> logger, UserManager<ApplicationUser> userManager)
+        public OrdersController(ForexDbContext context, ILogger<OrdersController> logger, UserManager<ApplicationUser> userManager, ICurrencyPoolService poolService)
         {
             _context = context;
             _logger = logger;
             _userManager = userManager;
+            _poolService = poolService;
         }
 
         // Helper method to check if user is admin or staff
@@ -227,15 +230,16 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
-            // Load available orders for matching if this order is still open
-            if (order.Status == OrderStatus.Open)
+            // Load available orders for matching if this order is still open or partially filled
+            if (order.Status == OrderStatus.Open || order.Status == OrderStatus.PartiallyFilled)
             {
                 var availableOrders = await _context.Orders
                     .Include(o => o.Customer)
-                    .Where(o => o.Status == OrderStatus.Open &&
+                    .Where(o => (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled) &&
                                o.Currency == order.Currency &&
                                o.OrderType != order.OrderType &&
-                               o.Id != order.Id)
+                               o.Id != order.Id &&
+                               o.Amount > o.FilledAmount) // Only orders with remaining amount
                     .ToListAsync();
 
                 // Filter by rate compatibility and sort appropriately
@@ -472,19 +476,20 @@ namespace ForexExchange.Controllers
                 .Include(o => o.Customer)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (order == null || order.Status != OrderStatus.Open)
+            if (order == null || (order.Status != OrderStatus.Open && order.Status != OrderStatus.PartiallyFilled) || order.Amount <= order.FilledAmount)
             {
                 TempData["ErrorMessage"] = "سفارش موجود نیست یا قابل مچ کردن نمی‌باشد.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            // Find matching orders
+            // Find matching orders - only those with remaining amount to fill
             var matchingOrders = await _context.Orders
                 .Include(o => o.Customer)
                 .Where(o => (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled) &&
                            o.Currency == order.Currency &&
                            o.OrderType != order.OrderType &&
-                           o.Id != order.Id)
+                           o.Id != order.Id &&
+                           o.Amount > o.FilledAmount) // Ensure order has remaining amount
                 .ToListAsync();
 
             // Filter by rate compatibility
@@ -508,64 +513,104 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            // Simple matching logic - match with first available order
-            var matchingOrder = matchingOrders.First();
-            var matchAmount = Math.Min(order.Amount - order.FilledAmount,
-                                     matchingOrder.Amount - matchingOrder.FilledAmount);
+            // Enhanced matching logic - match with best available orders
+            decimal remainingAmount = order.Amount - order.FilledAmount;
+            int matchCount = 0;
+            var createdTransactions = new List<int>();
 
-            // Determine transaction rate - use the better rate for both parties
-            // For buy/sell matching, use the price that satisfies both orders
-            decimal transactionRate;
-            if (order.OrderType == OrderType.Buy)
+            foreach (var matchingOrder in matchingOrders)
             {
-                // Buyer willing to pay up to order.Rate, seller asking matchingOrder.Rate
-                // Use the seller's rate (lower or equal to buyer's rate)
-                transactionRate = matchingOrder.Rate;
+                if (remainingAmount <= 0) break; // Order fully filled
+                
+                var availableAmount = matchingOrder.Amount - matchingOrder.FilledAmount;
+                if (availableAmount <= 0) continue; // Skip fully filled orders
+                
+                var matchAmount = Math.Min(remainingAmount, availableAmount);
+
+                // Determine transaction rate - use the better rate for both parties
+                decimal transactionRate;
+                if (order.OrderType == OrderType.Buy)
+                {
+                    // Buyer willing to pay up to order.Rate, seller asking matchingOrder.Rate
+                    // Use the seller's rate (lower or equal to buyer's rate)
+                    transactionRate = matchingOrder.Rate;
+                }
+                else
+                {
+                    // Seller willing to accept order.Rate, buyer offering matchingOrder.Rate  
+                    // Use the buyer's rate (higher or equal to seller's rate)
+                    transactionRate = matchingOrder.Rate;
+                }
+
+                // Create transaction
+                var transaction = new Transaction
+                {
+                    BuyOrderId = order.OrderType == OrderType.Buy ? order.Id : matchingOrder.Id,
+                    SellOrderId = order.OrderType == OrderType.Sell ? order.Id : matchingOrder.Id,
+                    BuyerCustomerId = order.OrderType == OrderType.Buy ? order.CustomerId : matchingOrder.CustomerId,
+                    SellerCustomerId = order.OrderType == OrderType.Sell ? order.CustomerId : matchingOrder.CustomerId,
+                    Currency = order.Currency,
+                    Amount = matchAmount,
+                    Rate = transactionRate,
+                    TotalInToman = matchAmount * transactionRate,
+                    Status = TransactionStatus.Pending,
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.Transactions.Add(transaction);
+
+                // Update order statuses
+                order.FilledAmount += matchAmount;
+                matchingOrder.FilledAmount += matchAmount;
+
+                if (order.FilledAmount >= order.Amount)
+                    order.Status = OrderStatus.Completed;
+                else
+                    order.Status = OrderStatus.PartiallyFilled;
+
+                if (matchingOrder.FilledAmount >= matchingOrder.Amount)
+                    matchingOrder.Status = OrderStatus.Completed;
+                else
+                    matchingOrder.Status = OrderStatus.PartiallyFilled;
+
+                order.UpdatedAt = DateTime.Now;
+                matchingOrder.UpdatedAt = DateTime.Now;
+
+                remainingAmount -= matchAmount;
+                matchCount++;
+                
+                await _context.SaveChangesAsync();
+                
+                // Update currency pool after transaction creation
+                try
+                {
+                    await _poolService.ProcessTransactionAsync(transaction);
+                    _logger.LogInformation($"Currency pool updated for transaction {transaction.Id}");
+                }
+                catch (Exception poolEx)
+                {
+                    _logger.LogError(poolEx, $"Failed to update currency pool for transaction {transaction.Id}");
+                    // Don't fail the matching process for pool update errors
+                }
+                
+                createdTransactions.Add(transaction.Id);
+            }
+
+            if (matchCount == 0)
+            {
+                string message = order.OrderType == OrderType.Buy
+                    ? $"هیچ سفارش فروش با نرخ {order.Rate:N0} تومان یا کمتر یافت نشد."
+                    : $"هیچ سفارش خرید با نرخ {order.Rate:N0} تومان یا بیشتر یافت نشد.";
+                TempData["InfoMessage"] = message;
+            }
+            else if (matchCount == 1)
+            {
+                TempData["SuccessMessage"] = $"سفارش با موفقیت مچ شد. تراکنش شماره {createdTransactions[0]} ایجاد شد.";
             }
             else
             {
-                // Seller willing to accept order.Rate, buyer offering matchingOrder.Rate  
-                // Use the buyer's rate (higher or equal to seller's rate)
-                transactionRate = matchingOrder.Rate;
+                TempData["SuccessMessage"] = $"سفارش با {matchCount} سفارش مچ شد. تراکنش‌های شماره {string.Join(", ", createdTransactions)} ایجاد شدند.";
             }
-
-            // Create transaction
-            var transaction = new Transaction
-            {
-                BuyOrderId = order.OrderType == OrderType.Buy ? order.Id : matchingOrder.Id,
-                SellOrderId = order.OrderType == OrderType.Sell ? order.Id : matchingOrder.Id,
-                BuyerCustomerId = order.OrderType == OrderType.Buy ? order.CustomerId : matchingOrder.CustomerId,
-                SellerCustomerId = order.OrderType == OrderType.Sell ? order.CustomerId : matchingOrder.CustomerId,
-                Currency = order.Currency,
-                Amount = matchAmount,
-                Rate = transactionRate,
-                TotalInToman = matchAmount * transactionRate,
-                Status = TransactionStatus.Pending,
-                CreatedAt = DateTime.Now
-            };
-
-            _context.Transactions.Add(transaction);
-
-            // Update order statuses
-            order.FilledAmount += matchAmount;
-            matchingOrder.FilledAmount += matchAmount;
-
-            if (order.FilledAmount >= order.Amount)
-                order.Status = OrderStatus.Completed;
-            else
-                order.Status = OrderStatus.PartiallyFilled;
-
-            if (matchingOrder.FilledAmount >= matchingOrder.Amount)
-                matchingOrder.Status = OrderStatus.Completed;
-            else
-                matchingOrder.Status = OrderStatus.PartiallyFilled;
-
-            order.UpdatedAt = DateTime.Now;
-            matchingOrder.UpdatedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = $"سفارش با موفقیت مچ شد. تراکنش شماره {transaction.Id} ایجاد شد.";
             return RedirectToAction(nameof(Details), new { id });
         }
 

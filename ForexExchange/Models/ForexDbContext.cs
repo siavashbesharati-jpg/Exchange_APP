@@ -21,6 +21,7 @@ namespace ForexExchange.Models
         public DbSet<ExchangeRate> ExchangeRates { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<SystemSettings> SystemSettings { get; set; }
+        public DbSet<CurrencyPool> CurrencyPools { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -121,6 +122,23 @@ namespace ForexExchange.Models
                 entity.Property(e => e.DataType).HasMaxLength(50);
                 entity.Property(e => e.UpdatedBy).HasMaxLength(100);
             });
+
+            // CurrencyPool configurations
+            modelBuilder.Entity<CurrencyPool>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Currency).IsUnique();
+                entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.Balance).HasColumnType("decimal(18,8)");
+                entity.Property(e => e.TotalBought).HasColumnType("decimal(18,8)");
+                entity.Property(e => e.TotalSold).HasColumnType("decimal(18,8)");
+                entity.Property(e => e.AverageBuyRate).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.AverageSellRate).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.Notes).HasMaxLength(500);
+                entity.HasIndex(e => new { e.Currency, e.IsActive });
+                entity.HasIndex(e => e.LastUpdated);
+                entity.HasIndex(e => e.RiskLevel);
+            });
             
             // ApplicationUser configurations
             modelBuilder.Entity<ApplicationUser>(entity =>
@@ -134,6 +152,16 @@ namespace ForexExchange.Models
 
             // Seed initial exchange rates
             var seedDate = new DateTime(2025, 8, 18, 12, 0, 0, DateTimeKind.Utc);
+            
+            // Seed initial currency pools
+            modelBuilder.Entity<CurrencyPool>().HasData(
+                new CurrencyPool { Id = 1, Currency = "USD", Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "US Dollar pool - initial setup" },
+                new CurrencyPool { Id = 2, Currency = "EUR", Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Euro pool - initial setup" },
+                new CurrencyPool { Id = 3, Currency = "AED", Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "UAE Dirham pool - initial setup" },
+                new CurrencyPool { Id = 4, Currency = "OMR", Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Omani Rial pool - initial setup" },
+                new CurrencyPool { Id = 5, Currency = "TRY", Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Turkish Lira pool - initial setup" }
+            );
+
             modelBuilder.Entity<ExchangeRate>().HasData(
                 new ExchangeRate { Id = 1, Currency = CurrencyType.USD, BuyRate = 68000, SellRate = 69000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 2, Currency = CurrencyType.EUR, BuyRate = 72000, SellRate = 73000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },

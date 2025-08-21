@@ -112,6 +112,121 @@ namespace ForexExchange.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("ForexExchange.Models.CurrencyPool", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("AverageBuyRate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("AverageSellRate")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RiskLevel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TotalBought")
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<decimal>("TotalSold")
+                        .HasColumnType("decimal(18,8)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Currency")
+                        .IsUnique();
+
+                    b.HasIndex("LastUpdated");
+
+                    b.HasIndex("RiskLevel");
+
+                    b.HasIndex("Currency", "IsActive");
+
+                    b.ToTable("CurrencyPools");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Balance = 0m,
+                            Currency = "USD",
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "US Dollar pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Balance = 0m,
+                            Currency = "EUR",
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Euro pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Balance = 0m,
+                            Currency = "AED",
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "UAE Dirham pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Balance = 0m,
+                            Currency = "OMR",
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Omani Rial pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Balance = 0m,
+                            Currency = "TRY",
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Turkish Lira pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        });
+                });
+
             modelBuilder.Entity("ForexExchange.Models.Customer", b =>
                 {
                     b.Property<int>("Id")

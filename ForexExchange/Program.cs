@@ -48,6 +48,7 @@ builder.Services.AddScoped<IOcrService, OpenRouterOcrService>();
 builder.Services.AddScoped<ITransactionSettlementService, TransactionSettlementService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBankStatementService, BankStatementService>();
+builder.Services.AddScoped<ICurrencyPoolService, CurrencyPoolService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDataSeedService, DataSeedService>();
 builder.Services.AddScoped<IWebScrapingService, WebScrapingService>();

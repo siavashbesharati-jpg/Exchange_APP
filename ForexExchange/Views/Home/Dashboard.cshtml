@@ -20,6 +20,15 @@
         {
             <!-- Admin/Staff Dashboard -->
             
+            <!-- Currency Pool Widget -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div id="pool-widget-container">
+                        @await Html.PartialAsync("_PoolWidget", ViewBag.CurrencyPools as List<ForexExchange.Models.CurrencyPool>)
+                    </div>
+                </div>
+            </div>
+            
             <!-- Management Section -->
             <div class="row mb-4">
                 <div class="col-12">
