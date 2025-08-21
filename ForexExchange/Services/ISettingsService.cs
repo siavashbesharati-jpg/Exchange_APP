@@ -38,7 +38,7 @@ namespace ForexExchange.Services
                 if (setting == null)
                 {
                     _logger.LogWarning($"Setting '{key}' not found, returning default value");
-                    return defaultValue;
+                    return defaultValue!; // ensure non-null for reference types
                 }
 
                 return ConvertToType<T>(setting.SettingValue, defaultValue);
@@ -46,7 +46,7 @@ namespace ForexExchange.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error getting setting '{key}', returning default value");
-                return defaultValue;
+                return defaultValue!; // ensure non-null for reference types
             }
         }
 

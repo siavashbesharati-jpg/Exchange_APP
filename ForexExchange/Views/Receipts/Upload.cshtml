@@ -108,14 +108,14 @@
                                                     خریدار (مشتری انتخاب شده)
                                                 </h6>
                                                 <div class="bg-light p-2 rounded">
-                                                    <strong>@transaction.BuyerCustomer.FullName</strong><br>
+                                                    <strong>@(transaction?.BuyerCustomer?.FullName ?? "")</strong><br>
                                                     <small class="text-muted">
-                                                        <i class="fas fa-phone me-1"></i>@transaction.BuyerCustomer.PhoneNumber
+                                                        <i class="fas fa-phone me-1"></i>@(transaction?.BuyerCustomer?.PhoneNumber ?? "")
                                                     </small>
-                                                    @if (!string.IsNullOrEmpty(transaction.BuyerCustomer.NationalId))
+                                                    @if (!string.IsNullOrEmpty(transaction?.BuyerCustomer?.NationalId))
                                                     {
                                                         <br><small class="text-muted">
-                                                            <i class="fas fa-id-card me-1"></i>@transaction.BuyerCustomer.NationalId
+                                                            <i class="fas fa-id-card me-1"></i>@(transaction?.BuyerCustomer?.NationalId ?? "")
                                                         </small>
                                                     }
                                                 </div>
@@ -128,9 +128,9 @@
                                                     فروشنده
                                                 </h6>
                                                 <div class="bg-light p-2 rounded">
-                                                    <strong>@transaction.SellerCustomer.FullName</strong><br>
+                                                    <strong>@(transaction?.SellerCustomer?.FullName ?? "")</strong><br>
                                                     <small class="text-muted">
-                                                        <i class="fas fa-phone me-1"></i>@transaction.SellerCustomer.PhoneNumber
+                                                        <i class="fas fa-phone me-1"></i>@(transaction?.SellerCustomer?.PhoneNumber ?? "")
                                                     </small>
                                                 </div>
                                             </div>
@@ -142,13 +142,13 @@
                                                     سفارش خرید (انتخاب شده)
                                                 </h6>
                                                 <div class="bg-light p-2 rounded">
-                                                    <strong>سفارش #@transaction.BuyOrderId</strong><br>
+                                                    <strong>سفارش #@transaction?.BuyOrderId</strong><br>
                                                     <small class="text-muted">
-                                                        مقدار: @transaction.BuyOrder.Amount.ToString("N2") @transaction.BuyOrder.FromCurrency?.PersianName
+                                                        مقدار: @(transaction?.BuyOrder?.Amount.ToString("N2") ?? "") @(transaction?.BuyOrder?.FromCurrency?.PersianName ?? transaction?.BuyOrder?.FromCurrency?.Code ?? "")
                                                     </small><br>
                                                     <small class="text-muted">
                                                         وضعیت: 
-                                                        @switch(transaction.BuyOrder.Status)
+                                                        @switch(transaction?.BuyOrder?.Status)
                                                         {
                                                             case ForexExchange.Models.OrderStatus.Open:
                                                                 <span class="badge bg-primary">باز</span>
