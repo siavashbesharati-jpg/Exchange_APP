@@ -1,6 +1,57 @@
 # 📋 TODO Tasks - Market Maker Exchange System
 ## سیستم صرافی بازارساز - لیست وظایف
 
+### 🚨 **CRITICAL REFACTORING - بازسازی بحرانی**
+
+#### 🔥 **Priority 1 - CurrencyType Enum Removal - حذف CurrencyType Enum**
+- [ ] **Complete Database-Driven Currency System** - تکمیل سیستم ارز مبتنی بر پایگاه داده
+  - **مسئله**: 280 خطای کامپایل پس از حذف CurrencyType enum
+  - **وضعیت**: 95% هسته سیستم تکمیل شده ✅
+  - **مانده**: Views، Controllers، Services، DataSeedService
+  - **راه‌حل**: تبدیل سیستماتیک تمام فایل‌ها به Currency entity
+  - **فایل مرجع**: `REFACTOR_SUMMARY.md` - جزئیات کامل
+  - **زمان تخمینی**: 10-16 ساعت کار سیستماتیک
+
+  #### **Sub-tasks - زیروظایف:**
+  - [ ] **DataSeedService.cs** - اولویت اول (2-3 ساعت)
+    - حذف مراجع hardcoded CurrencyType
+    - تبدیل به database lookups برای Currency entities
+    - رفع 50+ خطای initialization
+  
+  - [ ] **Controllers Updates** - بروزرسانی کنترلرها (2-4 ساعت)
+    - OrdersController.cs - رفع .Currency property references
+    - ExchangeRatesController.cs - تکمیل متدهای باقیمانده
+    - HomeController.cs، BankStatementsController.cs
+    - تبدیل query logic از enum به foreign key relationships
+  
+  - [ ] **Views Systematic Update** - بروزرسانی سیستماتیک Views (4-6 ساعت)
+    - Orders/*.cshtml - dropdown menus، display logic
+    - Reports/*.cshtml - currency display، helper methods
+    - ExchangeRates/*.cshtml - rate management UI
+    - Shared/_PoolWidget.cshtml - currency icons/flags
+    - تبدیل enum switches به database lookups
+  
+  - [ ] **Services Completion** - تکمیل سرویس‌ها (1-2 ساعت)
+    - NotificationService.cs - currency display in messages
+    - TransactionSettlementService.cs - matching logic
+    - حذف آخرین مراجع .Currency property
+  
+  - [ ] **Database Context Cleanup** - پاکسازی Context (1 ساعت)
+    - ForexDbContext.cs - حذف enum configurations
+    - Model builder cleanup
+    - Migration verification
+
+### 🚨 **CRITICAL BUGS - باگ‌های بحرانی**
+
+#### 🔥 **Priority 2 - اولویت دو** (after refactoring)
+- [x] **Fix Partial Matching Bug** - رفع باگ تطبیق جزئی ✅
+  - **مسئله**: موتور مچینگ سفارش‌های بزرگ‌تر را نادیده می‌گیرد
+  - **مثال**: خرید 1000 USD نمی‌تواند با فروش 2000 USD تطبیق یابد
+  - **راه‌حل**: تغییر لاجیک برای partial fills
+  - **فایل**: `OrdersController.cs` - متد `Details` و `Match`
+  - **وضعیت**: ✅ حل شده - Enhanced matching logic with multi-order supportsks - Market Maker Exchange System
+## سیستم صرافی بازارساز - لیست وظایف
+
 ### 🚨 **CRITICAL BUGS - باگ‌های بحرانی**
 
 #### 🔥 **Priority 1 - اولویت یک**
