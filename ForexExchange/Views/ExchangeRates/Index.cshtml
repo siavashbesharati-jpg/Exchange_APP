@@ -214,6 +214,17 @@
                 fromSelect.add(option1);
                 toSelect.add(option2);
             });
+            
+            // Set default values - USD to IRR as most common conversion
+            const usdCurrency = Object.values(currencies).find(c => c.code === 'USD');
+            const irrCurrency = Object.values(currencies).find(c => c.code === 'IRR');
+            
+            if (usdCurrency) {
+                fromSelect.value = usdCurrency.id;
+            }
+            if (irrCurrency) {
+                toSelect.value = irrCurrency.id;
+            }
         }
 
         function convertCurrency() {
