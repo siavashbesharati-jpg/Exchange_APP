@@ -9,14 +9,12 @@ namespace ForexExchange.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<WebScrapingService> _logger;
-        private readonly ForexDbContext _context;
         private const string BaseUrl = "https://alanchand.com/currencies-price/";
 
         public WebScrapingService(HttpClient httpClient, ILogger<WebScrapingService> logger, ForexDbContext context)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _context = context;
             
             // Configure HttpClient
             _httpClient.DefaultRequestHeaders.Add("User-Agent", 
@@ -24,38 +22,8 @@ namespace ForexExchange.Services
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
 
-        public async Task<Dictionary<string, (decimal BuyRate, decimal SellRate)>> GetExchangeRatesFromWebAsync()
-        {
-            var results = new Dictionary<string, (decimal BuyRate, decimal SellRate)>();
 
-            // Get active foreign currencies from database (excluding IRR/Toman)
-            var currencies = await _context.Currencies
-                .Where(c => c.IsActive && !c.IsBaseCurrency)
-                .ToListAsync();
-
-            foreach (var currency in currencies)
-            {
-                try
-                {
-                    var rates = await GetCurrencyRateAsync(currency);
-                    if (rates.HasValue)
-                    {
-                        results[currency.Code] = rates.Value;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to get exchange rate for {Currency}", currency.Code);
-                }
-            }
-
-            return results;
-        }
-
-        public async Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(Currency currency)
-        {
-            return await GetCurrencyRateAsync(currency.Code);
-        }
+       
 
         public async Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(string currencyCode)
         {

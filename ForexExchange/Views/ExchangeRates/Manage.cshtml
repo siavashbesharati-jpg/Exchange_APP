@@ -11,8 +11,6 @@
                 <h1 class="h3">مدیریت ارزها</h1>
                 <a asp-action="Index" class="btn btn-secondary">بازگشت به نرخ‌ها</a>
             </div>
-        </div>
-    </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -30,7 +28,7 @@
         </div>
     }
 
-    <!-- Quick Update Form -->
+    <!-- Quick Update Form (base pairs) -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
@@ -43,7 +41,7 @@
                             <table class="table table-bordered">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>ارز</th>
+                                        <th>ارز (به تومان)</th>
                                         <th>نرخ خرید (تومان)</th>
                                         <th>نرخ فروش (تومان)</th>
                                         <th>آخرین بروزرسانی</th>
@@ -70,7 +68,7 @@
                                             };
                                             <tr>
                                                 <td>
-                                                    <span class="badge @badgeClass">@c.PersianName (@c.Code)</span>
+                                                    <span class="badge @badgeClass">@c.PersianName (@c.Code) → IRR</span>
                                                 </td>
                                                 <td>
                                                     <input name="buyRates[@currencyKey]" type="number" class="form-control"
@@ -98,8 +96,8 @@
                         </div>
                         
                         <div class="text-center">
-                            <button type="submit" class="btn btn-success me-2" onclick="return confirm('آیا می‌خواهید تمام نرخ‌ها را بروزرسانی کنید؟')">
-                                بروزرسانی همه نرخ‌ها
+                            <button type="submit" class="btn btn-success me-2" onclick="return confirm('آیا می‌خواهید نرخ‌های پایه (ارز→تومان) را بروزرسانی کنید؟')">
+                                بروزرسانی نرخ‌های ارز → تومان
                             </button>
                             <button type="button" class="btn btn-primary" onclick="updateFromWeb()" title="بروزرسانی خودکار از وب">
                                 <i class="fas fa-globe"></i> بروزرسانی از وب
@@ -116,78 +114,53 @@
         </div>
     </div>
 
-    <!-- Individual Currency Management -->
+    <!-- Currency-to-Currency Pair Management -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">مدیریت جداگانه ارزها</h5>
+                    <h5 class="card-title mb-0">مدیریت تبدیل ارز به ارز</h5>
                 </div>
                 <div class="card-body">
-                    @if (Model.Any())
-                    {
+                    <form asp-action="BulkUpdatePairs" method="post">
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">از ارز</label>
+                                <select id="fromCurrency" class="form-select"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">به ارز</label>
+                                <select id="toCurrency" class="form-select"></select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">نرخ خرید</label>
+                                <input id="pairBuy" type="number" class="form-control" step="0.0001" min="0">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">نرخ فروش</label>
+                                <input id="pairSell" type="number" class="form-control" step="0.0001" min="0">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-outline-primary" onclick="addPair()">افزودن به لیست</button>
+                            <button type="submit" class="btn btn-success">ثبت تغییرات</button>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-striped" id="pairsTable">
                                 <thead>
                                     <tr>
-                                        <th>شناسه</th>
-                                        <th>ارز</th>
+                                        <th>از</th>
+                                        <th>به</th>
                                         <th>نرخ خرید</th>
                                         <th>نرخ فروش</th>
-                                        <th>تفاوت</th>
-                                        <th>بروزرسانی شده توسط</th>
-                                        <th>تاریخ بروزرسانی</th>
-                                        <th>عملیات</th>
+                                        <th>حذف</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in Model)
-                                    {
-                                        var code = item.FromCurrency?.Code?.ToUpper() ?? "";
-                                        string badgeClass = code switch
-                                        {
-                                            "USD" => "bg-primary",
-                                            "EUR" => "bg-success",
-                                            "AED" => "bg-info",
-                                            "OMR" => "bg-warning",
-                                            "TRY" => "bg-danger",
-                                            _ => "bg-secondary"
-                                        };
-                                        <tr>
-                                            <td>@item.Id</td>
-                                            <td>
-                                                <span class="badge @badgeClass">@((item.FromCurrency?.PersianName ?? item.FromCurrency?.Name) ?? code)</span>
-                                            </td>
-                                            <td class="text-success fw-bold">@item.BuyRate.ToString("N0") تومان</td>
-                                            <td class="text-danger fw-bold">@item.SellRate.ToString("N0") تومان</td>
-                                            <td>
-                                                @{
-                                                    var difference = item.SellRate - item.BuyRate;
-                                                    var percentage = item.BuyRate > 0 ? (difference / item.BuyRate) * 100 : 0;
-                                                }
-                                                <span class="badge bg-secondary">
-                                                    @difference.ToString("N0") (@percentage.ToString("F1")%)
-                                                </span>
-                                            </td>
-                                            <td>@item.UpdatedBy</td>
-                                            <td>@item.UpdatedAt.ToString("yyyy/MM/dd HH:mm")</td>
-                                            <td>
-                                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
-                                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
-                                            </td>
-                                        </tr>
-                                    }
                                 </tbody>
                             </table>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-4">
-                            <p class="text-muted">هیچ نرخ ارزی موجود نیست.</p>
-                            <a asp-action="Create" class="btn btn-primary">ثبت اولین نرخ</a>
-                        </div>
-                    }
+                    </form>
                 </div>
             </div>
         </div>
@@ -224,6 +197,47 @@
                 // Submit the hidden form
                 document.getElementById('webUpdateForm').submit();
             }
+        }
+
+        // Populate currency dropdowns
+        const currencies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Currencies ?? new object[0]));
+        const fromSel = document.getElementById('fromCurrency');
+        const toSel = document.getElementById('toCurrency');
+        function fillSelect(select) {
+            select.innerHTML = '';
+            currencies.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id ?? c.Id;
+                opt.textContent = `${c.persianName ?? c.PersianName} (${c.code ?? c.Code})`;
+                select.appendChild(opt);
+            });
+        }
+        fillSelect(fromSel);
+        fillSelect(toSel);
+
+        // Manage pairs list
+        const tbody = document.querySelector('#pairsTable tbody');
+        function addPair() {
+            const fromId = parseInt(fromSel.value);
+            const toId = parseInt(toSel.value);
+            const buy = parseFloat(document.getElementById('pairBuy').value);
+            const sell = parseFloat(document.getElementById('pairSell').value);
+            if (!fromId || !toId || fromId === toId) { alert('ارز مبدأ و مقصد باید متفاوت باشند.'); return; }
+            if (!buy || !sell || sell <= buy) { alert('نرخ‌ها نامعتبر است. نرخ فروش باید بزرگ‌تر از خرید باشد.'); return; }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td data-id="${fromId}">${fromSel.options[fromSel.selectedIndex].text}</td>
+                <td data-id="${toId}">${toSel.options[toSel.selectedIndex].text}</td>
+                <td>${buy}</td>
+                <td>${sell}</td>
+                <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">حذف</button></td>
+                <input type="hidden" name="pairs[${tbody.children.length}].FromCurrencyId" value="${fromId}" />
+                <input type="hidden" name="pairs[${tbody.children.length}].ToCurrencyId" value="${toId}" />
+                <input type="hidden" name="pairs[${tbody.children.length}].BuyRate" value="${buy}" />
+                <input type="hidden" name="pairs[${tbody.children.length}].SellRate" value="${sell}" />
+            `;
+            tbody.appendChild(tr);
         }
     </script>
 }

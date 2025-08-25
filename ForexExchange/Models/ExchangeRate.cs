@@ -40,12 +40,12 @@ namespace ForexExchange.Models
         public Currency ToCurrency { get; set; } = null!;
         
         [Required]
-        [Column(TypeName = "decimal(18,4)")]
+    [Column(TypeName = "decimal(18,8)")]
         [Display(Name = "Buy Rate - نرخ خرید")]
         public decimal BuyRate { get; set; }  // نرخ خرید
         
         [Required]
-        [Column(TypeName = "decimal(18,4)")]
+    [Column(TypeName = "decimal(18,8)")]
         [Display(Name = "Sell Rate - نرخ فروش")]
         public decimal SellRate { get; set; } // نرخ فروش
         

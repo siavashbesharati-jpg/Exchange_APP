@@ -15,20 +15,23 @@ namespace ForexExchange.Services
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ForexDbContext _context;
         private readonly ILogger<DataSeedService> _logger;
-        private readonly IWebScrapingService _webScrapingService;
+    private readonly IWebScrapingService _webScrapingService;
+    private readonly IRateCalculationService _rateCalc;
 
         public DataSeedService(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             ForexDbContext context,
             ILogger<DataSeedService> logger,
-            IWebScrapingService webScrapingService)
+            IWebScrapingService webScrapingService,
+            IRateCalculationService rateCalculationService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _context = context;
             _logger = logger;
             _webScrapingService = webScrapingService;
+            _rateCalc = rateCalculationService;
         }
 
         public async Task SeedDataAsync()
@@ -63,64 +66,34 @@ namespace ForexExchange.Services
         /// </summary>
         private async Task CreatCurencies()
         {
+
+
+            if (await _context.Currencies.AnyAsync())
+            {
+                _logger.LogInformation("Currecnies already exist, skipping seeding");
+                return;
+            }
+
             // Desired defaults
             var now = DateTime.Now;
             var defaults = new List<Currency>
             {
-                new Currency { Code = "IRR", Name = "Iranian Rial", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = now },
-                new Currency { Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = now },
-                new Currency { Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = now },
-                new Currency { Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = now },
-                new Currency { Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = now },
-                new Currency { Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = now },
+                new() { Code = "IRR", Name = "Iranian Rial", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = now },
+                new() { Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = now },
+                new() { Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = now },
+                 new() { Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = now },
+                new() { Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = now },
+                new() { Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = now },
             };
 
-            // Fetch existing
-            var existing = await _context.Currencies.ToListAsync();
-
-            // Ensure IRR exists and is the only base currency
-            var irr = existing.FirstOrDefault(c => c.Code == "IRR");
-            if (irr == null)
-            {
-                irr = defaults.First(c => c.Code == "IRR");
-                _context.Currencies.Add(irr);
-                _logger.LogInformation("Seeded base currency IRR.");
-            }
-            else
-            {
-                if (!irr.IsBaseCurrency)
-                {
-                    irr.IsBaseCurrency = true;
-                    irr.IsActive = true;
-                }
-            }
-
-            // Clear base flag from any non-IRR currencies accidentally marked
-            foreach (var c in existing.Where(c => c.Code != "IRR" && c.IsBaseCurrency))
-            {
-                c.IsBaseCurrency = false;
-            }
-
-            // Add or update the rest of defaults
-            foreach (var d in defaults.Where(x => x.Code != "IRR"))
-            {
-                var curr = existing.FirstOrDefault(c => c.Code == d.Code);
-                if (curr == null)
-                {
-                    _context.Currencies.Add(d);
-                    _logger.LogInformation($"Seeded currency {d.Code}.");
-                }
-                else
-                {
-                    // Update display fields if empty to enrich data, keep existing non-empty values
-                    if (string.IsNullOrWhiteSpace(curr.Name)) curr.Name = d.Name;
-                    if (string.IsNullOrWhiteSpace(curr.PersianName)) curr.PersianName = d.PersianName;
-                    if (string.IsNullOrWhiteSpace(curr.Symbol)) curr.Symbol = d.Symbol;
-                    if (curr.DisplayOrder == 0) curr.DisplayOrder = d.DisplayOrder;
-                }
-            }
-
+            _context.Currencies.AddRange(defaults);
             await _context.SaveChangesAsync();
+
+
+
+
+
+
         }
 
         private async Task CreateRolesAsync()
@@ -145,7 +118,7 @@ namespace ForexExchange.Services
 
             // Check if admin exists by email first (for existing installations)
             var adminUser = await _userManager.FindByEmailAsync(adminEmail);
-            
+
             // If found with email username, update it to use phone number
             if (adminUser != null && adminUser.UserName == adminEmail)
             {
@@ -210,9 +183,32 @@ namespace ForexExchange.Services
 
             try
             {
-                // Get real-time rates from web scraping service
-                var webRates = await _webScrapingService.GetExchangeRatesFromWebAsync();
+
+                var rates = new Dictionary<string, (decimal BuyRate, decimal SellRate)>();
+
+                // Get active foreign currencies from database (excluding IRR/Toman)
+                var currencies = await _context.Currencies
+                    .Where(c => c.IsActive && !c.IsBaseCurrency)
+                    .ToListAsync();
+
+                foreach (var currency in currencies)
+                {
+                    try
+                    {
+                        var rate = await _webScrapingService.GetCurrencyRateAsync(currency.Code);
+                        if (rate.HasValue)
+                        {
+                            rates[currency.Code] = rate.Value;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to get exchange rate for {Currency}", currency.Code);
+                    }
+                }
+
                 
+
                 var exchangeRates = new List<ExchangeRate>();
 
                 // Get base currency for exchange rate pairs
@@ -223,26 +219,66 @@ namespace ForexExchange.Services
                     return;
                 }
 
-                foreach (var rate in webRates)
+                // Map: currencyId -> (buy,sell) for currency->base
+                var scrapedMap = new Dictionary<int, (decimal buy, decimal sell)>();
+                foreach (var rate in rates)
                 {
-                    // Look up currency by code
                     var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == rate.Key);
-                    if (currency == null)
-                    {
-                        _logger.LogWarning($"Currency {rate.Key} not found in database, skipping");
-                        continue;
-                    }
+                    if (currency == null) { _logger.LogWarning($"Currency {rate.Key} not found in database, skipping"); continue; }
 
+                    // currency -> base (X->IRR)
                     exchangeRates.Add(new ExchangeRate
                     {
                         FromCurrencyId = currency.Id,
                         ToCurrencyId = baseCurrency.Id,
-                        BuyRate = rate.Value.BuyRate,
-                        SellRate = rate.Value.SellRate,
+                        BuyRate = _rateCalc.SafeRound(rate.Value.BuyRate, 4),
+                        SellRate = _rateCalc.SafeRound(rate.Value.SellRate, 4),
                         IsActive = true,
                         UpdatedAt = DateTime.Now,
                         UpdatedBy = "WebScraping-System"
                     });
+
+                    scrapedMap[currency.Id] = (rate.Value.BuyRate, rate.Value.SellRate);
+
+                    // base -> currency (IRR->X) reverse
+                    var rev = _rateCalc.ComputeReverseFromBase(rate.Value.BuyRate, rate.Value.SellRate);
+                    if (rev != null)
+                    {
+                        exchangeRates.Add(new ExchangeRate
+                        {
+                            FromCurrencyId = baseCurrency.Id,
+                            ToCurrencyId = currency.Id,
+                            BuyRate = _rateCalc.SafeRound(rev.Value.buy, 8),
+                            SellRate = _rateCalc.SafeRound(rev.Value.sell, 8),
+                            IsActive = true,
+                            UpdatedAt = DateTime.Now,
+                            UpdatedBy = "WebScraping-System"
+                        });
+                    }
+                }
+
+                // Cross pairs among all non-base currencies using IRR as pivot
+                var foreignIds = scrapedMap.Keys.ToList();
+                for (int i = 0; i < foreignIds.Count; i++)
+                {
+                    for (int j = 0; j < foreignIds.Count; j++)
+                    {
+                        if (i == j) continue;
+                        var fromId = foreignIds[i];
+                        var toId = foreignIds[j];
+                        var cross = _rateCalc.ComputeCrossFromBase(scrapedMap[fromId], scrapedMap[toId]);
+                        if (cross == null) continue;
+                        exchangeRates.Add(new ExchangeRate
+                        {
+                            FromCurrencyId = fromId,
+                            ToCurrencyId = toId,
+                            BuyRate = _rateCalc.SafeRound(cross.Value.buy, 8),
+                            SellRate = _rateCalc.SafeRound(cross.Value.sell, 8),
+                            IsActive = true,
+                            UpdatedAt = DateTime.Now,
+                            UpdatedBy = "WebScraping-System"
+                        });
+                    }
                 }
 
                 if (exchangeRates.Any())
@@ -254,17 +290,15 @@ namespace ForexExchange.Services
                 else
                 {
                     _logger.LogWarning("No rates received from web scraping, but ForexDbContext will handle rate seeding");
-                    // await SeedFallbackExchangeRatesAsync(); // Disabled - ForexDbContext handles seeding
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get rates from web scraping, but ForexDbContext will handle rate seeding");
-                // await SeedFallbackExchangeRatesAsync(); // Disabled - ForexDbContext handles seeding
             }
         }
 
-       
+
 
         private async Task SeedSampleDataAsync()
         {
@@ -290,11 +324,11 @@ namespace ForexExchange.Services
             // Seed Transactions
             await SeedTransactionsAsync();
             await _context.SaveChangesAsync(); // Save transactions before receipts
-            
+
             // Seed Receipts
             await SeedReceiptsAsync();
             await _context.SaveChangesAsync(); // Save receipts before notifications
-            
+
             // Seed Notifications
             await SeedNotificationsAsync();
 
@@ -446,7 +480,7 @@ namespace ForexExchange.Services
                 var status = OrderStatus.Open;
 
                 Currency fromCurrency, toCurrency;
-                
+
                 // Create diverse cross-currency scenarios with null checking
                 if (i < 20) // 40% Base currency-based trades (traditional)
                 {
@@ -495,11 +529,11 @@ namespace ForexExchange.Services
                 // Find appropriate exchange rate - prioritize direct rates, fallback to base currency conversion
                 var directRate = exchangeRates.FirstOrDefault(r => r.FromCurrencyId == fromCurrency.Id && r.ToCurrencyId == toCurrency.Id);
                 var reverseRate = exchangeRates.FirstOrDefault(r => r.FromCurrencyId == toCurrency.Id && r.ToCurrencyId == fromCurrency.Id);
-                
+
                 // For base currency conversion routes
-                var fromBaseCurrencyRate = baseCurrency != null ? 
+                var fromBaseCurrencyRate = baseCurrency != null ?
                     exchangeRates.FirstOrDefault(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == fromCurrency.Id) : null;
-                var toBaseCurrencyRate = baseCurrency != null ? 
+                var toBaseCurrencyRate = baseCurrency != null ?
                     exchangeRates.FirstOrDefault(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == toCurrency.Id) : null;
 
                 decimal rate;
@@ -518,7 +552,8 @@ namespace ForexExchange.Services
                     var baseToTargetRate = orderType == OrderType.Buy ? toBaseCurrencyRate.SellRate : toBaseCurrencyRate.BuyRate;
                     rate = baseToTargetRate / fromToBaseRate;
                 }
-                else
+
+
                 {
                     // Fallback to simple conversion rates using currency codes
                     var rateMapping = new Dictionary<string, decimal>
@@ -530,7 +565,7 @@ namespace ForexExchange.Services
                         { "OMR", 168000 },
                         { "TRY", 1900 }
                     };
-                    
+
                     var fromRate = rateMapping.ContainsKey(fromCurrency.Code ?? "IRR") ? rateMapping[fromCurrency.Code ?? "IRR"] : 1;
                     var toRate = rateMapping.ContainsKey(toCurrency.Code ?? "IRR") ? rateMapping[toCurrency.Code ?? "IRR"] : 1;
                     rate = toRate / fromRate;
@@ -546,8 +581,8 @@ namespace ForexExchange.Services
                     ToCurrency = toCurrency,
                     Amount = amount,
                     Rate = rate,
-                    TotalInToman = baseCurrency != null && fromCurrency.Id == baseCurrency.Id ? amount : 
-                                  (baseCurrency != null && toCurrency.Id == baseCurrency.Id ? totalValue : 
+                    TotalInToman = baseCurrency != null && fromCurrency.Id == baseCurrency.Id ? amount :
+                                  (baseCurrency != null && toCurrency.Id == baseCurrency.Id ? totalValue :
                                    totalValue * 65000), // Approximate base currency value for reporting
                     OrderType = orderType,
                     Status = status,
@@ -584,8 +619,8 @@ namespace ForexExchange.Services
                 var buyOrder = buyOrders[i];
 
                 // Find a matching sell order - either exact match or complementary cross-currency
-                var matchingSellOrders = sellOrders.Where(s => 
-                    s.Id != buyOrder.Id && 
+                var matchingSellOrders = sellOrders.Where(s =>
+                    s.Id != buyOrder.Id &&
                     (
                         // Exact currency pair match
                         (s.FromCurrency == buyOrder.ToCurrency && s.ToCurrency == buyOrder.FromCurrency) ||

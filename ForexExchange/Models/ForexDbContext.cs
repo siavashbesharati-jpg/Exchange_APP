@@ -71,6 +71,22 @@ namespace ForexExchange.Models
                       .WithMany(e => e.SellTransactions)
                       .HasForeignKey(e => e.SellerCustomerId)
                       .OnDelete(DeleteBehavior.Restrict);
+
+            // Map currency relationships
+            entity.HasOne(e => e.FromCurrency)
+                .WithMany(c => c.FromCurrencyTransactions)
+                .HasForeignKey(e => e.FromCurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ToCurrency)
+                .WithMany(c => c.ToCurrencyTransactions)
+                .HasForeignKey(e => e.ToCurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Useful indexes
+            entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId });
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
             });
             
             // Receipt configurations
@@ -128,16 +144,21 @@ namespace ForexExchange.Models
             modelBuilder.Entity<CurrencyPool>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Currency).IsUnique();
+                entity.HasIndex(e => e.CurrencyId).IsUnique();
                 entity.Property(e => e.Balance).HasColumnType("decimal(18,8)");
                 entity.Property(e => e.TotalBought).HasColumnType("decimal(18,8)");
                 entity.Property(e => e.TotalSold).HasColumnType("decimal(18,8)");
                 entity.Property(e => e.AverageBuyRate).HasColumnType("decimal(18,4)");
                 entity.Property(e => e.AverageSellRate).HasColumnType("decimal(18,4)");
                 entity.Property(e => e.Notes).HasMaxLength(500);
-                entity.HasIndex(e => new { e.Currency, e.IsActive });
+                entity.HasIndex(e => new { e.CurrencyId, e.IsActive });
                 entity.HasIndex(e => e.LastUpdated);
                 entity.HasIndex(e => e.RiskLevel);
+
+            entity.HasOne(e => e.Currency)
+                .WithMany(c => c.CurrencyPools)
+                .HasForeignKey(e => e.CurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
             });
             
             // Currency configurations
@@ -150,6 +171,8 @@ namespace ForexExchange.Models
                 entity.Property(e => e.PersianName).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Symbol).HasMaxLength(5);
                 entity.HasIndex(e => new { e.IsActive, e.DisplayOrder });
+                // Ignore legacy navigation not mapped on ExchangeRate
+                entity.Ignore(e => e.LegacyRates);
             });
             
             // ExchangeRate configurations - Updated for cross-currency support
@@ -163,17 +186,17 @@ namespace ForexExchange.Models
                 
                 // Configure foreign key relationships
                 entity.HasOne(e => e.FromCurrency)
-                      .WithMany()
+                      .WithMany(c => c.FromCurrencyRates)
                       .HasForeignKey(e => e.FromCurrencyId)
                       .OnDelete(DeleteBehavior.Restrict);
                       
                 entity.HasOne(e => e.ToCurrency)
-                      .WithMany()
+                      .WithMany(c => c.ToCurrencyRates)
                       .HasForeignKey(e => e.ToCurrencyId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
             
-            // Order configurations - Updated for cross-currency support
+        // Order configurations - Updated for cross-currency support
             modelBuilder.Entity<Order>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -186,7 +209,19 @@ namespace ForexExchange.Models
                 entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.FilledAmount).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.Notes).HasMaxLength(500);
-                entity.HasIndex(e => new { e.FromCurrency, e.ToCurrency });
+            // Map currency relationships
+            entity.HasOne(e => e.FromCurrency)
+                .WithMany(c => c.FromCurrencyOrders)
+                .HasForeignKey(e => e.FromCurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ToCurrency)
+                .WithMany(c => c.ToCurrencyOrders)
+                .HasForeignKey(e => e.ToCurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Useful indexes
+            entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId });
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.CreatedAt);
             });
