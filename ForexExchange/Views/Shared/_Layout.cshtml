@@ -34,14 +34,31 @@
 
 <body>
     <header>
-        <div class="container-fluid py-3">
-            <div class="d-flex justify-content-end">
-                <ul class="navbar-nav flex-row">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light" style="direction: rtl; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-exchange-alt"></i> ایران اکسپدیا
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="mainNavbar">
+                    <ul class="navbar-nav flex-row gap-2" style="direction: rtl;">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates" asp-action="Index">
+                                <i class="fas fa-home"></i> خانه
+                            </a>
+                        </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Dashboard">
+                            <i class="fas fa-home"></i> داشبورد
+                        </a>
+                    </li>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
-                                خوش آمدید، @User.Identity.Name
+                               @(User.Claims.FirstOrDefault(c => c.Type == "FullName")?.Value ?? User.Identity.Name)
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Profile">پروفایل کاربری</a></li>
@@ -59,9 +76,6 @@
                     {
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">ورود</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Register">ثبت نام</a>
                         </li>
                     }
                 </ul>

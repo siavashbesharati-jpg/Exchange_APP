@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 using ForexExchange.Models;
 
 namespace ForexExchange.Controllers
@@ -127,6 +126,11 @@ namespace ForexExchange.Controllers
                     user.CustomerId = customer.Id;
                     await _userManager.UpdateAsync(user);
 
+                    // Add FullName claim for navbar display
+                    var claims = new List<System.Security.Claims.Claim> {
+                        new System.Security.Claims.Claim("FullName", user.FullName ?? user.UserName)
+                    };
+                    await _userManager.AddClaimsAsync(user, claims);
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return RedirectToAction("Dashboard", "Home");
                 }
@@ -160,6 +164,13 @@ namespace ForexExchange.Controllers
                 var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == model.PhoneNumber);
                 if (user != null)
                 {
+                    // Ensure FullName claim is present for navbar display
+                    var userClaims = await _userManager.GetClaimsAsync(user);
+                    if (!userClaims.Any(c => c.Type == "FullName"))
+                    {
+                        var fullNameValue = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : (user.UserName ?? "کاربر");
+                        await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FullName", fullNameValue));
+                    }
                     var result = await _signInManager.PasswordSignInAsync(
                         user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true);
 

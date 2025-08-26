@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ForexExchange.Controllers;
 
@@ -12,6 +13,8 @@ public class HomeController : Controller
     private readonly ForexDbContext _context;
     private readonly ITransactionSettlementService _settlementService;
     private readonly ICurrencyPoolService _poolService;
+
+
 
     public HomeController(ILogger<HomeController> logger, ForexDbContext context, ITransactionSettlementService settlementService, ICurrencyPoolService poolService)
     {
@@ -60,7 +63,7 @@ public class HomeController : Controller
         // Get currency pools for the widget
         var pools = await _poolService.GetAllPoolsAsync();
         ViewBag.CurrencyPools = pools;
-        
+
         return View();
     }
 
