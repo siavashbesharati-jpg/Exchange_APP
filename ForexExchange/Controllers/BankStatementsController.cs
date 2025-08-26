@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using Newtonsoft.Json;
 
 namespace ForexExchange.Controllers
 {
@@ -87,7 +88,7 @@ namespace ForexExchange.Controllers
                 }
 
                 // Store the analysis result in TempData for the result view
-                TempData["AnalysisResult"] = System.Text.Json.JsonSerializer.Serialize(analysis);
+                TempData["AnalysisResult"] = Newtonsoft.Json.JsonConvert.SerializeObject(analysis);
                 TempData["SuccessMessage"] = "گردش حساب با موفقیت پردازش شد.";
 
                 return RedirectToAction(nameof(Results));
@@ -114,7 +115,7 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var analysis = System.Text.Json.JsonSerializer.Deserialize<BankStatementAnalysis>(analysisJson);
+            var analysis = Newtonsoft.Json.JsonConvert.DeserializeObject<BankStatementAnalysis>(analysisJson);
             if (analysis == null)
             {
                 return RedirectToAction(nameof(Index));

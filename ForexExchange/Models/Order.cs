@@ -4,11 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ForexExchange.Models
 {
     
-    public enum OrderType
-    {
-        Buy = 0,   // خرید
-        Sell = 1   // فروش
-    }
     
     public enum OrderStatus
     {
@@ -26,8 +21,7 @@ namespace ForexExchange.Models
         [Required]
         public int CustomerId { get; set; }
         
-        [Required]
-        public OrderType OrderType { get; set; }
+ 
         
         [Required]
         [Display(Name = "From Currency - از ارز")]

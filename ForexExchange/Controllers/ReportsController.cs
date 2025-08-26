@@ -190,26 +190,19 @@ namespace ForexExchange.Controllers
 
             // Load data first, then sort client-side for decimal fields
             var orders = await query
-                .OrderBy(o => o.OrderType)
+                .OrderByDescending(o => o.Rate)
                 .ToListAsync();
 
-            // Apply client-side sorting for decimal field (Rate)
-            orders = orders
-                .OrderBy(o => o.OrderType)
-                .ThenByDescending(o => o.Rate)
-                .ToList();
-
+            // Group by currency pair only
             var orderBook = orders
-                .GroupBy(o => new { o.FromCurrencyId, o.ToCurrencyId, o.OrderType })
+                .GroupBy(o => new { o.FromCurrencyId, o.ToCurrencyId })
                 .Select(g => new OrderBookReport
                 {
                     FromCurrencyId = g.Key.FromCurrencyId,
                     ToCurrencyId = g.Key.ToCurrencyId,
                     FromCurrencyCode = g.First().FromCurrency?.Code ?? "",
                     ToCurrencyCode = g.First().ToCurrency?.Code ?? "",
-                    OrderType = g.Key.OrderType,
-                    // Client-side sorting for decimal Rate field
-                    Orders = g.OrderBy(o => o.OrderType == OrderType.Buy ? -o.Rate : o.Rate).ToList(),
+                    Orders = g.OrderByDescending(o => o.Rate).ToList(),
                     TotalVolume = g.Sum(o => o.Amount - o.FilledAmount),
                     AverageRate = g.Average(o => o.Rate),
                     OrderCount = g.Count()
@@ -384,15 +377,14 @@ namespace ForexExchange.Controllers
 
     public class OrderBookReport
     {
-        public int FromCurrencyId { get; set; }
-        public int ToCurrencyId { get; set; }
-        public string FromCurrencyCode { get; set; } = "";
-        public string ToCurrencyCode { get; set; } = "";
-        public OrderType OrderType { get; set; }
-        public List<Order> Orders { get; set; } = new();
-        public decimal TotalVolume { get; set; }
-        public decimal AverageRate { get; set; }
-        public int OrderCount { get; set; }
+    public int FromCurrencyId { get; set; }
+    public int ToCurrencyId { get; set; }
+    public string FromCurrencyCode { get; set; } = "";
+    public string ToCurrencyCode { get; set; } = "";
+    public List<Order> Orders { get; set; } = new();
+    public decimal TotalVolume { get; set; }
+    public decimal AverageRate { get; set; }
+    public int OrderCount { get; set; }
     }
 
     public class CommissionReport

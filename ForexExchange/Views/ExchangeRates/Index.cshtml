@@ -172,7 +172,7 @@
 @section Scripts {
     <script>
         // Exchange rates data for conversion
-        const exchangeRates = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        const exchangeRates = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(
             Model.Select(r => new { 
                 FromId = r.FromCurrencyId, 
                 ToId = r.ToCurrencyId, 

@@ -471,12 +471,12 @@ namespace ForexExchange.Services
             var foreignCurrencies = currencies.Where(c => !c.IsBaseCurrency).ToList();
             var random = new Random();
 
-            var orderTypes = new[] { OrderType.Buy, OrderType.Sell };
+            // Removed OrderType array
 
             for (int i = 0; i < 50; i++) // Create 50 sample orders
             {
                 var customer = customers[random.Next(customers.Count)];
-                var orderType = orderTypes[random.Next(orderTypes.Length)];
+                // Removed orderType assignment
                 var status = OrderStatus.Open;
 
                 Currency fromCurrency, toCurrency;
@@ -493,7 +493,8 @@ namespace ForexExchange.Services
                     else
                     {
                         var foreignCurrency = foreignCurrencies[random.Next(foreignCurrencies.Count)];
-                        if (orderType == OrderType.Buy)
+                        // Randomly decide direction
+                        if (random.Next(2) == 0)
                         {
                             fromCurrency = baseCurrency;
                             toCurrency = foreignCurrency;
@@ -539,18 +540,16 @@ namespace ForexExchange.Services
                 decimal rate;
                 if (directRate != null)
                 {
-                    rate = orderType == OrderType.Buy ? directRate.SellRate : directRate.BuyRate;
+                    // Removed OrderType logic
                 }
                 else if (reverseRate != null)
                 {
-                    rate = orderType == OrderType.Buy ? (1.0m / reverseRate.BuyRate) : (1.0m / reverseRate.SellRate);
+                    // Removed OrderType logic
                 }
                 else if (fromBaseCurrencyRate != null && toBaseCurrencyRate != null && baseCurrency != null)
                 {
                     // Cross-rate via base currency
-                    var fromToBaseRate = orderType == OrderType.Buy ? fromBaseCurrencyRate.BuyRate : fromBaseCurrencyRate.SellRate;
-                    var baseToTargetRate = orderType == OrderType.Buy ? toBaseCurrencyRate.SellRate : toBaseCurrencyRate.BuyRate;
-                    rate = baseToTargetRate / fromToBaseRate;
+                    rate = toBaseCurrencyRate.BuyRate / fromBaseCurrencyRate.SellRate;
                 }
 
 
@@ -584,11 +583,11 @@ namespace ForexExchange.Services
                     TotalInToman = baseCurrency != null && fromCurrency.Id == baseCurrency.Id ? amount :
                                   (baseCurrency != null && toCurrency.Id == baseCurrency.Id ? totalValue :
                                    totalValue * 65000), // Approximate base currency value for reporting
-                    OrderType = orderType,
+                    // Removed OrderType assignment
                     Status = status,
                     CreatedAt = DateTime.Now.AddDays(-random.Next(1, 30)),
                     UpdatedAt = DateTime.Now.AddDays(-random.Next(0, 5)),
-                    Notes = i % 3 == 0 ? $"سفارش شماره {i + 1} - {(orderType == OrderType.Buy ? "خرید" : "فروش")} {fromCurrency.Code ?? "N/A"} به {toCurrency.Code ?? "N/A"}" : null,
+                    Notes = i % 3 == 0 ? $"سفارش شماره {i + 1} - {fromCurrency.Code ?? "N/A"} به {toCurrency.Code ?? "N/A"}" : null,
                     FilledAmount = 0
                 };
 
@@ -599,8 +598,8 @@ namespace ForexExchange.Services
         private async Task SeedTransactionsAsync()
         {
             // Get open buy and sell orders that can be matched
-            var buyOrders = await _context.Orders.Where(o => o.OrderType == OrderType.Buy && (o.Status == OrderStatus.Open || o.Status == OrderStatus.Completed)).ToListAsync();
-            var sellOrders = await _context.Orders.Where(o => o.OrderType == OrderType.Sell && (o.Status == OrderStatus.Open || o.Status == OrderStatus.Completed)).ToListAsync();
+            var buyOrders = await _context.Orders.Where(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.Completed).ToListAsync();
+            var sellOrders = await _context.Orders.Where(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.Completed).ToListAsync();
 
             // Check if we have enough orders to create transactions
             if (!buyOrders.Any() || !sellOrders.Any())

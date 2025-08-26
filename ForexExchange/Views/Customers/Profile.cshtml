@@ -209,7 +209,7 @@
                                                 <tr>
                                                     <td>#@order.Id</td>
                                                     <td>
-                                                        @if (order.OrderType == ForexExchange.Models.OrderType.Buy)
+                                                        <!-- Removed OrderType logic -->
                                                         {
                                                             <span class="badge bg-primary">خرید</span>
                                                         }
@@ -414,7 +414,7 @@
                                         activities.Add(new { 
                                             Date = order.CreatedAt,
                                             Type = "سفارش",
-                                            Description = $"سفارش {(order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")} {order.Amount:N0} {order.FromCurrency?.PersianName} ({order.CurrencyPair})",
+                                            Description = $"سفارش {order.Amount:N0} {order.FromCurrency?.PersianName} ({order.CurrencyPair})",
                                             Status = order.Status.ToString(),
                                             Icon = "fas fa-shopping-cart",
                                             Color = "primary"

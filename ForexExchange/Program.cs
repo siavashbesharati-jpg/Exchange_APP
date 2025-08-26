@@ -6,7 +6,12 @@ using ForexExchange.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+        options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
+    });
 
 // Add Entity Framework
 builder.Services.AddDbContext<ForexDbContext>(options =>

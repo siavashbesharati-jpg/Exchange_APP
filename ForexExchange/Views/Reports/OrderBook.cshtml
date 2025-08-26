@@ -68,7 +68,8 @@
                 <div class="card text-white bg-success">
                     <div class="card-body">
                         <h5 class="card-title">سفارشات خرید</h5>
-                        <h2 class="mb-0">@Model.Where(r => r.OrderType == ForexExchange.Models.OrderType.Buy).Sum(r => r.OrderCount)</h2>
+                        <!-- Removed OrderType Buy count, now showing total order count -->
+                        <h2 class="mb-0">@Model.Sum(r => r.OrderCount)</h2>
                     </div>
                 </div>
             </div>
@@ -76,7 +77,8 @@
                 <div class="card text-white bg-danger">
                     <div class="card-body">
                         <h5 class="card-title">سفارشات فروش</h5>
-                        <h2 class="mb-0">@Model.Where(r => r.OrderType == ForexExchange.Models.OrderType.Sell).Sum(r => r.OrderCount)</h2>
+                        <!-- Removed OrderType Sell count, now showing total order count -->
+                        <h2 class="mb-0">@Model.Sum(r => r.OrderCount)</h2>
                     </div>
                 </div>
             </div>
@@ -120,14 +122,14 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                @foreach (var orderBookReport in currencyGroup.OrderBy(r => r.OrderType))
+                                @foreach (var orderBookReport in currencyGroup)
                                 {
                                     <div class="col-md-6">
-                                        <div class="card @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "border-success" : "border-danger")">
-                                            <div class="card-header @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "bg-success" : "bg-danger") text-white">
+                                        <div class="card border-primary">
+                                            <div class="card-header bg-primary text-white">
                                                 <h6 class="mb-0">
-                                                    @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "سفارشات خرید" : "سفارشات فروش")
-                                                    <span class="badge @(orderBookReport.OrderType == ForexExchange.Models.OrderType.Buy ? "bg-light text-success" : "bg-light text-danger")">
+                                                    سفارشات
+                                                    <span class="badge bg-light text-primary">
                                                         @orderBookReport.OrderCount سفارش
                                                     </span>
                                                 </h6>

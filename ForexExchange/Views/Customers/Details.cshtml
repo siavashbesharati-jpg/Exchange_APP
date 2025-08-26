@@ -141,7 +141,7 @@
                                         <div class="border rounded p-2 mb-2">
                                             <small>
                                                 <strong>#@order.Id</strong> - 
-                                                @(order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")
+                                                <!-- Removed OrderType display, now just show currency pair or amount -->
                                                 @order.Amount.ToString("N0") @order.FromCurrency?.PersianName <small class="text-muted">(@order.CurrencyPair)</small>
                                                 <br>
                                                 <span class="text-muted">@order.CreatedAt.ToString("MM/dd HH:mm")</span>

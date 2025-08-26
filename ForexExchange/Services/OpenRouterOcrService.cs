@@ -1,5 +1,7 @@
-using System.Text.Json;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace ForexExchange.Services
@@ -81,8 +83,8 @@ namespace ForexExchange.Services
                     temperature = _configuration.GetValue<double>("OpenRouter:Temperature", 0.1)
                 };
 
-                var jsonContent = JsonSerializer.Serialize(requestBody);
-                var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                var jsonContent = JsonConvert.SerializeObject(requestBody);
+                var httpContent = new StringContent(jsonContent, Encoding.UTF8, MediaTypeHeaderValue.Parse("application/json"));
 
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");

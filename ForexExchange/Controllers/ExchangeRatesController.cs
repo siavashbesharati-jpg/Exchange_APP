@@ -308,8 +308,7 @@ namespace ForexExchange.Controllers
 
                     // Look for existing rate with FROM=currency, TO=baseCurrency (X → IRR)
                     var existingRate = await _context.ExchangeRates
-                        .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive);
-
+                        .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive); 
                     if (existingRate != null)
                     {
                         existingRate.BuyRate = _rateCalc.SafeRound(buyRate, 4);

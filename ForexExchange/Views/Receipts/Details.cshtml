@@ -182,7 +182,7 @@
                             <div class="alert alert-info">
                                 <h6><i class="fas fa-shopping-cart"></i> سفارش مرتبط</h6>
                                 <p class="mb-1"><strong>شماره سفارش:</strong> #@Model.Order.Id</p>
-                                <p class="mb-1"><strong>نوع:</strong> @(Model.Order.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")</p>
+                                <!-- Removed OrderType display, now just show currency pair or amount -->
                                 <p class="mb-1"><strong>مبلغ:</strong> @Model.Order.Amount.ToString("N0") @((Model?.Order?.FromCurrency?.PersianName ?? Model?.Order?.FromCurrency?.Code) ?? "")</p>
                                 <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.Order.Id" class="btn btn-sm btn-primary">مشاهده جزئیات سفارش</a>
                             </div>

@@ -37,15 +37,7 @@
                             
                            
                             
-                            <div class="col-md-6">
-                                <label asp-for="OrderType" class="form-label">نوع سفارش</label>
-                                <select asp-for="OrderType" class="form-select" required>
-                                    <option value="">انتخاب کنید</option>
-                                    <option value="0" selected="@(Model.OrderType == ForexExchange.Models.OrderType.Buy)">خرید</option>
-                                    <option value="1" selected="@(Model.OrderType == ForexExchange.Models.OrderType.Sell)">فروش</option>
-                                </select>
-                                <span asp-validation-for="OrderType" class="text-danger"></span>
-                            </div>
+                            <!-- Removed OrderType dropdown -->
                         </div>
 
                         <div class="row mb-3">
@@ -93,16 +85,6 @@
                                     <h6>اطلاعات جفت ارز فعلی:</h6>
                                     <p id="currencyPairText">
                                         جفت ارز: <strong>@Model.FromCurrency?.PersianName → @Model.ToCurrency?.PersianName</strong>
-                                    </p>
-                                    <p id="orderTypeExplanation">
-                                        @if (Model.OrderType == ForexExchange.Models.OrderType.Buy)
-                                        {
-                                            <span>خرید @Model.ToCurrency?.PersianName با @Model.FromCurrency?.PersianName</span>
-                                        }
-                                        else
-                                        {
-                                            <span>فروش @Model.FromCurrency?.PersianName به @Model.ToCurrency?.PersianName</span>
-                                        }
                                     </p>
                                 </div>
                             </div>
@@ -232,12 +214,10 @@
         function updateCurrencyPairInfo() {
             var fromCurrency = document.getElementById('fromCurrencySelect').value;
             var toCurrency = document.getElementById('toCurrencySelect').value;
-            var orderType = document.querySelector('select[name="OrderType"]').value;
             
             // Prevent same currency selection
             if (fromCurrency && toCurrency && fromCurrency === toCurrency) {
                 document.getElementById('currencyPairText').innerHTML = '<span class="text-danger">خطا: ارز مبدأ و مقصد نمی‌توانند یکسان باشند</span>';
-                document.getElementById('orderTypeExplanation').innerHTML = '';
                 return;
             }
             
@@ -249,26 +229,12 @@
                 
                 document.getElementById('currencyPairText').innerHTML = 
                     `جفت ارز: <strong>${fromName} (${fromCode}) → ${toName} (${toCode})</strong>`;
-                
-                if (orderType) {
-                    var orderTypeText = orderType == '0' ? 'خرید' : 'فروش';
-                    var explanation = '';
-                    
-                    if (orderType == '0') { // Buy
-                        explanation = `شما در حال ${orderTypeText} ${toName} با ${fromName} هستید`;
-                    } else { // Sell
-                        explanation = `شما در حال ${orderTypeText} ${fromName} به ${toName} هستید`;
-                    }
-                    
-                    document.getElementById('orderTypeExplanation').innerHTML = explanation;
-                }
             }
-        }
         
         // Add event listeners for cross-currency functionality
         document.getElementById('fromCurrencySelect').addEventListener('change', updateCurrencyPairInfo);
         document.getElementById('toCurrencySelect').addEventListener('change', updateCurrencyPairInfo);
-        document.querySelector('select[name="OrderType"]').addEventListener('change', updateCurrencyPairInfo);
+    // Removed OrderType event listener
         
         // Initial update on page load
         updateCurrencyPairInfo();

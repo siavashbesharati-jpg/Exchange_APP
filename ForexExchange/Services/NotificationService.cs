@@ -38,7 +38,7 @@ namespace ForexExchange.Services
                 var customer = await _context.Customers.FindAsync(order.CustomerId);
                 if (customer == null) return;
 
-                var message = $"سفارش {GetOrderTypeText(order.OrderType)} شما برای {order.Amount:N0} {GetCurrencyName(order.FromCurrency)} " +
+                var message = $"سفارش شما برای {order.Amount:N0} {GetCurrencyName(order.FromCurrency)} " +
                              $"با نرخ {order.Rate:N0} تومان ثبت شد.";
 
                 await CreateNotificationAsync(
@@ -334,15 +334,7 @@ namespace ForexExchange.Services
             };
         }
 
-        private string GetOrderTypeText(OrderType orderType)
-        {
-            return orderType switch
-            {
-                OrderType.Buy => "خرید",
-                OrderType.Sell => "فروش",
-                _ => orderType.ToString()
-            };
-        }
+    // Removed: GetOrderTypeText(OrderType orderType) - OrderType is deprecated
 
         private string GetCurrencyText(string currencyCode)
         {

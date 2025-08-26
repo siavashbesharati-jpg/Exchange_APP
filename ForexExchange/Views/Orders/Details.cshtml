@@ -56,68 +56,19 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>نوع سفارش:</strong></td>
-                                    <td>
-                                        <span class="badge @(Model.OrderType == ForexExchange.Models.OrderType.Buy ? "bg-success" : "bg-danger")">
-                                            @(Model.OrderType == ForexExchange.Models.OrderType.Buy ? "خرید" : "فروش")
-                                        </span>
-                                    </td>
+                                    <!-- Removed OrderType badge and display -->
                                 </tr>
                                 <tr>
                                     <td><strong>جفت ارز:</strong></td>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            @{
-                                                string GetCurrencyDisplayName(ForexExchange.Models.Currency? currency)
-                                                {
-                                                    if (currency == null) return "نامشخص";
-                                                    return $"{currency.PersianName} ({currency.Symbol})";
-                                                }
-
-                                                string GetCurrencyBadgeClass(ForexExchange.Models.Currency? currency)
-                                                {
-                                                    if (currency == null) return "bg-light";
-                                                    return currency.Symbol switch
-                                                    {
-                                                        "IRR" or "TMN" => "bg-secondary",
-                                                        "USD" => "bg-primary",
-                                                        "EUR" => "bg-success",
-                                                        "AED" => "bg-info",
-                                                        "OMR" => "bg-warning",
-                                                        "TRY" => "bg-danger",
-                                                        _ => "bg-light"
-                                                    };
-                                                }
-                                            }
-                                            
-                                            <span class="badge @GetCurrencyBadgeClass(Model.FromCurrency) me-2">
-                                                @GetCurrencyDisplayName(Model.FromCurrency)
-                                            </span>
-                                            
-                                            <i class="fas fa-arrow-right mx-2 text-muted"></i>
-                                            
-                                            <span class="badge @GetCurrencyBadgeClass(Model.ToCurrency)">
-                                                @GetCurrencyDisplayName(Model.ToCurrency)
-                                            </span>
+                                        <div style="direction:ltr; text-align:right;">
+                                            <span class="badge bg-primary">@Model.FromCurrency?.Code</span>
+                                            <span style="margin:0 8px;">→</span>
+                                            <span class="badge bg-danger">@Model.ToCurrency?.Code</span>
                                         </div>
+                                    </td>
+                                       
                                         
-                                        @if (Model.IsCrossCurrency)
-                                        {
-                                            <small class="text-muted d-block mt-2">
-                                                <i class="fas fa-exchange-alt"></i> تبادل ارز متقابل (غیر تومان)
-                                            </small>
-                                        }
-                                        
-                                        <small class="text-muted d-block mt-1">
-                                            @if (Model.OrderType == ForexExchange.Models.OrderType.Buy)
-                                            {
-                                                <span>خرید @GetCurrencyDisplayName(Model.ToCurrency) با @GetCurrencyDisplayName(Model.FromCurrency)</span>
-                                            }
-                                            else
-                                            {
-                                                <span>فروش @GetCurrencyDisplayName(Model.FromCurrency) به @GetCurrencyDisplayName(Model.ToCurrency)</span>
-                                            }
-                                        </small>
                                     </td>
                                 </tr>
                             </table>
@@ -126,62 +77,43 @@
                             <h6 class="text-muted">اطلاعات مالی</h6>
                             <table class="table table-borderless">
                                 <tr>
-                                    <td><strong>مقدار کل (ارز مبدأ):</strong></td>
+                                    <td><strong>مقدار کل (@Model.FromCurrency?.Code ):</strong></td>
                                     <td>
-                                        @Model.Amount.ToString("N2")
-                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                            @Model.Amount.ToString("N2") 
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>مقدار تکمیل شده:</strong></td>
+                                    <td><strong>مقدار تکمیل شده: (@Model.FromCurrency?.Code)</strong></td>
                                     <td>
-                                        @Model.FilledAmount.ToString("N2")
-                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                            @Model.FilledAmount.ToString("N2") 
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>مقدار باقیمانده:</strong></td>
+                                    <td><strong>مقدار باقیمانده: ( @Model.FromCurrency?.Code)</strong></td>
                                     <td>
-                                        @((Model.Amount - Model.FilledAmount).ToString("N2"))
-                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                            @((Model.Amount - Model.FilledAmount).ToString("N2"))
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>نرخ تبدیل:</strong></td>
+                                    <td><strong>نرخ معامله:</strong></td>
                                     <td>
-                                        @Model.Rate.ToString("N4")
-                                        @((Model.ToCurrency?.PersianName ?? Model.ToCurrency?.Code) ?? "")
-                                        به ازای هر
-                                        @((Model.FromCurrency?.PersianName ?? Model.FromCurrency?.Code) ?? "")
+                                            @Model.Rate.ToString("N4") 
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>مجموع (تومان):</strong></td>
-                                    <td><strong>@Model.TotalInToman.ToString("N0") تومان</strong></td>
+                                    <td><strong>دریافتی (@Model.ToCurrency?.Code):</strong></td>
+                                    <td><strong>@((Model.Amount * Model.Rate).ToString("N2")) </strong></td>
                                 </tr>
                             </table>
                         </div>
                     </div>
-
-                    @if (!string.IsNullOrEmpty(Model.Notes))
-                    {
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h6 class="text-muted">توضیحات</h6>
-                                <div class="alert alert-light">
-                                    @Model.Notes
-                                </div>
-                            </div>
-                        </div>
-                    }
-
-                    <div class="row mb-4">
+                                   
                         <div class="col-md-6">
-                            <h6 class="text-muted">تاریخ و زمان</h6>
+                           
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>تاریخ ایجاد:</strong></td>
-                                    <td>@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                    <td>@Model.CreatedAt.ToPersianDateTextify()</td>
                                 </tr>
                                 @if (Model.UpdatedAt.HasValue)
                                 {
@@ -220,14 +152,11 @@
                                             <tr>
                                                 <th>شناسه</th>
                                                 <th>طرف معامله</th>
-                                                <th>نوع معامله شما</th>
-                                                <th>نوع معامله طرف مقابل</th>
                                                 <th>مقدار</th>
                                                 <th>نرخ</th>
-                                                <th>مجموع</th>
                                                 <th>وضعیت</th>
                                                 <th>تاریخ</th>
-                                                <th>جزئیات طرف مقابل</th>
+                                                <th>جزئیات  </th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -236,8 +165,8 @@
                                                 var isThisBuyOrder = transaction.BuyOrderId == Model.Id;
                                                 var counterpartOrder = isThisBuyOrder ? transaction.SellOrder : transaction.BuyOrder;
                                                 var counterpartCustomer = isThisBuyOrder ? transaction.SellerCustomer : transaction.BuyerCustomer;
-                                                var thisOrderType = isThisBuyOrder ? "خرید" : "فروش";
-                                                var counterpartOrderType = isThisBuyOrder ? "فروش" : "خرید";
+                                                // Removed OrderType logic
+                                                // Removed OrderType logic
                                                 var thisOrderBadgeClass = isThisBuyOrder ? "bg-success" : "bg-danger";
                                                 var counterpartOrderBadgeClass = isThisBuyOrder ? "bg-danger" : "bg-success";
                                                 
@@ -247,15 +176,9 @@
                                                         <strong>@counterpartCustomer.FullName</strong>
                                                         <br><small class="text-muted">@counterpartCustomer.PhoneNumber</small>
                                                     </td>
-                                                    <td>
-                                                        <span class="badge @thisOrderBadgeClass">@thisOrderType</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge @counterpartOrderBadgeClass">@counterpartOrderType</span>
-                                                    </td>
+                                                   
                                                     <td>@transaction.Amount.ToString("N2")</td>
-                                                    <td>@transaction.Rate.ToString("N0")</td>
-                                                    <td>@transaction.TotalInToman.ToString("N0") تومان</td>
+                                                    <td>@transaction.Rate.ToString("N4")</td>
                                                     <td>
                                                         <span class="badge @(transaction.Status switch {
                                                             ForexExchange.Models.TransactionStatus.Pending => "bg-warning",
@@ -275,7 +198,7 @@
                                                             })
                                                         </span>
                                                     </td>
-                                                    <td>@transaction.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                                    <td>@transaction.CreatedAt.ToPersianDateTextify()</td>
                                                     <td>
                                                         <div class="small">
                                                             <strong>سفارش #@counterpartOrder.Id</strong>
@@ -295,18 +218,7 @@
                                     </table>
                                 </div>
                                 
-                                @if (Model.Transactions.Any())
-                                {
-                                    <div class="alert alert-info mt-3">
-                                        <h6><i class="fas fa-info-circle"></i> راهنمای تراکنش‌ها:</h6>
-                                        <ul class="mb-0">
-                                            <li><strong>طرف معامله:</strong> مشتری طرف مقابل شما در این تراکنش</li>
-                                            <li><strong>نوع معامله شما:</strong> نوع سفارش شما (خرید یا فروش)</li>
-                                            <li><strong>نوع معامله طرف مقابل:</strong> نوع سفارش طرف مقابل (مکمل شما)</li>
-                                            <li><strong>جزئیات طرف مقابل:</strong> اطلاعات سفارش و لینک به پروفایل طرف مقابل</li>
-                                        </ul>
-                                    </div>
-                                }
+                              
                             </div>
                         </div>
                     }
@@ -349,7 +261,7 @@
                                                             <span class="badge bg-warning">در انتظار تأیید</span>
                                                         }
                                                     </td>
-                                                    <td>@receipt.UploadedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                                    <td>@receipt.UploadedAt.ToPersianDateTextify()</td>
                                                     <td>
                                                         <a asp-controller="Receipts" asp-action="Details" asp-route-id="@receipt.Id" 
                                                            class="btn btn-sm btn-outline-primary">مشاهده</a>
@@ -388,14 +300,9 @@
                                 {
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle"></i>
-                                        @if (Model.OrderType == ForexExchange.Models.OrderType.Buy)
-                                        {
-                                            <text><strong>سفارشات فروش</strong> با نرخ @Model.Rate.ToString("N0") تومان یا کمتر:</text>
-                                        }
-                                        else
-                                        {
-                                            <text><strong>سفارشات خرید</strong> با نرخ @Model.Rate.ToString("N0") تومان یا بیشتر:</text>
-                                        }
+                                        <text>
+                                        در لیست زیر سفارشات قابل تطبیق با سفارش شما بر اساس نرخ و مقدار نمایش داده شده‌اند.
+                                        </text>
                                     </div>
                                     
                                     <div class="table-responsive">
@@ -403,10 +310,9 @@
                                             <thead>
                                                 <tr>
                                                     <th>مشتری</th>
-                                                    <th>نوع</th>
                                                     <th>مبلغ کل</th>
                                                     <th>باقیمانده</th>
-                                                    <th>نرخ</th>
+                                                    <th>میزان دریافتی (@Model.ToCurrency?.Code)</th>
                                                     <th>نرخ معامله</th>
                                                     <th>تاریخ</th>
                                                 </tr>
@@ -415,28 +321,15 @@
                                                 @foreach (var availableOrder in availableOrders.Take(10))
                                                 {
                                                     var remainingAmount = availableOrder.Amount - availableOrder.FilledAmount;
-                                                    var transactionRate = Model.OrderType == ForexExchange.Models.OrderType.Buy ? availableOrder.Rate : availableOrder.Rate;
-                                                    
+                                                    var transactionRate = availableOrder.Rate;
+                                                    var receivedAmount = remainingAmount * transactionRate;
                                                     <tr>
-                                                       
-                                                        <td> <a asp-action="Profile" asp-controller="Customers" asp-route-id="@availableOrder.Customer?.Id">@availableOrder.Customer?.FullName </a>
-                                                        </td>
-                                                        <td>
-                                                            @if (availableOrder.OrderType == ForexExchange.Models.OrderType.Buy)
-                                                            {
-                                                                <span class="badge bg-success">خرید</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <span class="badge bg-danger">فروش</span>
-                                                       
-                                                           }
-                                                        </td>
+                                                        <td> <a asp-action="Profile" asp-controller="Customers" asp-route-id="@availableOrder.Customer?.Id">@availableOrder.Customer?.FullName </a></td>
                                                         <td>@availableOrder.Amount.ToString("N2")</td>
                                                         <td class="fw-bold text-primary">@remainingAmount.ToString("N2")</td>
-                                                        <td>@availableOrder.Rate.ToString("N0")</td>
-                                                        <td class="fw-bold text-success">@transactionRate.ToString("N0")</td>
-                                                        <td>@availableOrder.CreatedAt.ToString("MM/dd HH:mm")</td>
+                                                        <td class="fw-bold text-info">@receivedAmount.ToString("N2") @Model.ToCurrency?.Code</td>
+                                                        <td class="fw-bold text-success">@transactionRate.ToString("N4")</td>
+                                                        <td>@availableOrder.CreatedAt.ToPersianDateTextify()</td>
                                                     </tr>
                                                 }
                                             </tbody>
@@ -452,20 +345,10 @@
                                 {
                                     <div class="alert alert-warning">
                                         <i class="fas fa-exclamation-triangle"></i>
-                                        @if (Model.OrderType == ForexExchange.Models.OrderType.Buy)
-                                        {
-                                            <text>
-                                                <strong>دلیل عدم تطبیق:</strong> هیچ سفارش فروش با نرخ @Model.Rate.ToString("N0") تومان یا کمتر وجود ندارد.
-                                                <br><small class="text-muted">برای تطبیق، نرخ خرید شما باید بیشتر یا مساوی نرخ فروش باشد.</small>
-                                            </text>
-                                        }
-                                        else
-                                        {
-                                            <text>
-                                                <strong>دلیل عدم تطبیق:</strong> هیچ سفارش خرید با نرخ @Model.Rate.ToString("N0") تومان یا بیشتر وجود ندارد.
-                                                <br><small class="text-muted">برای تطبیق، نرخ فروش شما باید کمتر یا مساوی نرخ خرید باشد.</small>
-                                            </text>
-                                        }
+                                        <text>
+                                            <strong>دلیل عدم تطبیق:</strong> هیچ سفارش با نرخ مناسب برای تطبیق وجود ندارد.
+                                            <br><small class="text-muted">برای تطبیق، نرخ سفارش شما باید با شرایط بازار هماهنگ باشد.</small>
+                                        </text>
                                     </div>
                                 }
                             </div>
@@ -523,3 +406,4 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
+

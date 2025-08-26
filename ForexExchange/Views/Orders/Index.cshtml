@@ -82,7 +82,7 @@
                                            placeholder="جستجو در نام مشتری..." class="form-control" />
                                     <input type="hidden" name="currentFilter" value="@ViewData["CurrentFilter"]" />
                                     <input type="hidden" name="sortOrder" value="@ViewData["CurrentSort"]" />
-                                    <input type="hidden" name="orderTypeFilter" value="@ViewData["OrderTypeFilter"]" />
+                                    <!-- Removed OrderTypeFilter hidden input -->
                                     <input type="hidden" name="currencyFilter" value="@ViewData["CurrencyFilter"]" />
                                     <input type="hidden" name="statusFilter" value="@ViewData["StatusFilter"]" />
                                     <input type="hidden" name="customerFilter" value="@ViewData["CustomerFilter"]" />
@@ -118,18 +118,7 @@
                                                class="text-white ms-1" style="text-decoration: none;">×</a>
                                         </span>
                                     }
-                                    @if (!String.IsNullOrEmpty(ViewData["OrderTypeFilter"]?.ToString()))
-                                    {
-                                        <span class="badge bg-info">
-                                            نوع: @ViewData["OrderTypeFilter"]
-                                            <a asp-action="Index" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-white ms-1" style="text-decoration: none;">×</a>
-                                        </span>
-                                    }
+                                    <!-- Removed OrderTypeFilter badge -->
                                     @if (!String.IsNullOrEmpty(ViewData["CurrencyFilter"]?.ToString()))
                                     {
                                         <span class="badge bg-info">
@@ -215,28 +204,7 @@
                                             </a>
                                         </th>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["OrderTypeSortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
-                                                نوع سفارش
-                                                @if (ViewData["CurrentSort"]?.ToString() == "OrderType")
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else if (ViewData["CurrentSort"]?.ToString() == "ordertype_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
+                                            <!-- Removed OrderType sorting column -->
                                         </th>
                                         <th>
                                             <a asp-action="Index" 
@@ -379,22 +347,7 @@
                                                 </a>
                                             </td>
                                             <td>
-                                                <a asp-action="Index"
-                                                   asp-route-orderTypeFilter="@item.OrderType"
-                                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                   asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                   asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                   asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                   class="text-decoration-none">
-                                                    @if (item.OrderType == ForexExchange.Models.OrderType.Buy)
-                                                    {
-                                                        <span class="badge bg-success">خرید</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge bg-danger">فروش</span>
-                                                    }
-                                                </a>
+                                                <!-- Removed OrderType badge and filter link -->
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center">
@@ -469,17 +422,7 @@
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
-                                                    @if (item.Status == ForexExchange.Models.OrderStatus.Open)
-                                                    {
-                                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">ویرایش</a>
-                                                        <form asp-action="Match" asp-route-id="@item.Id" method="post" style="display: inline;">
-                                                            <button type="submit" class="btn btn-sm btn-outline-success" 
-                                                                    onclick="return confirm('آیا می‌خواهید این سفارش را مچ کنید؟')">
-                                                                مچ کردن
-                                                            </button>
-                                                        </form>
-                                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">لغو</a>
-                                                    }
+                                                   
                                                 </div>
                                             </td>
                                         </tr>
