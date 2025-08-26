@@ -9,14 +9,17 @@
         cursor: pointer;
         transition: all 0.2s;
     }
+
     .clickable-filter:hover {
         transform: scale(1.05);
         filter: brightness(1.1);
     }
+
     .sort-icon {
         font-size: 0.8em;
         margin-left: 5px;
     }
+
     .filter-badge {
         margin: 2px;
     }
@@ -29,12 +32,13 @@
                 <h1 class="h3">مدیریت سفارش‌ها</h1>
                 <div class="d-flex gap-2">
                     <a asp-action="Create" class="btn btn-primary">ثبت سفارش جدید</a>
-                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="collapse" data-bs-target="#helpSection">
+                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="collapse"
+                        data-bs-target="#helpSection">
                         راهنما
                     </button>
                 </div>
             </div>
-            
+
             <!-- Help Section -->
             <div class="collapse mb-3" id="helpSection">
                 <div class="card card-body bg-light">
@@ -43,7 +47,8 @@
                         <li>برای <strong>مرتب‌سازی</strong>: روی عنوان ستون‌ها کلیک کنید</li>
                         <li>برای <strong>فیلتر کردن</strong>: روی مقادیر جدول (نوع سفارش، ارز، وضعیت) کلیک کنید</li>
                         <li>برای <strong>جستجو</strong>: از کادر جستجو استفاده کنید</li>
-                        <li>برای <strong>حذف فیلترها</strong>: روی × کنار هر فیلتر یا دکمه "حذف همه فیلترها" کلیک کنید</li>
+                        <li>برای <strong>حذف فیلترها</strong>: روی × کنار هر فیلتر یا دکمه "حذف همه فیلترها" کلیک کنید
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -78,8 +83,8 @@
                         <div class="col-md-3">
                             <form asp-action="Index" method="get">
                                 <div class="input-group">
-                                    <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]" 
-                                           placeholder="جستجو در نام مشتری..." class="form-control" />
+                                    <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]"
+                                        placeholder="جستجو در نام مشتری..." class="form-control" />
                                     <input type="hidden" name="currentFilter" value="@ViewData["CurrentFilter"]" />
                                     <input type="hidden" name="sortOrder" value="@ViewData["CurrentSort"]" />
                                     <!-- Removed OrderTypeFilter hidden input -->
@@ -91,11 +96,11 @@
                             </form>
                         </div>
                         <div class="col-md-9">
-                            @if (!String.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()) || 
-                                 !String.IsNullOrEmpty(ViewData["OrderTypeFilter"]?.ToString()) ||
-                                 !String.IsNullOrEmpty(ViewData["CurrencyFilter"]?.ToString()) ||
-                                 !String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()) ||
-                                 !String.IsNullOrEmpty(ViewData["CustomerFilter"]?.ToString()))
+                            @if (!String.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()) ||
+                                                        !String.IsNullOrEmpty(ViewData["OrderTypeFilter"]?.ToString()) ||
+                                                        !String.IsNullOrEmpty(ViewData["CurrencyFilter"]?.ToString()) ||
+                                                        !String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()) ||
+                                                        !String.IsNullOrEmpty(ViewData["CustomerFilter"]?.ToString()))
                             {
                                 <div class="d-flex flex-wrap gap-2">
                                     <span class="badge bg-secondary">فیلترهای فعال:</span>
@@ -110,12 +115,11 @@
                                     {
                                         <span class="badge bg-info">
                                             مشتری: @ViewData["CustomerFilter"]
-                                            <a asp-action="Index" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-white ms-1" style="text-decoration: none;">×</a>
+                                            <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]" class="text-white ms-1"
+                                                style="text-decoration: none;">×</a>
                                         </span>
                                     }
                                     <!-- Removed OrderTypeFilter badge -->
@@ -123,24 +127,22 @@
                                     {
                                         <span class="badge bg-info">
                                             ارز: @ViewData["CurrencyFilter"]
-                                            <a asp-action="Index"
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-white ms-1" style="text-decoration: none;">×</a>
+                                            <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]" class="text-white ms-1"
+                                                style="text-decoration: none;">×</a>
                                         </span>
                                     }
                                     @if (!String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()))
                                     {
                                         <span class="badge bg-info">
                                             وضعیت: @ViewData["StatusFilter"]
-                                            <a asp-action="Index"
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               class="text-white ms-1" style="text-decoration: none;">×</a>
+                                            <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]" class="text-white ms-1"
+                                                style="text-decoration: none;">×</a>
                                         </span>
                                     }
                                     <a asp-action="Index" class="btn btn-sm btn-outline-secondary">حذف همه فیلترها</a>
@@ -156,14 +158,13 @@
                                 <thead>
                                     <tr>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["IdSortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
+                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["IdSortParm"]"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                class="text-decoration-none">
                                                 شماره سفارش
                                                 @if (ViewData["CurrentSort"]?.ToString() == "id_desc")
                                                 {
@@ -180,14 +181,13 @@
                                             </a>
                                         </th>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["CustomerSortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
+                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["CustomerSortParm"]"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                class="text-decoration-none">
                                                 مشتری
                                                 @if (ViewData["CurrentSort"]?.ToString() == "Customer")
                                                 {
@@ -207,14 +207,13 @@
                                             <!-- Removed OrderType sorting column -->
                                         </th>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["CurrencySortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
+                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["CurrencySortParm"]"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                class="text-decoration-none">
                                                 جفت ارز
                                                 @if (ViewData["CurrentSort"]?.ToString() == "Currency")
                                                 {
@@ -231,14 +230,13 @@
                                             </a>
                                         </th>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["AmountSortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
+                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["AmountSortParm"]"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                class="text-decoration-none">
                                                 مبلغ
                                                 @if (ViewData["CurrentSort"]?.ToString() == "Amount")
                                                 {
@@ -255,14 +253,13 @@
                                             </a>
                                         </th>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["RateSortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
+                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["RateSortParm"]"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                class="text-decoration-none">
                                                 نرخ
                                                 @if (ViewData["CurrentSort"]?.ToString() == "Rate")
                                                 {
@@ -278,16 +275,14 @@
                                                 }
                                             </a>
                                         </th>
-                                        <th>مجموع (تومان)</th>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["StatusSortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
+                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["StatusSortParm"]"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                class="text-decoration-none">
                                                 وضعیت
                                                 @if (ViewData["CurrentSort"]?.ToString() == "Status")
                                                 {
@@ -304,14 +299,13 @@
                                             </a>
                                         </th>
                                         <th>
-                                            <a asp-action="Index" 
-                                               asp-route-sortOrder="@ViewData["DateSortParm"]" 
-                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                               asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                               asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                               class="text-decoration-none">
+                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                class="text-decoration-none">
                                                 تاریخ ثبت
                                                 @if (ViewData["CurrentSort"]?.ToString() == "Date")
                                                 {
@@ -336,13 +330,12 @@
                                         <tr>
                                             <td>@item.Id</td>
                                             <td>
-                                                <a asp-action="Index"
-                                                   asp-route-customerFilter="@item.Customer.FullName"
-                                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                   asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                                   asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                   asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                   class="text-decoration-none text-primary fw-bold">
+                                                <a asp-action="Index" asp-route-customerFilter="@item.Customer.FullName"
+                                                    asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                    asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                    asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                    asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                                    class="text-decoration-none text-primary fw-bold">
                                                     @item.Customer.FullName
                                                 </a>
                                             </td>
@@ -350,16 +343,8 @@
                                                 <!-- Removed OrderType badge and filter link -->
                                             </td>
                                             <td>
-                                                <div class="d-flex align-items-center">
+                                                <div class="d-flex align-items-center" style="float: right;" dir=ltr>
                                                     @{
-                                                        string GetCurrencyName(ForexExchange.Models.Currency currency)
-                                                        {
-                                                            // Prefer PersianName from DB, otherwise fall back to Code; no hardcoded lists
-                                                            if (currency == null) return "N/A";
-                                                            return !string.IsNullOrWhiteSpace(currency.PersianName)
-                                                                ? currency.PersianName
-                                                                : (currency.Code ?? "N/A");
-                                                        }
 
                                                         string GetCurrencyBadgeClass(ForexExchange.Models.Currency currency)
                                                         {
@@ -368,36 +353,30 @@
                                                             return currency.IsBaseCurrency ? "bg-secondary" : "bg-primary";
                                                         }
                                                     }
-                                                    
+
                                                     <span class="badge @GetCurrencyBadgeClass(item.FromCurrency) me-1">
-                                                        @GetCurrencyName(item.FromCurrency)
+                                                        @item.FromCurrency.Code
                                                     </span>
-                                                    
+
                                                     <i class="fas fa-arrow-right mx-1 text-muted"></i>
-                                                    
+
                                                     <span class="badge @GetCurrencyBadgeClass(item.ToCurrency)">
-                                                        @GetCurrencyName(item.ToCurrency)
+                                                        @item.ToCurrency.Code
                                                     </span>
                                                 </div>
-                                                
-                                                @if (item.IsCrossCurrency)
-                                                {
-                                                    <small class="text-muted d-block mt-1">
-                                                        <i class="fas fa-exchange-alt"></i> ارز متقابل
-                                                    </small>
-                                                }
+
+
                                             </td>
                                             <td>@item.Amount.ToString("N2")</td>
-                                            <td>@item.Rate.ToString("N0")</td>
-                                            <td>@item.TotalInToman.ToString("N0")</td>
+                                            <td>@item.Rate.ToString("N4")</td>
+
                                             <td>
-                                                <a asp-action="Index"
-                                                   asp-route-statusFilter="@item.Status"
-                                                   asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                   asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                   asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                                   asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                   class="text-decoration-none">
+                                                <a asp-action="Index" asp-route-statusFilter="@item.Status"
+                                                    asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                    asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                    asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
+                                                    asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                    class="text-decoration-none">
                                                     @switch (item.Status)
                                                     {
                                                         case ForexExchange.Models.OrderStatus.Open:
@@ -418,11 +397,12 @@
                                                     }
                                                 </a>
                                             </td>
-                                            <td>@item.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td>@item.CreatedAt.ToPersianDateTextify()</td>
                                             <td>
                                                 <div class="btn-group" role="group">
-                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
-                                                   
+                                                    <a asp-action="Details" asp-route-id="@item.Id"
+                                                        class="btn btn-sm btn-outline-primary">جزئیات</a>
+
                                                 </div>
                                             </td>
                                         </tr>
