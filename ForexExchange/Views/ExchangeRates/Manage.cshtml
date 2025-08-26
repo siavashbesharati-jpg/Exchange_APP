@@ -113,58 +113,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Currency-to-Currency Pair Management -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">مدیریت تبدیل ارز به ارز</h5>
-                </div>
-                <div class="card-body">
-                    <form asp-action="BulkUpdatePairs" method="post">
-                        <div class="row g-2 align-items-end mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">از ارز</label>
-                                <select id="fromCurrency" class="form-select"></select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">به ارز</label>
-                                <select id="toCurrency" class="form-select"></select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">نرخ خرید</label>
-                                <input id="pairBuy" type="number" class="form-control" step="0.0001" min="0">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">نرخ فروش</label>
-                                <input id="pairSell" type="number" class="form-control" step="0.0001" min="0">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <button type="button" class="btn btn-outline-primary" onclick="addPair()">افزودن به لیست</button>
-                            <button type="submit" class="btn btn-success">ثبت تغییرات</button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-striped" id="pairsTable">
-                                <thead>
-                                    <tr>
-                                        <th>از</th>
-                                        <th>به</th>
-                                        <th>نرخ خرید</th>
-                                        <th>نرخ فروش</th>
-                                        <th>حذف</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 @section Scripts {
@@ -197,47 +145,6 @@
                 // Submit the hidden form
                 document.getElementById('webUpdateForm').submit();
             }
-        }
-
-        // Populate currency dropdowns
-        const currencies = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Currencies ?? new object[0]));
-        const fromSel = document.getElementById('fromCurrency');
-        const toSel = document.getElementById('toCurrency');
-        function fillSelect(select) {
-            select.innerHTML = '';
-            currencies.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.id ?? c.Id;
-                opt.textContent = `${c.persianName ?? c.PersianName} (${c.code ?? c.Code})`;
-                select.appendChild(opt);
-            });
-        }
-        fillSelect(fromSel);
-        fillSelect(toSel);
-
-        // Manage pairs list
-        const tbody = document.querySelector('#pairsTable tbody');
-        function addPair() {
-            const fromId = parseInt(fromSel.value);
-            const toId = parseInt(toSel.value);
-            const buy = parseFloat(document.getElementById('pairBuy').value);
-            const sell = parseFloat(document.getElementById('pairSell').value);
-            if (!fromId || !toId || fromId === toId) { alert('ارز مبدأ و مقصد باید متفاوت باشند.'); return; }
-            if (!buy || !sell || sell <= buy) { alert('نرخ‌ها نامعتبر است. نرخ فروش باید بزرگ‌تر از خرید باشد.'); return; }
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td data-id="${fromId}">${fromSel.options[fromSel.selectedIndex].text}</td>
-                <td data-id="${toId}">${toSel.options[toSel.selectedIndex].text}</td>
-                <td>${buy}</td>
-                <td>${sell}</td>
-                <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">حذف</button></td>
-                <input type="hidden" name="pairs[${tbody.children.length}].FromCurrencyId" value="${fromId}" />
-                <input type="hidden" name="pairs[${tbody.children.length}].ToCurrencyId" value="${toId}" />
-                <input type="hidden" name="pairs[${tbody.children.length}].BuyRate" value="${buy}" />
-                <input type="hidden" name="pairs[${tbody.children.length}].SellRate" value="${sell}" />
-            `;
-            tbody.appendChild(tr);
         }
     </script>
 }
