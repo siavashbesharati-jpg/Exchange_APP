@@ -2,6 +2,8 @@
 
 @{
     ViewData["Title"] = "مدیریت ارزها";
+    // Add timestamp to prevent caching issues
+    ViewBag.CacheBreaker = DateTime.Now.Ticks;
 }
 
 <div class="container-fluid">
@@ -142,8 +144,16 @@
                 button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال بروزرسانی...';
                 button.disabled = true;
 
+                // Add timestamp to force cache refresh
+                var form = document.getElementById('webUpdateForm');
+                var timestampInput = document.createElement('input');
+                timestampInput.type = 'hidden';
+                timestampInput.name = 'timestamp';
+                timestampInput.value = new Date().getTime();
+                form.appendChild(timestampInput);
+
                 // Submit the hidden form
-                document.getElementById('webUpdateForm').submit();
+                form.submit();
             }
         }
     </script>

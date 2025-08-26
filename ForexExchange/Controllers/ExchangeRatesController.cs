@@ -245,9 +245,11 @@ namespace ForexExchange.Controllers
 
         // GET: ExchangeRates/Manage
         [Authorize(Roles = "Admin,Manager,Staff")]
-        public async Task<IActionResult> Manage()
+        public async Task<IActionResult> Manage(long? refresh)
         {
+            // Force fresh query to avoid EF tracking cache issues
             var exchangeRates = await _context.ExchangeRates
+                .AsNoTracking()
                 .Include(r => r.FromCurrency)
                 .Include(r => r.ToCurrency)
                 .Where(r => r.IsActive)
@@ -256,62 +258,13 @@ namespace ForexExchange.Controllers
                 .ToListAsync();
 
             ViewBag.Currencies = await _context.Currencies
+                .AsNoTracking()
                 .Where(c => c.IsActive && !c.IsBaseCurrency)
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new { c.Id, c.Code, c.PersianName })
                 .ToListAsync();
 
             return View(exchangeRates);
-        }
-
-        // POST: ExchangeRates/BulkUpdatePairs
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Manager,Staff")]
-        public async Task<IActionResult> BulkUpdatePairs(List<ExchangeRateUpdateViewModel> pairs)
-        {
-            if (pairs == null || pairs.Count == 0)
-            {
-                TempData["ErrorMessage"] = "هیچ موردی برای بروزرسانی ارسال نشد.";
-                return RedirectToAction(nameof(Manage));
-            }
-
-            var currencyIds = pairs.SelectMany(p => new[] { p.FromCurrencyId, p.ToCurrencyId }).Distinct().ToList();
-            var currencies = await _context.Currencies.Where(c => currencyIds.Contains(c.Id)).ToListAsync();
-
-            foreach (var p in pairs)
-            {
-                if (p.FromCurrencyId == p.ToCurrencyId) continue;
-                if (p.SellRate <= 0 || p.BuyRate <= 0 || p.SellRate <= p.BuyRate) continue;
-
-                var existing = await _context.ExchangeRates.FirstOrDefaultAsync(r => r.FromCurrencyId == p.FromCurrencyId && r.ToCurrencyId == p.ToCurrencyId && r.IsActive);
-                if (existing != null)
-                {
-                    existing.BuyRate = _rateCalc.SafeRound(p.BuyRate, 4);
-                    existing.SellRate = _rateCalc.SafeRound(p.SellRate, 4);
-                    existing.UpdatedAt = DateTime.Now;
-                    existing.UpdatedBy = User.Identity?.Name ?? "System";
-                    _context.Update(existing);
-                }
-                else
-                {
-                    var newRate = new ExchangeRate
-                    {
-                        FromCurrencyId = p.FromCurrencyId,
-                        ToCurrencyId = p.ToCurrencyId,
-                        BuyRate = _rateCalc.SafeRound(p.BuyRate, 4),
-                        SellRate = _rateCalc.SafeRound(p.SellRate, 4),
-                        IsActive = true,
-                        UpdatedAt = DateTime.Now,
-                        UpdatedBy = User.Identity?.Name ?? "System"
-                    };
-                    _context.Add(newRate);
-                }
-            }
-
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "نرخ‌های انتخاب‌شده با موفقیت بروزرسانی شدند.";
-            return RedirectToAction(nameof(Manage));
         }
 
         // POST: ExchangeRates/UpdateAll
@@ -527,7 +480,7 @@ namespace ForexExchange.Controllers
                 _logger.LogError(ex, "Error during web scraping update");
                 TempData["ErrorMessage"] = "خطا در بروزرسانی نرخ‌ها از وب. لطفاً دوباره تلاش کنید.";
             }
-            return RedirectToAction(nameof(Manage));
+            return RedirectToAction(nameof(Manage), new { refresh = DateTime.Now.Ticks });
         }
 
         // Upsert cross rates among all non-base currencies using fresh currency->base map
