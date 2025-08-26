@@ -1,7 +1,7 @@
 @model IEnumerable<ForexExchange.Models.ExchangeRate>
 
 @{
-    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : "نرخ‌های ارز";
+    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : "سامانه صرافی ایران اکسپدیا";
 }
 
 <div class="container-fluid">
