@@ -289,7 +289,7 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Manage));
             }
 
-            var currencies = await _context.Currencies.Where(c => c.IsActive).ToListAsync();
+            var currencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency).ToListAsync();
 
             foreach (var currency in currencies)
             {
@@ -302,17 +302,18 @@ namespace ForexExchange.Controllers
 
                     if (sellRate <= buyRate)
                     {
-                        TempData["ErrorMessage"] = $"نرخ فروش {currency.Name} باید بیشتر از نرخ خرید باشد.";
+                        TempData["ErrorMessage"] = $"نرخ فروش {currency.PersianName} باید بیشتر از نرخ خرید باشد.";
                         return RedirectToAction(nameof(Manage));
                     }
 
+                    // Look for existing rate with FROM=currency, TO=baseCurrency (X → IRR)
                     var existingRate = await _context.ExchangeRates
-                        .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.IsActive);
+                        .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive);
 
                     if (existingRate != null)
                     {
-                        existingRate.BuyRate = buyRate;
-                        existingRate.SellRate = sellRate;
+                        existingRate.BuyRate = _rateCalc.SafeRound(buyRate, 4);
+                        existingRate.SellRate = _rateCalc.SafeRound(sellRate, 4);
                         existingRate.UpdatedAt = DateTime.Now;
                         existingRate.UpdatedBy = User.Identity?.Name ?? "System";
                         _context.Update(existingRate);
@@ -323,8 +324,8 @@ namespace ForexExchange.Controllers
                         {
                             FromCurrencyId = currency.Id,
                             ToCurrencyId = baseCurrency.Id,
-                            BuyRate = buyRate,
-                            SellRate = sellRate,
+                            BuyRate = _rateCalc.SafeRound(buyRate, 4),
+                            SellRate = _rateCalc.SafeRound(sellRate, 4),
                             IsActive = true,
                             UpdatedAt = DateTime.Now,
                             UpdatedBy = User.Identity?.Name ?? "System"
@@ -336,7 +337,7 @@ namespace ForexExchange.Controllers
 
             await _context.SaveChangesAsync();
             TempData["SuccessMessage"] = "نرخ‌های ارز با موفقیت بروزرسانی شدند.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Manage));
         }
 
         // POST: ExchangeRates/UpdateFromWeb

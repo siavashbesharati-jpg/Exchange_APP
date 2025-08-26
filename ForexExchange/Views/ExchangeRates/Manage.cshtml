@@ -58,7 +58,8 @@
                                         foreach (var c in currencies)
                                         {
                                             int currencyKey = c.Id;
-                                            var currentRate = Model.FirstOrDefault(r => r.FromCurrencyId == currencyKey);
+                                            // Look for rates where this currency is FROM and IRR is TO (X → IRR)
+                                            var currentRate = Model.FirstOrDefault(r => r.FromCurrencyId == currencyKey && r.ToCurrency?.Code == "IRR");
                                             string badgeClass = ((string)c.Code).ToUpper() switch
                                             {
                                                 "USD" => "bg-primary",
