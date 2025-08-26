@@ -317,20 +317,20 @@ namespace ForexExchange.Services
             await _context.SaveChangesAsync(); // Save customers first
 
             // Seed Orders
-            await SeedOrdersAsync();
-            await _context.SaveChangesAsync(); // Save orders before transactions
+            // await SeedOrdersAsync();
+            // await _context.SaveChangesAsync(); // Save orders before transactions
 
 
-            // Seed Transactions
-            await SeedTransactionsAsync();
-            await _context.SaveChangesAsync(); // Save transactions before receipts
+            // // Seed Transactions
+            // await SeedTransactionsAsync();
+            // await _context.SaveChangesAsync(); // Save transactions before receipts
 
-            // Seed Receipts
-            await SeedReceiptsAsync();
-            await _context.SaveChangesAsync(); // Save receipts before notifications
+            // // Seed Receipts
+            // await SeedReceiptsAsync();
+            // await _context.SaveChangesAsync(); // Save receipts before notifications
 
-            // Seed Notifications
-            await SeedNotificationsAsync();
+            // // Seed Notifications
+            // await SeedNotificationsAsync();
 
             await _context.SaveChangesAsync();
 

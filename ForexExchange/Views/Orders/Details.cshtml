@@ -312,7 +312,7 @@
                                                     <th>مشتری</th>
                                                     <th>مبلغ کل</th>
                                                     <th>باقیمانده</th>
-                                                    <th>میزان دریافتی (@Model.ToCurrency?.Code)</th>
+                                                    <th>میزان دریافتی (@Model.FromCurrency?.Code)</th>
                                                     <th>نرخ معامله</th>
                                                     <th>تاریخ</th>
                                                 </tr>
@@ -327,7 +327,7 @@
                                                         <td> <a asp-action="Profile" asp-controller="Customers" asp-route-id="@availableOrder.Customer?.Id">@availableOrder.Customer?.FullName </a></td>
                                                         <td>@availableOrder.Amount.ToString("N2")</td>
                                                         <td class="fw-bold text-primary">@remainingAmount.ToString("N2")</td>
-                                                        <td class="fw-bold text-info">@receivedAmount.ToString("N2") @Model.ToCurrency?.Code</td>
+                                                        <td class="fw-bold text-info">@receivedAmount.ToString("N2") @availableOrder.ToCurrency?.Code</td>
                                                         <td class="fw-bold text-success">@transactionRate.ToString("N4")</td>
                                                         <td>@availableOrder.CreatedAt.ToPersianDateTextify()</td>
                                                     </tr>

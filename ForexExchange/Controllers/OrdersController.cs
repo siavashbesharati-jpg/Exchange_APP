@@ -398,6 +398,15 @@ namespace ForexExchange.Controllers
                 _context.Add(order);
                 await _context.SaveChangesAsync();
 
+                // Update currency pools if order is open/pending
+                if (order.Status == OrderStatus.Open)
+                {
+                    // Add to FromCurrency pool (reduce available currency)
+                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.Amount, PoolTransactionType.Buy, order.Rate);
+                    // Add to ToCurrency pool (increase available currency)
+                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
+                }
+
                 _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {exchangeRate} ({rateSource}), Total: {totalValue}");
 
                 TempData["SuccessMessage"] = "سفارش با موفقیت ثبت شد.";
@@ -490,6 +499,14 @@ namespace ForexExchange.Controllers
             var order = await _context.Orders.FindAsync(id);
             if (order != null)
             {
+                // Revert currency pool changes if order was open/pending
+                if (order.Status == OrderStatus.Open)
+                {
+                    // Revert FromCurrency pool (increase available currency)
+                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.Amount, PoolTransactionType.Sell, order.Rate);
+                    // Revert ToCurrency pool (decrease available currency)
+                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Buy, order.Rate);
+                }
                 order.Status = OrderStatus.Cancelled;
                 order.UpdatedAt = DateTime.Now;
                 _context.Update(order);
@@ -551,41 +568,71 @@ namespace ForexExchange.Controllers
 
                 var matchAmount = Math.Min(remainingAmount, availableAmount);
 
-                // Use the matching order's rate
-                decimal transactionRate = matchingOrder.Rate;
+                // Determine direction: who is buyer/seller for this currency pair
+                int buyOrderId, sellOrderId, buyerCustomerId, sellerCustomerId;
+                ForexExchange.Models.Order buyOrder, sellOrder;
+                if (order.FromCurrencyId == matchingOrder.ToCurrencyId && order.ToCurrencyId == matchingOrder.FromCurrencyId)
+                {
+                    // order is selling FromCurrency, matchingOrder is buying it
+                    buyOrderId = matchingOrder.Id;
+                    sellOrderId = order.Id;
+                    buyerCustomerId = matchingOrder.CustomerId;
+                    sellerCustomerId = order.CustomerId;
+                    buyOrder = matchingOrder;
+                    sellOrder = order;
+                }
+                else if (order.ToCurrencyId == matchingOrder.FromCurrencyId && order.FromCurrencyId == matchingOrder.ToCurrencyId)
+                {
+                    // order is buying ToCurrency, matchingOrder is selling it
+                    buyOrderId = order.Id;
+                    sellOrderId = matchingOrder.Id;
+                    buyerCustomerId = order.CustomerId;
+                    sellerCustomerId = matchingOrder.CustomerId;
+                    buyOrder = order;
+                    sellOrder = matchingOrder;
+                }
+                else
+                {
+                    // Not a valid match, skip
+                    continue;
+                }
+
+                // Use the best rate (lowest for buyer, highest for seller)
+                decimal transactionRate = Math.Min(order.Rate, matchingOrder.Rate);
 
                 // Create transaction
                 var transaction = new Transaction
                 {
-                    BuyOrderId = order.Id, // Always use order as BuyOrder for simplicity
-                    SellOrderId = matchingOrder.Id,
-                    BuyerCustomerId = order.CustomerId,
-                    SellerCustomerId = matchingOrder.CustomerId,
-                    FromCurrency = order.FromCurrency,
-                    ToCurrency = order.ToCurrency,
+                    BuyOrderId = buyOrderId,
+                    SellOrderId = sellOrderId,
+                    BuyerCustomerId = buyerCustomerId,
+                    SellerCustomerId = sellerCustomerId,
+                    FromCurrency = sellOrder.FromCurrency,
+                    ToCurrency = sellOrder.ToCurrency,
                     Amount = matchAmount,
                     Rate = transactionRate,
                     TotalAmount = matchAmount * transactionRate,
-                    TotalInToman = order.ToCurrency.IsBaseCurrency ? (matchAmount * transactionRate) :
-                                 (order.FromCurrency.IsBaseCurrency ? matchAmount : (matchAmount * transactionRate * 65000)), // Approximate conversion
+                    TotalInToman = sellOrder.ToCurrency.IsBaseCurrency ? (matchAmount * transactionRate) :
+                                 (sellOrder.FromCurrency.IsBaseCurrency ? matchAmount : (matchAmount * transactionRate * 65000)), // Approximate conversion
                     Status = TransactionStatus.Pending,
                     CreatedAt = DateTime.Now
                 };
 
                 _context.Transactions.Add(transaction);
 
-                // Update order statuses
+                // Update order statuses and filled amounts
                 order.FilledAmount += matchAmount;
                 matchingOrder.FilledAmount += matchAmount;
 
-                if (order.FilledAmount >= order.Amount)
+                // Correct status assignment for both orders
+                if (order.FilledAmount == order.Amount)
                     order.Status = OrderStatus.Completed;
-                else
+                else if (order.FilledAmount > 0)
                     order.Status = OrderStatus.PartiallyFilled;
 
-                if (matchingOrder.FilledAmount >= matchingOrder.Amount)
+                if (matchingOrder.FilledAmount == matchingOrder.Amount)
                     matchingOrder.Status = OrderStatus.Completed;
-                else
+                else if (matchingOrder.FilledAmount > 0)
                     matchingOrder.Status = OrderStatus.PartiallyFilled;
 
                 order.UpdatedAt = DateTime.Now;
@@ -596,17 +643,7 @@ namespace ForexExchange.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // Update currency pool after transaction creation
-                try
-                {
-                    await _poolService.ProcessTransactionAsync(transaction);
-                    _logger.LogInformation($"Currency pool updated for transaction {transaction.Id}");
-                }
-                catch (Exception poolEx)
-                {
-                    _logger.LogError(poolEx, $"Failed to update currency pool for transaction {transaction.Id}");
-                    // Don't fail the matching process for pool update errors
-                }
+                // No pool update here
 
                 createdTransactions.Add(transaction.Id);
             }
