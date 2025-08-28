@@ -77,13 +77,9 @@
                                                 <div class="card-body text-center">
                                                     <span class="badge @badgeClass mb-2">@fromName</span>
                                                     <div class="row">
-                                                        <div class="col-6">
-                                                            <small class="text-muted">خرید</small>
-                                                            <div class="fw-bold text-success">@item.BuyRate.ToString("N0")</div>
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <small class="text-muted">فروش</small>
-                                                            <div class="fw-bold text-danger">@item.SellRate.ToString("N0")</div>
+                                                        <div class="col-12">
+                                                            <small class="text-muted">نرخ</small>
+                                                            <div class="fw-bold text-primary">@item.Rate.ToString("N0")</div>
                                                         </div>
                                                     </div>
                                                     <small class="text-muted">@item.UpdatedAt.ToString("HH:mm")</small>
@@ -119,27 +115,23 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">مبلغ</label>
                             <input type="number" id="convertAmount" class="form-control" placeholder="مبلغ را وارد کنید" min="0" step="0.01" value="1">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">از ارز</label>
                             <select id="fromCurrency" class="form-select">
                                 <option value="">انتخاب کنید</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">به ارز</label>
                             <select id="toCurrency" class="form-select">
                                 <option value="">انتخاب کنید</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <button type="button" class="btn btn-primary w-100" onclick="convertCurrency()">
-                                <i class="fas fa-exchange-alt"></i> تبدیل
-                            </button>
-                        </div>
+                     
                     </div>
                     <div id="conversionResult" class="mt-3" style="display: none;">
                         <div class="alert alert-success border-0 shadow-sm text-center">
@@ -180,8 +172,7 @@
                 ToCode = r.ToCurrency?.Code,
                 FromName = r.FromCurrency?.PersianName ?? r.FromCurrency?.Name,
                 ToName = r.ToCurrency?.PersianName ?? r.ToCurrency?.Name,
-                BuyRate = r.BuyRate, 
-                SellRate = r.SellRate 
+                Rate = r.Rate 
             })
         ));
 
@@ -253,15 +244,15 @@
             
             if (rate) {
                 // Direct rate found
-                result = amount * rate.SellRate;
-                rateUsed = rate.SellRate;
+                result = amount * rate.Rate;
+                rateUsed = rate.Rate;
                 direction = 'مستقیم';
             } else {
                 // Try reverse rate
                 rate = exchangeRates.find(r => r.FromId === toId && r.ToId === fromId);
                 if (rate) {
-                    result = amount / rate.BuyRate;
-                    rateUsed = (1 / rate.BuyRate);
+                    result = amount / rate.Rate;
+                    rateUsed = (1 / rate.Rate);
                     direction = 'معکوس';
                 } else {
                     alert('نرخ تبدیل برای این جفت ارز موجود نیست');
@@ -318,6 +309,10 @@
         // Initialize dropdowns when page loads
         document.addEventListener('DOMContentLoaded', function() {
             populateDropdowns();
+            // Auto-calculate on any input or dropdown change
+            document.getElementById('convertAmount').addEventListener('input', convertCurrency);
+            document.getElementById('fromCurrency').addEventListener('change', convertCurrency);
+            document.getElementById('toCurrency').addEventListener('change', convertCurrency);
         });
 
         // Function to update rates from web

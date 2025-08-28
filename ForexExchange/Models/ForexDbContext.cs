@@ -180,8 +180,7 @@ namespace ForexExchange.Models
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId, e.IsActive }).IsUnique();
-                entity.Property(e => e.BuyRate).HasColumnType("decimal(18,4)");
-                entity.Property(e => e.SellRate).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.Rate).HasColumnType("decimal(18,4)");
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
                 
                 // Configure foreign key relationships
@@ -252,24 +251,22 @@ namespace ForexExchange.Models
             // Seed initial exchange rates - now with Currency IDs and cross-currency pairs
             modelBuilder.Entity<ExchangeRate>().HasData(
                 // IRR to other currencies (base currency rates)
-                new ExchangeRate { Id = 1, FromCurrencyId = 1, ToCurrencyId = 2, BuyRate = 68000, SellRate = 69000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 2, FromCurrencyId = 1, ToCurrencyId = 3, BuyRate = 72000, SellRate = 73000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 3, FromCurrencyId = 1, ToCurrencyId = 4, BuyRate = 18500, SellRate = 19000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 4, FromCurrencyId = 1, ToCurrencyId = 5, BuyRate = 177000, SellRate = 179000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 5, FromCurrencyId = 1, ToCurrencyId = 6, BuyRate = 1950, SellRate = 2050, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                
+                new ExchangeRate { Id = 1, FromCurrencyId = 1, ToCurrencyId = 2, Rate = 68500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 2, FromCurrencyId = 1, ToCurrencyId = 3, Rate = 72500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 3, FromCurrencyId = 1, ToCurrencyId = 4, Rate = 18750, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 4, FromCurrencyId = 1, ToCurrencyId = 5, Rate = 178000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 5, FromCurrencyId = 1, ToCurrencyId = 6, Rate = 2000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 // Reverse rates (other currencies to IRR)
-                new ExchangeRate { Id = 6, FromCurrencyId = 2, ToCurrencyId = 1, BuyRate = 1.0m/69000, SellRate = 1.0m/68000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 7, FromCurrencyId = 3, ToCurrencyId = 1, BuyRate = 1.0m/73000, SellRate = 1.0m/72000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 8, FromCurrencyId = 4, ToCurrencyId = 1, BuyRate = 1.0m/19000, SellRate = 1.0m/18500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 9, FromCurrencyId = 5, ToCurrencyId = 1, BuyRate = 1.0m/179000, SellRate = 1.0m/177000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 10, FromCurrencyId = 6, ToCurrencyId = 1, BuyRate = 1.0m/2050, SellRate = 1.0m/1950, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                
+                new ExchangeRate { Id = 6, FromCurrencyId = 2, ToCurrencyId = 1, Rate = 1.0m/68500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 7, FromCurrencyId = 3, ToCurrencyId = 1, Rate = 1.0m/72500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 8, FromCurrencyId = 4, ToCurrencyId = 1, Rate = 1.0m/18750, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 9, FromCurrencyId = 5, ToCurrencyId = 1, Rate = 1.0m/178000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 10, FromCurrencyId = 6, ToCurrencyId = 1, Rate = 1.0m/2000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 // Sample cross-currency rates (USD to other currencies)
-                new ExchangeRate { Id = 11, FromCurrencyId = 2, ToCurrencyId = 3, BuyRate = 0.92m, SellRate = 0.94m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 12, FromCurrencyId = 2, ToCurrencyId = 4, BuyRate = 3.67m, SellRate = 3.69m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 13, FromCurrencyId = 2, ToCurrencyId = 5, BuyRate = 0.384m, SellRate = 0.386m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 14, FromCurrencyId = 2, ToCurrencyId = 6, BuyRate = 34.5m, SellRate = 35.2m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
+                new ExchangeRate { Id = 11, FromCurrencyId = 2, ToCurrencyId = 3, Rate = 0.93m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 12, FromCurrencyId = 2, ToCurrencyId = 4, Rate = 3.68m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 13, FromCurrencyId = 2, ToCurrencyId = 5, Rate = 0.385m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 14, FromCurrencyId = 2, ToCurrencyId = 6, Rate = 34.85m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
             );
 
             // Seed initial system settings

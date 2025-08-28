@@ -305,7 +305,7 @@ namespace ForexExchange.Controllers
 
                 if (directRate != null)
                 {
-                    exchangeRate = directRate.SellRate; // Always use SellRate for simplicity
+                    exchangeRate = directRate.Rate;
                     rateSource = "Direct";
                 }
                 else
@@ -318,7 +318,7 @@ namespace ForexExchange.Controllers
 
                     if (reverseRate != null)
                     {
-                        exchangeRate = (1.0m / reverseRate.BuyRate); // Always use BuyRate for simplicity
+                        exchangeRate = (1.0m / reverseRate.Rate);
                         rateSource = "Reverse";
                     }
                     else
@@ -337,8 +337,8 @@ namespace ForexExchange.Controllers
 
                             if (fromRate != null && toRate != null)
                             {
-                                var fromToIrrRate = fromRate.SellRate;
-                                var irrToTargetRate = toRate.BuyRate;
+                                var fromToIrrRate = fromRate.Rate;
+                                var irrToTargetRate = toRate.Rate;
                                 exchangeRate = irrToTargetRate / fromToIrrRate;
                                 rateSource = "Cross-rate";
                             }
@@ -378,7 +378,7 @@ namespace ForexExchange.Controllers
                             var usdRate = await _context.ExchangeRates
                                 .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id &&
                                                          r.ToCurrencyId == usdCurrency.Id && r.IsActive);
-                            order.TotalInToman = totalValue * (usdRate?.BuyRate ?? 65000);
+                            order.TotalInToman = totalValue * (usdRate?.Rate ?? 65000);
                         }
                         else
                         {
@@ -719,7 +719,7 @@ namespace ForexExchange.Controllers
                     .Where(r => r.FromCurrencyId == fromCurrencyId && 
                                r.ToCurrencyId == toCurrencyId && 
                                r.IsActive)
-                    .Select(r => new { r.BuyRate, r.SellRate })
+                    .Select(r => new { r.Rate })
                     .FirstOrDefaultAsync();
 
                 decimal rate = 0;
@@ -727,7 +727,7 @@ namespace ForexExchange.Controllers
 
                 if (directRate != null)
                 {
-                    rate = orderType == "Buy" ? directRate.SellRate : directRate.BuyRate;
+                    rate = directRate.Rate;
                     source = "Direct";
                 }
                 else
@@ -737,13 +737,12 @@ namespace ForexExchange.Controllers
                         .Where(r => r.FromCurrencyId == toCurrencyId && 
                                    r.ToCurrencyId == fromCurrencyId && 
                                    r.IsActive)
-                        .Select(r => new { r.BuyRate, r.SellRate })
+                        .Select(r => new { r.Rate })
                         .FirstOrDefaultAsync();
 
                     if (reverseRate != null)
                     {
-                        rate = orderType == "Buy" ? 
-                            (1.0m / reverseRate.BuyRate) : (1.0m / reverseRate.SellRate);
+                        rate = (1.0m / reverseRate.Rate);
                         source = "Reverse";
                     }
                     else
@@ -759,20 +758,18 @@ namespace ForexExchange.Controllers
                             var fromRate = await _context.ExchangeRates
                                 .Where(r => r.FromCurrencyId == baseCurrencyId && 
                                            r.ToCurrencyId == fromCurrencyId && r.IsActive)
-                                .Select(r => new { r.BuyRate, r.SellRate })
+                                .Select(r => new { r.Rate })
                                 .FirstOrDefaultAsync();
 
                             var toRate = await _context.ExchangeRates
                                 .Where(r => r.FromCurrencyId == baseCurrencyId && 
                                            r.ToCurrencyId == toCurrencyId && r.IsActive)
-                                .Select(r => new { r.BuyRate, r.SellRate })
+                                .Select(r => new { r.Rate })
                                 .FirstOrDefaultAsync();
 
                             if (fromRate != null && toRate != null)
                             {
-                                var fromToBaseRate = orderType == "Buy" ? fromRate.SellRate : fromRate.BuyRate;
-                                var baseToTargetRate = orderType == "Buy" ? toRate.BuyRate : toRate.SellRate;
-                                rate = baseToTargetRate / fromToBaseRate;
+                                rate = toRate.Rate / fromRate.Rate;
                                 source = "Cross-rate";
                             }
                         }

@@ -15,8 +15,8 @@ namespace ForexExchange.Services
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ForexDbContext _context;
         private readonly ILogger<DataSeedService> _logger;
-    private readonly IWebScrapingService _webScrapingService;
-    private readonly IRateCalculationService _rateCalc;
+        private readonly IWebScrapingService _webScrapingService;
+        private readonly IRateCalculationService _rateCalc;
 
         public DataSeedService(
             UserManager<ApplicationUser> userManager,
@@ -172,46 +172,23 @@ namespace ForexExchange.Services
 
         private async Task SeedExchangeRatesAsync()
         {
-            // Check if exchange rates already exist
-            if (await _context.ExchangeRates.AnyAsync())
-            {
-                _logger.LogInformation("Exchange rates already exist, skipping seeding");
-                return;
-            }
-
-            _logger.LogInformation("Seeding exchange rates using web scraping...");
-
             try
             {
-
-                var rates = new Dictionary<string, (decimal BuyRate, decimal SellRate)>();
-
-                // Get active foreign currencies from database (excluding IRR/Toman)
+                var rates = new Dictionary<string, decimal>();
                 var currencies = await _context.Currencies
                     .Where(c => c.IsActive && !c.IsBaseCurrency)
                     .ToListAsync();
 
                 foreach (var currency in currencies)
                 {
-                    try
+                    var rateResult = await _webScrapingService.GetCurrencyRateAsync(currency.Code);
+                    if (rateResult.HasValue)
                     {
-                        var rate = await _webScrapingService.GetCurrencyRateAsync(currency.Code);
-                        if (rate.HasValue)
-                        {
-                            rates[currency.Code] = rate.Value;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to get exchange rate for {Currency}", currency.Code);
+                        rates[currency.Code] = rateResult.Value;
                     }
                 }
 
-                
-
                 var exchangeRates = new List<ExchangeRate>();
-
-                // Get base currency for exchange rate pairs
                 var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
                 if (baseCurrency == null)
                 {
@@ -219,41 +196,46 @@ namespace ForexExchange.Services
                     return;
                 }
 
-                // Map: currencyId -> (buy,sell) for currency->base
-                var scrapedMap = new Dictionary<int, (decimal buy, decimal sell)>();
+                // Map: currencyId -> rate for currency->base
+                var scrapedMap = new Dictionary<int, decimal>();
                 foreach (var rate in rates)
                 {
                     var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == rate.Key);
                     if (currency == null) { _logger.LogWarning($"Currency {rate.Key} not found in database, skipping"); continue; }
 
                     // currency -> base (X->IRR)
-                    exchangeRates.Add(new ExchangeRate
-                    {
-                        FromCurrencyId = currency.Id,
-                        ToCurrencyId = baseCurrency.Id,
-                        BuyRate = _rateCalc.SafeRound(rate.Value.BuyRate, 4),
-                        SellRate = _rateCalc.SafeRound(rate.Value.SellRate, 4),
-                        IsActive = true,
-                        UpdatedAt = DateTime.Now,
-                        UpdatedBy = "WebScraping-System"
-                    });
-
-                    scrapedMap[currency.Id] = (rate.Value.BuyRate, rate.Value.SellRate);
-
-                    // base -> currency (IRR->X) reverse
-                    var rev = _rateCalc.ComputeReverseFromBase(rate.Value.BuyRate, rate.Value.SellRate);
-                    if (rev != null)
+                    var existingRate = await _context.ExchangeRates.FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive);
+                    if (existingRate == null)
                     {
                         exchangeRates.Add(new ExchangeRate
                         {
-                            FromCurrencyId = baseCurrency.Id,
-                            ToCurrencyId = currency.Id,
-                            BuyRate = _rateCalc.SafeRound(rev.Value.buy, 8),
-                            SellRate = _rateCalc.SafeRound(rev.Value.sell, 8),
+                            FromCurrencyId = currency.Id,
+                            ToCurrencyId = baseCurrency.Id,
+                            Rate = _rateCalc.SafeRound(rate.Value, 4),
                             IsActive = true,
                             UpdatedAt = DateTime.Now,
                             UpdatedBy = "WebScraping-System"
                         });
+                    }
+                    scrapedMap[currency.Id] = rate.Value;
+
+                    // base -> currency (IRR->X) reverse
+                    var rev = scrapedMap[currency.Id] > 0 ? 1.0m / scrapedMap[currency.Id] : 0;
+                    if (rev > 0)
+                    {
+                        var existingRev = await _context.ExchangeRates.FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == currency.Id && r.IsActive);
+                        if (existingRev == null)
+                        {
+                            exchangeRates.Add(new ExchangeRate
+                            {
+                                FromCurrencyId = baseCurrency.Id,
+                                ToCurrencyId = currency.Id,
+                                Rate = _rateCalc.SafeRound(rev, 8),
+                                IsActive = true,
+                                UpdatedAt = DateTime.Now,
+                                UpdatedBy = "WebScraping-System"
+                            });
+                        }
                     }
                 }
 
@@ -266,18 +248,25 @@ namespace ForexExchange.Services
                         if (i == j) continue;
                         var fromId = foreignIds[i];
                         var toId = foreignIds[j];
-                        var cross = _rateCalc.ComputeCrossFromBase(scrapedMap[fromId], scrapedMap[toId]);
-                        if (cross == null) continue;
-                        exchangeRates.Add(new ExchangeRate
+                        var fromRate = scrapedMap[fromId];
+                        var toRate = scrapedMap[toId];
+                        if (fromRate > 0 && toRate > 0)
                         {
-                            FromCurrencyId = fromId,
-                            ToCurrencyId = toId,
-                            BuyRate = _rateCalc.SafeRound(cross.Value.buy, 8),
-                            SellRate = _rateCalc.SafeRound(cross.Value.sell, 8),
-                            IsActive = true,
-                            UpdatedAt = DateTime.Now,
-                            UpdatedBy = "WebScraping-System"
-                        });
+                            var cross = toRate / fromRate;
+                            var existingCross = await _context.ExchangeRates.FirstOrDefaultAsync(r => r.FromCurrencyId == fromId && r.ToCurrencyId == toId && r.IsActive);
+                            if (existingCross == null)
+                            {
+                                exchangeRates.Add(new ExchangeRate
+                                {
+                                    FromCurrencyId = fromId,
+                                    ToCurrencyId = toId,
+                                    Rate = _rateCalc.SafeRound(cross, 8),
+                                    IsActive = true,
+                                    UpdatedAt = DateTime.Now,
+                                    UpdatedBy = "WebScraping-System"
+                                });
+                            }
+                        }
                     }
                 }
 
@@ -291,6 +280,7 @@ namespace ForexExchange.Services
                 {
                     _logger.LogWarning("No rates received from web scraping, but ForexDbContext will handle rate seeding");
                 }
+
             }
             catch (Exception ex)
             {
@@ -537,22 +527,20 @@ namespace ForexExchange.Services
                 var toBaseCurrencyRate = baseCurrency != null ?
                     exchangeRates.FirstOrDefault(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == toCurrency.Id) : null;
 
-                decimal rate;
+                decimal rate = 1;
                 if (directRate != null)
                 {
-                    // Removed OrderType logic
+                    rate = directRate.Rate;
                 }
                 else if (reverseRate != null)
                 {
-                    // Removed OrderType logic
+                    rate = reverseRate.Rate > 0 ? 1.0m / reverseRate.Rate : 1;
                 }
                 else if (fromBaseCurrencyRate != null && toBaseCurrencyRate != null && baseCurrency != null)
                 {
-                    // Cross-rate via base currency
-                    rate = toBaseCurrencyRate.BuyRate / fromBaseCurrencyRate.SellRate;
+                    rate = toBaseCurrencyRate.Rate / fromBaseCurrencyRate.Rate;
                 }
-
-
+                else
                 {
                     // Fallback to simple conversion rates using currency codes
                     var rateMapping = new Dictionary<string, decimal>
@@ -583,7 +571,7 @@ namespace ForexExchange.Services
                     TotalInToman = baseCurrency != null && fromCurrency.Id == baseCurrency.Id ? amount :
                                   (baseCurrency != null && toCurrency.Id == baseCurrency.Id ? totalValue :
                                    totalValue * 65000), // Approximate base currency value for reporting
-                    // Removed OrderType assignment
+                                                        // Removed OrderType assignment
                     Status = status,
                     CreatedAt = DateTime.Now.AddDays(-random.Next(1, 30)),
                     UpdatedAt = DateTime.Now.AddDays(-random.Next(0, 5)),

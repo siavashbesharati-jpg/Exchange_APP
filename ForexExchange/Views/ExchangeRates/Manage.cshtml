@@ -45,7 +45,6 @@
                                     <tr>
                                         <th>ارز </th>
                                         <th>نرخ خرید (تومان)</th>
-                                        <th>نرخ فروش (تومان)</th>
                                         <th>آخرین بروزرسانی</th>
                                     </tr>
                                 </thead>
@@ -73,14 +72,11 @@
                                                 <td>
                                                     <span class="badge @badgeClass">@c.PersianName (@c.Code)</span>
                                                 </td>
-                                                <td>
-                                                    <input name="buyRates[@currencyKey]" type="number" class="form-control"
-                                                           value="@(currentRate?.BuyRate ?? 0)" step="0.01" min="0" required />
-                                                </td>
-                                                <td>
-                                                    <input name="sellRates[@currencyKey]" type="number" class="form-control"
-                                                           value="@(currentRate?.SellRate ?? 0)" step="0.01" min="0" required />
-                                                </td>
+                                                <!-- Removed BuyRate input, only Rate input remains for single-rate system -->
+                                                   <td>
+                                                       <input name="rates[@currencyKey]" type="number" class="form-control"
+                                                              value="@(currentRate?.Rate ?? 0)" step="0.01" min="0" required />
+                                                   </td>
                                                 <td>
                                                     @if (currentRate != null)
                                                     {
@@ -121,20 +117,7 @@
 @section Scripts {
     <script>
         // Validate sell rate is higher than buy rate
-        document.querySelectorAll('input[name*="buyRates"], input[name*="sellRates"]').forEach(function(input) {
-            input.addEventListener('change', function() {
-                var row = this.closest('tr');
-                var buyInput = row.querySelector('input[name*="buyRates"]');
-                var sellInput = row.querySelector('input[name*="sellRates"]');
-                
-                if (buyInput.value && sellInput.value) {
-                    if (parseFloat(sellInput.value) <= parseFloat(buyInput.value)) {
-                        alert('نرخ فروش باید بیشتر از نرخ خرید باشد.');
-                        sellInput.focus();
-                    }
-                }
-            });
-        });
+        // No need to validate buy/sell rate difference in single-rate system
 
         // Function to update rates from web
         function updateFromWeb() {

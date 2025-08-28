@@ -82,14 +82,14 @@
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-success">@Model.Amount.ToString("N2")</div>
-                                <small class="text-muted">مقدار (@Model.FromCurrency?.PersianName)</small>
+                                <div class="h4 text-success">@Model.Amount.ToString("N2") @Model.FromCurrency?.Code</div>
+                                <small class="text-muted">مقدار ارسال شده</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-danger">@Model.TotalInToman.ToString("N0")</div>
-                                <small class="text-muted">مجموع (تومان)</small>
+                                <div class="h4 text-primary">@((Model.Amount * Model.Rate).ToString("N2")) @Model.ToCurrency?.Code</div>
+                                <small class="text-muted">مقدار دریافتی</small>
                             </div>
                         </div>
                     </div>
@@ -317,16 +317,14 @@
                             فروشنده @(isSeller ? "(شما)" : "")
                         </h6>
                         <div class="bg-light p-3 rounded">
-                            <strong>@Model.SellerCustomer.FullName</strong><br>
+                            <strong>...</strong><br>
                             <small class="text-muted">
-                                <i class="fas fa-phone me-1"></i>@Model.SellerCustomer.PhoneNumber
+                                <i class="fas fa-phone me-1"></i>.....
                             </small>
-                            @if (!string.IsNullOrEmpty(Model.SellerCustomer.NationalId))
-                            {
                                 <br><small class="text-muted">
-                                    <i class="fas fa-id-card me-1"></i>@Model.SellerCustomer.NationalId
+                                    <i class="fas fa-id-card me-1"></i> .....
                                 </small>
-                            }
+                            
                         </div>
                     </div>
                 </div>
@@ -481,7 +479,7 @@
                         </div>
                         <div class="col-md-6">
                             <strong>مقدار ارز دریافتی:</strong>
-                            <div class="h5 text-success">@Model.Amount.ToString("N2") @Model.FromCurrency?.PersianName <small class="text-muted">(@Model.CurrencyPair)</small></div>
+                            <div class="h5 text-primary">@((Model.Amount * Model.Rate).ToString("N2")) @Model.ToCurrency?.Code <small class="text-muted">(@Model.CurrencyPair)</small></div>
                         </div>
                     </div>
                     
@@ -530,8 +528,8 @@
                             <div class="h5 text-primary">@Model.Amount.ToString("N2") @Model.FromCurrency?.PersianName <small class="text-muted">(@Model.CurrencyPair)</small></div>
                         </div>
                         <div class="col-md-6">
-                            <strong>مبلغ دریافتی:</strong>
-                            <div class="h5 text-success">@Model.TotalInToman.ToString("N0") تومان</div>
+                            <strong>مقدار ارسال شده:</strong>
+                            <div class="h5 text-success">@Model.Amount.ToString("N2") @Model.FromCurrency?.Code</div>
                         </div>
                     </div>
                     

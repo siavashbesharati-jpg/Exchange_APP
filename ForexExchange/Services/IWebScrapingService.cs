@@ -5,6 +5,6 @@ namespace ForexExchange.Services
     public interface IWebScrapingService
     {
         
-        Task<(decimal BuyRate, decimal SellRate)?> GetCurrencyRateAsync(string currencyCode);
+        Task<decimal?> GetCurrencyRateAsync(string currencyCode);
     }
 }

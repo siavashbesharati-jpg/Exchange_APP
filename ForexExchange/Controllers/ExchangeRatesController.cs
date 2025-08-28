@@ -156,7 +156,7 @@ namespace ForexExchange.Controllers
         // POST: ExchangeRates/UpdateAll
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateAll(Dictionary<string, decimal> buyRates, Dictionary<string, decimal> sellRates)
+    public async Task<IActionResult> UpdateAll(Dictionary<string, decimal> rates)
         {
             try
             {
@@ -174,12 +174,11 @@ namespace ForexExchange.Controllers
                 {
                     var currencyKey = currency.Id.ToString();
 
-                    if (buyRates.ContainsKey(currencyKey) && sellRates.ContainsKey(currencyKey))
+                    if (rates.ContainsKey(currencyKey))
                     {
-                        var buyRate = buyRates[currencyKey];
-                        var sellRate = sellRates[currencyKey];
+                        var rate = rates[currencyKey];
 
-                        if (buyRate > 0 && sellRate > 0)
+                        if (rate > 0)
                         {
                             // Deactivate old rate for this currency pair
                             var existingRate = await _context.ExchangeRates
@@ -198,8 +197,7 @@ namespace ForexExchange.Controllers
                             {
                                 FromCurrencyId = baseCurrency.Id,
                                 ToCurrencyId = currency.Id,
-                                BuyRate = buyRate,
-                                SellRate = sellRate,
+                                Rate = rate,
                                 UpdatedAt = DateTime.Now,
                                 UpdatedBy = "Admin",
                                 IsActive = true
@@ -234,8 +232,7 @@ namespace ForexExchange.Controllers
                 {
                     fromCurrency = r.FromCurrency.Code,
                     toCurrency = r.ToCurrency.Code,
-                    buyRate = r.BuyRate,
-                    sellRate = r.SellRate,
+                    rate = r.Rate,
                     updatedAt = r.UpdatedAt
                 })
                 .ToListAsync();
@@ -271,9 +268,9 @@ namespace ForexExchange.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin,Manager,Staff")]
-        public async Task<IActionResult> UpdateAll(Dictionary<int, decimal> buyRates, Dictionary<int, decimal> sellRates)
+    public async Task<IActionResult> UpdateAll(Dictionary<int, decimal> rates)
         {
-            if (buyRates == null || sellRates == null)
+            if (rates == null)
             {
                 TempData["ErrorMessage"] = "داده‌های ورودی نامعتبر است.";
                 return RedirectToAction(nameof(Manage));
@@ -295,24 +292,16 @@ namespace ForexExchange.Controllers
             {
                 var currencyKey = currency.Id;
 
-                if (buyRates.ContainsKey(currencyKey) && sellRates.ContainsKey(currencyKey))
+                if (rates.ContainsKey(currencyKey))
                 {
-                    var buyRate = buyRates[currencyKey];
-                    var sellRate = sellRates[currencyKey];
-
-                    if (sellRate <= buyRate)
-                    {
-                        TempData["ErrorMessage"] = $"نرخ فروش {currency.PersianName} باید بیشتر از نرخ خرید باشد.";
-                        return RedirectToAction(nameof(Manage));
-                    }
+                    var rate = rates[currencyKey];
 
                     // Look for existing rate with FROM=currency, TO=baseCurrency (X → IRR)
                     var existingRate = await _context.ExchangeRates
                         .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive); 
                     if (existingRate != null)
                     {
-                        existingRate.BuyRate = _rateCalc.SafeRound(buyRate, 4);
-                        existingRate.SellRate = _rateCalc.SafeRound(sellRate, 4);
+                        existingRate.Rate = _rateCalc.SafeRound(rate, 4);
                         existingRate.UpdatedAt = DateTime.Now;
                         existingRate.UpdatedBy = User.Identity?.Name ?? "System";
                         _context.Update(existingRate);
@@ -323,8 +312,7 @@ namespace ForexExchange.Controllers
                         {
                             FromCurrencyId = currency.Id,
                             ToCurrencyId = baseCurrency.Id,
-                            BuyRate = _rateCalc.SafeRound(buyRate, 4),
-                            SellRate = _rateCalc.SafeRound(sellRate, 4),
+                            Rate = _rateCalc.SafeRound(rate, 4),
                             IsActive = true,
                             UpdatedAt = DateTime.Now,
                             UpdatedBy = User.Identity?.Name ?? "System"
@@ -365,7 +353,7 @@ namespace ForexExchange.Controllers
                 int updatedCount = 0;
                 var errors = new List<string>();
                 // Collect fresh currency->base rates from web
-                var scrapedMap = new Dictionary<int, (decimal buy, decimal sell)>();
+                var scrapedMap = new Dictionary<int, decimal>();
                 foreach (var currency in Currecnies)
                 {
                     if (currency.IsBaseCurrency) continue; // skip base
@@ -376,24 +364,16 @@ namespace ForexExchange.Controllers
                         return RedirectToAction(nameof(Manage));
                     }
 
-                    if (rate.Value.SellRate <= rate.Value.BuyRate)
-                    {
-                        errors.Add($"نرخ‌های دریافت شده برای {currency.PersianName} نامعتبر است (نرخ فروش باید بیشتر از نرخ خرید باشد)");
-                        continue;
-                    }
-
                     // Normalize incoming web values to 4 decimals for storage
-                    var roundedBuy = _rateCalc.SafeRound(rate.Value.BuyRate, 4);
-                    var roundedSell = _rateCalc.SafeRound(rate.Value.SellRate, 4);
-                    scrapedMap[currency.Id] = (roundedBuy, roundedSell);
+                    var roundedRate = _rateCalc.SafeRound(rate.Value, 4);
+                    scrapedMap[currency.Id] = roundedRate;
 
                     var existingRate = await _context.ExchangeRates
                             .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive);
 
                     if (existingRate != null)
                     {
-                        existingRate.BuyRate = roundedBuy;
-                        existingRate.SellRate = roundedSell;
+                        existingRate.Rate = roundedRate;
                         existingRate.UpdatedAt = DateTime.Now;
                         existingRate.UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)";
                         _context.Update(existingRate);
@@ -404,8 +384,7 @@ namespace ForexExchange.Controllers
                         {
                             FromCurrencyId = currency.Id,
                             ToCurrencyId = baseCurrency.Id,
-                            BuyRate = roundedBuy,
-                            SellRate = roundedSell,
+                            Rate = roundedRate,
                             IsActive = true,
                             UpdatedAt = DateTime.Now,
                             UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)"
@@ -413,43 +392,8 @@ namespace ForexExchange.Controllers
                         _context.Add(newRate);
                     }
                     updatedCount++;
-                    _logger.LogInformation("Updated {Code}->IRR: Buy={BuyRate}, Sell={SellRate}",
-                        currency.Code, rate.Value.BuyRate, rate.Value.SellRate);
-                }
-
-                // Also maintain base->currency reverse rates
-                foreach (var kv in scrapedMap)
-                {
-                    var currencyId = kv.Key;
-                    var (buyToBase, sellToBase) = kv.Value; // currency->base
-                    var rev = _rateCalc.ComputeReverseFromBase(buyToBase, sellToBase); // base->currency
-                    if (rev == null) continue;
-
-                    var existingRev = await _context.ExchangeRates
-                        .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == currencyId && r.IsActive);
-
-                    if (existingRev != null)
-                    {
-                        existingRev.BuyRate = _rateCalc.SafeRound(rev.Value.buy, 8);
-                        existingRev.SellRate = _rateCalc.SafeRound(rev.Value.sell, 8);
-                        existingRev.UpdatedAt = DateTime.Now;
-                        existingRev.UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)";
-                        _context.Update(existingRev);
-                    }
-                    else
-                    {
-                        var newRev = new ExchangeRate
-                        {
-                            FromCurrencyId = baseCurrency.Id,
-                            ToCurrencyId = currencyId,
-                            BuyRate = _rateCalc.SafeRound(rev.Value.buy, 8),
-                            SellRate = _rateCalc.SafeRound(rev.Value.sell, 8),
-                            IsActive = true,
-                            UpdatedAt = DateTime.Now,
-                            UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)"
-                        };
-                        _context.Add(newRev);
-                    }
+                    _logger.LogInformation("Updated {Code}->IRR: Rate={Rate}",
+                        currency.Code, rate.Value);
                 }
 
                 // Compute cross rates among non-base currencies using currency->base rates
@@ -484,7 +428,7 @@ namespace ForexExchange.Controllers
         }
 
         // Upsert cross rates among all non-base currencies using fresh currency->base map
-        private async Task UpsertCrossRatesFromBaseAsync(int baseCurrencyId, Dictionary<int, (decimal buy, decimal sell)> map)
+    private async Task UpsertCrossRatesFromBaseAsync(int baseCurrencyId, Dictionary<int, decimal> map)
         {
             var foreignIds = map.Keys.ToList();
             for (int i = 0; i < foreignIds.Count; i++)
@@ -494,16 +438,13 @@ namespace ForexExchange.Controllers
                     if (i == j) continue;
                     var fromId = foreignIds[i];
                     var toId = foreignIds[j];
-                    var cross = _rateCalc.ComputeCrossFromBase(map[fromId], map[toId]);
-                    if (cross == null) continue;
-
+                    var crossRate = map[fromId] / map[toId];
                     var existing = await _context.ExchangeRates
                         .FirstOrDefaultAsync(r => r.FromCurrencyId == fromId && r.ToCurrencyId == toId && r.IsActive);
 
                     if (existing != null)
                     {
-                        existing.BuyRate = _rateCalc.SafeRound(cross.Value.buy, 8);
-                        existing.SellRate = _rateCalc.SafeRound(cross.Value.sell, 8);
+                        existing.Rate = crossRate;
                         existing.UpdatedAt = DateTime.Now;
                         existing.UpdatedBy = User.Identity?.Name ?? "System";
                         _context.Update(existing);
@@ -514,8 +455,7 @@ namespace ForexExchange.Controllers
                         {
                             FromCurrencyId = fromId,
                             ToCurrencyId = toId,
-                            BuyRate = _rateCalc.SafeRound(cross.Value.buy, 8),
-                            SellRate = _rateCalc.SafeRound(cross.Value.sell, 8),
+                            Rate = crossRate,
                             IsActive = true,
                             UpdatedAt = DateTime.Now,
                             UpdatedBy = User.Identity?.Name ?? "System"
