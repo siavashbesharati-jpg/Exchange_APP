@@ -101,7 +101,7 @@ namespace ForexExchange.Models
         
         /// <summary>
         /// Check if order is cross-currency (not involving IRR/Toman)
-        /// بررسی آیا سفارش متقابل است (شامل تومان نمی‌شود)
+        /// بررسی آیا معامله متقابل است (شامل تومان نمی‌شود)
         /// </summary>
         public bool IsCrossCurrency => FromCurrency?.Code != "IRR" && ToCurrency?.Code != "IRR";
         

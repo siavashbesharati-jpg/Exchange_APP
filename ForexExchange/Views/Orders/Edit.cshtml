@@ -1,7 +1,7 @@
 @model ForexExchange.Models.Order
 
 @{
-    ViewData["Title"] = "ویرایش سفارش";
+    ViewData["Title"] = "ویرایش معامله";
 }
 
 <div class="container">
@@ -9,7 +9,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">ویرایش سفارش #@Model.Id</h4>
+                    <h4 class="card-title mb-0">ویرایش معامله #@Model.Id</h4>
                 </div>
                 <div class="card-body">
                     <form asp-action="Edit" method="post">
@@ -164,13 +164,13 @@
 
                         <div class="mb-3">
                             <label asp-for="Notes" class="form-label">توضیحات (اختیاری)</label>
-                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="توضیحات اضافی در مورد سفارش...">@Model.Notes</textarea>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="توضیحات اضافی در مورد معامله...">@Model.Notes</textarea>
                             <span asp-validation-for="Notes" class="text-danger"></span>
                         </div>
 
                         <div class="d-flex justify-content-between">
                             <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
-                            <button type="submit" class="btn btn-primary">بروزرسانی سفارش</button>
+                            <button type="submit" class="btn btn-primary">بروزرسانی معامله</button>
                         </div>
                     </form>
                 </div>

@@ -38,12 +38,12 @@ namespace ForexExchange.Services
                 var customer = await _context.Customers.FindAsync(order.CustomerId);
                 if (customer == null) return;
 
-                var message = $"سفارش شما برای {order.Amount:N0} {GetCurrencyName(order.FromCurrency)} " +
+                var message = $"معامله شما برای {order.Amount:N0} {GetCurrencyName(order.FromCurrency)} " +
                              $"با نرخ {order.Rate:N0} تومان ثبت شد.";
 
                 await CreateNotificationAsync(
                     customerId: order.CustomerId,
-                    title: "سفارش جدید ثبت شد",
+                    title: "معامله جدید ثبت شد",
                     message: message,
                     type: NotificationType.OrderCreated,
                     relatedEntityId: order.Id,
@@ -53,7 +53,7 @@ namespace ForexExchange.Services
                 // Send email notification
                 await _emailService.SendEmailAsync(
                     customer.Email,
-                    "تأیید ثبت سفارش",
+                    "تأیید ثبت معامله",
                     $"سلام {customer.FullName}،\n\n{message}\n\nبا تشکر،\nسیستم صرافی"
                 );
 
@@ -74,40 +74,40 @@ namespace ForexExchange.Services
 
                 if (buyer != null)
                 {
-                    var buyerMessage = $"سفارش خرید شما با فروشنده ای تطبیق یافت. " +
+                    var buyerMessage = $"معامله خرید شما با فروشنده ای تطبیق یافت. " +
                                      $"مبلغ: {transaction.Amount:N2} {GetCurrencyName(transaction.FromCurrency)} " +
                                      $"به نرخ {transaction.Rate:N0} تومان. " +
                                      $"کل قابل پرداخت: {transaction.TotalInToman:N0} تومان.";
 
                     await CreateNotificationAsync(
                         customerId: transaction.BuyerCustomerId,
-                        title: "تطبیق سفارش خرید",
+                        title: "تطبیق معامله خرید",
                         message: buyerMessage,
                         type: NotificationType.OrderMatched,
                         relatedEntityId: transaction.Id,
                         priority: NotificationPriority.High
                     );
 
-                    await _emailService.SendEmailAsync(buyer.Email, "تطبیق سفارش خرید", buyerMessage);
+                    await _emailService.SendEmailAsync(buyer.Email, "تطبیق معامله خرید", buyerMessage);
                 }
 
                 if (seller != null)
                 {
-                    var sellerMessage = $"سفارش فروش شما با خریداری تطبیق یافت. " +
+                    var sellerMessage = $"معامله فروش شما با خریداری تطبیق یافت. " +
                                       $"مبلغ: {transaction.Amount:N2} {GetCurrencyName(transaction.FromCurrency)} " +
                                       $"به نرخ {transaction.Rate:N0} تومان. " +
                                       $"کل دریافتی: {transaction.TotalInToman:N0} تومان.";
 
                     await CreateNotificationAsync(
                         customerId: transaction.SellerCustomerId,
-                        title: "تطبیق سفارش فروش",
+                        title: "تطبیق معامله فروش",
                         message: sellerMessage,
                         type: NotificationType.OrderMatched,
                         relatedEntityId: transaction.Id,
                         priority: NotificationPriority.High
                     );
 
-                    await _emailService.SendEmailAsync(seller.Email, "تطبیق سفارش فروش", sellerMessage);
+                    await _emailService.SendEmailAsync(seller.Email, "تطبیق معامله فروش", sellerMessage);
                 }
 
                 _logger.LogInformation("Order matched notifications sent for transaction {TransactionId}", transaction.Id);

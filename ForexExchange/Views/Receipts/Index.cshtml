@@ -43,7 +43,7 @@
                                         <th>شماره پیگیری</th>
                                         <th>تاریخ آپلود</th>
                                         <th>وضعیت</th>
-                                        <th>سفارش/تراکنش</th>
+                                        <th>معامله/تراکنش</th>
                                         <th>عملیات</th>
                                     </tr>
                                 </thead>
@@ -103,7 +103,7 @@
                                                 @if (item.Order != null)
                                                 {
                                                     <a asp-controller="Orders" asp-action="Details" asp-route-id="@item.OrderId" class="btn btn-sm btn-outline-primary">
-                                                        سفارش #@item.OrderId
+                                                        معامله #@item.OrderId
                                                     </a>
                                                 }
                                                 @if (item.Transaction != null)

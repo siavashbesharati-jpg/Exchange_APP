@@ -575,7 +575,7 @@ namespace ForexExchange.Services
                     Status = status,
                     CreatedAt = DateTime.Now.AddDays(-random.Next(1, 30)),
                     UpdatedAt = DateTime.Now.AddDays(-random.Next(0, 5)),
-                    Notes = i % 3 == 0 ? $"سفارش شماره {i + 1} - {fromCurrency.Code ?? "N/A"} به {toCurrency.Code ?? "N/A"}" : null,
+                    Notes = i % 3 == 0 ? $"معامله شماره {i + 1} - {fromCurrency.Code ?? "N/A"} به {toCurrency.Code ?? "N/A"}" : null,
                     FilledAmount = 0
                 };
 
@@ -727,11 +727,11 @@ namespace ForexExchange.Services
 
             var notificationTypes = new[]
             {
-                "سفارش شما با موفقیت ثبت شد",
+                "معامله شما با موفقیت ثبت شد",
                 "تراکنش شما در حال پردازش است",
                 "رسید شما تأیید شد",
                 "نرخ ارز مورد نظر شما تغییر کرد",
-                "سفارش شما کامل شد",
+                "معامله شما کامل شد",
                 "لطفاً رسید تراکنش را ارسال کنید",
                 "حساب کاربری شما فعال شد"
             };

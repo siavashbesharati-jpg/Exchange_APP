@@ -99,7 +99,7 @@
 
                                         <!-- Customer & Order Info -->
                                         <div class="col-md-6">
-                                            <h6 class="text-primary mb-3">اطلاعات مشتریان و سفارشات</h6>
+                                            <h6 class="text-primary mb-3">اطلاعات مشتریان و معاملات</h6>
                                             
                                             <!-- Buyer Information -->
                                             <div class="mb-3">
@@ -139,10 +139,10 @@
                                             <div class="mb-3">
                                                 <h6 class="text-info mb-2">
                                                     <i class="fas fa-shopping-cart me-1"></i>
-                                                    سفارش خرید (انتخاب شده)
+                                                    معامله خرید (انتخاب شده)
                                                 </h6>
                                                 <div class="bg-light p-2 rounded">
-                                                    <strong>سفارش #@transaction?.BuyOrderId</strong><br>
+                                                    <strong>معامله #@transaction?.BuyOrderId</strong><br>
                                                     <small class="text-muted">
                                                         مقدار: @(transaction?.BuyOrder?.Amount.ToString("N2") ?? "") @(transaction?.BuyOrder?.FromCurrency?.PersianName ?? transaction?.BuyOrder?.FromCurrency?.Code ?? "")
                                                     </small><br>
@@ -304,7 +304,7 @@
                         <!-- Related Order/Transaction -->
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="orderId" class="form-label">سفارش مرتبط (اختیاری)</label>
+                                <label for="orderId" class="form-label">معامله مرتبط (اختیاری)</label>
                                 @if (ViewBag.IsTransactionSpecific == true)
                                 {
                                     <!-- Disabled order dropdown when coming from transaction -->
@@ -312,28 +312,28 @@
                                         @if (ViewBag.SelectedOrder != null)
                                         {
                                             <option value="@ViewBag.SelectedOrderId" selected>
-                                                سفارش #@ViewBag.SelectedOrderId - @ViewBag.SelectedOrder.Customer.FullName - @ViewBag.SelectedOrder.Amount.ToString("N0") @ViewBag.SelectedOrder.CurrencyPair
+                                                معامله #@ViewBag.SelectedOrderId - @ViewBag.SelectedOrder.Customer.FullName - @ViewBag.SelectedOrder.Amount.ToString("N0") @ViewBag.SelectedOrder.CurrencyPair
                                             </option>
                                         }
                                     </select>
                                     <!-- Hidden field to ensure the value is posted -->
                                     <input type="hidden" name="orderId" value="@ViewBag.SelectedOrderId" />
                                     <div class="form-text text-info">
-                                        <i class="fas fa-info-circle"></i> سفارش از تراکنش انتخاب شده تعیین شده است
+                                        <i class="fas fa-info-circle"></i> معامله از تراکنش انتخاب شده تعیین شده است
                                     </div>
                                 }
                                 else
                                 {
                                     <!-- Normal order dropdown -->
                                     <select id="orderId" name="orderId" class="form-select">
-                                        <option value="">انتخاب سفارش</option>
+                                        <option value="">انتخاب معامله</option>
                                         @if (ViewBag.OpenOrders != null)
                                         {
                                             @foreach (var order in ViewBag.OpenOrders)
                                             {
                                                 var isSelected = ViewBag.SelectedOrderId != null && ViewBag.SelectedOrderId == order.Id;
                                                 <option value="@order.Id" selected="@isSelected">
-                                                    سفارش #@order.Id - @order.Customer.FullName - @order.Amount.ToString("N0") @order.CurrencyPair
+                                                    معامله #@order.Id - @order.Customer.FullName - @order.Amount.ToString("N0") @order.CurrencyPair
                                                 </option>
                                             }
                                         }

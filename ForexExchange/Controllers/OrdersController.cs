@@ -409,7 +409,7 @@ namespace ForexExchange.Controllers
 
                 _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {exchangeRate} ({rateSource}), Total: {totalValue}");
 
-                TempData["SuccessMessage"] = "سفارش با موفقیت ثبت شد.";
+                TempData["SuccessMessage"] = "معامله با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Details), new { id = order.Id });
             }
 
@@ -452,7 +452,7 @@ namespace ForexExchange.Controllers
                     order.UpdatedAt = DateTime.Now;
                     _context.Update(order);
                     await _context.SaveChangesAsync();
-                    TempData["SuccessMessage"] = "سفارش با موفقیت بروزرسانی شد.";
+                    TempData["SuccessMessage"] = "معامله با موفقیت بروزرسانی شد.";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -511,7 +511,7 @@ namespace ForexExchange.Controllers
                 order.UpdatedAt = DateTime.Now;
                 _context.Update(order);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "سفارش لغو شد.";
+                TempData["SuccessMessage"] = "معامله لغو شد.";
             }
 
             return RedirectToAction(nameof(Index));
@@ -528,7 +528,7 @@ namespace ForexExchange.Controllers
 
             if (order == null || (order.Status != OrderStatus.Open && order.Status != OrderStatus.PartiallyFilled) || order.Amount <= order.FilledAmount)
             {
-                TempData["ErrorMessage"] = "سفارش موجود نیست یا قابل مچ کردن نمی‌باشد.";
+                TempData["ErrorMessage"] = "معامله موجود نیست یا قابل مچ کردن نمی‌باشد.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
@@ -550,7 +550,7 @@ namespace ForexExchange.Controllers
 
             if (!matchingOrders.Any())
             {
-                TempData["InfoMessage"] = $"هیچ سفارش مچ با نرخ مناسب یافت نشد.";
+                TempData["InfoMessage"] = $"هیچ معامله مچ با نرخ مناسب یافت نشد.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
@@ -650,15 +650,15 @@ namespace ForexExchange.Controllers
 
             if (matchCount == 0)
             {
-                TempData["InfoMessage"] = $"هیچ سفارش مچ با نرخ مناسب یافت نشد.";
+                TempData["InfoMessage"] = $"هیچ معامله مچ با نرخ مناسب یافت نشد.";
             }
             else if (matchCount == 1)
             {
-                TempData["SuccessMessage"] = $"سفارش با موفقیت مچ شد. تراکنش شماره {createdTransactions[0]} ایجاد شد.";
+                TempData["SuccessMessage"] = $"معامله با موفقیت مچ شد. تراکنش شماره {createdTransactions[0]} ایجاد شد.";
             }
             else
             {
-                TempData["SuccessMessage"] = $"سفارش با {matchCount} سفارش مچ شد. تراکنش‌های شماره {string.Join(", ", createdTransactions)} ایجاد شدند.";
+                TempData["SuccessMessage"] = $"معامله با {matchCount} معامله مچ شد. تراکنش‌های شماره {string.Join(", ", createdTransactions)} ایجاد شدند.";
             }
             return RedirectToAction(nameof(Details), new { id });
         }
@@ -683,7 +683,7 @@ namespace ForexExchange.Controllers
                 Value = c.Id.ToString(),
                 Text = $"{c.Code} - {c.Name}"
             }).ToList();
-            
+
             ViewBag.ToCurrencies = currencies.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {
                 Value = c.Id.ToString(),
@@ -701,8 +701,16 @@ namespace ForexExchange.Controllers
                 Value = c.Id.ToString(),
                 Text = c.FullName
             }).ToList();
-            
+
             ViewBag.IsAdminOrStaff = true;
+
+            // Simplified: load a dictionary mapping currency code to balance
+            var pools = await _poolService.GetAllPoolsAsync();
+            // Use p.Currency.Code if available, else p.CurrencyCode
+            var poolDict = pools
+                .GroupBy(p => !string.IsNullOrWhiteSpace(p.Currency?.Code) ? p.Currency.Code : p.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.Sum(p => p.Balance));
+            ViewBag.PoolData = poolDict;
 
             // Don't load exchange rates here - they will be loaded via AJAX when needed
             // This eliminates the heavy Include operations

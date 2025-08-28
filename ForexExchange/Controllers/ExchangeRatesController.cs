@@ -391,6 +391,30 @@ namespace ForexExchange.Controllers
                         };
                         _context.Add(newRate);
                     }
+                    // Add/update reverse rate: baseCurrency -> currency (e.g., IRR -> USD)
+                    var reverseRate = await _context.ExchangeRates
+                        .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == currency.Id && r.IsActive);
+                    var reverseValue = roundedRate > 0 ? _rateCalc.SafeRound(1 / roundedRate, 8) : 0;
+                    if (reverseRate != null)
+                    {
+                        reverseRate.Rate = reverseValue;
+                        reverseRate.UpdatedAt = DateTime.Now;
+                        reverseRate.UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)";
+                        _context.Update(reverseRate);
+                    }
+                    else if (reverseValue > 0)
+                    {
+                        var newReverse = new ExchangeRate
+                        {
+                            FromCurrencyId = baseCurrency.Id,
+                            ToCurrencyId = currency.Id,
+                            Rate = reverseValue,
+                            IsActive = true,
+                            UpdatedAt = DateTime.Now,
+                            UpdatedBy = $"{User.Identity?.Name ?? "System"} (Web)"
+                        };
+                        _context.Add(newReverse);
+                    }
                     updatedCount++;
                     _logger.LogInformation("Updated {Code}->IRR: Rate={Rate}",
                         currency.Code, rate.Value);
@@ -462,6 +486,30 @@ namespace ForexExchange.Controllers
                         };
                         _context.Add(newCross);
                     }
+                        // Add/update reverse cross-rate (toId -> fromId)
+                        var reverseCrossRate = crossRate > 0 ? _rateCalc.SafeRound(1 / crossRate, 8) : 0;
+                        var existingReverse = await _context.ExchangeRates
+                            .FirstOrDefaultAsync(r => r.FromCurrencyId == toId && r.ToCurrencyId == fromId && r.IsActive);
+                        if (existingReverse != null)
+                        {
+                            existingReverse.Rate = reverseCrossRate;
+                            existingReverse.UpdatedAt = DateTime.Now;
+                            existingReverse.UpdatedBy = User.Identity?.Name ?? "System";
+                            _context.Update(existingReverse);
+                        }
+                        else if (reverseCrossRate > 0)
+                        {
+                            var newReverseCross = new ExchangeRate
+                            {
+                                FromCurrencyId = toId,
+                                ToCurrencyId = fromId,
+                                Rate = reverseCrossRate,
+                                IsActive = true,
+                                UpdatedAt = DateTime.Now,
+                                UpdatedBy = User.Identity?.Name ?? "System"
+                            };
+                            _context.Add(newReverseCross);
+                        }
                 }
             }
         }

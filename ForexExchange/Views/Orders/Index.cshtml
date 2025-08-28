@@ -1,7 +1,7 @@
 @model IEnumerable<ForexExchange.Models.Order>
 
 @{
-    ViewData["Title"] = "مدیریت سفارش‌ها";
+    ViewData["Title"] = "مدیریت معامله‌ها";
 }
 
 <style>
@@ -29,9 +29,9 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">مدیریت سفارش‌ها</h1>
+                <h1 class="h3">مدیریت معامله‌ها</h1>
                 <div class="d-flex gap-2">
-                    <a asp-action="Create" class="btn btn-primary">ثبت سفارش جدید</a>
+                    <a asp-action="Create" class="btn btn-primary">ثبت معامله جدید</a>
                     <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="collapse"
                         data-bs-target="#helpSection">
                         راهنما
@@ -45,7 +45,7 @@
                     <h6>راهنمای استفاده:</h6>
                     <ul class="mb-0 small">
                         <li>برای <strong>مرتب‌سازی</strong>: روی عنوان ستون‌ها کلیک کنید</li>
-                        <li>برای <strong>فیلتر کردن</strong>: روی مقادیر جدول (نوع سفارش، ارز، وضعیت) کلیک کنید</li>
+                        <li>برای <strong>فیلتر کردن</strong>: روی مقادیر جدول (نوع معامله، ارز، وضعیت) کلیک کنید</li>
                         <li>برای <strong>جستجو</strong>: از کادر جستجو استفاده کنید</li>
                         <li>برای <strong>حذف فیلترها</strong>: روی × کنار هر فیلتر یا دکمه "حذف همه فیلترها" کلیک کنید
                         </li>
@@ -75,7 +75,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">لیست سفارش‌ها</h5>
+                    <h5 class="card-title mb-0">لیست معامله‌ها</h5>
                 </div>
                 <div class="card-body">
                     <!-- Search and Filter Section -->
@@ -165,7 +165,7 @@
                                                 asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                 asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                 class="text-decoration-none">
-                                                شماره سفارش
+                                                شماره معامله
                                                 @if (ViewData["CurrentSort"]?.ToString() == "id_desc")
                                                 {
                                                     <i class="fas fa-sort-down"></i>
@@ -414,8 +414,8 @@
                     else
                     {
                         <div class="text-center py-4">
-                            <p class="text-muted">هیچ سفارشی موجود نیست.</p>
-                            <a asp-action="Create" class="btn btn-primary">ثبت اولین سفارش</a>
+                            <p class="text-muted">هیچ معاملهی موجود نیست.</p>
+                            <a asp-action="Create" class="btn btn-primary">ثبت اولین معامله</a>
                         </div>
                     }
                 </div>

@@ -1,7 +1,7 @@
 @model ForexExchange.Models.Order
 
 @{
-    ViewData["Title"] = "ثبت سفارش جدید";
+    ViewData["Title"] = "ثبت معامله جدید";
 }
 
 <div class="container">
@@ -9,60 +9,87 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">ثبت سفارش جدید</h4>
+                    <h4 class="card-title mb-0">ثبت معامله جدید</h4>
                 </div>
                 <div class="card-body">
                     <form asp-action="Create" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                        
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0)) {
+                            <div class="alert alert-danger mt-2" id="validationSummaryBox">
+                                <ul class="mb-0">
+                                @foreach (var state in ViewData.ModelState.Values)
+                                    {
+                                        foreach (var error in state.Errors)
+                                        {
+                                            var msg = error.ErrorMessage;
+                                            // Localize known messages
+                                            if (msg == "The CustomerId field is required.") msg = "انتخاب مشتری الزامی است.";
+                                            if (msg == "The FromCurrencyId field is required.") msg = "انتخاب ارز مبدأ الزامی است.";
+                                            if (msg == "The ToCurrencyId field is required.") msg = "انتخاب ارز مقصد الزامی است.";
+                                            if (msg == "The Amount field is required.") msg = "مبلغ معامله الزامی است.";
+                                            <li>@msg</li>
+                                        }
+                                    }
+                                }
+                                </ul>
+                            </div>
+                        }
+                        <div class="alert alert-info mt-2" id="currencyPairMsgBox" style="display: none;"></div>
+                        <div class="alert alert-danger mt-2" id="validationSummaryBox" style="display: none;"></div>
+
                         <div class="row mb-3">
-                         
-                                <div class="col-md-6">
-                                    <label asp-for="CustomerId" class="form-label">انتخاب مشتری</label>
-                                    <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select" id="customerSelect" required>
-                                        <option value="">یک مشتری انتخاب کنید</option>
-                                    </select>
-                                    <span asp-validation-for="CustomerId" class="text-danger"></span>
+                            <!-- Currency Pool Information -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <div class="alert alert-warning" id="currencyPoolInfo" style="display: none;"
+                                        dir=ltr>
+                                        <h6>موجودی استخر ارزها:</h6>
+                                        <p id="currencyPoolText"></p>
+                                    </div>
                                 </div>
-                            
-                          
-                            
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="CustomerId" class="form-label">انتخاب مشتری</label>
+                                <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select"
+                                    id="customerSelect" required>
+                                    <option value="">یک مشتری انتخاب کنید</option>
+                                </select>
+                                <span asp-validation-for="CustomerId" class="text-danger"></span>
+                            </div>
+
+
+
                             <!-- Removed OrderType dropdown -->
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label asp-for="FromCurrencyId" class="form-label">از ارز (مبدأ)</label>
-                                <select asp-for="FromCurrencyId" asp-items="ViewBag.FromCurrencies" class="form-select" id="fromCurrencySelect" required>
+                                <select asp-for="FromCurrencyId" asp-items="ViewBag.FromCurrencies" class="form-select"
+                                    id="fromCurrencySelect" required>
                                     <option value="">انتخاب کنید</option>
                                 </select>
                                 <span asp-validation-for="FromCurrencyId" class="text-danger"></span>
                             </div>
-                            
+
                             <div class="col-md-4">
                                 <label asp-for="ToCurrencyId" class="form-label">به ارز (مقصد)</label>
-                                <select asp-for="ToCurrencyId" asp-items="ViewBag.ToCurrencies" class="form-select" id="toCurrencySelect" required>
+                                <select asp-for="ToCurrencyId" asp-items="ViewBag.ToCurrencies" class="form-select"
+                                    id="toCurrencySelect" required>
                                     <option value="">انتخاب کنید</option>
                                 </select>
                                 <span asp-validation-for="ToCurrencyId" class="text-danger"></span>
                             </div>
-                            
+
                             <div class="col-md-4">
                                 <label asp-for="Amount" class="form-label">مبلغ (ارز مبدأ)</label>
-                                <input asp-for="Amount" type="number" class="form-control" step="0.01" min="0" id="amountInput" required />
+                                <input asp-for="Amount" type="number" class="form-control" step="0.01" min="0"
+                                    id="amountInput" required />
                                 <span asp-validation-for="Amount" class="text-danger"></span>
                             </div>
                         </div>
 
-                        <!-- Currency Pair Information -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="alert alert-info" id="currencyPairInfo" style="display: none;">
-                                    <h6>اطلاعات جفت ارز:</h6>
-                                    <p id="currencyPairText"></p>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Currency Pair Information (moved below pool info if needed) -->
 
                         <!-- Exchange Rate Display -->
                         <div class="row mb-3">
@@ -72,7 +99,8 @@
                                         <h6 class="card-title">نرخ ارز انتخابی:</h6>
                                         <div id="selectedExchangeRate" class="alert alert-info" style="display: none;">
                                             <div id="rateInfo"></div>
-                                            <div class="spinner-border spinner-border-sm" id="rateLoader" style="display: none;" role="status">
+                                            <div class="spinner-border spinner-border-sm" id="rateLoader"
+                                                style="display: none;" role="status">
                                                 <span class="visually-hidden">در حال بارگذاری...</span>
                                             </div>
                                         </div>
@@ -86,22 +114,23 @@
                             <div class="col-12">
                                 <div class="alert alert-info" id="calculationResult" style="display: none;">
                                     <h6>محاسبه خودکار:</h6>
-                                    <p id="calculationText"></p>
+                                    <p id="calculationText" dir=ltr></p>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mb-3">
                             <label asp-for="Notes" class="form-label">توضیحات (اختیاری)</label>
-                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="توضیحات اضافی در مورد سفارش..."></textarea>
+                            <textarea asp-for="Notes" class="form-control" rows="3"
+                                placeholder="توضیحات اضافی در مورد معامله..."></textarea>
                             <span asp-validation-for="Notes" class="text-danger"></span>
                         </div>
 
                         <div class="d-flex justify-content-between">
                             <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
-                            <button type="submit" class="btn btn-primary">ثبت سفارش</button>
+                            <button type="submit" class="btn btn-primary">ثبت معامله</button>
                         </div>
-                        
+
                         <!-- Hidden fields for calculated values -->
                         <input type="hidden" asp-for="Rate" id="hiddenRate" value="0" />
                         <input type="hidden" asp-for="TotalAmount" id="hiddenTotalAmount" value="0" />
@@ -115,33 +144,49 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+
     <script>
         let currentRate = null;
-        
-        function updateCurrencyPairInfo() {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
-            // Reset displays
-            document.getElementById('currencyPairInfo').style.display = 'none';
-            document.getElementById('selectedExchangeRate').style.display = 'none';
-            document.getElementById('calculationResult').style.display = 'none';
-            currentRate = null;
-            // Prevent same currency selection
-            if (fromCurrency && toCurrency && fromCurrency === toCurrency) {
-                document.getElementById('currencyPairInfo').style.display = 'block';
-                document.getElementById('currencyPairText').innerHTML = '<span class="text-danger">خطا: ارز مبدأ و مقصد نمی‌توانند یکسان باشند</span>';
-                return;
+        // Currency pool data loaded from server-side ViewBag (dictionary: code => balance)
+        let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
+
+
+
+
+        function showCurrencyPoolInfo(fromCurrencyId, toCurrencyId) {
+            // Get currency codes from dropdown values (not text)
+            const fromSelect = document.getElementById('fromCurrencySelect');
+            const toSelect = document.getElementById('toCurrencySelect');
+            const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+            const toCode = toSelect.value ? toSelect.options[toSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+            // Debug logs
+            console.log('currencyPools:', currencyPools);
+            console.log('fromCode:', fromCode, 'toCode:', toCode);
+            console.log('fromPoolValue:', currencyPools[fromCode]);
+            console.log('toPoolValue:', currencyPools[toCode]);
+            let html = '';
+            if (fromCode && currencyPools.hasOwnProperty(fromCode)) {
+                const fromVal = currencyPools[fromCode];
+                const fromBadge = fromVal < 0 ? 'badge bg-danger' : 'badge bg-success';
+                html += `<strong>موجودی ${fromCode}:</strong> <span class="${fromBadge}">${fromVal.toLocaleString()}</span>`;
             }
-            if (fromCurrency && toCurrency) {
-                document.getElementById('currencyPairText').innerHTML = `جفت ارز انتخاب شده`;
-                document.getElementById('currencyPairInfo').style.display = 'block';
-                // Load exchange rate via AJAX
-                loadExchangeRate(fromCurrency, toCurrency);
+            if (toCode && currencyPools.hasOwnProperty(toCode)) {
+                const toVal = currencyPools[toCode];
+                const toBadge = toVal < 0 ? 'badge bg-danger' : 'badge bg-success';
+                html += `<br><strong>موجودی ${toCode}:</strong> <span class="${toBadge}">${toVal.toLocaleString()}</span>`;
+            }
+            if (html) {
+                document.getElementById('currencyPoolText').innerHTML = html;
+                document.getElementById('currencyPoolInfo').style.display = 'block';
+            } else {
+                document.getElementById('currencyPoolInfo').style.display = 'none';
             }
         }
-        
+
         function loadExchangeRate(fromCurrencyId, toCurrencyId) {
             document.getElementById('selectedExchangeRate').style.display = 'block';
             document.getElementById('rateLoader').style.display = 'inline-block';
@@ -153,39 +198,39 @@
                     if (data.success) {
                         if (data.rate > 0) {
                             currentRate = data.rate;
-                            document.getElementById('rateInfo').innerHTML = 
+                            document.getElementById('rateInfo').innerHTML =
                                 `<strong>نرخ:</strong> ${data.rate.toLocaleString()} <small class="text-muted">(${data.source})</small>`;
                             document.getElementById('hiddenRate').value = data.rate;
                             updateCalculation();
                         } else {
-                            document.getElementById('rateInfo').innerHTML = 
+                            document.getElementById('rateInfo').innerHTML =
                                 '<span class="text-warning">نرخ ارز برای این جفت ارز موجود نیست</span>';
                             document.getElementById('hiddenRate').value = '0';
                         }
                     } else {
-                        document.getElementById('rateInfo').innerHTML = 
+                        document.getElementById('rateInfo').innerHTML =
                             `<span class="text-danger">خطا: ${data.error}</span>`;
                         document.getElementById('hiddenRate').value = '0';
                     }
                 })
                 .catch(error => {
                     document.getElementById('rateLoader').style.display = 'none';
-                    document.getElementById('rateInfo').innerHTML = 
+                    document.getElementById('rateInfo').innerHTML =
                         '<span class="text-danger">خطا در بارگذاری نرخ ارز</span>';
                     console.error('Error loading exchange rate:', error);
                 });
         }
-        
+
         function updateCalculation() {
             var amount = document.getElementById('amountInput').value;
-            
+
             if (amount && currentRate && currentRate > 0) {
                 var total = parseFloat(amount) * currentRate;
-                
-                document.getElementById('calculationText').innerHTML = 
+
+                document.getElementById('calculationText').innerHTML =
                     `${parseFloat(amount).toLocaleString()} × ${currentRate.toLocaleString()} = <strong>${total.toLocaleString()}</strong>`;
                 document.getElementById('calculationResult').style.display = 'block';
-                
+
                 // Update hidden total amount field
                 document.getElementById('hiddenTotalAmount').value = total;
             } else {
@@ -193,15 +238,36 @@
                 document.getElementById('hiddenTotalAmount').value = '0';
             }
         }
-        
+
         // Add event listeners
-        document.getElementById('fromCurrencySelect').addEventListener('change', updateCurrencyPairInfo);
-        document.getElementById('toCurrencySelect').addEventListener('change', updateCurrencyPairInfo);
+        document.getElementById('fromCurrencySelect').addEventListener('change', function () {
+            var fromCurrency = document.getElementById('fromCurrencySelect').value;
+            var toCurrency = document.getElementById('toCurrencySelect').value;
+            if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                loadExchangeRate(fromCurrency, toCurrency);
+                showCurrencyPoolInfo(fromCurrency, toCurrency);
+            } else {
+                document.getElementById('selectedExchangeRate').style.display = 'none';
+                document.getElementById('calculationResult').style.display = 'none';
+                document.getElementById('currencyPoolInfo').style.display = 'none';
+            }
+        });
+        document.getElementById('toCurrencySelect').addEventListener('change', function () {
+            var fromCurrency = document.getElementById('fromCurrencySelect').value;
+            var toCurrency = document.getElementById('toCurrencySelect').value;
+            if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                loadExchangeRate(fromCurrency, toCurrency);
+                showCurrencyPoolInfo(fromCurrency, toCurrency);
+            } else {
+                document.getElementById('selectedExchangeRate').style.display = 'none';
+                document.getElementById('calculationResult').style.display = 'none';
+                document.getElementById('currencyPoolInfo').style.display = 'none';
+            }
+        });
         document.getElementById('amountInput').addEventListener('input', updateCalculation);
-    // Removed OrderType event listener
-        
+
         // Add form submission validation
-        document.querySelector('form').addEventListener('submit', function(e) {
+        document.querySelector('form').addEventListener('submit', function (e) {
             var fromCurrency = document.getElementById('fromCurrencySelect').value;
             var toCurrency = document.getElementById('toCurrencySelect').value;
             var amount = document.getElementById('amountInput').value;

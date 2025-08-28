@@ -80,7 +80,7 @@
                             <div class="card bg-primary text-white">
                                 <div class="card-body">
                                     <h4>@Model.Orders.Count</h4>
-                                    <p class="mb-0">کل سفارش‌ها</p>
+                                    <p class="mb-0">کل معامله‌ها</p>
                                 </div>
                             </div>
                         </div>
@@ -104,7 +104,7 @@
                             <div class="card bg-warning text-white">
                                 <div class="card-body">
                                     <h4>@Model.Orders.Count(o => o.Status == ForexExchange.Models.OrderStatus.Open)</h4>
-                                    <p class="mb-0">سفارش‌های باز</p>
+                                    <p class="mb-0">معامله‌های باز</p>
                                 </div>
                             </div>
                         </div>
@@ -135,7 +135,7 @@
                             @if (Model.Orders.Any())
                             {
                                 <div class="col-md-4">
-                                    <h6>آخرین سفارش‌ها</h6>
+                                    <h6>آخرین معامله‌ها</h6>
                                     @foreach (var order in Model.Orders.OrderByDescending(o => o.CreatedAt).Take(3))
                                     {
                                         <div class="border rounded p-2 mb-2">

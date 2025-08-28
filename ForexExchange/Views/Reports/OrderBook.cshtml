@@ -1,14 +1,14 @@
 @model IEnumerable<ForexExchange.Controllers.OrderBookReport>
 
 @{
-    ViewData["Title"] = "دفتر سفارشات";
+    ViewData["Title"] = "دفتر معاملات";
 }
 
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">دفتر سفارشات</h1>
+                <h1 class="h3">دفتر معاملات</h1>
                 <a asp-action="Index" class="btn btn-secondary">بازگشت به گزارشات</a>
             </div>
         </div>
@@ -44,7 +44,7 @@
                             </select>
                         </div>
                         <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary">نمایش دفتر سفارشات</button>
+                            <button type="submit" class="btn btn-primary">نمایش دفتر معاملات</button>
                         </div>
                     </form>
                 </div>
@@ -59,7 +59,7 @@
             <div class="col-md-3">
                 <div class="card text-white bg-primary">
                     <div class="card-body">
-                        <h5 class="card-title">کل سفارشات فعال</h5>
+                        <h5 class="card-title">کل معاملات فعال</h5>
                         <h2 class="mb-0">@Model.Sum(r => r.OrderCount)</h2>
                     </div>
                 </div>
@@ -67,7 +67,7 @@
             <div class="col-md-3">
                 <div class="card text-white bg-success">
                     <div class="card-body">
-                        <h5 class="card-title">سفارشات خرید</h5>
+                        <h5 class="card-title">معاملات خرید</h5>
                         <!-- Removed OrderType Buy count, now showing total order count -->
                         <h2 class="mb-0">@Model.Sum(r => r.OrderCount)</h2>
                     </div>
@@ -76,7 +76,7 @@
             <div class="col-md-3">
                 <div class="card text-white bg-danger">
                     <div class="card-body">
-                        <h5 class="card-title">سفارشات فروش</h5>
+                        <h5 class="card-title">معاملات فروش</h5>
                         <!-- Removed OrderType Sell count, now showing total order count -->
                         <h2 class="mb-0">@Model.Sum(r => r.OrderCount)</h2>
                     </div>
@@ -128,9 +128,9 @@
                                         <div class="card border-primary">
                                             <div class="card-header bg-primary text-white">
                                                 <h6 class="mb-0">
-                                                    سفارشات
+                                                    معاملات
                                                     <span class="badge bg-light text-primary">
-                                                        @orderBookReport.OrderCount سفارش
+                                                        @orderBookReport.OrderCount معامله
                                                     </span>
                                                 </h6>
                                             </div>
@@ -183,7 +183,7 @@
                                                     @if (orderBookReport.Orders.Count > 10)
                                                     {
                                                         <div class="text-muted small text-center">
-                                                            ... و @(orderBookReport.Orders.Count - 10) سفارش دیگر
+                                                            ... و @(orderBookReport.Orders.Count - 10) معامله دیگر
                                                         </div>
                                                     }
                                                 }
@@ -191,7 +191,7 @@
                                                 {
                                                     <div class="text-center text-muted">
                                                         <i class="fas fa-inbox"></i>
-                                                        <div>سفارشی موجود نیست</div>
+                                                        <div>معاملهی موجود نیست</div>
                                                     </div>
                                                 }
                                             </div>
@@ -211,7 +211,7 @@
             <div class="col-12">
                 <div class="alert alert-info text-center">
                     <i class="fas fa-info-circle"></i>
-                    هیچ سفارش فعالی یافت نشد.
+                    هیچ معامله فعالی یافت نشد.
                 </div>
             </div>
         </div>

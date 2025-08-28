@@ -245,7 +245,7 @@
                         <p class="mb-1"><strong>حساب بانکی:</strong> @Model.BuyerBankAccount</p>
                     }
                     <p class="mb-0">
-                        <strong>سفارش:</strong>
+                        <strong>معامله:</strong>
                         <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.BuyOrderId">
                             #@Model.BuyOrderId
                         </a>
@@ -272,7 +272,7 @@
                         <p class="mb-1"><strong>حساب بانکی:</strong> @Model.SellerBankAccount</p>
                     }
                     <p class="mb-0">
-                        <strong>سفارش:</strong>
+                        <strong>معامله:</strong>
                         <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.SellOrderId">
                             #@Model.SellOrderId
                         </a>
@@ -516,7 +516,7 @@
                     <input type="hidden" name="transactionId" value="@Model.Id">
 
                     <div class="alert alert-warning">
-                        <strong>توجه:</strong> با ثبت ناموفق بودن تراکنش، سفارشات مرتبط به حالت قبلی بازگردانده خواهند
+                        <strong>توجه:</strong> با ثبت ناموفق بودن تراکنش، معاملات مرتبط به حالت قبلی بازگردانده خواهند
                         شد.
                     </div>
 

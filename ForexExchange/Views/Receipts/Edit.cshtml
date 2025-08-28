@@ -54,9 +54,9 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label asp-for="OrderId" class="form-label">سفارش (اختیاری)</label>
+                                <label asp-for="OrderId" class="form-label">معامله (اختیاری)</label>
                                 <select asp-for="OrderId" class="form-select">
-                                    <option value="">بدون سفارش</option>
+                                    <option value="">بدون معامله</option>
                                     @foreach (var order in (ViewBag.Orders as List<ForexExchange.Models.Order>) ?? new List<ForexExchange.Models.Order>())
                                     {
                                         <option value="@order.Id" selected="@(order.Id == Model.OrderId)">

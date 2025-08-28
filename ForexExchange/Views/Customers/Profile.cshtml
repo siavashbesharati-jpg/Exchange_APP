@@ -25,7 +25,7 @@
                 <div class="card-body text-center">
                     <i class="fas fa-shopping-cart fa-2x mb-2"></i>
                     <h5>@stats?.TotalOrders</h5>
-                    <p class="mb-0">کل سفارش‌ها</p>
+                    <p class="mb-0">کل معامله‌ها</p>
                 </div>
             </div>
         </div>
@@ -127,7 +127,7 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label">نرخ تکمیل سفارش‌ها</label>
+                        <label class="form-label">نرخ تکمیل معامله‌ها</label>
                         <div class="progress mb-1">
                             <div class="progress-bar bg-success" role="progressbar" style="width: @stats?.CompletionRate.ToString("F1")%" aria-valuenow="@stats?.CompletionRate" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
@@ -144,11 +144,11 @@
                     
                     <div class="row">
                         <div class="col-6">
-                            <small class="text-muted">میانگین سفارش:</small>
+                            <small class="text-muted">میانگین معامله:</small>
                             <div class="fw-bold">@stats?.AverageOrderValue.ToString("N0") تومان</div>
                         </div>
                         <div class="col-6">
-                            <small class="text-muted">سفارش‌های باز:</small>
+                            <small class="text-muted">معامله‌های باز:</small>
                             <div class="fw-bold text-warning">@stats?.PendingOrders</div>
                         </div>
                     </div>
@@ -163,7 +163,7 @@
                     <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">
-                                سفارش‌ها (@Model.Orders.Count)
+                                معامله‌ها (@Model.Orders.Count)
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -252,7 +252,7 @@
                                 {
                                     <div class="text-center">
                                         <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id" class="btn btn-outline-primary">
-                                            مشاهده همه سفارش‌ها (@Model.Orders.Count)
+                                            مشاهده همه معامله‌ها (@Model.Orders.Count)
                                         </a>
                                     </div>
                                 }
@@ -261,7 +261,7 @@
                             {
                                 <div class="text-center py-4">
                                     <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">هیچ سفارشی ثبت نشده است.</p>
+                                    <p class="text-muted">هیچ معاملهی ثبت نشده است.</p>
                                 </div>
                             }
                         </div>
@@ -413,8 +413,8 @@
                                     {
                                         activities.Add(new { 
                                             Date = order.CreatedAt,
-                                            Type = "سفارش",
-                                            Description = $"سفارش {order.Amount:N0} {order.FromCurrency?.PersianName} ({order.CurrencyPair})",
+                                            Type = "معامله",
+                                            Description = $"معامله {order.Amount:N0} {order.FromCurrency?.PersianName} ({order.CurrencyPair})",
                                             Status = order.Status.ToString(),
                                             Icon = "fas fa-shopping-cart",
                                             Color = "primary"

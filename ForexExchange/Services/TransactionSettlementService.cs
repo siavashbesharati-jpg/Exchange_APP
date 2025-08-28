@@ -33,7 +33,7 @@ namespace ForexExchange.Services
             {
                 // Validate orders can be matched
                 if (buyOrder.FromCurrencyId != sellOrder.FromCurrencyId || buyOrder.ToCurrencyId != sellOrder.ToCurrencyId)
-                    throw new InvalidOperationException("جفت ارز سفارشات باید یکسان باشد");
+                    throw new InvalidOperationException("جفت ارز معاملات باید یکسان باشد");
                 
                 if (buyOrder.Rate < sellOrder.Rate)
                     throw new InvalidOperationException("نرخ خرید باید بیشتر یا مساوی نرخ فروش باشد");

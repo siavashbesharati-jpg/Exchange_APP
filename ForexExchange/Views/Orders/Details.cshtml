@@ -1,7 +1,7 @@
 @model ForexExchange.Models.Order
 
 @{
-    ViewData["Title"] = "جزئیات سفارش";
+    ViewData["Title"] = "جزئیات معامله";
 }
 
 <div class="container">
@@ -9,7 +9,7 @@
         <div class="col-md-10">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0">جزئیات سفارش #@Model.Id</h4>
+                    <h4 class="card-title mb-0">جزئیات معامله #@Model.Id</h4>
                     <div>
                         <span class="badge @(Model.Status switch {
                             ForexExchange.Models.OrderStatus.Open => "bg-info",
@@ -33,10 +33,10 @@
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <h6 class="text-muted">اطلاعات سفارش</h6>
+                            <h6 class="text-muted">اطلاعات معامله</h6>
                             <table class="table table-borderless">
                                 <tr>
-                                    <td><strong>شماره سفارش:</strong></td>
+                                    <td><strong>شماره معامله:</strong></td>
                                     <td>@Model.Id</td>
                                 </tr>
                                 <tr>
@@ -125,7 +125,7 @@
                             </table>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-muted">پیشرفت سفارش</h6>
+                            <h6 class="text-muted">پیشرفت معامله</h6>
                             @{
                                 var progressPercentage = Model.Amount > 0 ? (Model.FilledAmount / Model.Amount * 100) : 0;
                             }
@@ -201,13 +201,13 @@
                                                     <td>@transaction.CreatedAt.ToPersianDateTextify()</td>
                                                     <td>
                                                         <div class="small">
-                                                            <strong>سفارش #@counterpartOrder.Id</strong>
+                                                            <strong>معامله #@counterpartOrder.Id</strong>
                                                             <br>نرخ: @counterpartOrder.Rate.ToString("N0")
                                                             <br>مقدار کل: @counterpartOrder.Amount.ToString("N2")
                                                             <br>
                                                             <a href="@Url.Action("Details", "Orders", new { id = counterpartOrder.Id })" 
                                                                class="btn btn-xs btn-outline-info btn-sm mt-1">
-                                                                <i class="fas fa-eye"></i> مشاهده سفارش
+                                                                <i class="fas fa-eye"></i> مشاهده معامله
                                                             </a>
                                                            
                                                         </div>
@@ -284,10 +284,10 @@
                             <div class="card-header">
                                 <h5 class="mb-0">
                                     <i class="fas fa-exchange-alt"></i>
-                                    سفارشات قابل تطبیق
+                                    معاملات قابل تطبیق
                                     @if (availableOrders?.Any() == true)
                                     {
-                                        <span class="badge bg-success ms-2">@availableOrders.Count سفارش</span>
+                                        <span class="badge bg-success ms-2">@availableOrders.Count معامله</span>
                                     }
                                     else
                                     {
@@ -301,7 +301,7 @@
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle"></i>
                                         <text>
-                                        در لیست زیر سفارشات قابل تطبیق با سفارش شما بر اساس نرخ و مقدار نمایش داده شده‌اند.
+                                        در لیست زیر معاملات قابل تطبیق با معامله شما بر اساس نرخ و مقدار نمایش داده شده‌اند.
                                         </text>
                                     </div>
                                     
@@ -338,7 +338,7 @@
                                     
                                     @if (availableOrders.Count > 10)
                                     {
-                                        <div class="text-muted small">... و @(availableOrders.Count - 10) سفارش دیگر</div>
+                                        <div class="text-muted small">... و @(availableOrders.Count - 10) معامله دیگر</div>
                                     }
                                 }
                                 else
@@ -346,8 +346,8 @@
                                     <div class="alert alert-warning">
                                         <i class="fas fa-exclamation-triangle"></i>
                                         <text>
-                                            <strong>دلیل عدم تطبیق:</strong> هیچ سفارش با نرخ مناسب برای تطبیق وجود ندارد.
-                                            <br><small class="text-muted">برای تطبیق، نرخ سفارش شما باید با شرایط بازار هماهنگ باشد.</small>
+                                            <strong>دلیل عدم تطبیق:</strong> هیچ معامله با نرخ مناسب برای تطبیق وجود ندارد.
+                                            <br><small class="text-muted">برای تطبیق، نرخ معامله شما باید با شرایط بازار هماهنگ باشد.</small>
                                         </text>
                                     </div>
                                 }
@@ -361,7 +361,7 @@
                             @if (Model.Status == ForexExchange.Models.OrderStatus.Open)
                             {
                                 <form asp-action="Match" asp-route-id="@Model.Id" method="post" style="display: inline-block;" 
-                                      onsubmit="return confirm('آیا از مچ کردن این سفارش اطمینان دارید؟')">
+                                      onsubmit="return confirm('آیا از مچ کردن این معامله اطمینان دارید؟')">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-warning me-2">مچ کردن</button>
                                 </form>
@@ -370,9 +370,9 @@
                             @if (Model.Status != ForexExchange.Models.OrderStatus.Cancelled && Model.Status != ForexExchange.Models.OrderStatus.Completed)
                             {
                                 <form asp-action="Delete" asp-route-id="@Model.Id" method="post" style="display: inline-block;" 
-                                      onsubmit="return confirm('آیا از لغو این سفارش اطمینان دارید؟')">
+                                      onsubmit="return confirm('آیا از لغو این معامله اطمینان دارید؟')">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger">لغو سفارش</button>
+                                    <button type="submit" class="btn btn-danger">لغو معامله</button>
                                 </form>
                             }
                         </div>
