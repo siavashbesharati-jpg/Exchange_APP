@@ -3,27 +3,29 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using ForexExchange.Models;
+using ForexExchange.Services;
 
 namespace ForexExchange.Controllers
 {
     [Authorize(Roles = "Admin,Manager,Staff")]
     public class CustomersController : Controller
     {
-        private readonly ForexDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ILogger<CustomersController> _logger;
+    private readonly ForexDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly ILogger<CustomersController> _logger;
+    private readonly CustomerDebtCreditService _debtCreditService;
 
-        public CustomersController(
-            ForexDbContext context,
-            UserManager<ApplicationUser> userManager,
-            ILogger<CustomersController> logger)
-        {
-            _context = context;
-            _userManager = userManager;
-            _logger = logger;
-        }
-
-        // GET: Customers
+    public CustomersController(
+        ForexDbContext context,
+        UserManager<ApplicationUser> userManager,
+        ILogger<CustomersController> logger,
+        CustomerDebtCreditService debtCreditService)
+    {
+        _context = context;
+        _userManager = userManager;
+        _logger = logger;
+        _debtCreditService = debtCreditService;
+    }        // GET: Customers
         public async Task<IActionResult> Index()
         {
             var customers = await _context.Customers
@@ -118,7 +120,11 @@ namespace ForexExchange.Controllers
                 RegistrationDays = (DateTime.Now - customer.CreatedAt).Days
             };
 
+            // Calculate debt/credit information for this customer
+            var customerDebtCredit = await _debtCreditService.GetCustomerDebtCreditAsync(customer.Id);
+
             ViewBag.CustomerStats = stats;
+            ViewBag.CustomerDebtCredit = customerDebtCredit;
             return View(customer);
         }
 

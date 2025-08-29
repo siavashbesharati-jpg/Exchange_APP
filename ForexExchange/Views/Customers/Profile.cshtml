@@ -177,6 +177,12 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab">
+                                <i class="fas fa-chart-line me-1"></i>
+                                وضعیت مالی
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
                                 فعالیت‌ها
                             </button>
@@ -194,8 +200,8 @@
                                         <thead>
                                             <tr>
                                                 <th>شماره</th>
-                                                <th>نوع</th>
-                                                <th>جفت ارز</th>
+                                                <th>از ارز</th>
+                                                <th>به ارز</th>
                                                 <th>مبلغ</th>
                                                 <th>نرخ</th>
                                                 <th>وضعیت</th>
@@ -208,19 +214,10 @@
                                             {
                                                 <tr>
                                                     <td>#@order.Id</td>
-                                                    <td>
-                                                        <!-- Removed OrderType logic -->
-                                                        {
-                                                            <span class="badge bg-primary">خرید</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-warning">فروش</span>
-                                                        }
-                                                    </td>
-                                                    <td>@order.CurrencyPair</td>
+                                                    <td>@order.FromCurrency?.Code</td>
+                                                    <td>@order.ToCurrency?.Code</td>
                                                     <td>@order.Amount.ToString("N0")</td>
-                                                    <td>@order.Rate.ToString("N0")</td>
+                                                    <td>@order.Rate.ToString("N4")</td>
                                                     <td>
                                                         @if (order.Status == ForexExchange.Models.OrderStatus.Open)
                                                         {
@@ -280,8 +277,6 @@
                                         <thead>
                                             <tr>
                                                 <th>شماره</th>
-                                                <th>نقش</th>
-                                                <th>طرف مقابل</th>
                                                 <th>مبلغ</th>
                                                 <th>وضعیت</th>
                                                 <th>تاریخ</th>
@@ -293,26 +288,8 @@
                                             {
                                                 <tr>
                                                     <td>#@transaction.Id</td>
-                                                    <td>
-                                                        @if (transaction.BuyerCustomerId == Model.Id)
-                                                        {
-                                                            <span class="badge bg-primary">خریدار</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-warning">فروشنده</span>
-                                                        }
-                                                    </td>
-                                                    <td>
-                                                        @if (transaction.BuyerCustomerId == Model.Id)
-                                                        {
-                                                            @transaction.SellerCustomer?.FullName
-                                                        }
-                                                        else
-                                                        {
-                                                            @transaction.BuyerCustomer?.FullName
-                                                        }
-                                                    </td>
+                                                   
+                                                
                                                     <td>
                                                         @transaction.Amount.ToString("N0") @transaction.FromCurrency?.PersianName
                                                         <small class="text-muted">(@transaction.CurrencyPair)</small>
@@ -402,6 +379,163 @@
                             }
                         </div>
 
+                        <!-- Financial Status Tab -->
+                        <div class="tab-pane fade" id="financial" role="tabpanel">
+                            @{
+                                var customerDebtCredit = ViewBag.CustomerDebtCredit as ForexExchange.Models.CustomerDebtCredit;
+                            }
+                            @if (customerDebtCredit != null)
+                            {
+                                <div class="row mb-4">
+                                    <!-- Net Balance Overview -->
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-header bg-light text-center">
+                                                <h5 class="mb-0">
+                                                    <i class="bi bi-cash-stack me-2"></i>
+                                                   ارزهای فعال
+                                                </h5>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <div class="balance-display mb-3">
+
+                                                    <h3 class="text-success mb-2 fw-bold">
+                                                         @customerDebtCredit.CurrencyBalances.Count
+                                                    </h3>
+                                                </div>
+                                              
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Active Orders Summary -->
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-header bg-light text-center">
+                                                <h5 class="mb-0">
+                                                    <i class="bi bi-clipboard-data me-2"></i>
+                                                    معاملات فعال
+                                                </h5>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <h3 class="text-primary mb-2 fw-bold">@customerDebtCredit.ActiveOrderCount</h3>
+                                                <small class="text-muted">معامله باز یا نیمه تکمیل</small>
+                                                <div class="mt-3">
+                                                    <a href="@Url.Action("Create", "Orders", new { customerId = Model.Id })" class="btn btn-success btn-sm">
+                                                        <i class="bi bi-plus-circle me-1"></i>
+                                                        معامله جدید
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Actions -->
+                                    <div class="col-md-4">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-header bg-light text-center">
+                                                <h5 class="mb-0">
+                                                    <i class="bi bi-gear me-2"></i>
+                                                    عملیات سریع
+                                                </h5>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <div class="d-grid gap-2">
+                                                    <a href="@Url.Action("Index", "Orders", new { customerId = Model.Id })" class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-list me-1"></i>
+                                                        همه معاملات
+                                                    </a>
+                                                    <a href="@Url.Action("Index", "CustomerTransactions", new { customerId = Model.Id })" class="btn btn-outline-info btn-sm">
+                                                        <i class="bi bi-arrow-left-right me-1"></i>
+                                                        تراکنش‌ها
+                                                    </a>
+                                                    <a href="@Url.Action("Index", "Receipts", new { customerId = Model.Id })" class="btn btn-outline-secondary btn-sm">
+                                                        <i class="bi bi-receipt me-1"></i>
+                                                        رسیدها
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Currency Breakdown -->
+                                @if (customerDebtCredit.CurrencyBalances.Any())
+                                {
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <h5 class="mb-0">
+                                                        <i class="bi bi-currency-exchange me-2"></i>
+                                                       تراز ارزی
+                                                    </h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row g-3">
+                                                        @foreach (var currencyBalance in customerDebtCredit.CurrencyBalances)
+                                                        {
+                                                            <div class="col-xl-3 col-lg-4 col-md-6">
+                                                                <div class="card h-100 border-0 shadow-sm currency-card">
+                                                                    <div class="card-body text-center">
+                                                                        <div class="currency-header mb-2">
+                                                                            <h6 class="mb-1 fw-bold">@currencyBalance.CurrencyName</h6>
+                                                                            <small class="text-muted">@currencyBalance.CurrencyCode</small>
+                                                                        </div>
+
+                                                                        <div class="balance-info">
+                                                                            <div class="balance-amount mb-2" dir=ltr>
+                                                                                <span class="fw-bold @(currencyBalance.Balance >= 0 ? "text-success" : "text-danger")">
+                                                                                    @currencyBalance.Balance.ToString("N0")
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <div class="balance-breakdown small">
+                                                                                @if (currencyBalance.DebtAmount > 0)
+                                                                                {
+                                                                                    <div class="text-danger">
+                                                                                        <i class="bi bi-dash-circle me-1"></i>
+                                                                                        بدهی: @currencyBalance.DebtAmount.ToString("N0")
+                                                                                    </div>
+                                                                                }
+                                                                                @if (currencyBalance.CreditAmount > 0)
+                                                                                {
+                                                                                    <div class="text-success">
+                                                                                        <i class="bi bi-plus-circle me-1"></i>
+                                                                                        بستانکاری: @currencyBalance.CreditAmount.ToString("N0")
+                                                                                    </div>
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                              
+                            }
+                            else
+                            {
+                                <div class="text-center py-5">
+                                    <div class="empty-state">
+                                        <i class="bi bi-cash-stack text-muted" style="font-size: 3rem;"></i>
+                                        <h5 class="text-muted mt-3">اطلاعات مالی یافت نشد</h5>
+                                        <p class="text-muted">این مشتری هنوز هیچ معامله فعالی ندارد</p>
+                                        <a href="@Url.Action("Create", "Orders", new { customerId = Model.Id })" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle me-1"></i>
+                                            ایجاد اولین معامله
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
                         <!-- Activity Timeline Tab -->
                         <div class="tab-pane fade" id="activity" role="tabpanel">
                             <div class="timeline">
@@ -447,7 +581,7 @@
                                         <div class="timeline-content">
                                             <h6 class="timeline-title">@act.Type</h6>
                                             <p class="timeline-text">@act.Description</p>
-                                            <small class="text-muted">@((DateTime)act.Date).ToString("yyyy/MM/dd HH:mm")</small>
+                                            <small class="text-muted">@(((DateTime)act.Date).ToPersianDateTextify())</small>
                                         </div>
                                     </div>
                                 }
@@ -503,6 +637,86 @@
         .timeline-text {
             margin-bottom: 5px;
             color: #6c757d;
+        }
+
+        /* Financial Tab Styles */
+        .balance-display h3 {
+            font-size: 2rem;
+            margin: 0;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .currency-card {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+
+        .currency-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        }
+
+        .currency-header {
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 0.5rem;
+        }
+
+        .balance-info {
+            padding: 1rem 0;
+        }
+
+        .balance-amount {
+            font-size: 1.2rem;
+        }
+
+        .balance-breakdown {
+            margin-top: 0.5rem;
+        }
+
+        .summary-item {
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.8);
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        .empty-state {
+            padding: 3rem 1rem;
+        }
+
+        .empty-state i {
+            opacity: 0.5;
+        }
+
+        .status-indicator .badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .balance-display h3 {
+                font-size: 1.5rem;
+            }
+
+            .summary-item {
+                padding: 0.75rem;
+            }
+
+            .summary-value {
+                font-size: 1.25rem;
+            }
         }
     </style>
     

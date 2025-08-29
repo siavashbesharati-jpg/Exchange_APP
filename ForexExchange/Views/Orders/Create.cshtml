@@ -96,12 +96,33 @@
                             <div class="col-12">
                                 <div class="card bg-light">
                                     <div class="card-body">
-                                        <h6 class="card-title">نرخ ارز انتخابی:</h6>
-                                        <div id="selectedExchangeRate" class="alert alert-info" style="display: none;">
-                                            <div id="rateInfo"></div>
-                                            <div class="spinner-border spinner-border-sm" id="rateLoader"
-                                                style="display: none;" role="status">
-                                                <span class="visually-hidden">در حال بارگذاری...</span>
+                                        <h6 class="card-title">نرخ ارز:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div id="selectedExchangeRate" class="alert alert-info" style="display: none;">
+                                                    <div id="rateInfo"></div>
+                                                    <div class="spinner-border spinner-border-sm" id="rateLoader"
+                                                        style="display: none;" role="status">
+                                                        <span class="visually-hidden">در حال بارگذاری...</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label asp-for="Rate" class="form-label">نرخ قابل ویرایش</label>
+                                                <div class="input-group">
+                                                    <input asp-for="Rate" type="number" class="form-control" step="0.0001" min="0"
+                                                        id="rateInput" placeholder="نرخ ارز را وارد کنید" />
+                                                    <button class="btn btn-outline-secondary" type="button" id="loadSuggestedRateBtn"
+                                                        title="بارگذاری نرخ پیشنهادی">
+                                                        <i class="bi bi-arrow-clockwise"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="form-text">
+                                                    <small class="text-muted">
+                                                        نرخ ارز را به صورت دستی وارد کنید یا از نرخ پیشنهادی استفاده کنید
+                                                    </small>
+                                                </div>
+                                                <span asp-validation-for="Rate" class="text-danger"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -132,8 +153,8 @@
                         </div>
 
                         <!-- Hidden fields for calculated values -->
-                        <input type="hidden" asp-for="Rate" id="hiddenRate" value="0" />
                         <input type="hidden" asp-for="TotalAmount" id="hiddenTotalAmount" value="0" />
+                        <input type="hidden" asp-for="Rate" id="hiddenRate" value="0" />
                         <input type="hidden" asp-for="Status" value="0" />
                         <input type="hidden" asp-for="FilledAmount" value="0" />
                     </form>
@@ -199,18 +220,21 @@
                         if (data.rate > 0) {
                             currentRate = data.rate;
                             document.getElementById('rateInfo').innerHTML =
-                                `<strong>نرخ:</strong> ${data.rate.toLocaleString()} <small class="text-muted">(${data.source})</small>`;
-                            document.getElementById('hiddenRate').value = data.rate;
-                            updateCalculation();
+                                `<strong>نرخ پیشنهادی:</strong> ${data.rate.toLocaleString()} <small class="text-muted">(${data.source})</small>`;
+                            // Auto-fill the rate input with suggested rate only if it's empty or zero
+                            const rateInput = document.getElementById('rateInput');
+                            if (!rateInput.value || rateInput.value === '0' || rateInput.value === '') {
+                                rateInput.value = data.rate;
+                                document.getElementById('hiddenRate').value = data.rate;
+                                updateCalculation();
+                            }
                         } else {
                             document.getElementById('rateInfo').innerHTML =
                                 '<span class="text-warning">نرخ ارز برای این جفت ارز موجود نیست</span>';
-                            document.getElementById('hiddenRate').value = '0';
                         }
                     } else {
                         document.getElementById('rateInfo').innerHTML =
                             `<span class="text-danger">خطا: ${data.error}</span>`;
-                        document.getElementById('hiddenRate').value = '0';
                     }
                 })
                 .catch(error => {
@@ -223,19 +247,23 @@
 
         function updateCalculation() {
             var amount = document.getElementById('amountInput').value;
+            var rate = document.getElementById('rateInput').value;
 
-            if (amount && currentRate && currentRate > 0) {
-                var total = parseFloat(amount) * currentRate;
+            if (amount && rate && parseFloat(rate) > 0) {
+                var total = parseFloat(amount) * parseFloat(rate);
 
                 document.getElementById('calculationText').innerHTML =
-                    `${parseFloat(amount).toLocaleString()} × ${currentRate.toLocaleString()} = <strong>${total.toLocaleString()}</strong>`;
+                    `${parseFloat(amount).toLocaleString()} × ${parseFloat(rate).toLocaleString()} = <strong>${total.toLocaleString()}</strong>`;
                 document.getElementById('calculationResult').style.display = 'block';
 
                 // Update hidden total amount field
                 document.getElementById('hiddenTotalAmount').value = total;
+                // Update hidden rate field
+                document.getElementById('hiddenRate').value = rate;
             } else {
                 document.getElementById('calculationResult').style.display = 'none';
                 document.getElementById('hiddenTotalAmount').value = '0';
+                document.getElementById('hiddenRate').value = '0';
             }
         }
 
@@ -266,21 +294,42 @@
         });
         document.getElementById('amountInput').addEventListener('input', updateCalculation);
 
+        // Add event listener for manual rate input
+        document.getElementById('rateInput').addEventListener('input', function() {
+            updateCalculation();
+        });
+
+        // Add event listener for load suggested rate button
+        document.getElementById('loadSuggestedRateBtn').addEventListener('click', function() {
+            var fromCurrency = document.getElementById('fromCurrencySelect').value;
+            var toCurrency = document.getElementById('toCurrencySelect').value;
+            if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                loadExchangeRate(fromCurrency, toCurrency);
+            } else {
+                alert('لطفاً ابتدا ارز مبدأ و مقصد را انتخاب کنید.');
+            }
+        });
+
         // Add form submission validation
         document.querySelector('form').addEventListener('submit', function (e) {
             var fromCurrency = document.getElementById('fromCurrencySelect').value;
             var toCurrency = document.getElementById('toCurrencySelect').value;
             var amount = document.getElementById('amountInput').value;
             var customerId = document.getElementById('customerSelect').value;
-            var rate = document.getElementById('hiddenRate').value;
+            var rate = document.getElementById('rateInput').value;
             if (!customerId || !fromCurrency || !toCurrency || !amount || !rate || rate === '0') {
                 e.preventDefault();
-                alert('لطفاً تمام فیلدهای ضروری را تکمیل کنید و منتظر بارگذاری نرخ ارز باشید.');
+                alert('لطفاً تمام فیلدهای ضروری را تکمیل کنید.');
                 return false;
             }
             if (fromCurrency === toCurrency) {
                 e.preventDefault();
                 alert('ارز مبدأ و مقصد نمی‌توانند یکسان باشند.');
+                return false;
+            }
+            if (parseFloat(rate) <= 0) {
+                e.preventDefault();
+                alert('نرخ ارز باید بزرگتر از صفر باشد.');
                 return false;
             }
         });

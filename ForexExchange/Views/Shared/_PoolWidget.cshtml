@@ -1,17 +1,31 @@
 @model List<ForexExchange.Models.CurrencyPool>
 @using ForexExchange.Services
 
-<div class="card mb-4">
-    <div class="card-header bg-primary text-white">
-        <i class="bi bi-bank"></i> استخر ارزی - Currency Pool
-        <div class="float-end">
-            <small id="pool-last-update">آخرین بروزرسانی: @DateTime.Now.ToString("HH:mm:ss")</small>
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-bank2 me-2"></i>
+            <strong>استخر ارزی - Currency Pool</strong>
+        </div>
+        <div class="d-flex align-items-center">
+            <small id="pool-last-update" class="me-3">
+                <i class="bi bi-clock-history me-1"></i>
+                @DateTime.Now.ToString("HH:mm:ss")
+            </small>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="refreshPoolWidget()" title="بروزرسانی دستی">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="auto-refresh-toggle" onclick="toggleAutoRefresh()" title="بروزرسانی خودکار">
+                    <i class="bi bi-play-circle"></i>
+                </button>
+            </div>
         </div>
     </div>
     <div class="card-body">
         @if (Model != null && Model.Any())
         {
-            <div class="row">
+            <div class="row g-3">
                 @foreach (var pool in Model)
                 {
                     var riskColorClass = pool.RiskLevel switch
@@ -24,182 +38,233 @@
                     };
 
                     var balanceColorClass = pool.Balance >= 0 ? "success" : "danger";
-                    var balanceIcon = pool.Balance >= 0 ? "bi-arrow-up-circle" : "bi-arrow-down-circle";
-                
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card border-@riskColorClass">
-                            <div class="card-body text-center">
-                                <h5 class="card-title">
-                                    <span class="currency-flag">
+                    var balanceIcon = pool.Balance >= 0 ? "bi-graph-up-arrow" : "bi-graph-down-arrow";
+                    var balancePercent = pool.Balance > 0 ? Math.Min(100, (pool.Balance / (pool.TotalBought + pool.TotalSold)) * 100) : 0;
+
+                    <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
+                        <div class="card h-100 border-0 shadow-sm pool-card" data-currency="@pool.Currency?.Code">
+                            <!-- Currency Header -->
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <span class="currency-flag me-2" style="font-size: 1.5em;">
                                         @{
                                             var flagEmoji = pool.Currency?.Symbol switch
                                             {
                                                 "IRR" or "TMN" => "🇮🇷",
                                                 "USD" => "🇺🇸",
-                                                "EUR" => "🇪🇺", 
+                                                "EUR" => "🇪🇺",
                                                 "AED" => "🇦🇪",
                                                 "OMR" => "🇴🇲",
                                                 "TRY" => "🇹🇷",
                                                 _ => "💱"
                                             };
                                         }
-                                        <span>@flagEmoji</span>
+                                        @flagEmoji
                                     </span>
-                                    @pool.Currency?.PersianName
-                                </h5>
-                                
-                                <div class="balance-display">
-                                    <h3 class="text-@balanceColorClass">
-                                        <i class="bi @balanceIcon"></i>
-                                        @pool.Balance.ToString("N2")
-                                    </h3>
-                                    <small class="text-muted">موجودی فعلی</small>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">@pool.Currency?.PersianName</h6>
+                                        <small class="text-muted">@pool.Currency?.Code</small>
+                                    </div>
                                 </div>
+                                <span class="badge bg-@riskColorClass risk-badge">
+                                    @switch (pool.RiskLevel)
+                                    {
+                                        case ForexExchange.Models.PoolRiskLevel.Low: <text><i class="bi bi-shield-check"></i> کم</text> break;
+                                        case ForexExchange.Models.PoolRiskLevel.Medium: <text><i class="bi bi-shield-exclamation"></i> متوسط</text> break;
+                                        case ForexExchange.Models.PoolRiskLevel.High: <text><i class="bi bi-shield-x"></i> بالا</text> break;
+                                        case ForexExchange.Models.PoolRiskLevel.Critical: <text><i class="bi bi-exclamation-triangle-fill"></i> بحرانی</text> break;
+                                        default: <text>نامشخص</text> break;
+                                    }
+                                </span>
+                            </div>
 
-                                <div class="pool-stats mt-3">
-                                    <div class="row text-center">
-                                        <div class="col-6">
-                                            <div class="stat-item">
-                                                <strong class="text-success">@pool.TotalBought.ToString("N0")</strong>
-                                                <br><small>خرید</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="stat-item">
-                                                <strong class="text-danger">@pool.TotalSold.ToString("N0")</strong>
-                                                <br><small>فروش</small>
-                                            </div>
+                            <!-- Balance Section -->
+                            <div class="card-body text-center">
+                                <div class="balance-display mb-3">
+                                    <div class="balance-amount">
+                                        <h4 class="text-@balanceColorClass mb-1 fw-bold">
+                                            <i class="bi @balanceIcon me-1"></i>
+                                            @pool.Balance.ToString("N0")
+                                        </h4>
+                                        <small class="text-muted">موجودی فعلی (@pool.Currency?.Symbol)</small>
+                                    </div>
+
+                                    <!-- Balance Progress Bar -->
+                                    <div class="progress mt-2" style="height: 6px;">
+                                        <div class="progress-bar bg-@balanceColorClass"
+                                             role="progressbar"
+                                             style="width: @balancePercent%"
+                                             aria-valuenow="@balancePercent"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="risk-indicator mt-3">
-                                    <span class="badge bg-@riskColorClass">
-                                        @switch (pool.RiskLevel)
-                                        {
-                                            case ForexExchange.Models.PoolRiskLevel.Low: <text>ریسک کم</text> break;
-                                            case ForexExchange.Models.PoolRiskLevel.Medium: <text>ریسک متوسط</text> break;
-                                            case ForexExchange.Models.PoolRiskLevel.High: <text>ریسک بالا</text> break;
-                                            case ForexExchange.Models.PoolRiskLevel.Critical: <text>ریسک بحرانی</text> break;
-                                            default: <text>نامشخص</text> break;
-                                        }
-                                    </span>
+                                <!-- Quick Stats -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <div class="stat-card bg-success bg-opacity-10 p-2 rounded">
+                                            <div class="text-success fw-bold small">@pool.TotalBought.ToString("N0")</div>
+                                            <div class="text-muted tiny">خرید کل</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="stat-card bg-danger bg-opacity-10 p-2 rounded">
+                                            <div class="text-danger fw-bold small">@pool.TotalSold.ToString("N0")</div>
+                                            <div class="text-muted tiny">فروش کل</div>
+                                        </div>
+                                    </div>
                                 </div>
 
+                                <!-- Rate Information -->
                                 @if (pool.AverageBuyRate.HasValue || pool.AverageSellRate.HasValue)
                                 {
-                                    <div class="rate-info mt-2">
+                                    <div class="rate-info mb-2">
                                         <small class="text-muted">
                                             @if (pool.AverageBuyRate.HasValue)
                                             {
-                                                <span>خرید: @pool.AverageBuyRate.Value.ToString("N0")</span>
-                                            }
-                                            @if (pool.AverageBuyRate.HasValue && pool.AverageSellRate.HasValue)
-                                            {
-                                                <span> | </span>
+                                                <span class="badge bg-success bg-opacity-25 text-success me-1">
+                                                    <i class="bi bi-arrow-up"></i> @pool.AverageBuyRate.Value.ToString("N0")
+                                                </span>
                                             }
                                             @if (pool.AverageSellRate.HasValue)
                                             {
-                                                <span>فروش: @pool.AverageSellRate.Value.ToString("N0")</span>
+                                                <span class="badge bg-danger bg-opacity-25 text-danger">
+                                                    <i class="bi bi-arrow-down"></i> @pool.AverageSellRate.Value.ToString("N0")
+                                                </span>
                                             }
                                         </small>
                                     </div>
                                 }
 
-                                <div class="last-update mt-2">
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock"></i>
-                                        @pool.LastUpdated.ToString("dd/MM HH:mm")
-                                    </small>
+                                <!-- Quick Actions -->
+                                <div class="quick-actions">
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <a href="@Url.Action("Create", "Orders")" class="btn btn-outline-primary btn-sm" title="معامله جدید">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                        <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-outline-info btn-sm" title="نرخ‌ها">
+                                            <i class="bi bi-graph-up"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="showPoolDetails('@pool.Currency?.Code')" title="جزئیات">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <!-- Footer with Last Update -->
+                            <div class="card-footer bg-light text-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>
+                                    @pool.LastUpdated.ToString("dd/MM HH:mm")
+                                </small>
                             </div>
                         </div>
                     </div>
                 }
             </div>
 
-            <!-- Summary Row -->
-            <div class="row mt-3">
+            <!-- Enhanced Summary Dashboard -->
+            <div class="row mt-4">
                 <div class="col-12">
-                    <div class="alert alert-info">
-                        <div class="row text-center">
-                            <div class="col-md-3">
-                                <strong>@Model.Count</strong><br>
-                                <small>تعداد ارزها</small>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>@Model.Count(p => p.Balance > 0)</strong><br>
-                                <small>موجودی مثبت</small>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>@Model.Count(p => p.Balance < 0)</strong><br>
-                                <small>موجودی منفی</small>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>@Model.Count(p => p.RiskLevel >= ForexExchange.Models.PoolRiskLevel.High)</strong><br>
-                                <small>ریسک بالا</small>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">
+                                <i class="bi bi-bar-chart-line me-2"></i>
+                                خلاصه وضعیت استخرها
+                            </h6>
+                            <div class="row text-center g-3">
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-primary">@Model.Count</div>
+                                        <div class="summary-label">تعداد ارزها</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-success">@Model.Count(p => p.Balance > 0)</div>
+                                        <div class="summary-label">موجودی مثبت</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-danger">@Model.Count(p => p.Balance < 0)</div>
+                                        <div class="summary-label">موجودی منفی</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-warning">@Model.Count(p => p.RiskLevel >= ForexExchange.Models.PoolRiskLevel.High)</div>
+                                        <div class="summary-label">نیاز به توجه</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Auto Refresh Controls -->
-            <div class="row mt-2">
-                <div class="col-12 text-center">
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-primary" onclick="refreshPoolWidget()">
-                            <i class="bi bi-arrow-clockwise"></i> بروزرسانی
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" id="auto-refresh-toggle" onclick="toggleAutoRefresh()">
-                            <i class="bi bi-play-circle"></i> خودکار
-                        </button>
                     </div>
                 </div>
             </div>
         }
         else
         {
-            <div class="text-center text-muted py-4">
-                <i class="bi bi-bank" style="font-size: 2rem;"></i>
-                <p class="mt-2">هیچ استخر ارزی یافت نشد</p>
-                <small>استخرهای ارزی پس از اولین تراکنش ایجاد می‌شوند</small>
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="bi bi-bank2 text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">استخر ارزی خالی است</h5>
+                    <p class="text-muted">استخرهای ارزی پس از اولین تراکنش ایجاد می‌شوند</p>
+                    <a href="@Url.Action("Create", "Orders")" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        ایجاد اولین معامله
+                    </a>
+                </div>
             </div>
         }
     </div>
 </div>
 
 <style>
-.currency-flag {
-    font-size: 1.2em;
-    margin-left: 0.5rem;
+@@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
-.balance-display h3 {
-    margin: 0.5rem 0;
-    font-weight: bold;
+@@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
-.stat-item {
-    padding: 0.25rem;
+@@media (max-width: 768px) {
+    .pool-card {
+        margin-bottom: 1rem;
+    }
+
+    .balance-display .balance-amount h4 {
+        font-size: 1.5rem;
+    }
+
+    .summary-item {
+        padding: 0.75rem;
+    }
+
+    .summary-value {
+        font-size: 1.25rem;
+    }
 }
 
-.risk-indicator {
-    margin: 0.5rem 0;
-}
+@@media (max-width: 576px) {
+    .currency-flag {
+        font-size: 1.2em;
+    }
 
-.pool-stats .row {
-    margin: 0;
-}
+    .quick-actions .btn-group {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
 
-.last-update {
-    font-size: 0.75rem;
+    .quick-actions .btn {
+        width: 100%;
+    }
 }
-
-.card.border-success { border-color: #198754 !important; }
-.card.border-warning { border-color: #ffc107 !important; }
-.card.border-danger { border-color: #dc3545 !important; }
-.card.border-dark { border-color: #212529 !important; }
 </style>
 
 <script>
@@ -207,33 +272,121 @@ let autoRefreshInterval = null;
 let isAutoRefreshActive = false;
 
 function refreshPoolWidget() {
+    const container = $('#pool-widget-container');
+    const refreshBtn = container.find('button[onclick="refreshPoolWidget()"]');
+
+    // Add loading state
+    container.addClass('refreshing');
+    refreshBtn.prop('disabled', true).html('<i class="bi bi-arrow-clockwise spinning"></i>');
+
     $.get('/Home/PoolWidget', function(data) {
-        $('#pool-widget-container').html(data);
-        $('#pool-last-update').text('آخرین بروزرسانی: ' + new Date().toLocaleTimeString('fa-IR'));
-    }).fail(function() {
-        console.error('خطا در بروزرسانی ویجت استخر');
+        container.html(data);
+        $('#pool-last-update').html('<i class="bi bi-clock-history me-1"></i>' + new Date().toLocaleTimeString('fa-IR'));
+
+        // Show success feedback
+        showNotification('استخر ارزی بروزرسانی شد', 'success');
+    }).fail(function(xhr, status, error) {
+        console.error('خطا در بروزرسانی ویجت استخر:', error);
+        showNotification('خطا در بروزرسانی استخر ارزی', 'error');
+    }).always(function() {
+        // Remove loading state
+        container.removeClass('refreshing');
+        refreshBtn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i>');
     });
 }
 
 function toggleAutoRefresh() {
     const button = $('#auto-refresh-toggle');
-    
+    const icon = button.find('i');
+
     if (isAutoRefreshActive) {
         clearInterval(autoRefreshInterval);
         isAutoRefreshActive = false;
-        button.html('<i class="bi bi-play-circle"></i> خودکار');
-        button.removeClass('btn-success').addClass('btn-outline-secondary');
+        icon.removeClass('bi-stop-circle').addClass('bi-play-circle');
+        button.removeClass('btn-success').addClass('btn-outline-light');
+        button.attr('title', 'بروزرسانی خودکار');
+        showNotification('بروزرسانی خودکار متوقف شد', 'info');
     } else {
         autoRefreshInterval = setInterval(refreshPoolWidget, 30000); // Refresh every 30 seconds
         isAutoRefreshActive = true;
-        button.html('<i class="bi bi-stop-circle"></i> توقف');
-        button.removeClass('btn-outline-secondary').addClass('btn-success');
+        icon.removeClass('bi-play-circle').addClass('bi-stop-circle');
+        button.removeClass('btn-outline-light').addClass('btn-success');
+        button.attr('title', 'توقف بروزرسسانی خودکار');
+        showNotification('بروزرسانی خودکار فعال شد', 'success');
     }
 }
 
-// Auto-refresh on page load if enabled
+function showPoolDetails(currencyCode) {
+    // Create a modal or redirect to detailed view
+    // For now, we'll show a simple alert with pool information
+    const poolCard = $(`.pool-card[data-currency="${currencyCode}"]`);
+    const currencyName = poolCard.find('h6').text();
+    const balance = poolCard.find('.balance-amount h4').text();
+    const riskBadge = poolCard.find('.risk-badge').text();
+
+    // You can replace this with a proper modal implementation
+    alert(`جزئیات استخر ${currencyName} (${currencyCode}):\n\n` +
+          `موجودی: ${balance}\n` +
+          `سطح ریسک: ${riskBadge}\n\n` +
+          `برای مشاهده جزئیات بیشتر به صفحه نرخ‌های ارز مراجعه کنید.`);
+
+    // Alternative: Redirect to exchange rates page with filter
+    // window.location.href = `/ExchangeRates/Index?currency=${currencyCode}`;
+}
+
+function showNotification(message, type = 'info') {
+    // Create a simple notification system
+    const notification = $(`
+        <div class="alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed"
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `);
+
+    $('body').append(notification);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.alert('close');
+    }, 5000);
+}
+
+// Add spinning animation for refresh icon
+const style = document.createElement('style');
+style.textContent = `
+    .spinning {
+        animation: spin 1s linear infinite;
+    }
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize tooltips
 $(document).ready(function() {
-    // Optional: Start auto-refresh by default
-    // toggleAutoRefresh();
+    // Initialize Bootstrap tooltips if available
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        $('[title]').tooltip();
+    }
+
+    // Add hover effects for better interactivity
+    $('.pool-card').hover(
+        function() {
+            $(this).addClass('shadow-lg');
+        },
+        function() {
+            $(this).removeClass('shadow-lg');
+        }
+    );
+
+    // Add click tracking for analytics (optional)
+    $('.quick-actions .btn').click(function() {
+        const action = $(this).attr('title') || $(this).text();
+        console.log(`Pool action clicked: ${action}`);
+    });
 });
 </script>

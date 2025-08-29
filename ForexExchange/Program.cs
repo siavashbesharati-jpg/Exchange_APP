@@ -59,6 +59,7 @@ builder.Services.AddScoped<IDataSeedService, DataSeedService>();
 builder.Services.AddScoped<IWebScrapingService, WebScrapingService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IRateCalculationService, RateCalculationService>();
+builder.Services.AddScoped<CustomerDebtCreditService>();
 
 var app = builder.Build();
 

@@ -234,10 +234,21 @@ namespace ForexExchange.Controllers
         }
 
         // GET: Orders/Create
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(int? customerId = null)
         {
             // Load only essential data with minimal queries
             await LoadCreateViewDataOptimized();
+
+            // If customerId is provided, create an Order model with that customer pre-selected
+            if (customerId.HasValue)
+            {
+                var order = new Order
+                {
+                    CustomerId = customerId.Value
+                };
+                return View(order);
+            }
+
             return View();
         }
 
@@ -247,7 +258,7 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Create(Order order)
         {
             // Debug: Log received order data first
-            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, Amount: {order.Amount}");
+            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, Amount: {order.Amount}, ManualRate: {order.Rate}");
 
             // Remove Customer navigation property from validation as we only need CustomerId
             ModelState.Remove("Customer");
@@ -255,9 +266,11 @@ namespace ForexExchange.Controllers
             ModelState.Remove("Receipts");
             ModelState.Remove("FromCurrency");
             ModelState.Remove("ToCurrency");
-            ModelState.Remove("Rate"); // Rate is calculated server-side
             ModelState.Remove("TotalAmount"); // TotalAmount is calculated server-side
             ModelState.Remove("TotalInToman"); // TotalInToman is calculated server-side
+
+            // Keep Rate in ModelState for manual rate validation
+            // ModelState.Remove("Rate"); // Removed - now we validate manual rates
 
             // Debug: Log all ModelState errors
             if (!ModelState.IsValid)
@@ -270,7 +283,7 @@ namespace ForexExchange.Controllers
                         _logger.LogWarning($"Field: {modelError.Key}, Error: {error.ErrorMessage}");
                     }
                 }
-                
+
                 // Reload view data and return with errors
                 await LoadCreateViewDataOptimized();
                 return View(order);
@@ -292,20 +305,28 @@ namespace ForexExchange.Controllers
                 return View(order);
             }
 
+            // Validate manual rate if provided
+            if (order.Rate <= 0)
+            {
+                ModelState.AddModelError("Rate", "نرخ ارز باید بزرگتر از صفر باشد.");
+                await LoadCreateViewDataOptimized();
+                return View(order);
+            }
+
             if (ModelState.IsValid)
             {
-                // Try to find direct exchange rate
+                // Calculate system-suggested rate for comparison and fallback
                 var directRate = await _context.ExchangeRates
                     .FirstOrDefaultAsync(r => r.FromCurrencyId == order.FromCurrencyId &&
                                              r.ToCurrencyId == order.ToCurrencyId &&
                                              r.IsActive);
 
-                decimal exchangeRate = 0;
+                decimal systemExchangeRate = 0;
                 string rateSource = "";
 
                 if (directRate != null)
                 {
-                    exchangeRate = directRate.Rate;
+                    systemExchangeRate = directRate.Rate;
                     rateSource = "Direct";
                 }
                 else
@@ -318,7 +339,7 @@ namespace ForexExchange.Controllers
 
                     if (reverseRate != null)
                     {
-                        exchangeRate = (1.0m / reverseRate.Rate);
+                        systemExchangeRate = (1.0m / reverseRate.Rate);
                         rateSource = "Reverse";
                     }
                     else
@@ -339,22 +360,39 @@ namespace ForexExchange.Controllers
                             {
                                 var fromToIrrRate = fromRate.Rate;
                                 var irrToTargetRate = toRate.Rate;
-                                exchangeRate = irrToTargetRate / fromToIrrRate;
+                                systemExchangeRate = irrToTargetRate / fromToIrrRate;
                                 rateSource = "Cross-rate";
                             }
                         }
                     }
                 }
 
-                if (exchangeRate <= 0)
+                // Determine which rate to use
+                decimal finalExchangeRate;
+                string finalRateSource;
+
+                if (systemExchangeRate > 0)
                 {
-                    ModelState.AddModelError("", "نرخ ارز برای این جفت ارز موجود نیست.");
-                    await LoadCreateViewDataOptimized();
-                    return View(order);
+                    // Check if manual rate differs significantly from system rate (more than 10%)
+                    decimal rateDifference = Math.Abs(order.Rate - systemExchangeRate) / systemExchangeRate;
+                    if (rateDifference > 0.1m) // 10% difference
+                    {
+                        _logger.LogWarning($"Manual rate {order.Rate} differs significantly from system rate {systemExchangeRate} ({rateDifference:P2}) for order creation");
+                        // Still allow the manual rate but log the discrepancy
+                    }
+
+                    finalExchangeRate = order.Rate;
+                    finalRateSource = $"Manual (System: {systemExchangeRate} {rateSource})";
+                }
+                else
+                {
+                    // No system rate available, use manual rate
+                    finalExchangeRate = order.Rate;
+                    finalRateSource = "Manual (No system rate)";
                 }
 
                 // Calculate total and set order properties
-                order.Rate = exchangeRate;
+                order.Rate = finalExchangeRate;
                 var totalValue = order.Amount * order.Rate;
 
                 // Calculate TotalInToman for reporting (approximate if not IRR-based)
@@ -407,7 +445,7 @@ namespace ForexExchange.Controllers
                     await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
                 }
 
-                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {exchangeRate} ({rateSource}), Total: {totalValue}");
+                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {finalExchangeRate} ({finalRateSource}), Total: {totalValue}");
 
                 TempData["SuccessMessage"] = "معامله با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Details), new { id = order.Id });
@@ -517,7 +555,7 @@ namespace ForexExchange.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: Orders/Match/5
+        // POST: Orders/Match/5 - Show available orders for manual matching
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Match(int id)
@@ -532,135 +570,140 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            // Find matching orders - only those with remaining amount to fill
-            var matchingOrders = await _context.Orders
+            // Just redirect to Details page where available orders are already shown
+            TempData["InfoMessage"] = "لیست سفارشات قابل مچ نمایش داده شده است. لطفاً سفارش مورد نظر را انتخاب کنید.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST: Orders/MatchOrders - Match two specific orders manually
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MatchOrders(int primaryOrderId, int matchingOrderId)
+        {
+            var primaryOrder = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Where(o => (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled) &&
-                           // Find complementary currency pairs
-                           ((o.FromCurrencyId == order.ToCurrencyId && o.ToCurrencyId == order.FromCurrencyId)) &&
-                           o.Id != order.Id &&
-                           o.Amount > o.FilledAmount) // Ensure order has remaining amount
-                .ToListAsync();
+                .FirstOrDefaultAsync(o => o.Id == primaryOrderId);
 
-            // Filter by rate compatibility
-            // No OrderType: just sort by best rate (lowest for buyer, highest for seller)
-            matchingOrders = matchingOrders.OrderBy(o => o.Rate).ToList();
+            var matchingOrder = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .FirstOrDefaultAsync(o => o.Id == matchingOrderId);
 
-            if (!matchingOrders.Any())
+            if (primaryOrder == null || matchingOrder == null)
             {
-                TempData["InfoMessage"] = $"هیچ معامله مچ با نرخ مناسب یافت نشد.";
-                return RedirectToAction(nameof(Details), new { id });
+                TempData["ErrorMessage"] = "یک یا هر دو سفارش یافت نشد.";
+                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
-            // Enhanced matching logic - match with best available orders
-            decimal remainingAmount = order.Amount - order.FilledAmount;
-            int matchCount = 0;
-            var createdTransactions = new List<int>();
-
-            foreach (var matchingOrder in matchingOrders)
+            if ((primaryOrder.Status != OrderStatus.Open && primaryOrder.Status != OrderStatus.PartiallyFilled) ||
+                primaryOrder.Amount <= primaryOrder.FilledAmount)
             {
-                if (remainingAmount <= 0) break; // Order fully filled
-
-                var availableAmount = matchingOrder.Amount - matchingOrder.FilledAmount;
-                if (availableAmount <= 0) continue; // Skip fully filled orders
-
-                var matchAmount = Math.Min(remainingAmount, availableAmount);
-
-                // Determine direction: who is buyer/seller for this currency pair
-                int buyOrderId, sellOrderId, buyerCustomerId, sellerCustomerId;
-                ForexExchange.Models.Order buyOrder, sellOrder;
-                if (order.FromCurrencyId == matchingOrder.ToCurrencyId && order.ToCurrencyId == matchingOrder.FromCurrencyId)
-                {
-                    // order is selling FromCurrency, matchingOrder is buying it
-                    buyOrderId = matchingOrder.Id;
-                    sellOrderId = order.Id;
-                    buyerCustomerId = matchingOrder.CustomerId;
-                    sellerCustomerId = order.CustomerId;
-                    buyOrder = matchingOrder;
-                    sellOrder = order;
-                }
-                else if (order.ToCurrencyId == matchingOrder.FromCurrencyId && order.FromCurrencyId == matchingOrder.ToCurrencyId)
-                {
-                    // order is buying ToCurrency, matchingOrder is selling it
-                    buyOrderId = order.Id;
-                    sellOrderId = matchingOrder.Id;
-                    buyerCustomerId = order.CustomerId;
-                    sellerCustomerId = matchingOrder.CustomerId;
-                    buyOrder = order;
-                    sellOrder = matchingOrder;
-                }
-                else
-                {
-                    // Not a valid match, skip
-                    continue;
-                }
-
-                // Use the best rate (lowest for buyer, highest for seller)
-                decimal transactionRate = Math.Min(order.Rate, matchingOrder.Rate);
-
-                // Create transaction
-                var transaction = new Transaction
-                {
-                    BuyOrderId = buyOrderId,
-                    SellOrderId = sellOrderId,
-                    BuyerCustomerId = buyerCustomerId,
-                    SellerCustomerId = sellerCustomerId,
-                    FromCurrency = sellOrder.FromCurrency,
-                    ToCurrency = sellOrder.ToCurrency,
-                    Amount = matchAmount,
-                    Rate = transactionRate,
-                    TotalAmount = matchAmount * transactionRate,
-                    TotalInToman = sellOrder.ToCurrency.IsBaseCurrency ? (matchAmount * transactionRate) :
-                                 (sellOrder.FromCurrency.IsBaseCurrency ? matchAmount : (matchAmount * transactionRate * 65000)), // Approximate conversion
-                    Status = TransactionStatus.Pending,
-                    CreatedAt = DateTime.Now
-                };
-
-                _context.Transactions.Add(transaction);
-
-                // Update order statuses and filled amounts
-                order.FilledAmount += matchAmount;
-                matchingOrder.FilledAmount += matchAmount;
-
-                // Correct status assignment for both orders
-                if (order.FilledAmount == order.Amount)
-                    order.Status = OrderStatus.Completed;
-                else if (order.FilledAmount > 0)
-                    order.Status = OrderStatus.PartiallyFilled;
-
-                if (matchingOrder.FilledAmount == matchingOrder.Amount)
-                    matchingOrder.Status = OrderStatus.Completed;
-                else if (matchingOrder.FilledAmount > 0)
-                    matchingOrder.Status = OrderStatus.PartiallyFilled;
-
-                order.UpdatedAt = DateTime.Now;
-                matchingOrder.UpdatedAt = DateTime.Now;
-
-                remainingAmount -= matchAmount;
-                matchCount++;
-
-                await _context.SaveChangesAsync();
-
-                // No pool update here
-
-                createdTransactions.Add(transaction.Id);
+                TempData["ErrorMessage"] = "سفارش اصلی قابل مچ کردن نیست.";
+                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
-            if (matchCount == 0)
+            if ((matchingOrder.Status != OrderStatus.Open && matchingOrder.Status != OrderStatus.PartiallyFilled) ||
+                matchingOrder.Amount <= matchingOrder.FilledAmount)
             {
-                TempData["InfoMessage"] = $"هیچ معامله مچ با نرخ مناسب یافت نشد.";
+                TempData["ErrorMessage"] = "سفارش مقابل قابل مچ کردن نیست.";
+                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
-            else if (matchCount == 1)
+
+            // Validate that orders are complementary
+            bool isValidPair = (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId && 
+                               primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId) ||
+                              (primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId && 
+                               primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId);
+
+            if (!isValidPair)
             {
-                TempData["SuccessMessage"] = $"معامله با موفقیت مچ شد. تراکنش شماره {createdTransactions[0]} ایجاد شد.";
+                TempData["ErrorMessage"] = "این دو سفارش قابل مچ کردن با هم نیستند.";
+                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
+            }
+
+            // Calculate match amount (minimum of remaining amounts)
+            decimal primaryRemaining = primaryOrder.Amount - primaryOrder.FilledAmount;
+            decimal matchingRemaining = matchingOrder.Amount - matchingOrder.FilledAmount;
+            decimal matchAmount = Math.Min(primaryRemaining, matchingRemaining);
+
+            // Determine direction: who is buyer/seller
+            int buyOrderId, sellOrderId, buyerCustomerId, sellerCustomerId;
+            ForexExchange.Models.Order buyOrder, sellOrder;
+            
+            if (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId && 
+                primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId)
+            {
+                // primaryOrder is selling, matchingOrder is buying
+                buyOrderId = matchingOrder.Id;
+                sellOrderId = primaryOrder.Id;
+                buyerCustomerId = matchingOrder.CustomerId;
+                sellerCustomerId = primaryOrder.CustomerId;
+                buyOrder = matchingOrder;
+                sellOrder = primaryOrder;
             }
             else
             {
-                TempData["SuccessMessage"] = $"معامله با {matchCount} معامله مچ شد. تراکنش‌های شماره {string.Join(", ", createdTransactions)} ایجاد شدند.";
+                // primaryOrder is buying, matchingOrder is selling
+                buyOrderId = primaryOrder.Id;
+                sellOrderId = matchingOrder.Id;
+                buyerCustomerId = primaryOrder.CustomerId;
+                sellerCustomerId = matchingOrder.CustomerId;
+                buyOrder = primaryOrder;
+                sellOrder = matchingOrder;
             }
-            return RedirectToAction(nameof(Details), new { id });
+
+            // Use the best rate (lowest for buyer, highest for seller)
+            decimal transactionRate = Math.Min(primaryOrder.Rate, matchingOrder.Rate);
+
+            // Create transaction
+            var transaction = new Transaction
+            {
+                BuyOrderId = buyOrderId,
+                SellOrderId = sellOrderId,
+                BuyerCustomerId = buyerCustomerId,
+                SellerCustomerId = sellerCustomerId,
+                FromCurrencyId = sellOrder.FromCurrencyId,
+                ToCurrencyId = sellOrder.ToCurrencyId,
+                FromCurrency = sellOrder.FromCurrency,
+                ToCurrency = sellOrder.ToCurrency,
+                Amount = matchAmount,
+                Rate = transactionRate,
+                TotalAmount = matchAmount * transactionRate,
+                TotalInToman = (sellOrder.ToCurrency.IsBaseCurrency) ? (matchAmount * transactionRate) :
+                             (sellOrder.FromCurrency.IsBaseCurrency ? matchAmount : (matchAmount * transactionRate * 65000)),
+                Status = TransactionStatus.Pending,
+                CreatedAt = DateTime.Now
+            };
+
+            _context.Transactions.Add(transaction);
+
+            // Update order statuses and filled amounts
+            primaryOrder.FilledAmount += matchAmount;
+            matchingOrder.FilledAmount += matchAmount;
+
+            // Update order statuses
+            if (primaryOrder.FilledAmount == primaryOrder.Amount)
+                primaryOrder.Status = OrderStatus.Completed;
+            else if (primaryOrder.FilledAmount > 0)
+                primaryOrder.Status = OrderStatus.PartiallyFilled;
+
+            if (matchingOrder.FilledAmount == matchingOrder.Amount)
+                matchingOrder.Status = OrderStatus.Completed;
+            else if (matchingOrder.FilledAmount > 0)
+                matchingOrder.Status = OrderStatus.PartiallyFilled;
+
+            primaryOrder.UpdatedAt = DateTime.Now;
+            matchingOrder.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Manually matched Order {primaryOrder.Id} with Order {matchingOrder.Id}: {matchAmount} units at rate {transactionRate}");
+
+            TempData["SuccessMessage"] = $"سفارشات با موفقیت مچ شدند. تراکنش ایجاد شد.";
+            return RedirectToAction(nameof(Details), new { id = primaryOrderId });
         }
 
         private bool OrderExists(int id)
@@ -851,6 +894,40 @@ namespace ForexExchange.Controllers
                 _logger.LogError(ex, "Error diagnosing data integrity");
                 return Json(new { success = false, error = ex.Message });
             }
+        }
+
+        // Helper method to find the optimal matching combination
+        private List<Order> FindOptimalMatchingCombination(List<Order> availableOrders, decimal targetAmount)
+        {
+            // Sort by size descending (largest first)
+            var sortedBySize = availableOrders.OrderByDescending(o => o.Amount - o.FilledAmount).ToList();
+            
+            // Greedy algorithm: take largest orders that fit without exceeding target
+            var selectedOrders = new List<Order>();
+            decimal currentSum = 0;
+            
+            foreach (var order in sortedBySize)
+            {
+                var availableAmount = order.Amount - order.FilledAmount;
+                
+                // If adding this order would exceed target, skip it
+                if (currentSum + availableAmount > targetAmount)
+                {
+                    continue; // Skip this order, try next smaller one
+                }
+                
+                // Add this order if it fits
+                selectedOrders.Add(order);
+                currentSum += availableAmount;
+                
+                // If we've reached or exceeded target, stop
+                if (currentSum >= targetAmount)
+                {
+                    break;
+                }
+            }
+            
+            return selectedOrders;
         }
     }
 }

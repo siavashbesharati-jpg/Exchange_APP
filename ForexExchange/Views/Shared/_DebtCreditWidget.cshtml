@@ -1,0 +1,372 @@
+@model List<ForexExchange.Models.CustomerDebtCredit>
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-gradient-info text-white d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-cash-stack me-2"></i>
+            <strong>وضعیت بدهی و بستانکاری مشتریان</strong>
+        </div>
+        <div class="d-flex align-items-center">
+            <small id="debt-credit-last-update" class="me-3">
+                <i class="bi bi-clock-history me-1"></i>
+                @DateTime.Now.ToString("HH:mm:ss")
+            </small>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="refreshDebtCreditWidget()" title="بروزرسانی">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model != null && Model.Any())
+        {
+            <div class="row g-3">
+                @foreach (var customerDebtCredit in Model.Take(6)) // Show top 6 customers
+                {
+                    <div class="col-xl-4 col-lg-6 mb-3">
+                        <div class="card h-100 border-0 shadow-sm customer-debt-card">
+                            <!-- Customer Header -->
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="customer-avatar me-2">
+                                        <i class="bi bi-person-circle text-primary" style="font-size: 1.5em;"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">@customerDebtCredit.CustomerName</h6>
+                                        <small class="text-muted">@customerDebtCredit.CustomerPhone</small>
+                                    </div>
+                                </div>
+                                <div class="status-indicator">
+                                    @if (customerDebtCredit.NetBalance >= 0)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> بستانکار
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-exclamation-triangle"></i> بدهکار
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Net Balance Summary -->
+                            <div class="card-body text-center">
+                                <div class="net-balance mb-3">
+                                    <div class="net-balance-amount">
+                                        <h5 class="text-@(customerDebtCredit.NetBalance >= 0 ? "success" : "danger") mb-1 fw-bold">
+                                            <i class="bi bi-@(customerDebtCredit.NetBalance >= 0 ? "plus-circle" : "dash-circle") me-1"></i>
+                                            @Math.Abs(customerDebtCredit.NetBalance).ToString("N0")
+                                        </h5>
+                                        <small class="text-muted">تراز خالص (@customerDebtCredit.PrimaryCurrency)</small>
+                                    </div>
+                                </div>
+
+                                <!-- Currency Breakdown -->
+                                <div class="currency-breakdown">
+                                    <div class="row g-2">
+                                        @foreach (var currencyBalance in customerDebtCredit.CurrencyBalances.Take(3))
+                                        {
+                                            <div class="col-4">
+                                                <div class="currency-item p-2 rounded @(currencyBalance.Balance >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
+                                                    <div class="currency-code fw-bold small">@currencyBalance.CurrencyCode</div>
+                                                    <div class="currency-amount @(currencyBalance.Balance >= 0 ? "text-success" : "text-danger") tiny">
+                                                        @currencyBalance.Balance.ToString("N0")
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Quick Actions -->
+                                <div class="quick-actions mt-3">
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <a href="@Url.Action("Profile", "Customers", new { id = customerDebtCredit.CustomerId })" class="btn btn-outline-primary btn-sm" title="پروفایل">
+                                            <i class="bi bi-person"></i>
+                                        </a>
+                                        <a href="@Url.Action("Index", "CustomerTransactions", new { customerId = customerDebtCredit.CustomerId })" class="btn btn-outline-info btn-sm" title="تراکنش‌ها">
+                                            <i class="bi bi-receipt"></i>
+                                        </a>
+                                        <a href="@Url.Action("Create", "Orders", new { customerId = customerDebtCredit.CustomerId })" class="btn btn-outline-success btn-sm" title="معامله جدید">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer with Order Count -->
+                            <div class="card-footer bg-light text-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-clipboard-data me-1"></i>
+                                    @customerDebtCredit.ActiveOrderCount معامله فعال
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">
+                                <i class="bi bi-bar-chart-line me-2"></i>
+                                آمار کلی بدهی و بستانکاری
+                            </h6>
+                            <div class="row text-center g-3">
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-primary">@Model.Count</div>
+                                        <div class="summary-label">کل مشتریان</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-success">@Model.Count(c => c.NetBalance >= 0)</div>
+                                        <div class="summary-label">بستانکار</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-danger">@Model.Count(c => c.NetBalance < 0)</div>
+                                        <div class="summary-label">بدهکار</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="summary-item">
+                                        <div class="summary-value text-warning">@Model.Sum(c => Math.Abs(c.NetBalance)).ToString("N0")</div>
+                                        <div class="summary-label">جمع کل</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Count > 6)
+            {
+                <div class="text-center mt-3">
+                    <a href="@Url.Action("Index", "Customers")" class="btn btn-outline-primary">
+                        <i class="bi bi-people me-1"></i>
+                        مشاهده همه مشتریان (@Model.Count)
+                    </a>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="bi bi-cash-stack text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted mt-3">هیچ اطلاعات بدهی/بستانکاری یافت نشد</h5>
+                    <p class="text-muted">اطلاعات بدهی و بستانکاری مشتریان پس از ثبت اولین معامله نمایش داده می‌شود</p>
+                    <a href="@Url.Action("Create", "Orders")" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        ایجاد اولین معامله
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+.customer-debt-card {
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.customer-debt-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.net-balance-amount h5 {
+    font-size: 1.4rem;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.currency-item {
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.currency-item:hover {
+    transform: scale(1.05);
+}
+
+.quick-actions .btn {
+    border-radius: 6px !important;
+    padding: 0.25rem 0.5rem;
+}
+
+.quick-actions .btn:hover {
+    transform: scale(1.05);
+}
+
+.summary-item {
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.8);
+    margin-bottom: 0.5rem;
+}
+
+.summary-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.empty-state {
+    padding: 3rem 1rem;
+}
+
+.empty-state i {
+    opacity: 0.5;
+}
+
+.tiny {
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
+.status-indicator .badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+}
+
+/* Responsive adjustments */
+@@media (max-width: 768px) {
+    .customer-debt-card {
+        margin-bottom: 1rem;
+    }
+
+    .net-balance-amount h5 {
+        font-size: 1.2rem;
+    }
+
+    .summary-item {
+        padding: 0.75rem;
+    }
+
+    .summary-value {
+        font-size: 1.25rem;
+    }
+}
+
+@@media (max-width: 576px) {
+    .currency-breakdown .col-4 {
+        margin-bottom: 0.5rem;
+    }
+
+    .quick-actions .btn-group {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .quick-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+function refreshDebtCreditWidget() {
+    const container = $('#debt-credit-widget-container');
+    const refreshBtn = container.find('button[onclick="refreshDebtCreditWidget()"]');
+
+    // Add loading state
+    container.addClass('refreshing');
+    refreshBtn.prop('disabled', true).html('<i class="bi bi-arrow-clockwise spinning"></i>');
+
+    $.get('/Home/DebtCreditWidget', function(data) {
+        container.html(data);
+        $('#debt-credit-last-update').html('<i class="bi bi-clock-history me-1"></i>' + new Date().toLocaleTimeString('fa-IR'));
+        showNotification('وضعیت بدهی و بستانکاری بروزرسانی شد', 'success');
+    }).fail(function(xhr, status, error) {
+        console.error('خطا در بروزرسانی ویجت بدهی/بستانکاری:', error);
+        showNotification('خطا در بروزرسانی وضعیت بدهی و بستانکاری', 'error');
+    }).always(function() {
+        container.removeClass('refreshing');
+        refreshBtn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i>');
+    });
+}
+
+function showNotification(message, type = 'info') {
+    const notification = $(`
+        <div class="alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed"
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `);
+
+    $('body').append(notification);
+
+    setTimeout(() => {
+        notification.alert('close');
+    }, 5000);
+}
+
+// Add spinning animation
+const style = document.createElement('style');
+style.textContent = `
+    .spinning {
+        animation: spin 1s linear infinite;
+    }
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .refreshing {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize tooltips
+$(document).ready(function() {
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        $('[title]').tooltip();
+    }
+
+    $('.customer-debt-card').hover(
+        function() {
+            $(this).addClass('shadow-lg');
+        },
+        function() {
+            $(this).removeClass('shadow-lg');
+        }
+    );
+});
+</script>

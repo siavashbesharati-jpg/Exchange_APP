@@ -302,6 +302,7 @@
                                         <i class="fas fa-info-circle"></i>
                                         <text>
                                         در لیست زیر معاملات قابل تطبیق با معامله شما بر اساس نرخ و مقدار نمایش داده شده‌اند.
+                                        برای مچ کردن، روی دکمه "مچ کردن" هر معامله کلیک کنید.
                                         </text>
                                     </div>
                                     
@@ -315,6 +316,7 @@
                                                     <th>میزان دریافتی (@Model.FromCurrency?.Code)</th>
                                                     <th>نرخ معامله</th>
                                                     <th>تاریخ</th>
+                                                    <th>عملیات</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -330,6 +332,15 @@
                                                         <td class="fw-bold text-info">@receivedAmount.ToString("N2") @availableOrder.ToCurrency?.Code</td>
                                                         <td class="fw-bold text-success">@transactionRate.ToString("N4")</td>
                                                         <td>@availableOrder.CreatedAt.ToPersianDateTextify()</td>
+                                                        <td>
+                                                            <form asp-action="MatchOrders" asp-route-primaryOrderId="@Model.Id" asp-route-matchingOrderId="@availableOrder.Id" method="post" style="display: inline-block;" 
+                                                                  onsubmit="return confirm('آیا از مچ کردن این معامله با مشتری @availableOrder.Customer?.FullName اطمینان دارید؟')">
+                                                                @Html.AntiForgeryToken()
+                                                                <button type="submit" class="btn btn-sm btn-success">
+                                                                    <i class="fas fa-exchange-alt"></i> مچ کردن
+                                                                </button>
+                                                            </form>
+                                                        </td>
                                                     </tr>
                                                 }
                                             </tbody>
@@ -360,11 +371,6 @@
                         <div>
                             @if (Model.Status == ForexExchange.Models.OrderStatus.Open)
                             {
-                                <form asp-action="Match" asp-route-id="@Model.Id" method="post" style="display: inline-block;" 
-                                      onsubmit="return confirm('آیا از مچ کردن این معامله اطمینان دارید؟')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-warning me-2">مچ کردن</button>
-                                </form>
                                 <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary me-2">ویرایش</a>
                             }
                             @if (Model.Status != ForexExchange.Models.OrderStatus.Cancelled && Model.Status != ForexExchange.Models.OrderStatus.Completed)

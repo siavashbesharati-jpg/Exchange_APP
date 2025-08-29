@@ -29,6 +29,15 @@
                 </div>
             </div>
             
+            <!-- Customer Debt/Credit Widget -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div id="debt-credit-widget-container">
+                        @await Html.PartialAsync("_DebtCreditWidget", ViewBag.CustomerDebtCredits as List<ForexExchange.Models.CustomerDebtCredit>)
+                    </div>
+                </div>
+            </div>
+            
             <!-- Management Section -->
             <div class="row mb-4">
                 <div class="col-12">

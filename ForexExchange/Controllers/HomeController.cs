@@ -13,15 +13,17 @@ public class HomeController : Controller
     private readonly ForexDbContext _context;
     private readonly ITransactionSettlementService _settlementService;
     private readonly ICurrencyPoolService _poolService;
+    private readonly CustomerDebtCreditService _debtCreditService;
 
 
 
-    public HomeController(ILogger<HomeController> logger, ForexDbContext context, ITransactionSettlementService settlementService, ICurrencyPoolService poolService)
+    public HomeController(ILogger<HomeController> logger, ForexDbContext context, ITransactionSettlementService settlementService, ICurrencyPoolService poolService, CustomerDebtCreditService debtCreditService)
     {
         _logger = logger;
         _context = context;
         _settlementService = settlementService;
         _poolService = poolService;
+        _debtCreditService = debtCreditService;
     }
 
     public async Task<IActionResult> Index()
@@ -64,6 +66,14 @@ public class HomeController : Controller
         var pools = await _poolService.GetAllPoolsAsync();
         ViewBag.CurrencyPools = pools;
 
+        // Get customer debt/credit summary for admin/staff
+        if (User.Identity?.IsAuthenticated == true &&
+            (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
+        {
+            var customerDebtCredits = await _debtCreditService.GetCustomerDebtCreditSummaryAsync();
+            ViewBag.CustomerDebtCredits = customerDebtCredits;
+        }
+
         return View();
     }
 
@@ -71,6 +81,12 @@ public class HomeController : Controller
     {
         var pools = await _poolService.GetAllPoolsAsync();
         return PartialView("_PoolWidget", pools);
+    }
+
+    public async Task<IActionResult> DebtCreditWidget()
+    {
+        var customerDebtCredits = await _debtCreditService.GetCustomerDebtCreditSummaryAsync();
+        return PartialView("_DebtCreditWidget", customerDebtCredits);
     }
 
     public IActionResult Privacy()
