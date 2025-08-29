@@ -77,9 +77,8 @@ namespace ForexExchange.Controllers
                 Transactions = transactions
             };
 
-            // Currency breakdown
+            // Currency breakdown - include all transactions, not just completed ones
             report.CurrencyBreakdown = transactions
-                .Where(t => t.Status == TransactionStatus.Completed)
                 .GroupBy(t => t.FromCurrencyId)
                 .Select(g => new CurrencyVolumeReport
                 {
@@ -93,9 +92,8 @@ namespace ForexExchange.Controllers
                 })
                 .ToList();
 
-            // Daily breakdown for chart
+            // Daily breakdown for chart - include all transactions
             report.DailyBreakdown = transactions
-                .Where(t => t.Status == TransactionStatus.Completed)
                 .GroupBy(t => t.CreatedAt.Date)
                 .Select(g => new DailyVolumeReport
                 {
