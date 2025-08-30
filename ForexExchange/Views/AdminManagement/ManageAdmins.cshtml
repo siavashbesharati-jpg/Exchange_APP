@@ -4,6 +4,20 @@
     ViewData["Title"] = "مدیریت ادمین‌ها";
 }
 
+@functions {
+    public string GetRoleDisplayName(ForexExchange.Models.UserRole role)
+    {
+        return role switch
+        {
+            ForexExchange.Models.UserRole.Customer => "مشتری",
+            ForexExchange.Models.UserRole.Admin => "ادمین",
+            ForexExchange.Models.UserRole.Operator => "اپراتور",
+            ForexExchange.Models.UserRole.Manager => "مدیر",
+            _ => role.ToString()
+        };
+    }
+}
+
 <div class="container-fluid">
     <!-- Header -->
     <div class="row mb-4">
@@ -81,16 +95,19 @@
                                             <td>@user.UserName</td>
                                             <td>@user.Email</td>
                                             <td>
-                                                @if (User.IsInRole("SuperAdmin"))
+                                                @if (user.Id == User.FindFirst("sub")?.Value)
                                                 {
-                                                    <select class="form-select form-select-sm" onchange="changeUserRole('@user.Id', this.value)">
-                                                        <option value="Admin" selected="@(ViewBag.UserRoles[user.Id]?.Contains("Admin") == true)">ادمین</option>
-                                                        <option value="SuperAdmin" selected="@(ViewBag.UserRoles[user.Id]?.Contains("SuperAdmin") == true)">سوپر ادمین</option>
-                                                    </select>
+                                                    <span class="badge bg-primary">@GetRoleDisplayName(user.Role)</span>
+                                                    <small class="text-muted d-block">(شما)</small>
                                                 }
                                                 else
                                                 {
-                                                    @(ViewBag.UserRoles[user.Id]?.Contains("SuperAdmin") == true ? "سوپر ادمین" : "ادمین")
+                                                    <select class="form-select form-select-sm" onchange="changeUserRole('@user.Id', this.value)">
+                                                        @foreach (ForexExchange.Models.UserRole role in Enum.GetValues(typeof(ForexExchange.Models.UserRole)))
+                                                        {
+                                                            <option value="@role" selected="@(user.Role == role)">@GetRoleDisplayName(role)</option>
+                                                        }
+                                                    </select>
                                                 }
                                             </td>
                                             <td>@user.CreatedAt.ToString("yyyy/MM/dd")</td>
@@ -99,7 +116,7 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    @if (User.IsInRole("SuperAdmin") && user.Id != User.FindFirst("sub")?.Value)
+                                                    @if (user.Id != User.FindFirst("sub")?.Value)
                                                     {
                                                         <button type="button" class="btn btn-danger btn-sm" onclick="deleteAdmin('@user.Id', '@user.UserName')">
                                                             <i class="fas fa-trash me-1"></i>
@@ -140,6 +157,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="CreateAdmin" method="post">
+                @Html.AntiForgeryToken()
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">نام کاربری</label>
@@ -157,8 +175,10 @@
                     <div class="mb-3">
                         <label class="form-label">نقش</label>
                         <select class="form-select" name="role" required>
-                            <option value="Admin">ادمین</option>
-                            <option value="SuperAdmin">سوپر ادمین</option>
+                            @foreach (ForexExchange.Models.UserRole role in Enum.GetValues(typeof(ForexExchange.Models.UserRole)))
+                            {
+                                <option value="@role">@GetRoleDisplayName(role)</option>
+                            }
                         </select>
                     </div>
                 </div>
@@ -179,6 +199,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                         'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     }
                 })
@@ -203,6 +224,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                         'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                     }
                 })

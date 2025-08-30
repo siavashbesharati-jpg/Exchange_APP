@@ -193,15 +193,6 @@ namespace ForexExchange.Controllers
                 .OrderBy(u => u.UserName)
                 .ToListAsync();
 
-            // Get roles for each user
-            var userRoles = new Dictionary<string, IList<string>>();
-            foreach (var user in adminUsers)
-            {
-                userRoles[user.Id] = await _userManager.GetRolesAsync(user);
-            }
-
-            ViewBag.UserRoles = userRoles;
-
             return View(adminUsers);
         }
 
@@ -212,7 +203,7 @@ namespace ForexExchange.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateAdmin(string userName, string email, string password, string role)
+        public async Task<IActionResult> CreateAdmin(string userName, string email, string password, UserRole role)
         {
             if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
             {
@@ -224,17 +215,15 @@ namespace ForexExchange.Controllers
             {
                 UserName = userName,
                 Email = email,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                Role = role
             };
 
             var result = await _userManager.CreateAsync(user, password);
             if (result.Succeeded)
             {
-                // Add to Admin role (only Admin role exists)
-                if (role == "Admin")
-                {
-                    await _userManager.AddToRoleAsync(user, "Admin");
-                }
+                // Add to Admin role for Identity (only Admin role exists)
+                await _userManager.AddToRoleAsync(user, "Admin");
 
                 // Log activity
                 var currentUser = await _userManager.GetUserAsync(User);
@@ -244,8 +233,8 @@ namespace ForexExchange.Controllers
                         currentUser.Id,
                         currentUser.UserName ?? "Unknown",
                         AdminActivityType.UserCreated,
-                        $"کاربر ادمین جدید ایجاد شد: {userName} با نقش Admin",
-                        JsonSerializer.Serialize(new { UserId = user.Id, Role = "Admin" }),
+                        $"کاربر جدید ایجاد شد: {userName} با نقش {role}",
+                        JsonSerializer.Serialize(new { UserId = user.Id, Role = role }),
                         "ApplicationUser",
                         null,
                         null,
@@ -253,7 +242,7 @@ namespace ForexExchange.Controllers
                     );
                 }
 
-                TempData["Success"] = $"کاربر ادمین {userName} با موفقیت ایجاد شد.";
+                TempData["Success"] = $"کاربر {userName} با موفقیت ایجاد شد.";
             }
             else
             {
@@ -270,46 +259,79 @@ namespace ForexExchange.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangeAdminRole(string userId, string newRole)
+        public async Task<IActionResult> ChangeAdminRole(string userId, UserRole newRole)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "کاربر یافت نشد." });
+                }
+
                 TempData["Error"] = "کاربر یافت نشد.";
                 return RedirectToAction("ManageAdmins");
             }
 
-            // Get current roles
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            var oldRole = currentRoles.FirstOrDefault();
-
-            // Remove current roles
-            await _userManager.RemoveFromRolesAsync(user, currentRoles);
-
-            // Add Admin role (only Admin role exists)
-            if (newRole == "Admin")
+            // Prevent users from changing their own role
+            var currentUserCheck = await _userManager.GetUserAsync(User);
+            if (currentUserCheck != null && currentUserCheck.Id == userId)
             {
-                await _userManager.AddToRoleAsync(user, "Admin");
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "نمی‌توانید نقش خود را تغییر دهید." });
+                }
+
+                TempData["Error"] = "نمی‌توانید نقش خود را تغییر دهید.";
+                return RedirectToAction("ManageAdmins");
             }
 
-            // Log activity
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser != null)
+            var oldRole = user.Role;
+
+            // Update the user's role in the database
+            user.Role = newRole;
+            var updateResult = await _userManager.UpdateAsync(user);
+
+            if (updateResult.Succeeded)
             {
-                await _adminActivityService.LogActivityAsync(
-                    currentUser.Id,
-                    currentUser.UserName ?? "Unknown",
-                    AdminActivityType.UserUpdated,
-                    $"نقش کاربر {user.UserName} تغییر یافت از {oldRole} به Admin",
-                    JsonSerializer.Serialize(new { UserId = user.Id, OldRole = oldRole, NewRole = "Admin" }),
-                    "ApplicationUser",
-                    null,
-                    oldRole,
-                    "Admin"
-                );
+                // Log activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await _adminActivityService.LogActivityAsync(
+                        currentUser.Id,
+                        currentUser.UserName ?? "Unknown",
+                        AdminActivityType.UserUpdated,
+                        $"نقش کاربر {user.UserName} تغییر یافت از {oldRole} به {newRole}",
+                        JsonSerializer.Serialize(new { UserId = user.Id, OldRole = oldRole, NewRole = newRole }),
+                        "ApplicationUser",
+                        null,
+                        oldRole.ToString(),
+                        newRole.ToString()
+                    );
+                }
+
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = $"نقش کاربر {user.UserName} با موفقیت تغییر یافت." });
+                }
+
+                TempData["Success"] = $"نقش کاربر {user.UserName} با موفقیت تغییر یافت.";
+            }
+            else
+            {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = string.Join(", ", updateResult.Errors.Select(e => e.Description)) });
+                }
+
+                TempData["Error"] = string.Join(", ", updateResult.Errors.Select(e => e.Description));
             }
 
-            TempData["Success"] = $"نقش کاربر {user.UserName} با موفقیت تغییر یافت.";
             return RedirectToAction("ManageAdmins");
         }
 
@@ -325,7 +347,27 @@ namespace ForexExchange.Controllers
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "کاربر یافت نشد." });
+                }
+
                 TempData["Error"] = "کاربر یافت نشد.";
+                return RedirectToAction("ManageAdmins");
+            }
+
+            // Prevent users from deleting themselves
+            var currentUserCheck = await _userManager.GetUserAsync(User);
+            if (currentUserCheck != null && currentUserCheck.Id == userId)
+            {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "نمی‌توانید خود را حذف کنید." });
+                }
+
+                TempData["Error"] = "نمی‌توانید خود را حذف کنید.";
                 return RedirectToAction("ManageAdmins");
             }
 
@@ -338,6 +380,12 @@ namespace ForexExchange.Controllers
 
                 if (isUserAdmin && adminCount <= 1)
                 {
+                    // Check if this is an AJAX request
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = "نمی‌توان آخرین ادمین را حذف کرد." });
+                    }
+
                     TempData["Error"] = "نمی‌توان آخرین ادمین را حذف کرد.";
                     return RedirectToAction("ManageAdmins");
                 }
@@ -363,10 +411,22 @@ namespace ForexExchange.Controllers
                     );
                 }
 
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = $"کاربر ادمین {userName} با موفقیت حذف شد." });
+                }
+
                 TempData["Success"] = $"کاربر ادمین {userName} با موفقیت حذف شد.";
             }
             else
             {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = string.Join(", ", result.Errors.Select(e => e.Description)) });
+                }
+
                 TempData["Error"] = string.Join(", ", result.Errors.Select(e => e.Description));
             }
 
