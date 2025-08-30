@@ -117,48 +117,50 @@
                                     </div>
                                 </div>
 
-                                <!-- Rate Information -->
-                                @if (pool.AverageBuyRate.HasValue || pool.AverageSellRate.HasValue)
+                                <!-- Active Order Counts -->
+                                @if (pool.ActiveBuyOrderCount > 0 || pool.ActiveSellOrderCount > 0)
                                 {
-                                    <div class="rate-info mb-2">
-                                        <small class="text-muted">
-                                            @if (pool.AverageBuyRate.HasValue)
+                                    <div class="order-counts mb-3">
+                                        <div class="row g-1">
+                                            @if (pool.ActiveBuyOrderCount > 0)
                                             {
-                                                <span class="badge bg-success bg-opacity-25 text-success me-1">
-                                                    <i class="bi bi-arrow-up"></i> @pool.AverageBuyRate.Value.ToString("N0")
-                                                </span>
+                                                <div class="col-6">
+                                                    <div class="order-card bg-success bg-opacity-10 p-2 rounded text-center">
+                                                        <div class="order-value text-success fw-bold small">
+                                                            @pool.ActiveBuyOrderCount
+                                                        </div>
+                                                        <div class="order-label text-muted tiny">
+                                                            <i class="bi bi-arrow-up me-1"></i>معامله خرید
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             }
-                                            @if (pool.AverageSellRate.HasValue)
+                                            @if (pool.ActiveSellOrderCount > 0)
                                             {
-                                                <span class="badge bg-danger bg-opacity-25 text-danger">
-                                                    <i class="bi bi-arrow-down"></i> @pool.AverageSellRate.Value.ToString("N0")
-                                                </span>
+                                                <div class="col-6">
+                                                    <div class="order-card bg-danger bg-opacity-10 p-2 rounded text-center">
+                                                        <div class="order-value text-danger fw-bold small">
+                                                            @pool.ActiveSellOrderCount
+                                                        </div>
+                                                        <div class="order-label text-muted tiny">
+                                                            <i class="bi bi-arrow-down me-1"></i>معامله فروش
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             }
-                                        </small>
+                                        </div>
+                                        <div class="text-center mt-1">
+                                            <small class="text-muted">معاملهات فعال (غیرلغو)</small>
+                                        </div>
                                     </div>
                                 }
-
-                                <!-- Quick Actions -->
-                                <div class="quick-actions">
-                                    <div class="btn-group btn-group-sm w-100" role="group">
-                                        <a href="@Url.Action("Create", "Orders")" class="btn btn-outline-primary btn-sm" title="معامله جدید">
-                                            <i class="bi bi-plus-circle"></i>
-                                        </a>
-                                        <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-outline-info btn-sm" title="نرخ‌ها">
-                                            <i class="bi bi-graph-up"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="showPoolDetails('@pool.Currency?.Code')" title="جزئیات">
-                                            <i class="bi bi-info-circle"></i>
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
 
                             <!-- Footer with Last Update -->
                             <div class="card-footer bg-light text-center">
                                 <small class="text-muted">
                                     <i class="bi bi-clock me-1"></i>
-                                    @pool.LastUpdated.ToString("dd/MM HH:mm")
+                                    @pool.LastUpdated.ToFriendlyPersianDateTextify()
                                 </small>
                             </div>
                         </div>
@@ -256,14 +258,42 @@
         font-size: 1.2em;
     }
 
-    .quick-actions .btn-group {
-        flex-direction: column;
-        gap: 0.25rem;
+    .order-card {
+        padding: 0.5rem !important;
     }
 
-    .quick-actions .btn {
-        width: 100%;
+    .order-value {
+        font-size: 0.75rem !important;
     }
+
+    .order-label {
+        font-size: 0.65rem !important;
+    }
+}
+
+/* Order Card Styles */
+.order-card {
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.order-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.order-value {
+    font-size: 0.875rem;
+    line-height: 1.2;
+}
+
+.order-label {
+    font-size: 0.7rem;
+    line-height: 1.1;
+}
+
+.tiny {
+    font-size: 0.65rem;
 }
 </style>
 

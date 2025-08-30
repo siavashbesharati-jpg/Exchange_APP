@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using Microsoft.AspNetCore.Identity;
+using System.Text.Json;
 
 namespace ForexExchange.Controllers
 {
@@ -12,13 +14,26 @@ namespace ForexExchange.Controllers
         private readonly ILogger<ExchangeRatesController> _logger;
         private readonly IWebScrapingService _webScrapingService;
         private readonly IRateCalculationService _rateCalc;
+        private readonly AdminActivityService _adminActivityService;
+        private readonly AdminNotificationService _adminNotificationService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public ExchangeRatesController(ForexDbContext context, ILogger<ExchangeRatesController> logger, IWebScrapingService webScrapingService, IRateCalculationService rateCalc)
+        public ExchangeRatesController(
+            ForexDbContext context,
+            ILogger<ExchangeRatesController> logger,
+            IWebScrapingService webScrapingService,
+            IRateCalculationService rateCalc,
+            AdminActivityService adminActivityService,
+            AdminNotificationService adminNotificationService,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _logger = logger;
             _webScrapingService = webScrapingService;
             _rateCalc = rateCalc;
+            _adminActivityService = adminActivityService;
+            _adminNotificationService = adminNotificationService;
+            _userManager = userManager;
         }
 
         // GET: ExchangeRates
@@ -86,6 +101,14 @@ namespace ForexExchange.Controllers
                 _context.Add(exchangeRate);
                 await _context.SaveChangesAsync();
 
+                // Log admin activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await _adminActivityService.LogExchangeRateUpdatedAsync(exchangeRate, currentUser.Id, currentUser.UserName ?? "Unknown");
+                    await _adminNotificationService.SendExchangeRateNotificationAsync(exchangeRate, "created");
+                }
+
                 TempData["SuccessMessage"] = "نرخ ارز با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Index));
             }
@@ -135,6 +158,15 @@ namespace ForexExchange.Controllers
 
                     _context.Update(exchangeRate);
                     await _context.SaveChangesAsync();
+
+                    // Log admin activity
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        await _adminActivityService.LogExchangeRateUpdatedAsync(exchangeRate, currentUser.Id, currentUser.UserName ?? "Unknown");
+                        await _adminNotificationService.SendExchangeRateNotificationAsync(exchangeRate, "updated");
+                    }
+
                     TempData["SuccessMessage"] = "نرخ ارز با موفقیت بروزرسانی شد.";
                 }
                 catch (DbUpdateConcurrencyException)
@@ -209,6 +241,23 @@ namespace ForexExchange.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                // Log admin activity for bulk rate update
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await _adminActivityService.LogActivityAsync(
+                        currentUser.Id,
+                        currentUser.UserName ?? "Unknown",
+                        AdminActivityType.ExchangeRateUpdated,
+                        $"بروزرسانی انبوه نرخ ارز: {rates.Count} نرخ بروزرسانی شد",
+                        JsonSerializer.Serialize(new { UpdatedRates = rates.Count, Rates = rates }),
+                        "ExchangeRate",
+                        null
+                    );
+                    await _adminNotificationService.SendBulkOperationNotificationAsync("بروزرسانی نرخ ارز", rates.Count, $"نرخ‌های ارز بروزرسانی شدند");
+                }
+
                 TempData["SuccessMessage"] = "تمام نرخ‌های ارز با موفقیت بروزرسانی شد.";
             }
             catch (Exception ex)

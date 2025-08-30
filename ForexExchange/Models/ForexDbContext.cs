@@ -23,6 +23,7 @@ namespace ForexExchange.Models
         public DbSet<SystemSettings> SystemSettings { get; set; }
         public DbSet<CurrencyPool> CurrencyPools { get; set; }
         public DbSet<Currency> Currencies { get; set; }
+        public DbSet<AdminActivity> AdminActivities { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -148,8 +149,6 @@ namespace ForexExchange.Models
                 entity.Property(e => e.Balance).HasColumnType("decimal(18,8)");
                 entity.Property(e => e.TotalBought).HasColumnType("decimal(18,8)");
                 entity.Property(e => e.TotalSold).HasColumnType("decimal(18,8)");
-                entity.Property(e => e.AverageBuyRate).HasColumnType("decimal(18,4)");
-                entity.Property(e => e.AverageSellRate).HasColumnType("decimal(18,4)");
                 entity.Property(e => e.Notes).HasMaxLength(500);
                 entity.HasIndex(e => new { e.CurrencyId, e.IsActive });
                 entity.HasIndex(e => e.LastUpdated);
@@ -180,7 +179,11 @@ namespace ForexExchange.Models
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId, e.IsActive }).IsUnique();
-                entity.Property(e => e.Rate).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.Rate).HasColumnType("decimal(18,8)");
+                entity.Property(e => e.AverageBuyRate).HasColumnType("decimal(18,8)");
+                entity.Property(e => e.AverageSellRate).HasColumnType("decimal(18,8)");
+                entity.Property(e => e.TotalBuyVolume).HasColumnType("decimal(18,8)");
+                entity.Property(e => e.TotalSellVolume).HasColumnType("decimal(18,8)");
                 entity.Property(e => e.UpdatedBy).HasMaxLength(50);
                 
                 // Configure foreign key relationships
@@ -193,6 +196,25 @@ namespace ForexExchange.Models
                       .WithMany(c => c.ToCurrencyRates)
                       .HasForeignKey(e => e.ToCurrencyId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // AdminActivity configurations
+            modelBuilder.Entity<AdminActivity>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.AdminUserId).HasMaxLength(450); // ASP.NET Identity User ID length
+                entity.Property(e => e.AdminUsername).HasMaxLength(256);
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.Details).HasColumnType("TEXT");
+                entity.Property(e => e.IpAddress).HasMaxLength(45);
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                entity.Property(e => e.EntityType).HasMaxLength(100);
+                entity.Property(e => e.OldValue).HasColumnType("TEXT");
+                entity.Property(e => e.NewValue).HasColumnType("TEXT");
+                entity.HasIndex(e => e.AdminUserId);
+                entity.HasIndex(e => e.ActivityType);
+                entity.HasIndex(e => e.Timestamp);
+                entity.HasIndex(e => new { e.AdminUserId, e.Timestamp });
             });
             
         // Order configurations - Updated for cross-currency support

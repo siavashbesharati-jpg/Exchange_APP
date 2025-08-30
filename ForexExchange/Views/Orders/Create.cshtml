@@ -218,16 +218,30 @@
                     document.getElementById('rateLoader').style.display = 'none';
                     if (data.success) {
                         if (data.rate > 0) {
-                            currentRate = data.rate;
-                            document.getElementById('rateInfo').innerHTML =
-                                `<strong>نرخ پیشنهادی:</strong> ${data.rate.toLocaleString()} <small class="text-muted">(${data.source})</small>`;
-                            // Auto-fill the rate input with suggested rate only if it's empty or zero
-                            const rateInput = document.getElementById('rateInput');
-                            if (!rateInput.value || rateInput.value === '0' || rateInput.value === '') {
-                                rateInput.value = data.rate;
-                                document.getElementById('hiddenRate').value = data.rate;
-                                updateCalculation();
+                            // Round rate to 4 decimal places for consistency
+                            const roundedRate = Math.round(data.rate * 10000) / 10000;
+                            currentRate = roundedRate;
+                            
+                            // Build rate info HTML with average rates
+                            let rateInfoHtml = `<strong>نرخ پیشنهادی:</strong> ${roundedRate.toFixed(4)} <small class="text-muted">(${data.source})</small>`;
+                            
+                            if (data.averageBuyRate) {
+                                const roundedBuyRate = Math.round(data.averageBuyRate * 10000) / 10000;
+                                rateInfoHtml += `<br><strong>میانگین نرخ خرید:</strong> ${roundedBuyRate.toFixed(4)}`;
                             }
+                            
+                            if (data.averageSellRate) {
+                                const roundedSellRate = Math.round(data.averageSellRate * 10000) / 10000;
+                                rateInfoHtml += `<br><strong>میانگین نرخ فروش:</strong> ${roundedSellRate.toFixed(4)}`;
+                            }
+                            
+                            document.getElementById('rateInfo').innerHTML = rateInfoHtml;
+                            
+                            // Always update the rate input with the new suggested rate when currencies change
+                            const rateInput = document.getElementById('rateInput');
+                            rateInput.value = roundedRate;
+                            document.getElementById('hiddenRate').value = roundedRate;
+                            updateCalculation();
                         } else {
                             document.getElementById('rateInfo').innerHTML =
                                 '<span class="text-warning">نرخ ارز برای این جفت ارز موجود نیست</span>';
@@ -253,7 +267,7 @@
                 var total = parseFloat(amount) * parseFloat(rate);
 
                 document.getElementById('calculationText').innerHTML =
-                    `${parseFloat(amount).toLocaleString()} × ${parseFloat(rate).toLocaleString()} = <strong>${total.toLocaleString()}</strong>`;
+                    `${parseFloat(amount).toLocaleString()} × ${parseFloat(rate).toFixed(4)} = <strong>${total.toLocaleString()}</strong>`;
                 document.getElementById('calculationResult').style.display = 'block';
 
                 // Update hidden total amount field
@@ -294,8 +308,16 @@
         });
         document.getElementById('amountInput').addEventListener('input', updateCalculation);
 
-        // Add event listener for manual rate input
+        // Add event listener for manual rate input with validation
         document.getElementById('rateInput').addEventListener('input', function() {
+            var rateValue = parseFloat(this.value);
+            if (rateValue > 0) {
+                // Round to 4 decimal places to ensure it's a multiple of 0.0001
+                var roundedRate = Math.round(rateValue * 10000) / 10000;
+                if (roundedRate !== rateValue) {
+                    this.value = roundedRate;
+                }
+            }
             updateCalculation();
         });
 

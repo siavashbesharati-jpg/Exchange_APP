@@ -37,31 +37,18 @@
                                         <small class="text-muted">@customerDebtCredit.CustomerPhone</small>
                                     </div>
                                 </div>
-                                <div class="status-indicator">
-                                    @if (customerDebtCredit.NetBalance >= 0)
-                                    {
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-check-circle"></i> بستانکار
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">
-                                            <i class="bi bi-exclamation-triangle"></i> بدهکار
-                                        </span>
-                                    }
-                                </div>
+                               
                             </div>
 
                             <!-- Net Balance Summary -->
                             <div class="card-body text-center">
                                 <div class="net-balance mb-3">
-                                    <div class="net-balance-amount">
+                                    <div class="net-balance-amount" dir="ltr">
                                         <h5 class="text-@(customerDebtCredit.NetBalance >= 0 ? "success" : "danger") mb-1 fw-bold">
                                             <i class="bi bi-@(customerDebtCredit.NetBalance >= 0 ? "plus-circle" : "dash-circle") me-1"></i>
-                                            @Math.Abs(customerDebtCredit.NetBalance).ToString("N0")
+                                            @customerDebtCredit.ActiveOrderCount
                                         </h5>
-                                        <small class="text-muted">تراز خالص (@customerDebtCredit.PrimaryCurrency)</small>
+                                        <small class="text-muted"> معامله فعال </small>
                                     </div>
                                 </div>
 
@@ -70,7 +57,7 @@
                                     <div class="row g-2">
                                         @foreach (var currencyBalance in customerDebtCredit.CurrencyBalances.Take(3))
                                         {
-                                            <div class="col-4">
+                                            <div class="col-4" dir="ltr">
                                                 <div class="currency-item p-2 rounded @(currencyBalance.Balance >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
                                                     <div class="currency-code fw-bold small">@currencyBalance.CurrencyCode</div>
                                                     <div class="currency-amount @(currencyBalance.Balance >= 0 ? "text-success" : "text-danger") tiny">
@@ -102,7 +89,7 @@
                             <div class="card-footer bg-light text-center">
                                 <small class="text-muted">
                                     <i class="bi bi-clipboard-data me-1"></i>
-                                    @customerDebtCredit.ActiveOrderCount معامله فعال
+                                  
                                 </small>
                             </div>
                         </div>

@@ -93,6 +93,21 @@ namespace ForexExchange.Services
         /// <param name="transaction">Transaction to process</param>
         /// <returns>Updated pools</returns>
         Task<List<CurrencyPool>> ProcessTransactionAsync(Transaction transaction);
+
+        /// <summary>
+        /// Update order counts for a currency pool
+        /// بروزرسانی تعداد معاملهات برای استخر ارزی
+        /// </summary>
+        /// <param name="currencyId">Currency ID</param>
+        /// <returns>Task</returns>
+        Task UpdateOrderCountsAsync(int currencyId);
+
+        /// <summary>
+        /// Update order counts for all currency pools
+        /// بروزرسانی تعداد معاملهات برای همه استخرهای ارزی
+        /// </summary>
+        /// <returns>Task</returns>
+        Task UpdateAllOrderCountsAsync();
     }
 
     /// <summary>

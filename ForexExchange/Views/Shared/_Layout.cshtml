@@ -29,6 +29,85 @@
         .navbar-brand {
             font-weight: 600;
         }
+
+        /* RTL SweetAlert2 Support */
+        .rtl-swal-popup {
+            direction: rtl;
+            text-align: right;
+        }
+
+        .rtl-swal-title {
+            text-align: center;
+        }
+
+        .rtl-swal-content {
+            text-align: right;
+        }
+
+        /* Admin Notification Modal Styling */
+        .admin-notification-modal {
+            font-family: 'Vazirmatn', sans-serif;
+            direction: rtl;
+        }
+
+        .admin-notification-modal .swal2-html-container {
+            text-align: right;
+        }
+
+        .admin-notification-modal .swal2-actions {
+            flex-direction: row-reverse;
+        }
+
+        .admin-notification-modal .swal2-confirm {
+            margin-left: 10px !important;
+            margin-right: 0 !important;
+        }
+
+        .admin-notification-modal .swal2-cancel {
+            margin-right: 10px !important;
+            margin-left: 0 !important;
+        }
+
+        /* Admin Notification Toast Styling (fallback) */
+        .admin-notification-toast {
+            font-family: 'Vazirmatn', sans-serif;
+            direction: rtl;
+        }
+
+        .admin-notification-toast .swal2-html-container {
+            text-align: right;
+        }
+
+        /* Connection status indicator */
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .connection-status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .connection-status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .connection-status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
     </style>
     @RenderSection("Styles", required: false)
 </head>
@@ -83,7 +162,13 @@
             </div>
         </div>
     </header>
-    
+
+    <!-- Connection Status Indicator -->
+    <div id="connectionStatus" class="connection-status">
+        <i class="fas fa-circle"></i>
+        <span id="connectionText">در حال اتصال...</span>
+    </div>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -100,7 +185,19 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Microsoft SignalR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+    <!-- Animate.css for SweetAlert2 animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/admin-notifications.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 

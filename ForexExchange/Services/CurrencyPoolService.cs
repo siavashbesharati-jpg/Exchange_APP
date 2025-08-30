@@ -37,28 +37,12 @@ namespace ForexExchange.Services
                 // Exchange buys currency - increases pool balance
                 pool.Balance += amount;
                 pool.TotalBought += amount;
-                
-                // Update weighted average buy rate
-                if (pool.TotalBought > 0)
-                {
-                    decimal previousBuyValue = (pool.TotalBought - amount) * (pool.AverageBuyRate ?? 0);
-                    decimal currentBuyValue = amount * rate;
-                    pool.AverageBuyRate = (previousBuyValue + currentBuyValue) / pool.TotalBought;
-                }
             }
             else
             {
                 // Exchange sells currency - decreases pool balance
                 pool.Balance -= amount;
                 pool.TotalSold += amount;
-                
-                // Update weighted average sell rate
-                if (pool.TotalSold > 0)
-                {
-                    decimal previousSellValue = (pool.TotalSold - amount) * (pool.AverageSellRate ?? 0);
-                    decimal currentSellValue = amount * rate;
-                    pool.AverageSellRate = (previousSellValue + currentSellValue) / pool.TotalSold;
-                }
             }
 
             pool.LastUpdated = DateTime.Now;
@@ -135,8 +119,6 @@ namespace ForexExchange.Services
                 Balance = initialBalance,
                 TotalBought = initialBalance > 0 ? initialBalance : 0,
                 TotalSold = 0,
-                AverageBuyRate = null,
-                AverageSellRate = null,
                 LastUpdated = DateTime.Now,
                 RiskLevel = PoolRiskLevel.Low,
                 IsActive = true,
@@ -244,8 +226,10 @@ namespace ForexExchange.Services
             };
 
             // Calculate additional metrics
-            var totalValue = pool.TotalBought * (pool.AverageBuyRate ?? 0) + pool.TotalSold * (pool.AverageSellRate ?? 0);
-            performance.ProfitMargin = totalValue > 0 ? (performance.NetProfitLoss / totalValue) * 100 : 0;
+            // Note: Profit margin calculation is now done per currency pair in ExchangeRate
+            // توجه: محاسبه حاشیه سود اکنون در ExchangeRate بر اساس جفت ارز انجام می‌شود
+            var totalVolume = pool.TotalBought + pool.TotalSold;
+            performance.ProfitMargin = totalVolume > 0 ? (performance.NetProfitLoss / totalVolume) * 100 : 0;
 
             return performance;
         }
@@ -280,6 +264,53 @@ namespace ForexExchange.Services
             }
 
             return updatedPools;
+        }
+
+        /// <summary>
+        /// Update order counts for a currency pool
+        /// بروزرسانی تعداد معاملهات برای استخر ارزی
+        /// </summary>
+        public async Task UpdateOrderCountsAsync(int currencyId)
+        {
+            var pool = await GetPoolAsync(currencyId);
+            if (pool == null) return;
+
+            // Count active buy orders (orders where FromCurrencyId = currencyId, meaning the exchange to buy this currency)
+            var activeBuyOrders = await _context.Orders
+                .Where(o => o.FromCurrencyId == currencyId &&
+                           o.Status != OrderStatus.Cancelled)
+                .CountAsync();
+
+            // Count active sell orders (orders where ToCurrencyId = currencyId, meaning the  exchange want to sell this currency)
+            var activeSellOrders = await _context.Orders
+                .Where(o => o.ToCurrencyId == currencyId &&
+                           o.Status != OrderStatus.Cancelled)
+                .CountAsync();
+
+            pool.ActiveBuyOrderCount = activeBuyOrders;
+            pool.ActiveSellOrderCount = activeSellOrders;
+            pool.LastUpdated = DateTime.Now;
+
+            _context.CurrencyPools.Update(pool);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Order counts updated for currency ID {currencyId}: Buy={activeBuyOrders}, Sell={activeSellOrders}");
+        }
+
+        /// <summary>
+        /// Update order counts for all currency pools
+        /// بروزرسانی تعداد معاملهات برای همه استخرهای ارزی
+        /// </summary>
+        public async Task UpdateAllOrderCountsAsync()
+        {
+            var pools = await _context.CurrencyPools.ToListAsync();
+            
+            foreach (var pool in pools)
+            {
+                await UpdateOrderCountsAsync(pool.CurrencyId);
+            }
+
+            _logger.LogInformation("All currency pool order counts updated");
         }
 
         /// <summary>

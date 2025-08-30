@@ -44,6 +44,38 @@ namespace ForexExchange.Models
     [Display(Name = "Rate - نرخ ارز")]
     public decimal Rate { get; set; }  // نرخ ارز
 
+        /// <summary>
+        /// Average buy rate for this currency pair (weighted average of buy orders)
+        /// میانگین نرخ خرید برای این جفت ارز (میانگین وزنی معاملهات خرید)
+        /// </summary>
+        [Column(TypeName = "decimal(18,8)")]
+        [Display(Name = "Average Buy Rate - میانگین نرخ خرید")]
+        public decimal? AverageBuyRate { get; set; }
+
+        /// <summary>
+        /// Average sell rate for this currency pair (weighted average of sell orders)
+        /// میانگین نرخ فروش برای این جفت ارز (میانگین وزنی معاملهات فروش)
+        /// </summary>
+        [Column(TypeName = "decimal(18,8)")]
+        [Display(Name = "Average Sell Rate - میانگین نرخ فروش")]
+        public decimal? AverageSellRate { get; set; }
+
+        /// <summary>
+        /// Total volume of buy orders for this pair
+        /// حجم کل معاملهات خرید برای این جفت ارز
+        /// </summary>
+        [Column(TypeName = "decimal(18,8)")]
+        [Display(Name = "Total Buy Volume - حجم کل خرید")]
+        public decimal TotalBuyVolume { get; set; }
+
+        /// <summary>
+        /// Total volume of sell orders for this pair
+        /// حجم کل معاملهات فروش برای این جفت ارز
+        /// </summary>
+        [Column(TypeName = "decimal(18,8)")]
+        [Display(Name = "Total Sell Volume - حجم کل فروش")]
+        public decimal TotalSellVolume { get; set; }
+
         [Display(Name = "Updated At - تاریخ بروزرسانی")]
         public DateTime UpdatedAt { get; set; }
 

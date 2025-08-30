@@ -68,20 +68,18 @@ namespace ForexExchange.Models
         public decimal TotalSold { get; set; }
 
         /// <summary>
-        /// Average buy rate for current balance
-        /// میانگین نرخ خرید برای موجودی فعلی
+        /// Number of active buy orders (non-cancelled)
+        /// تعداد معاملهات خرید فعال (غیرلغو شده)
         /// </summary>
-        [Column(TypeName = "decimal(18,4)")]
-        [Display(Name = "Avg Buy Rate - میانگین نرخ خرید")]
-        public decimal? AverageBuyRate { get; set; }
+        [Display(Name = "Active Buy Orders - معاملهات خرید فعال")]
+        public int ActiveBuyOrderCount { get; set; }
 
         /// <summary>
-        /// Average sell rate for sold amounts
-        /// میانگین نرخ فروش برای مقادیر فروخته شده
+        /// Number of active sell orders (non-cancelled)
+        /// تعداد معاملهات فروش فعال (غیرلغو شده)
         /// </summary>
-        [Column(TypeName = "decimal(18,4)")]
-        [Display(Name = "Avg Sell Rate - میانگین نرخ فروش")]
-        public decimal? AverageSellRate { get; set; }
+        [Display(Name = "Active Sell Orders - معاملهات فروش فعال")]
+        public int ActiveSellOrderCount { get; set; }
 
         /// <summary>
         /// Last time this pool was updated
@@ -116,17 +114,15 @@ namespace ForexExchange.Models
         /// <summary>
         /// Calculate net profit/loss for this currency
         /// محاسبه سود/زیان خالص برای این ارز
+        /// Note: Profit/Loss calculation is now done per currency pair in ExchangeRate
+        /// توجه: محاسبه سود/زیان اکنون در ExchangeRate بر اساس جفت ارز انجام می‌شود
         /// </summary>
         /// <returns>Net profit (positive) or loss (negative)</returns>
         public decimal CalculateNetProfitLoss()
         {
-            if (AverageBuyRate == null || AverageSellRate == null)
-                return 0;
-
-            decimal totalBuyValue = TotalBought * AverageBuyRate.Value;
-            decimal totalSellValue = TotalSold * AverageSellRate.Value;
-            
-            return totalSellValue - totalBuyValue;
+            // Profit/Loss is now calculated per currency pair, not per individual currency
+            // سود/زیان اکنون بر اساس جفت ارز محاسبه می‌شود، نه ارز تک
+            return 0;
         }
 
         /// <summary>

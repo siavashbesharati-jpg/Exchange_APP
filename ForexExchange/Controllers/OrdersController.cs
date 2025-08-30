@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using ForexExchange.Services;
 using ForexExchange.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace ForexExchange.Controllers
 {
@@ -13,12 +14,24 @@ namespace ForexExchange.Controllers
         private readonly ForexDbContext _context;
         private readonly ILogger<OrdersController> _logger;
         private readonly ICurrencyPoolService _poolService;
+        private readonly AdminActivityService _adminActivityService;
+        private readonly AdminNotificationService _adminNotificationService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public OrdersController(ForexDbContext context, ILogger<OrdersController> logger, ICurrencyPoolService poolService)
+        public OrdersController(
+            ForexDbContext context,
+            ILogger<OrdersController> logger,
+            ICurrencyPoolService poolService,
+            AdminActivityService adminActivityService,
+            AdminNotificationService adminNotificationService,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _logger = logger;
             _poolService = poolService;
+            _adminActivityService = adminActivityService;
+            _adminNotificationService = adminNotificationService;
+            _userManager = userManager;
         }
 
 
@@ -436,6 +449,19 @@ namespace ForexExchange.Controllers
                 _context.Add(order);
                 await _context.SaveChangesAsync();
 
+                // Load related entities for notification
+                await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
+                await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
+                await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
+
+                // Log admin activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await _adminActivityService.LogOrderCreatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
+                    await _adminNotificationService.SendOrderNotificationAsync(order, "created");
+                }
+
                 // Update currency pools if order is open/pending
                 if (order.Status == OrderStatus.Open)
                 {
@@ -443,6 +469,13 @@ namespace ForexExchange.Controllers
                     await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.Amount, PoolTransactionType.Buy, order.Rate);
                     // Add to ToCurrency pool (increase available currency)
                     await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
+
+                    // Update order counts for both currencies
+                    await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
+                    await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
+
+                    // Update average rates for this currency pair
+                    await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
                 }
 
                 _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {finalExchangeRate} ({finalRateSource}), Total: {totalValue}");
@@ -490,6 +523,20 @@ namespace ForexExchange.Controllers
                     order.UpdatedAt = DateTime.Now;
                     _context.Update(order);
                     await _context.SaveChangesAsync();
+
+                    // Load related entities for notification
+                    await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
+                    await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
+                    await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
+
+                    // Log admin activity
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        await _adminActivityService.LogOrderUpdatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
+                        await _adminNotificationService.SendOrderNotificationAsync(order, "updated");
+                    }
+
                     TempData["SuccessMessage"] = "معامله با موفقیت بروزرسانی شد.";
                 }
                 catch (DbUpdateConcurrencyException)
@@ -549,6 +596,27 @@ namespace ForexExchange.Controllers
                 order.UpdatedAt = DateTime.Now;
                 _context.Update(order);
                 await _context.SaveChangesAsync();
+
+                // Load related entities for notification
+                await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
+                await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
+                await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
+
+                // Log admin activity
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await _adminActivityService.LogOrderCancelledAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
+                    await _adminNotificationService.SendOrderNotificationAsync(order, "cancelled");
+                }
+
+                // Update order counts for both currencies after cancellation
+                await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
+                await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
+
+                // Update average rates for this currency pair
+                await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
+
                 TempData["SuccessMessage"] = "معامله لغو شد.";
             }
 
@@ -571,7 +639,7 @@ namespace ForexExchange.Controllers
             }
 
             // Just redirect to Details page where available orders are already shown
-            TempData["InfoMessage"] = "لیست سفارشات قابل مچ نمایش داده شده است. لطفاً سفارش مورد نظر را انتخاب کنید.";
+            TempData["InfoMessage"] = "لیست معاملهات قابل مچ نمایش داده شده است. لطفاً معامله مورد نظر را انتخاب کنید.";
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -594,21 +662,21 @@ namespace ForexExchange.Controllers
 
             if (primaryOrder == null || matchingOrder == null)
             {
-                TempData["ErrorMessage"] = "یک یا هر دو سفارش یافت نشد.";
+                TempData["ErrorMessage"] = "یک یا هر دو معامله یافت نشد.";
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
             if ((primaryOrder.Status != OrderStatus.Open && primaryOrder.Status != OrderStatus.PartiallyFilled) ||
                 primaryOrder.Amount <= primaryOrder.FilledAmount)
             {
-                TempData["ErrorMessage"] = "سفارش اصلی قابل مچ کردن نیست.";
+                TempData["ErrorMessage"] = "معامله اصلی قابل مچ کردن نیست.";
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
             if ((matchingOrder.Status != OrderStatus.Open && matchingOrder.Status != OrderStatus.PartiallyFilled) ||
                 matchingOrder.Amount <= matchingOrder.FilledAmount)
             {
-                TempData["ErrorMessage"] = "سفارش مقابل قابل مچ کردن نیست.";
+                TempData["ErrorMessage"] = "معامله مقابل قابل مچ کردن نیست.";
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
@@ -620,7 +688,7 @@ namespace ForexExchange.Controllers
 
             if (!isValidPair)
             {
-                TempData["ErrorMessage"] = "این دو سفارش قابل مچ کردن با هم نیستند.";
+                TempData["ErrorMessage"] = "این دو معامله قابل مچ کردن با هم نیستند.";
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
@@ -702,7 +770,7 @@ namespace ForexExchange.Controllers
 
             _logger.LogInformation($"Manually matched Order {primaryOrder.Id} with Order {matchingOrder.Id}: {matchAmount} units at rate {transactionRate}");
 
-            TempData["SuccessMessage"] = $"سفارشات با موفقیت مچ شدند. تراکنش ایجاد شد.";
+            TempData["SuccessMessage"] = $"معاملهات با موفقیت مچ شدند. تراکنش ایجاد شد.";
             return RedirectToAction(nameof(Details), new { id = primaryOrderId });
         }
 
@@ -770,15 +838,19 @@ namespace ForexExchange.Controllers
                     .Where(r => r.FromCurrencyId == fromCurrencyId && 
                                r.ToCurrencyId == toCurrencyId && 
                                r.IsActive)
-                    .Select(r => new { r.Rate })
+                    .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                     .FirstOrDefaultAsync();
 
                 decimal rate = 0;
+                decimal? averageBuyRate = null;
+                decimal? averageSellRate = null;
                 string source = "";
 
                 if (directRate != null)
                 {
                     rate = directRate.Rate;
+                    averageBuyRate = directRate.AverageBuyRate;
+                    averageSellRate = directRate.AverageSellRate;
                     source = "Direct";
                 }
                 else
@@ -788,12 +860,15 @@ namespace ForexExchange.Controllers
                         .Where(r => r.FromCurrencyId == toCurrencyId && 
                                    r.ToCurrencyId == fromCurrencyId && 
                                    r.IsActive)
-                        .Select(r => new { r.Rate })
+                        .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                         .FirstOrDefaultAsync();
 
                     if (reverseRate != null)
                     {
                         rate = (1.0m / reverseRate.Rate);
+                        // For reverse rates, swap buy/sell averages
+                        averageBuyRate = reverseRate.AverageSellRate.HasValue ? (1.0m / reverseRate.AverageSellRate.Value) : null;
+                        averageSellRate = reverseRate.AverageBuyRate.HasValue ? (1.0m / reverseRate.AverageBuyRate.Value) : null;
                         source = "Reverse";
                     }
                     else
@@ -809,25 +884,40 @@ namespace ForexExchange.Controllers
                             var fromRate = await _context.ExchangeRates
                                 .Where(r => r.FromCurrencyId == baseCurrencyId && 
                                            r.ToCurrencyId == fromCurrencyId && r.IsActive)
-                                .Select(r => new { r.Rate })
+                                .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                                 .FirstOrDefaultAsync();
 
                             var toRate = await _context.ExchangeRates
                                 .Where(r => r.FromCurrencyId == baseCurrencyId && 
                                            r.ToCurrencyId == toCurrencyId && r.IsActive)
-                                .Select(r => new { r.Rate })
+                                .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                                 .FirstOrDefaultAsync();
 
                             if (fromRate != null && toRate != null)
                             {
                                 rate = toRate.Rate / fromRate.Rate;
+                                // For cross rates, calculate averages proportionally
+                                if (fromRate.AverageBuyRate.HasValue && toRate.AverageBuyRate.HasValue)
+                                {
+                                    averageBuyRate = toRate.AverageBuyRate.Value / fromRate.AverageBuyRate.Value;
+                                }
+                                if (fromRate.AverageSellRate.HasValue && toRate.AverageSellRate.HasValue)
+                                {
+                                    averageSellRate = toRate.AverageSellRate.Value / fromRate.AverageSellRate.Value;
+                                }
                                 source = "Cross-rate";
                             }
                         }
                     }
                 }
 
-                return Json(new { success = true, rate = rate, source = source });
+                return Json(new { 
+                    success = true, 
+                    rate = rate, 
+                    averageBuyRate = averageBuyRate,
+                    averageSellRate = averageSellRate,
+                    source = source 
+                });
             }
             catch (Exception ex)
             {
@@ -928,6 +1018,67 @@ namespace ForexExchange.Controllers
             }
             
             return selectedOrders;
+        }
+
+        /// <summary>
+        /// Update average rates for a currency pair based on active orders
+        /// بروزرسانی نرخ‌های میانگین برای جفت ارز بر اساس معاملهات فعال
+        /// </summary>
+        private async Task UpdateAverageRatesForPairAsync(int fromCurrencyId, int toCurrencyId)
+        {
+            // Find the exchange rate for this pair
+            var exchangeRate = await _context.ExchangeRates
+                .FirstOrDefaultAsync(er => er.FromCurrencyId == fromCurrencyId &&
+                                         er.ToCurrencyId == toCurrencyId &&
+                                         er.IsActive);
+
+            if (exchangeRate == null) return;
+
+            // Calculate average buy rate (orders where ToCurrencyId matches)
+            var buyOrders = await _context.Orders
+                .Where(o => o.FromCurrencyId == fromCurrencyId &&
+                           o.ToCurrencyId == toCurrencyId &&
+                           o.Status != OrderStatus.Cancelled)
+                .ToListAsync();
+
+            if (buyOrders.Any())
+            {
+                // Weighted average buy rate
+                var totalBuyVolume = buyOrders.Sum(o => o.Amount);
+                var weightedBuyRate = buyOrders.Sum(o => o.Amount * o.Rate) / totalBuyVolume;
+                exchangeRate.AverageBuyRate = weightedBuyRate;
+                exchangeRate.TotalBuyVolume = totalBuyVolume;
+            }
+            else
+            {
+                exchangeRate.AverageBuyRate = null;
+                exchangeRate.TotalBuyVolume = 0;
+            }
+
+            // Calculate average sell rate (orders where FromCurrencyId matches)
+            var sellOrders = await _context.Orders
+                .Where(o => o.FromCurrencyId == toCurrencyId &&
+                           o.ToCurrencyId == fromCurrencyId &&
+                           o.Status != OrderStatus.Cancelled)
+                .ToListAsync();
+
+            if (sellOrders.Any())
+            {
+                // Weighted average sell rate
+                var totalSellVolume = sellOrders.Sum(o => o.Amount);
+                var weightedSellRate = sellOrders.Sum(o => o.Amount * o.Rate) / totalSellVolume;
+                exchangeRate.AverageSellRate = weightedSellRate;
+                exchangeRate.TotalSellVolume = totalSellVolume;
+            }
+            else
+            {
+                exchangeRate.AverageSellRate = null;
+                exchangeRate.TotalSellVolume = 0;
+            }
+
+            exchangeRate.UpdatedAt = DateTime.Now;
+            _context.Update(exchangeRate);
+            await _context.SaveChangesAsync();
         }
     }
 }
