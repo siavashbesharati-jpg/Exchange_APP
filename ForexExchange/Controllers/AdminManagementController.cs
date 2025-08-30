@@ -38,7 +38,7 @@ namespace ForexExchange.Controllers
         /// Admin Activity Log Index
         /// صفحه اصلی لاگ فعالیت‌های ادمین
         /// </summary>
-        [Authorize(Roles = "SuperAdmin,Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index(
             string? adminUserId = null,
             AdminActivityType? activityType = null,
@@ -52,16 +52,7 @@ namespace ForexExchange.Controllers
             if (currentUser == null)
                 return RedirectToAction("Login", "Account");
 
-            // Check if user is SuperAdmin
-            var isSuperAdmin = await _userManager.IsInRoleAsync(currentUser, "SuperAdmin");
-
-            // If not SuperAdmin, only show their own activities
-            if (!isSuperAdmin)
-            {
-                adminUserId = currentUser.Id;
-            }
-
-            // Get activities
+            // Get activities (all admins can see all activities)
             var activities = await _adminActivityService.GetAllActivitiesAsync(
                 adminUserId, activityType, fromDate, toDate, pageSize * page);
 
@@ -69,30 +60,27 @@ namespace ForexExchange.Controllers
             var totalActivities = activities.Count;
             var paginatedActivities = activities.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-            // Get all admin users for filter dropdown (only for SuperAdmin)
+            // Get all admin users for filter dropdown
             var adminUsers = new List<ApplicationUser>();
-            if (isSuperAdmin)
-            {
-                var adminRole = await _roleManager.FindByNameAsync("Admin");
-                var superAdminRole = await _roleManager.FindByNameAsync("SuperAdmin");
+            var adminRole = await _roleManager.FindByNameAsync("Admin");
 
-                if (adminRole != null)
-                {
+            if (adminRole != null)
+            {
                 var adminUserIds = _context.UserRoles
-                    .Where(ur => ur.RoleId == adminRole.Id || (superAdminRole != null && ur.RoleId == superAdminRole.Id))
+                    .Where(ur => ur.RoleId == adminRole.Id)
                     .Select(ur => ur.UserId)
-                    .Distinct();                    adminUsers = await _context.Users
-                        .Where(u => adminUserIds.Contains(u.Id))
-                        .OrderBy(u => u.UserName)
-                        .ToListAsync();
-                }
+                    .Distinct();
+                adminUsers = await _context.Users
+                    .Where(u => adminUserIds.Contains(u.Id))
+                    .OrderBy(u => u.UserName)
+                    .ToListAsync();
             }
 
             // Get activity statistics
             var stats = await _adminActivityService.GetActivityStatisticsAsync(fromDate, toDate);
 
             ViewBag.CurrentUser = currentUser;
-            ViewBag.IsSuperAdmin = isSuperAdmin;
+            ViewBag.IsSuperAdmin = true; // All admins have full access now
             ViewBag.AdminUsers = adminUsers;
             ViewBag.Activities = paginatedActivities;
             ViewBag.TotalActivities = totalActivities;
@@ -113,7 +101,7 @@ namespace ForexExchange.Controllers
         /// دریافت جزئیات فعالیت
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "SuperAdmin,Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetActivityDetails(int id)
         {
             var activity = await _context.AdminActivities
@@ -122,14 +110,9 @@ namespace ForexExchange.Controllers
             if (activity == null)
                 return NotFound();
 
-            // Check permissions
+            // Check permissions (all admins can see all activity details)
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null)
-                return Forbid();
-
-            var isSuperAdmin = await _userManager.IsInRoleAsync(currentUser, "SuperAdmin");
-
-            if (!isSuperAdmin && activity.AdminUserId != currentUser.Id)
                 return Forbid();
 
             return Json(new
@@ -152,28 +135,21 @@ namespace ForexExchange.Controllers
         }
 
         /// <summary>
-        /// Super Admin Dashboard
-        /// داشبورد سوپر ادمین
+        /// Admin Dashboard
+        /// داشبورد ادمین
         /// </summary>
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Dashboard()
         {
             // Get system statistics
             var totalUsers = await _userManager.Users.CountAsync();
             var totalAdmins = 0;
-            var totalSuperAdmins = 0;
 
             var adminRole = await _roleManager.FindByNameAsync("Admin");
-            var superAdminRole = await _roleManager.FindByNameAsync("SuperAdmin");
 
             if (adminRole != null)
             {
                 totalAdmins = _context.UserRoles.Count(ur => ur.RoleId == adminRole.Id);
-            }
-
-            if (superAdminRole != null)
-            {
-                totalSuperAdmins = _context.UserRoles.Count(ur => ur.RoleId == superAdminRole.Id);
             }
 
             // Get recent activities
@@ -185,7 +161,7 @@ namespace ForexExchange.Controllers
 
             ViewBag.TotalUsers = totalUsers;
             ViewBag.TotalAdmins = totalAdmins;
-            ViewBag.TotalSuperAdmins = totalSuperAdmins;
+            ViewBag.TotalSuperAdmins = 0; // No SuperAdmin role exists
             ViewBag.RecentActivities = recentActivities;
             ViewBag.MonthlyStats = monthlyStats;
 
@@ -196,20 +172,19 @@ namespace ForexExchange.Controllers
         /// Manage Admin Users
         /// مدیریت کاربران ادمین
         /// </summary>
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ManageAdmins()
         {
             var adminRole = await _roleManager.FindByNameAsync("Admin");
-            var superAdminRole = await _roleManager.FindByNameAsync("SuperAdmin");
 
-            if (adminRole == null || superAdminRole == null)
+            if (adminRole == null)
             {
-                TempData["Error"] = "نقش‌های ادمین یافت نشدند.";
+                TempData["Error"] = "نقش ادمین یافت نشد.";
                 return RedirectToAction("Dashboard");
             }
 
             var adminUserIds = _context.UserRoles
-                .Where(ur => ur.RoleId == adminRole.Id || ur.RoleId == superAdminRole.Id)
+                .Where(ur => ur.RoleId == adminRole.Id)
                 .Select(ur => ur.UserId)
                 .Distinct();
 
@@ -219,11 +194,13 @@ namespace ForexExchange.Controllers
                 .ToListAsync();
 
             // Get roles for each user
+            var userRoles = new Dictionary<string, IList<string>>();
             foreach (var user in adminUsers)
             {
-                // Note: Roles property doesn't exist on ApplicationUser, using UserManager instead
-                // user.Roles = await _userManager.GetRolesAsync(user);
+                userRoles[user.Id] = await _userManager.GetRolesAsync(user);
             }
+
+            ViewBag.UserRoles = userRoles;
 
             return View(adminUsers);
         }
@@ -233,7 +210,7 @@ namespace ForexExchange.Controllers
         /// ایجاد کاربر ادمین جدید
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateAdmin(string userName, string email, string password, string role)
         {
@@ -253,10 +230,10 @@ namespace ForexExchange.Controllers
             var result = await _userManager.CreateAsync(user, password);
             if (result.Succeeded)
             {
-                // Add to role
-                if (role == "SuperAdmin" || role == "Admin")
+                // Add to Admin role (only Admin role exists)
+                if (role == "Admin")
                 {
-                    await _userManager.AddToRoleAsync(user, role);
+                    await _userManager.AddToRoleAsync(user, "Admin");
                 }
 
                 // Log activity
@@ -267,8 +244,8 @@ namespace ForexExchange.Controllers
                         currentUser.Id,
                         currentUser.UserName ?? "Unknown",
                         AdminActivityType.UserCreated,
-                        $"کاربر ادمین جدید ایجاد شد: {userName} با نقش {role}",
-                        JsonSerializer.Serialize(new { UserId = user.Id, Role = role }),
+                        $"کاربر ادمین جدید ایجاد شد: {userName} با نقش Admin",
+                        JsonSerializer.Serialize(new { UserId = user.Id, Role = "Admin" }),
                         "ApplicationUser",
                         null,
                         null,
@@ -291,7 +268,7 @@ namespace ForexExchange.Controllers
         /// تغییر نقش کاربر ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeAdminRole(string userId, string newRole)
         {
@@ -309,10 +286,10 @@ namespace ForexExchange.Controllers
             // Remove current roles
             await _userManager.RemoveFromRolesAsync(user, currentRoles);
 
-            // Add new role
-            if (newRole == "SuperAdmin" || newRole == "Admin")
+            // Add Admin role (only Admin role exists)
+            if (newRole == "Admin")
             {
-                await _userManager.AddToRoleAsync(user, newRole);
+                await _userManager.AddToRoleAsync(user, "Admin");
             }
 
             // Log activity
@@ -323,12 +300,12 @@ namespace ForexExchange.Controllers
                     currentUser.Id,
                     currentUser.UserName ?? "Unknown",
                     AdminActivityType.UserUpdated,
-                    $"نقش کاربر {user.UserName} تغییر یافت از {oldRole} به {newRole}",
-                    JsonSerializer.Serialize(new { UserId = user.Id, OldRole = oldRole, NewRole = newRole }),
+                    $"نقش کاربر {user.UserName} تغییر یافت از {oldRole} به Admin",
+                    JsonSerializer.Serialize(new { UserId = user.Id, OldRole = oldRole, NewRole = "Admin" }),
                     "ApplicationUser",
                     null,
                     oldRole,
-                    newRole
+                    "Admin"
                 );
             }
 
@@ -341,7 +318,7 @@ namespace ForexExchange.Controllers
         /// حذف کاربر ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAdmin(string userId)
         {
@@ -352,16 +329,16 @@ namespace ForexExchange.Controllers
                 return RedirectToAction("ManageAdmins");
             }
 
-            // Prevent deleting the last SuperAdmin
-            var superAdminRole = await _roleManager.FindByNameAsync("SuperAdmin");
-            if (superAdminRole != null)
+            // Prevent deleting the last Admin
+            var adminRole = await _roleManager.FindByNameAsync("Admin");
+            if (adminRole != null)
             {
-                var superAdminCount = _context.UserRoles.Count(ur => ur.RoleId == superAdminRole.Id);
-                var isUserSuperAdmin = await _userManager.IsInRoleAsync(user, "SuperAdmin");
+                var adminCount = _context.UserRoles.Count(ur => ur.RoleId == adminRole.Id);
+                var isUserAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
-                if (isUserSuperAdmin && superAdminCount <= 1)
+                if (isUserAdmin && adminCount <= 1)
                 {
-                    TempData["Error"] = "نمی‌توان آخرین سوپر ادمین را حذف کرد.";
+                    TempData["Error"] = "نمی‌توان آخرین ادمین را حذف کرد.";
                     return RedirectToAction("ManageAdmins");
                 }
             }
@@ -401,7 +378,7 @@ namespace ForexExchange.Controllers
         /// صادرات فعالیت‌های ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportActivities(
             string? adminUserId = null,

@@ -33,16 +33,9 @@ namespace ForexExchange.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{user.Id}");
 
                 // Add admin users to admin group
-                if (await _userManager.IsInRoleAsync(user, "Admin") ||
-                    await _userManager.IsInRoleAsync(user, "SuperAdmin"))
+                if (await _userManager.IsInRoleAsync(user, "Admin"))
                 {
                     await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
-                }
-
-                // Add super admin users to super admin group
-                if (await _userManager.IsInRoleAsync(user, "SuperAdmin"))
-                {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, "SuperAdmins");
                 }
             }
 
@@ -63,7 +56,6 @@ namespace ForexExchange.Hubs
 
                 // Remove from admin groups
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Admins");
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, "SuperAdmins");
             }
 
             await base.OnDisconnectedAsync(exception);

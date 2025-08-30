@@ -46,10 +46,10 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Send notification to all super admin users
-        /// ارسال اعلان به تمام کاربران سوپر ادمین
+        /// Send notification to all admin users
+        /// ارسال اعلان به تمام کاربران ادمین
         /// </summary>
-        public async Task SendToSuperAdminsAsync(string title, string message, string type = "info", object? data = null)
+        public async Task SendToAdminsAsync(string title, string message, string type = "info", object? data = null)
         {
             var notification = new
             {
@@ -60,7 +60,7 @@ namespace ForexExchange.Services
                 timestamp = DateTime.Now
             };
 
-            await _hubContext.Clients.Group("SuperAdmins").SendAsync("ReceiveNotification", notification);
+            await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", notification);
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace ForexExchange.Services
             var title = "هشدار امنیتی";
             var fullMessage = string.IsNullOrEmpty(details) ? message : $"{message}\n{details}";
 
-            await SendToSuperAdminsAsync(title, fullMessage, "error", new
+            await SendToAdminsAsync(title, fullMessage, "error", new
             {
                 alertType = "security",
                 details = details,
@@ -171,7 +171,7 @@ namespace ForexExchange.Services
             var message = GetUserManagementMessage(action, targetUserName, performedBy);
             var type = "info";
 
-            await SendToSuperAdminsAsync(title, message, type, new
+            await SendToAdminsAsync(title, message, type, new
             {
                 action = action,
                 targetUser = targetUserName,

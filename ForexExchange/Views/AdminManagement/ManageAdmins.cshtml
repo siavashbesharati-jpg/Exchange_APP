@@ -1,0 +1,224 @@
+@model IEnumerable<ForexExchange.Models.ApplicationUser>
+
+@{
+    ViewData["Title"] = "مدیریت ادمین‌ها";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-user-shield text-warning me-2"></i>
+                        مدیریت ادمین‌ها
+                    </h1>
+                    <p class="text-muted mt-1">مدیریت کاربران ادمین و نقش‌های آنها</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAdminModal">
+                        <i class="fas fa-plus me-2"></i>
+                        افزودن ادمین جدید
+                    </button>
+                    <a href="@Url.Action("Index", "AdminManagement")" class="btn btn-secondary">
+                        <i class="fas fa-history me-2"></i>
+                        لاگ فعالیت‌ها
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Admin Users Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        لیست کاربران ادمین
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model != null && Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>نام کاربری</th>
+                                        <th>ایمیل</th>
+                                        <th>نقش</th>
+                                        <th>تاریخ عضویت</th>
+                                        <th>وضعیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in Model)
+                                    {
+                                        <tr>
+                                            <td>@user.UserName</td>
+                                            <td>@user.Email</td>
+                                            <td>
+                                                @if (User.IsInRole("SuperAdmin"))
+                                                {
+                                                    <select class="form-select form-select-sm" onchange="changeUserRole('@user.Id', this.value)">
+                                                        <option value="Admin" selected="@(ViewBag.UserRoles[user.Id]?.Contains("Admin") == true)">ادمین</option>
+                                                        <option value="SuperAdmin" selected="@(ViewBag.UserRoles[user.Id]?.Contains("SuperAdmin") == true)">سوپر ادمین</option>
+                                                    </select>
+                                                }
+                                                else
+                                                {
+                                                    @(ViewBag.UserRoles[user.Id]?.Contains("SuperAdmin") == true ? "سوپر ادمین" : "ادمین")
+                                                }
+                                            </td>
+                                            <td>@user.CreatedAt.ToString("yyyy/MM/dd")</td>
+                                            <td>
+                                                <span class="badge bg-success">فعال</span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    @if (User.IsInRole("SuperAdmin") && user.Id != User.FindFirst("sub")?.Value)
+                                                    {
+                                                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteAdmin('@user.Id', '@user.UserName')">
+                                                            <i class="fas fa-trash me-1"></i>
+                                                            حذف
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ کاربر ادمینی یافت نشد</h5>
+                            <p class="text-muted">برای شروع، یک کاربر ادمین جدید اضافه کنید.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Admin Modal -->
+<div class="modal fade" id="createAdminModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus me-2"></i>
+                    افزودن ادمین جدید
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreateAdmin" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">نام کاربری</label>
+                        <input type="text" class="form-control" name="userName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ایمیل</label>
+                        <input type="email" class="form-control" name="email" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">رمز عبور</label>
+                        <input type="password" class="form-control" name="password" required minlength="6" />
+                        <div class="form-text">حداقل ۶ کاراکتر</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">نقش</label>
+                        <select class="form-select" name="role" required>
+                            <option value="Admin">ادمین</option>
+                            <option value="SuperAdmin">سوپر ادمین</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-success">ایجاد ادمین</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function changeUserRole(userId, newRole) {
+            if (confirm('آیا از تغییر نقش این کاربر اطمینان دارید؟')) {
+                fetch(`/AdminManagement/ChangeAdminRole?userId=${userId}&newRole=${newRole}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('خطا: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('خطا در تغییر نقش کاربر');
+                });
+            }
+        }
+
+        function deleteAdmin(userId, userName) {
+            if (confirm(`آیا از حذف کاربر "${userName}" اطمینان دارید؟ این عمل قابل برگرداندن نیست.`)) {
+                fetch(`/AdminManagement/DeleteAdmin?userId=${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('خطا: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('خطا در حذف کاربر');
+                });
+            }
+        }
+    </script>
+}
