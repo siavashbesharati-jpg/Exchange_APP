@@ -312,7 +312,8 @@ class AdminNotificationManager {
             }
         }
 
-        // Also show SweetAlert for errors
+        // Also show SweetAlert for errors - DISABLED to prevent annoying toasts
+        /*
         if (type === 'error') {
             Swal.fire({
                 title: 'وضعیت اتصال',
@@ -325,6 +326,7 @@ class AdminNotificationManager {
                 timerProgressBar: true
             });
         }
+        */
     }
 
     /**

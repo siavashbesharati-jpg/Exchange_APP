@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - سامانه صرافی اکسورا</title>
+    <title>@ViewData["Title"] - سامانه صرافی تابان </title>
 
     <!-- Bootstrap 5 RTL -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -19,6 +19,14 @@
 
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ForexExchange.styles.css" asp-append-version="true" />
+
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="~/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon/favicon-16x16.png">
+    <link rel="manifest" href="~/favicon/site.webmanifest">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
 
     <style>
         body {
@@ -116,8 +124,9 @@
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-light" style="direction: rtl; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-exchange-alt"></i> اکسورا
+                <a class="navbar-brand fw-bold" asp-area="" asp-controller="ExchangeRates" asp-action="Index">
+                    <img src="~/favicon/android-chrome-512x512.png" alt="تابان" height="32" class="me-2" style="border-radius: 4px;">
+                    تابان
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -182,7 +191,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; ۱۴۰۳ - سامانه صرافی اکسورا - <a asp-area="" asp-controller="Home" asp-action="Privacy">حریم خصوصی</a>
+            &copy; ۱۴۰۳ - سامانه صرافی تابان  - <a asp-area="" asp-controller="Home" asp-action="Privacy">حریم خصوصی</a>
         </div>
     </footer>
 

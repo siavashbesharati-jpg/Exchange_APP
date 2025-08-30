@@ -39,10 +39,10 @@ namespace ForexExchange.Models
         /// </summary>
         public Currency ToCurrency { get; set; } = null!;
 
-    [Required]
-    [Column(TypeName = "decimal(18,8)")]
-    [Display(Name = "Rate - نرخ ارز")]
-    public decimal Rate { get; set; }  // نرخ ارز
+        [Required]
+        [Column(TypeName = "decimal(18,8)")]
+        [Display(Name = "Rate - نرخ ارز")]
+        public decimal Rate { get; set; }  // نرخ ارز
 
         /// <summary>
         /// Average buy rate for this currency pair (weighted average of buy orders)
@@ -100,6 +100,6 @@ namespace ForexExchange.Models
         /// </summary>
         public bool IsCrossCurrency => FromCurrency?.Code != "IRR" && ToCurrency?.Code != "IRR";
 
-    // Spread, SpreadPercentage, and MidRate removed (single rate system)
+        // Spread, SpreadPercentage, and MidRate removed (single rate system)
     }
 }

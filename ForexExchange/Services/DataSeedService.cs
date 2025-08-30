@@ -50,7 +50,7 @@ namespace ForexExchange.Services
                 await SeedExchangeRatesAsync();
 
                 // Seed sample data
-                await SeedSampleDataAsync();
+                //await SeedSampleDataAsync();
 
                 _logger.LogInformation("Data seeding completed successfully");
             }
