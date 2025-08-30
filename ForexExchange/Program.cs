@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using ForexExchange.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,6 +48,14 @@ builder.Services.AddScoped<RoleManager<IdentityRole>>();
 
 // Add HttpClient for OpenRouter API
 builder.Services.AddHttpClient();
+// Add HttpContextAccessor for admin activity logging
+builder.Services.AddHttpContextAccessor();
+
+// Add HttpClient for OpenRouter API
+builder.Services.AddHttpClient();
+
+// Add SignalR
+builder.Services.AddSignalR();
 
 // Add Services
 builder.Services.AddScoped<IOcrService, OpenRouterOcrService>();
@@ -61,6 +70,8 @@ builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IRateCalculationService, RateCalculationService>();
 builder.Services.AddScoped<AdminActivityService>();
 builder.Services.AddScoped<AdminNotificationService>();
+builder.Services.AddScoped<CustomerDebtCreditService>();
+
 
 var app = builder.Build();
 
@@ -95,5 +106,8 @@ app.MapStaticAssets();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=ExchangeRates}/{action=Index}/{id?}");
+
+// Map SignalR hubs
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.Run();

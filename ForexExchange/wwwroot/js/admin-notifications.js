@@ -34,9 +34,7 @@ class AdminNotificationManager {
         }
 
         this.connection = new signalR.HubConnectionBuilder()
-            .withUrl('/notificationHub', {
-                accessTokenFactory: () => this.getAccessToken()
-            })
+            .withUrl('/notificationHub')
             .withAutomaticReconnect()
             .configureLogging(signalR.LogLevel.Information)
             .build();
@@ -61,8 +59,7 @@ class AdminNotificationManager {
 
         this.connection.onreconnected(() => {
             console.log('Reconnected to notification hub');
-            // Remove the connection established notification
-            // this.showConnectionStatus('اتصال برقرار شد', 'success');
+            this.showConnectionStatus('اتصال برقرار شد', 'success');
         });
 
         this.connection.onclose(() => {
@@ -81,8 +78,7 @@ class AdminNotificationManager {
             await this.connection.start();
             this.isConnected = true;
             console.log('Connected to notification hub');
-            // Remove the connection established notification
-            // this.showConnectionStatus('اتصال برقرار شد', 'success');
+            this.showConnectionStatus('اتصال برقرار شد', 'success');
         } catch (err) {
             console.error('Error connecting to notification hub:', err);
             this.showConnectionStatus('خطا در اتصال', 'error');

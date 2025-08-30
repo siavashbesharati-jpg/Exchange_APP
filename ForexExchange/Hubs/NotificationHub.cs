@@ -10,7 +10,6 @@ namespace ForexExchange.Hubs
     /// SignalR Hub for real-time notifications
     /// هاب SignalR برای اعلان‌های بلادرنگ
     /// </summary>
-    [Authorize]
     public class NotificationHub : Hub
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -26,16 +25,19 @@ namespace ForexExchange.Hubs
         /// </summary>
         public override async Task OnConnectedAsync()
         {
-            var user = await _userManager.GetUserAsync(Context.User);
-            if (user != null)
+            if (Context.User?.Identity?.IsAuthenticated == true)
             {
-                // Add user to their personal group for targeted notifications
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{user.Id}");
-
-                // Add admin users to admin group
-                if (await _userManager.IsInRoleAsync(user, "Admin"))
+                var user = await _userManager.GetUserAsync(Context.User);
+                if (user != null)
                 {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
+                    // Add user to their personal group for targeted notifications
+                    await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{user.Id}");
+
+                    // Add admin users to admin group
+                    if (await _userManager.IsInRoleAsync(user, "Admin"))
+                    {
+                        await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
+                    }
                 }
             }
 
@@ -46,16 +48,19 @@ namespace ForexExchange.Hubs
         /// Called when a client disconnects from the hub
         /// فراخوانی هنگام قطع اتصال کلاینت از هاب
         /// </summary>
-        public override async Task OnDisconnectedAsync(System.Exception exception)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            var user = await _userManager.GetUserAsync(Context.User);
-            if (user != null)
+            if (Context.User?.Identity?.IsAuthenticated == true)
             {
-                // Remove user from their personal group
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"User_{user.Id}");
+                var user = await _userManager.GetUserAsync(Context.User);
+                if (user != null)
+                {
+                    // Remove user from their personal group
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"User_{user.Id}");
 
-                // Remove from admin groups
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Admins");
+                    // Remove from admin groups
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Admins");
+                }
             }
 
             await base.OnDisconnectedAsync(exception);
@@ -85,16 +90,19 @@ namespace ForexExchange.Hubs
         /// </summary>
         public async Task SendTestNotification()
         {
-            var user = await _userManager.GetUserAsync(Context.User);
-            if (user != null)
+            if (Context.User?.Identity?.IsAuthenticated == true)
             {
-                await Clients.Caller.SendAsync("ReceiveNotification", new
+                var user = await _userManager.GetUserAsync(Context.User);
+                if (user != null)
                 {
-                    title = "Test Notification",
-                    message = "This is a test notification to verify real-time functionality.",
-                    type = "info",
-                    timestamp = DateTime.Now
-                });
+                    await Clients.Caller.SendAsync("ReceiveNotification", new
+                    {
+                        title = "Test Notification",
+                        message = "This is a test notification to verify real-time functionality.",
+                        type = "info",
+                        timestamp = DateTime.Now
+                    });
+                }
             }
         }
     }
