@@ -567,6 +567,8 @@ namespace ForexExchange.Controllers
 
             var order = await _context.Orders
                 .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (order == null)
             {
@@ -576,51 +578,141 @@ namespace ForexExchange.Controllers
             return View(order);
         }
 
-        // POST: Orders/Delete/5
-        [HttpPost, ActionName("Delete")]
+        // POST: Orders/CancelWithReverseOrder
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> CancelWithReverseOrder(int id, decimal reverseRate)
         {
-            var order = await _context.Orders.FindAsync(id);
-            if (order != null)
+            var originalOrder = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (originalOrder == null)
             {
-                // Revert currency pool changes if order was open/pending
-                if (order.Status == OrderStatus.Open)
-                {
-                    // Revert FromCurrency pool (increase available currency)
-                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.Amount, PoolTransactionType.Sell, order.Rate);
-                    // Revert ToCurrency pool (decrease available currency)
-                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Buy, order.Rate);
-                }
-                order.Status = OrderStatus.Cancelled;
-                order.UpdatedAt = DateTime.Now;
-                _context.Update(order);
-                await _context.SaveChangesAsync();
-
-                // Load related entities for notification
-                await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
-                await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
-                await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
-
-                // Log admin activity
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
-                {
-                    await _adminActivityService.LogOrderCancelledAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                    await _adminNotificationService.SendOrderNotificationAsync(order, "cancelled");
-                }
-
-                // Update order counts for both currencies after cancellation
-                await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
-                await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
-
-                // Update average rates for this currency pair
-                await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
-
-                TempData["SuccessMessage"] = "معامله لغو شد.";
+                TempData["ErrorMessage"] = "معامله یافت نشد.";
+                return RedirectToAction(nameof(Index));
             }
 
-            return RedirectToAction(nameof(Index));
+            if (originalOrder.Status != OrderStatus.Open && originalOrder.Status != OrderStatus.PartiallyFilled)
+            {
+                TempData["ErrorMessage"] = "این معامله قابل لغو نیست.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Validate reverse rate
+            if (reverseRate <= 0)
+            {
+                TempData["ErrorMessage"] = "نرخ معکوس باید بزرگتر از صفر باشد.";
+                return RedirectToAction(nameof(Delete), new { id });
+            }
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Cancel the original order
+                    if (originalOrder.Status == OrderStatus.Open)
+                    {
+                        // Revert currency pool changes
+                        await _poolService.UpdatePoolAsync(originalOrder.FromCurrencyId, originalOrder.Amount, PoolTransactionType.Sell, originalOrder.Rate);
+                        await _poolService.UpdatePoolAsync(originalOrder.ToCurrencyId, originalOrder.Amount * originalOrder.Rate, PoolTransactionType.Buy, originalOrder.Rate);
+                    }
+
+                    originalOrder.Status = OrderStatus.Cancelled;
+                    originalOrder.UpdatedAt = DateTime.Now;
+                    _context.Update(originalOrder);
+
+                    // Create reverse order
+                    var reverseOrder = new Order
+                    {
+                        CustomerId = originalOrder.CustomerId,
+                        FromCurrencyId = originalOrder.ToCurrencyId, // Reverse the currencies
+                        ToCurrencyId = originalOrder.FromCurrencyId,
+                        Amount = originalOrder.Amount,
+                        Rate = reverseRate,
+                        TotalAmount = originalOrder.Amount * reverseRate,
+                        CreatedAt = DateTime.Now,
+                        Status = OrderStatus.Open,
+                        FilledAmount = 0
+                    };
+
+                    // Calculate TotalInToman for the reverse order
+                    var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                    if (baseCurrency != null)
+                    {
+                        if (reverseOrder.FromCurrencyId == baseCurrency.Id)
+                        {
+                            reverseOrder.TotalInToman = reverseOrder.Amount;
+                        }
+                        else if (reverseOrder.ToCurrencyId == baseCurrency.Id)
+                        {
+                            reverseOrder.TotalInToman = reverseOrder.TotalAmount;
+                        }
+                        else
+                        {
+                            // Approximate IRR value using USD rate as base
+                            var usdCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "USD" && c.IsActive);
+                            if (usdCurrency != null)
+                            {
+                                var usdRate = await _context.ExchangeRates
+                                    .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id &&
+                                                             r.ToCurrencyId == usdCurrency.Id && r.IsActive);
+                                reverseOrder.TotalInToman = reverseOrder.TotalAmount * (usdRate?.Rate ?? 65000);
+                            }
+                            else
+                            {
+                                reverseOrder.TotalInToman = reverseOrder.TotalAmount * 65000;
+                            }
+                        }
+                    }
+
+                    _context.Add(reverseOrder);
+                    await _context.SaveChangesAsync();
+
+                    // Update currency pools for the new reverse order
+                    await _poolService.UpdatePoolAsync(reverseOrder.FromCurrencyId, reverseOrder.Amount, PoolTransactionType.Buy, reverseOrder.Rate);
+                    await _poolService.UpdatePoolAsync(reverseOrder.ToCurrencyId, reverseOrder.Amount * reverseOrder.Rate, PoolTransactionType.Sell, reverseOrder.Rate);
+
+                    // Update order counts
+                    await _poolService.UpdateOrderCountsAsync(reverseOrder.FromCurrencyId);
+                    await _poolService.UpdateOrderCountsAsync(reverseOrder.ToCurrencyId);
+                    await _poolService.UpdateOrderCountsAsync(originalOrder.FromCurrencyId);
+                    await _poolService.UpdateOrderCountsAsync(originalOrder.ToCurrencyId);
+
+                    // Update average rates
+                    await UpdateAverageRatesForPairAsync(reverseOrder.FromCurrencyId, reverseOrder.ToCurrencyId);
+                    await UpdateAverageRatesForPairAsync(originalOrder.FromCurrencyId, originalOrder.ToCurrencyId);
+
+                    await transaction.CommitAsync();
+
+                    // Load related entities for notifications
+                    await _context.Entry(reverseOrder).Reference(o => o.Customer).LoadAsync();
+                    await _context.Entry(reverseOrder).Reference(o => o.FromCurrency).LoadAsync();
+                    await _context.Entry(reverseOrder).Reference(o => o.ToCurrency).LoadAsync();
+
+                    // Log admin activity
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        await _adminActivityService.LogOrderCancelledAsync(originalOrder, currentUser.Id, currentUser.UserName ?? "Unknown");
+                        await _adminActivityService.LogOrderCreatedAsync(reverseOrder, currentUser.Id, currentUser.UserName ?? "Unknown");
+                        await _adminNotificationService.SendOrderNotificationAsync(originalOrder, "cancelled");
+                        await _adminNotificationService.SendOrderNotificationAsync(reverseOrder, "created");
+                    }
+
+                    TempData["SuccessMessage"] = $"معامله لغو شد و معامله معکوس با نرخ {reverseRate:N4} ایجاد شد.";
+                    return RedirectToAction(nameof(Details), new { id = reverseOrder.Id });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, $"Error cancelling order {id} and creating reverse order");
+                    TempData["ErrorMessage"] = "خطا در لغو معامله و ایجاد معامله معکوس.";
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+            }
         }
 
         // POST: Orders/Match/5 - Show available orders for manual matching

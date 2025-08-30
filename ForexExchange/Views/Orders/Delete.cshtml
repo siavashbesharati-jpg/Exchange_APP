@@ -1,0 +1,186 @@
+@model ForexExchange.Models.Order
+
+@{
+    ViewData["Title"] = "لغو معامله";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h4">@ViewData["Title"]</h2>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> بازگشت به لیست
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        لغو معامله با ایجاد سفارش معکوس
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>توجه:</strong> لغو این معامله نیازمند ایجاد یک سفارش معکوس است.
+                        شما می‌توانید نرخ سفارش معکوس را تعیین کنید.
+                    </div>
+
+                    <!-- Original Order Details -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-file-invoice"></i> جزئیات معامله اصلی
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <strong>مشتری:</strong> @Model.Customer?.FullName
+                                </div>
+                                <div class="mb-2">
+                                    <strong>ارز مبدأ:</strong>
+                                    <span class="badge bg-primary">@Model.FromCurrency?.PersianName (@Model.FromCurrency?.Code)</span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>ارز مقصد:</strong>
+                                    <span class="badge bg-success">@Model.ToCurrency?.PersianName (@Model.ToCurrency?.Code)</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <strong>مبلغ:</strong> @Model.Amount.ToString("N2")
+                                </div>
+                                <div class="mb-2">
+                                    <strong>نرخ:</strong> @Model.Rate.ToString("N4")
+                                </div>
+                                <div class="mb-2">
+                                    <strong>مجموع:</strong> @Model.TotalAmount.ToString("N2")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reverse Order Preview -->
+                    <div class="mb-4">
+                        <h6 class="text-danger mb-3">
+                            <i class="fas fa-exchange-alt"></i> جزئیات سفارش معکوس
+                        </h6>
+                        <div class="card border-danger">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-2">
+                                            <strong>مشتری:</strong> @Model.Customer?.FullName
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>ارز مبدأ:</strong>
+                                            <span class="badge bg-success">@Model.ToCurrency?.PersianName (@Model.ToCurrency?.Code)</span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>ارز مقصد:</strong>
+                                            <span class="badge bg-primary">@Model.FromCurrency?.PersianName (@Model.FromCurrency?.Code)</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-2">
+                                            <strong>مبلغ:</strong> @Model.Amount.ToString("N2")
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="reverseRate" class="form-label">
+                                                <strong>نرخ معکوس:</strong>
+                                            </label>
+                                            <input type="number" id="reverseRate" name="reverseRate"
+                                                   class="form-control" step="0.0001" min="0.0001"
+                                                   value="@Model.Rate.ToString("N4")" required>
+                                            <div class="form-text">
+                                                نرخ سفارش معکوس را تعیین کنید
+                                            </div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>مجموع:</strong>
+                                            <span id="reverseTotal">@(Model.Amount * Model.Rate).ToString("N2")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                            <i class="fas fa-eye"></i> مشاهده جزئیات
+                        </a>
+                        <div>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmCancelModal">
+                                <i class="fas fa-times"></i> لغو با ایجاد سفارش معکوس
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmCancelModal" tabindex="-1" aria-labelledby="confirmCancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmCancelModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> تأیید لغو معامله
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <p>آیا از لغو این معامله و ایجاد سفارش معکوس اطمینان دارید؟</p>
+                <div class="alert alert-warning">
+                    <strong>توجه:</strong> این عملیات غیرقابل برگشت است.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <form asp-action="CancelWithReverseOrder" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="reverseRate" id="hiddenReverseRate" value="@Model.Rate" />
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-check"></i> تأیید و ایجاد سفارش معکوس
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Update total when rate changes
+        document.getElementById('reverseRate').addEventListener('input', function() {
+            const rate = parseFloat(this.value) || 0;
+            const amount = @Model.Amount;
+            const total = amount * rate;
+            document.getElementById('reverseTotal').textContent = total.toLocaleString('fa-IR', { maximumFractionDigits: 2 });
+            document.getElementById('hiddenReverseRate').value = rate;
+        });
+
+        // Update hidden field when rate changes
+        document.getElementById('reverseRate').addEventListener('change', function() {
+            document.getElementById('hiddenReverseRate').value = this.value;
+        });
+    </script>
+}

@@ -64,7 +64,7 @@
 
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <label asp-for="FromCurrencyId" class="form-label">از ارز (مبدأ)</label>
+                                <label asp-for="FromCurrencyId" class="form-label"> خرید </label>
                                 <select asp-for="FromCurrencyId" asp-items="ViewBag.FromCurrencies" class="form-select"
                                     id="fromCurrencySelect" required>
                                     <option value="">انتخاب کنید</option>
@@ -73,7 +73,7 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label asp-for="ToCurrencyId" class="form-label">به ارز (مقصد)</label>
+                                <label asp-for="ToCurrencyId" class="form-label">  فروش </label>
                                 <select asp-for="ToCurrencyId" asp-items="ViewBag.ToCurrencies" class="form-select"
                                     id="toCurrencySelect" required>
                                     <option value="">انتخاب کنید</option>
