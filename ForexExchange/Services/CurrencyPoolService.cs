@@ -25,10 +25,13 @@ namespace ForexExchange.Services
         public async Task<CurrencyPool> UpdatePoolAsync(int currencyId, decimal amount, PoolTransactionType transactionType, decimal rate)
         {
             var pool = await GetPoolAsync(currencyId);
-            
+
             if (pool == null)
             {
-                pool = await CreatePoolAsync(currencyId);
+                _logger.LogWarning($"Currency pool not found for currency ID {currencyId}");
+                throw new InvalidOperationException($"Currency pool not found for currency ID {currencyId}");
+                  
+          
             }
 
             // Update balances based on transaction type
@@ -46,15 +49,15 @@ namespace ForexExchange.Services
             }
 
             pool.LastUpdated = DateTime.Now;
-            
+
             // Update risk level
             await UpdatePoolRiskLevel(pool);
-            
+
             _context.CurrencyPools.Update(pool);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation($"Pool updated for currency ID {currencyId}: Balance={pool.Balance}, Type={transactionType}, Amount={amount}");
-            
+
             return pool;
         }
 
@@ -66,7 +69,7 @@ namespace ForexExchange.Services
         {
             var pool = await _context.CurrencyPools
                 .FirstOrDefaultAsync(p => p.CurrencyId == currencyId && p.IsActive);
-            
+
             return pool?.Balance ?? 0;
         }
 
@@ -129,7 +132,7 @@ namespace ForexExchange.Services
             await _context.SaveChangesAsync();
 
             _logger.LogInformation($"Created new pool for {currency.Code} with initial balance {initialBalance}");
-            
+
             return pool;
         }
 
@@ -149,7 +152,7 @@ namespace ForexExchange.Services
                     // Same currency - no conversion needed
                     totalValue += pool.Balance;
                 }
-                else if (!string.IsNullOrEmpty(pool.Currency?.Code) && 
+                else if (!string.IsNullOrEmpty(pool.Currency?.Code) &&
                          exchangeRates.TryGetValue(pool.Currency.Code, out var rate))
                 {
                     totalValue += pool.CalculateCurrentPositionValue(targetCurrencyCode, rate);
@@ -186,7 +189,7 @@ namespace ForexExchange.Services
             {
                 var previousRiskLevel = pool.RiskLevel;
                 await UpdatePoolRiskLevel(pool, lowThreshold, highThreshold);
-                
+
                 if (pool.RiskLevel != previousRiskLevel)
                 {
                     updatedCount++;
@@ -304,7 +307,7 @@ namespace ForexExchange.Services
         public async Task UpdateAllOrderCountsAsync()
         {
             var pools = await _context.CurrencyPools.ToListAsync();
-            
+
             foreach (var pool in pools)
             {
                 await UpdateOrderCountsAsync(pool.CurrencyId);
@@ -320,7 +323,7 @@ namespace ForexExchange.Services
         private async Task UpdatePoolRiskLevel(CurrencyPool pool, decimal lowThreshold = 1000, decimal highThreshold = 5000)
         {
             decimal absBalance = Math.Abs(pool.Balance);
-            
+
             if (absBalance <= lowThreshold)
                 pool.RiskLevel = PoolRiskLevel.Low;
             else if (absBalance <= highThreshold)

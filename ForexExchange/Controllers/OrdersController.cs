@@ -429,17 +429,17 @@ namespace ForexExchange.Controllers
                             var usdRate = await _context.ExchangeRates
                                 .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id &&
                                                          r.ToCurrencyId == usdCurrency.Id && r.IsActive);
-                            order.TotalInToman = totalValue * (usdRate?.Rate ?? 65000);
+                            order.TotalInToman = totalValue * (usdRate?.Rate ?? 0);
                         }
                         else
                         {
-                            order.TotalInToman = totalValue * 65000; // Default fallback
+                            order.TotalInToman = totalValue * 0; // Default fallback
                         }
                     }
                 }
                 else
                 {
-                    order.TotalInToman = totalValue * 65000; // Default fallback
+                    order.TotalInToman = totalValue * 0; // Default fallback
                 }
 
                 order.CreatedAt = DateTime.Now;
@@ -608,82 +608,44 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Delete), new { id });
             }
 
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    // Cancel the original order
-                    if (originalOrder.Status == OrderStatus.Open)
-                    {
-                        // Revert currency pool changes
-                        await _poolService.UpdatePoolAsync(originalOrder.FromCurrencyId, originalOrder.Amount, PoolTransactionType.Sell, originalOrder.Rate);
-                        await _poolService.UpdatePoolAsync(originalOrder.ToCurrencyId, originalOrder.Amount * originalOrder.Rate, PoolTransactionType.Buy, originalOrder.Rate);
-                    }
 
-                    originalOrder.Status = OrderStatus.Cancelled;
+                    originalOrder.Status = OrderStatus.Completed;
                     originalOrder.UpdatedAt = DateTime.Now;
                     _context.Update(originalOrder);
 
-                    // Create reverse order
+                    // Create reverse order with corrected calculations
                     var reverseOrder = new Order
                     {
                         CustomerId = originalOrder.CustomerId,
-                        FromCurrencyId = originalOrder.ToCurrencyId, // Reverse the currencies
-                        ToCurrencyId = originalOrder.FromCurrencyId,
-                        Amount = originalOrder.Amount,
-                        Rate = reverseRate,
-                        TotalAmount = originalOrder.Amount * reverseRate,
+                        FromCurrencyId = originalOrder.ToCurrencyId,     // Reverse currencies: IRR
+                        ToCurrencyId = originalOrder.FromCurrencyId,     // USD
+                        Amount = originalOrder.TotalAmount,              // Total from original order: 10,300,000 IRR
+                        Rate = reverseRate,                              // User-input rate: 104,000
                         CreatedAt = DateTime.Now,
-                        Status = OrderStatus.Open,
-                        FilledAmount = 0
+                        Status = OrderStatus.Completed,
+                        FilledAmount = originalOrder.TotalAmount / reverseRate,  // Correct calculation: 10,300,000 / 104,000 = 99
+                        TotalAmount = originalOrder.TotalAmount / reverseRate,   // Same as FilledAmount: 99
+                        TotalInToman = 0
                     };
 
-                    // Calculate TotalInToman for the reverse order
-                    var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
-                    if (baseCurrency != null)
-                    {
-                        if (reverseOrder.FromCurrencyId == baseCurrency.Id)
-                        {
-                            reverseOrder.TotalInToman = reverseOrder.Amount;
-                        }
-                        else if (reverseOrder.ToCurrencyId == baseCurrency.Id)
-                        {
-                            reverseOrder.TotalInToman = reverseOrder.TotalAmount;
-                        }
-                        else
-                        {
-                            // Approximate IRR value using USD rate as base
-                            var usdCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "USD" && c.IsActive);
-                            if (usdCurrency != null)
-                            {
-                                var usdRate = await _context.ExchangeRates
-                                    .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id &&
-                                                             r.ToCurrencyId == usdCurrency.Id && r.IsActive);
-                                reverseOrder.TotalInToman = reverseOrder.TotalAmount * (usdRate?.Rate ?? 65000);
-                            }
-                            else
-                            {
-                                reverseOrder.TotalInToman = reverseOrder.TotalAmount * 65000;
-                            }
-                        }
-                    }
+
 
                     _context.Add(reverseOrder);
                     await _context.SaveChangesAsync();
 
                     // Update currency pools for the new reverse order
                     await _poolService.UpdatePoolAsync(reverseOrder.FromCurrencyId, reverseOrder.Amount, PoolTransactionType.Buy, reverseOrder.Rate);
-                    await _poolService.UpdatePoolAsync(reverseOrder.ToCurrencyId, reverseOrder.Amount * reverseOrder.Rate, PoolTransactionType.Sell, reverseOrder.Rate);
+                    await _poolService.UpdatePoolAsync(reverseOrder.ToCurrencyId, reverseOrder.TotalAmount, PoolTransactionType.Sell, reverseOrder.Rate);
 
                     // Update order counts
                     await _poolService.UpdateOrderCountsAsync(reverseOrder.FromCurrencyId);
                     await _poolService.UpdateOrderCountsAsync(reverseOrder.ToCurrencyId);
-                    await _poolService.UpdateOrderCountsAsync(originalOrder.FromCurrencyId);
-                    await _poolService.UpdateOrderCountsAsync(originalOrder.ToCurrencyId);
 
-                    // Update average rates
-                    await UpdateAverageRatesForPairAsync(reverseOrder.FromCurrencyId, reverseOrder.ToCurrencyId);
-                    await UpdateAverageRatesForPairAsync(originalOrder.FromCurrencyId, originalOrder.ToCurrencyId);
 
                     await transaction.CommitAsync();
 
@@ -773,9 +735,9 @@ namespace ForexExchange.Controllers
             }
 
             // Validate that orders are complementary
-            bool isValidPair = (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId && 
+            bool isValidPair = (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId &&
                                primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId) ||
-                              (primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId && 
+                              (primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId &&
                                primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId);
 
             if (!isValidPair)
@@ -792,8 +754,8 @@ namespace ForexExchange.Controllers
             // Determine direction: who is buyer/seller
             int buyOrderId, sellOrderId, buyerCustomerId, sellerCustomerId;
             ForexExchange.Models.Order buyOrder, sellOrder;
-            
-            if (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId && 
+
+            if (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId &&
                 primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId)
             {
                 // primaryOrder is selling, matchingOrder is buying
@@ -927,8 +889,8 @@ namespace ForexExchange.Controllers
             {
                 // Try to find direct exchange rate
                 var directRate = await _context.ExchangeRates
-                    .Where(r => r.FromCurrencyId == fromCurrencyId && 
-                               r.ToCurrencyId == toCurrencyId && 
+                    .Where(r => r.FromCurrencyId == fromCurrencyId &&
+                               r.ToCurrencyId == toCurrencyId &&
                                r.IsActive)
                     .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                     .FirstOrDefaultAsync();
@@ -949,8 +911,8 @@ namespace ForexExchange.Controllers
                 {
                     // Try reverse rate
                     var reverseRate = await _context.ExchangeRates
-                        .Where(r => r.FromCurrencyId == toCurrencyId && 
-                                   r.ToCurrencyId == fromCurrencyId && 
+                        .Where(r => r.FromCurrencyId == toCurrencyId &&
+                                   r.ToCurrencyId == fromCurrencyId &&
                                    r.IsActive)
                         .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                         .FirstOrDefaultAsync();
@@ -974,13 +936,13 @@ namespace ForexExchange.Controllers
                         if (baseCurrencyId > 0)
                         {
                             var fromRate = await _context.ExchangeRates
-                                .Where(r => r.FromCurrencyId == baseCurrencyId && 
+                                .Where(r => r.FromCurrencyId == baseCurrencyId &&
                                            r.ToCurrencyId == fromCurrencyId && r.IsActive)
                                 .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                                 .FirstOrDefaultAsync();
 
                             var toRate = await _context.ExchangeRates
-                                .Where(r => r.FromCurrencyId == baseCurrencyId && 
+                                .Where(r => r.FromCurrencyId == baseCurrencyId &&
                                            r.ToCurrencyId == toCurrencyId && r.IsActive)
                                 .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
                                 .FirstOrDefaultAsync();
@@ -1003,12 +965,13 @@ namespace ForexExchange.Controllers
                     }
                 }
 
-                return Json(new { 
-                    success = true, 
-                    rate = rate, 
+                return Json(new
+                {
+                    success = true,
+                    rate = rate,
                     averageBuyRate = averageBuyRate,
                     averageSellRate = averageSellRate,
-                    source = source 
+                    source = source
                 });
             }
             catch (Exception ex)
@@ -1025,7 +988,7 @@ namespace ForexExchange.Controllers
             try
             {
                 var query = _context.Customers.Where(c => c.IsActive);
-                
+
                 if (!string.IsNullOrEmpty(search))
                 {
                     query = query.Where(c => c.FullName.Contains(search));
@@ -1055,17 +1018,19 @@ namespace ForexExchange.Controllers
                 var ordersWithMissingCurrencies = await _context.Orders
                     .Where(o => !_context.Currencies.Any(c => c.Id == o.FromCurrencyId) ||
                                !_context.Currencies.Any(c => c.Id == o.ToCurrencyId))
-                    .Select(o => new { 
-                        o.Id, 
-                        o.FromCurrencyId, 
+                    .Select(o => new
+                    {
+                        o.Id,
+                        o.FromCurrencyId,
                         o.ToCurrencyId,
                         FromCurrencyExists = _context.Currencies.Any(c => c.Id == o.FromCurrencyId),
                         ToCurrencyExists = _context.Currencies.Any(c => c.Id == o.ToCurrencyId)
                     })
                     .ToListAsync();
 
-                return Json(new { 
-                    success = true, 
+                return Json(new
+                {
+                    success = true,
                     ordersWithMissingCurrencies = ordersWithMissingCurrencies,
                     totalOrders = await _context.Orders.CountAsync(),
                     totalCurrencies = await _context.Currencies.CountAsync()
@@ -1083,32 +1048,32 @@ namespace ForexExchange.Controllers
         {
             // Sort by size descending (largest first)
             var sortedBySize = availableOrders.OrderByDescending(o => o.Amount - o.FilledAmount).ToList();
-            
+
             // Greedy algorithm: take largest orders that fit without exceeding target
             var selectedOrders = new List<Order>();
             decimal currentSum = 0;
-            
+
             foreach (var order in sortedBySize)
             {
                 var availableAmount = order.Amount - order.FilledAmount;
-                
+
                 // If adding this order would exceed target, skip it
                 if (currentSum + availableAmount > targetAmount)
                 {
                     continue; // Skip this order, try next smaller one
                 }
-                
+
                 // Add this order if it fits
                 selectedOrders.Add(order);
                 currentSum += availableAmount;
-                
+
                 // If we've reached or exceeded target, stop
                 if (currentSum >= targetAmount)
                 {
                     break;
                 }
             }
-            
+
             return selectedOrders;
         }
 

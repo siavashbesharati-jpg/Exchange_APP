@@ -5,407 +5,830 @@
 }
 
 <style>
-    .clickable-filter {
-        cursor: pointer;
-        transition: all 0.2s;
+:root {
+    --primary-color: #667eea;
+    --success-color: #51cf66;
+    --warning-color: #ffd43b;
+    --danger-color: #ff6b6b;
+    --info-color: #74c0fc;
+    --secondary-color: #868e96;
+}
+
+.dashboard-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.modern-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border: none;
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.modern-header {
+    /* background: var(--primary-color); */
+    color: #000000;
+    padding: 25px;
+    position: relative;
+}
+
+.modern-header::before {
+    display: none;
+}
+
+.header-content {
+    position: relative;
+    z-index: 1;
+}
+
+.modern-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.modern-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 0;
+}
+
+.modern-body {
+    padding: 30px;
+}
+
+.search-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    border: 1px solid #e9ecef;
+}
+
+.search-input {
+    border-radius: 25px;
+    border: 2px solid #e9ecef;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    transform: translateY(-2px);
+}
+
+.modern-btn {
+    padding: 10px 25px;
+    border-radius: 25px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.modern-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.btn-primary-modern {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-success-modern {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-info-modern {
+    background: var(--info-color);
+    color: white;
+}
+
+.btn-danger-modern {
+    background: var(--danger-color);
+    color: white;
+}
+
+.modern-table {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.modern-table thead th {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 18px 15px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.modern-table tbody td {
+    padding: 18px 15px;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.modern-table tbody tr:hover {
+    background: #f8f9fa;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.sort-link {
+    color: white !important;
+    text-decoration: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.sort-link:hover {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+.sort-icon {
+    font-size: 0.8em;
+    margin-left: 5px;
+    opacity: 0.8;
+}
+
+.currency-pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.currency-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.currency-badge.from {
+    background: #ff6b6b;
+    color: white;
+}
+
+.currency-badge.to {
+    background: #4ecdc4;
+    color: white;
+}
+
+.arrow-icon {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.status-badge-modern {
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-badge-modern:hover {
+    transform: scale(1.05);
+}
+
+.status-open {
+    background: var(--warning-color);
+    color: white;
+}
+
+.status-matched {
+    background: var(--info-color);
+    color: white;
+}
+
+.status-partial {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.status-completed {
+    background: var(--success-color);
+    color: white;
+}
+
+.status-cancelled {
+    background: var(--danger-color);
+    color: white;
+}
+
+.filter-section {
+    background: #e3f2fd;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.filter-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-badge-modern {
+    background: var(--primary-color);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.filter-badge-modern .remove-filter {
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.filter-badge-modern .remove-filter:hover {
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-details {
+    background: var(--info-color);
+    color: white;
+}
+
+.btn-details:hover {
+    background: var(--info-gradient);
+    transform: scale(1.05);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin: 30px 0;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: #6c757d;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.empty-state-text {
+    color: #6c757d;
+    margin-bottom: 30px;
+}
+
+.stats-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    text-align: center;
+    /* border-left: 4px solid #667eea; */
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.stats-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+@@media (max-width: 768px) {
+    .modern-header {
+        padding: 20px;
     }
 
-    .clickable-filter:hover {
-        transform: scale(1.05);
-        filter: brightness(1.1);
+    .modern-title {
+        font-size: 1.5rem;
     }
 
-    .sort-icon {
-        font-size: 0.8em;
-        margin-left: 5px;
+    .modern-body {
+        padding: 20px;
     }
 
-    .filter-badge {
-        margin: 2px;
+    .currency-pair {
+        flex-direction: column;
+        gap: 5px;
     }
+
+    .action-buttons {
+        justify-content: center;
+    }
+
+    .filter-badges {
+        justify-content: center;
+    }
+}
 </style>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">مدیریت معامله‌ها</h1>
-                <div class="d-flex gap-2">
-                    <a asp-action="Create" class="btn btn-primary">ثبت معامله جدید</a>
-                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="collapse"
-                        data-bs-target="#helpSection">
-                        راهنما
-                    </button>
+<div class="dashboard-container">
+    <div class="container-fluid">
+        <!-- Modern Header -->
+        <div class="modern-card">
+            <div class="modern-header">
+                <div class="header-content">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <div>
+                            <h1 class="modern-title">مدیریت معامله‌ها</h1>
+                            <p class="modern-subtitle">سیستم مدیریت جامع معاملات ارزی</p>
+                        </div>
+                        <div class="d-flex gap-3 flex-wrap">
+                            <a asp-action="Create" class="modern-btn btn-primary-modern">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                ثبت معامله جدید
+                            </a>
+                            <button type="button" class="modern-btn btn-info-modern" data-bs-toggle="collapse"
+                                data-bs-target="#helpSection">
+                                <i class="fas fa-question-circle me-2"></i>
+                                راهنما
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Help Section -->
-            <div class="collapse mb-3" id="helpSection">
-                <div class="card card-body bg-light">
-                    <h6>راهنمای استفاده:</h6>
-                    <ul class="mb-0 small">
-                        <li>برای <strong>مرتب‌سازی</strong>: روی عنوان ستون‌ها کلیک کنید</li>
-                        <li>برای <strong>فیلتر کردن</strong>: روی مقادیر جدول (نوع معامله، ارز، وضعیت) کلیک کنید</li>
-                        <li>برای <strong>جستجو</strong>: از کادر جستجو استفاده کنید</li>
-                        <li>برای <strong>حذف فیلترها</strong>: روی × کنار هر فیلتر یا دکمه "حذف همه فیلترها" کلیک کنید
-                        </li>
-                    </ul>
+            <div class="modern-body">
+                <!-- Help Section -->
+                <div class="collapse mb-4" id="helpSection">
+                    <div class="alert alert-modern alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            راهنمای استفاده از سیستم:
+                        </h6>
+                        <ul class="mb-0">
+                            <li><i class="fas fa-mouse-pointer me-2"></i><strong>مرتب‌سازی:</strong> روی عنوان ستون‌ها کلیک کنید</li>
+                            <li><i class="fas fa-filter me-2"></i><strong>فیلتر کردن:</strong> روی مقادیر جدول کلیک کنید</li>
+                            <li><i class="fas fa-search me-2"></i><strong>جستجو:</strong> از کادر جستجو استفاده کنید</li>
+                            <li><i class="fas fa-times me-2"></i><strong>حذف فیلترها:</strong> روی × کنار هر فیلتر کلیک کنید</li>
+                        </ul>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
-        </div>
-    }
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">لیست معامله‌ها</h5>
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card">
+                            <div class="stats-number">@Model.Count()</div>
+                            <div class="stats-label">کل معاملات</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card">
+                            <div class="stats-number">@Model.Count(o => o.Status == ForexExchange.Models.OrderStatus.Open)</div>
+                            <div class="stats-label">معاملات باز</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card">
+                            <div class="stats-number">@Model.Count(o => o.Status == ForexExchange.Models.OrderStatus.Completed)</div>
+                            <div class="stats-label">معاملات تکمیل شده</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card">
+                            <div class="stats-number">@Model.Count(o => o.Status == ForexExchange.Models.OrderStatus.Cancelled)</div>
+                            <div class="stats-label">معاملات لغو شده</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <!-- Search and Filter Section -->
-                    <div class="row mb-3">
-                        <div class="col-md-3">
+
+                <!-- Alerts -->
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-modern alert-success position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
+                        <i class="fas fa-check-circle me-2"></i>
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-modern alert-danger position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                <!-- Search and Filter Section -->
+                <div class="search-section">
+                    <div class="row">
+                        <div class="col-md-4">
                             <form asp-action="Index" method="get">
                                 <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
                                     <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]"
-                                        placeholder="جستجو در نام مشتری..." class="form-control" />
+                                        placeholder="جستجو در نام مشتری..." class="form-control search-input" />
                                     <input type="hidden" name="currentFilter" value="@ViewData["CurrentFilter"]" />
                                     <input type="hidden" name="sortOrder" value="@ViewData["CurrentSort"]" />
-                                    <!-- Removed OrderTypeFilter hidden input -->
                                     <input type="hidden" name="currencyFilter" value="@ViewData["CurrencyFilter"]" />
                                     <input type="hidden" name="statusFilter" value="@ViewData["StatusFilter"]" />
                                     <input type="hidden" name="customerFilter" value="@ViewData["CustomerFilter"]" />
-                                    <button type="submit" class="btn btn-outline-secondary">جستجو</button>
+                                    <button type="submit" class="modern-btn btn-primary-modern">
+                                        <i class="fas fa-search me-2"></i>جستجو
+                                    </button>
                                 </div>
                             </form>
                         </div>
-                        <div class="col-md-9">
+                        <div class="col-md-8">
                             @if (!String.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()) ||
-                                                        !String.IsNullOrEmpty(ViewData["OrderTypeFilter"]?.ToString()) ||
                                                         !String.IsNullOrEmpty(ViewData["CurrencyFilter"]?.ToString()) ||
                                                         !String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()) ||
                                                         !String.IsNullOrEmpty(ViewData["CustomerFilter"]?.ToString()))
                             {
-                                <div class="d-flex flex-wrap gap-2">
-                                    <span class="badge bg-secondary">فیلترهای فعال:</span>
-                                    @if (!String.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
-                                    {
-                                        <span class="badge bg-info">
-                                            جستجو: @ViewData["CurrentFilter"]
-                                            <a asp-action="Index" class="text-white ms-1" style="text-decoration: none;">×</a>
-                                        </span>
-                                    }
-                                    @if (!String.IsNullOrEmpty(ViewData["CustomerFilter"]?.ToString()))
-                                    {
-                                        <span class="badge bg-info">
-                                            مشتری: @ViewData["CustomerFilter"]
-                                            <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]" class="text-white ms-1"
-                                                style="text-decoration: none;">×</a>
-                                        </span>
-                                    }
-                                    <!-- Removed OrderTypeFilter badge -->
-                                    @if (!String.IsNullOrEmpty(ViewData["CurrencyFilter"]?.ToString()))
-                                    {
-                                        <span class="badge bg-info">
-                                            ارز: @ViewData["CurrencyFilter"]
-                                            <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]" class="text-white ms-1"
-                                                style="text-decoration: none;">×</a>
-                                        </span>
-                                    }
-                                    @if (!String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()))
-                                    {
-                                        <span class="badge bg-info">
-                                            وضعیت: @ViewData["StatusFilter"]
-                                            <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-orderTypeFilter="@ViewData["OrderTypeFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]" class="text-white ms-1"
-                                                style="text-decoration: none;">×</a>
-                                        </span>
-                                    }
-                                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">حذف همه فیلترها</a>
+                                <div class="filter-section">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <strong class="text-primary">
+                                            <i class="fas fa-filter me-2"></i>
+                                            فیلترهای فعال:
+                                        </strong>
+                                        <a asp-action="Index" class="modern-btn btn-danger-modern btn-sm">
+                                            <i class="fas fa-times me-2"></i>
+                                            حذف همه
+                                        </a>
+                                    </div>
+                                    <div class="filter-badges">
+                                        @if (!String.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                                        {
+                                            <span class="filter-badge-modern">
+                                                <i class="fas fa-search me-1"></i>
+                                                جستجو: @ViewData["CurrentFilter"]
+                                                <a asp-action="Index" class="remove-filter">×</a>
+                                            </span>
+                                        }
+                                        @if (!String.IsNullOrEmpty(ViewData["CustomerFilter"]?.ToString()))
+                                        {
+                                            <span class="filter-badge-modern">
+                                                <i class="fas fa-user me-1"></i>
+                                                مشتری: @ViewData["CustomerFilter"]
+                                                <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                    asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                    asp-route-statusFilter="@ViewData["StatusFilter"]" class="remove-filter">×</a>
+                                            </span>
+                                        }
+                                        @if (!String.IsNullOrEmpty(ViewData["CurrencyFilter"]?.ToString()))
+                                        {
+                                            <span class="filter-badge-modern">
+                                                <i class="fas fa-coins me-1"></i>
+                                                ارز: @ViewData["CurrencyFilter"]
+                                                <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                    asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                    asp-route-statusFilter="@ViewData["StatusFilter"]" class="remove-filter">×</a>
+                                            </span>
+                                        }
+                                        @if (!String.IsNullOrEmpty(ViewData["StatusFilter"]?.ToString()))
+                                        {
+                                            <span class="filter-badge-modern">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                وضعیت: @ViewData["StatusFilter"]
+                                                <a asp-action="Index" asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                    asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                    asp-route-currencyFilter="@ViewData["CurrencyFilter"]" class="remove-filter">×</a>
+                                            </span>
+                                        }
+                                    </div>
                                 </div>
                             }
                         </div>
                     </div>
-
-                    @if (Model.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>
-                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["IdSortParm"]"
-                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                class="text-decoration-none">
-                                                شماره معامله
-                                                @if (ViewData["CurrentSort"]?.ToString() == "id_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else if (String.IsNullOrEmpty(ViewData["CurrentSort"]?.ToString()))
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["CustomerSortParm"]"
-                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                class="text-decoration-none">
-                                                مشتری
-                                                @if (ViewData["CurrentSort"]?.ToString() == "Customer")
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else if (ViewData["CurrentSort"]?.ToString() == "customer_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <!-- Removed OrderType sorting column -->
-                                        </th>
-                                        <th>
-                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["CurrencySortParm"]"
-                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                class="text-decoration-none">
-                                                جفت ارز
-                                                @if (ViewData["CurrentSort"]?.ToString() == "Currency")
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else if (ViewData["CurrentSort"]?.ToString() == "currency_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["AmountSortParm"]"
-                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                class="text-decoration-none">
-                                                مبلغ
-                                                @if (ViewData["CurrentSort"]?.ToString() == "Amount")
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else if (ViewData["CurrentSort"]?.ToString() == "amount_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["RateSortParm"]"
-                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                class="text-decoration-none">
-                                                نرخ
-                                                @if (ViewData["CurrentSort"]?.ToString() == "Rate")
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else if (ViewData["CurrentSort"]?.ToString() == "rate_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["StatusSortParm"]"
-                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                class="text-decoration-none">
-                                                وضعیت
-                                                @if (ViewData["CurrentSort"]?.ToString() == "Status")
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else if (ViewData["CurrentSort"]?.ToString() == "status_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]"
-                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                                class="text-decoration-none">
-                                                تاریخ ثبت
-                                                @if (ViewData["CurrentSort"]?.ToString() == "Date")
-                                                {
-                                                    <i class="fas fa-sort-up"></i>
-                                                }
-                                                else if (ViewData["CurrentSort"]?.ToString() == "date_desc")
-                                                {
-                                                    <i class="fas fa-sort-down"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="fas fa-sort"></i>
-                                                }
-                                            </a>
-                                        </th>
-                                        <th>عملیات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in Model)
-                                    {
-                                        <tr>
-                                            <td>@item.Id</td>
-                                            <td>
-                                                <a asp-action="Profile" asp-controller="Customers" asp-route-id="@item.CustomerId">
-                                                    @item.Customer.FullName
-                                                </a>
-                                            </td>
-                                            <td>
-                                                <!-- Removed OrderType badge and filter link -->
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center" style="float: right;" dir=ltr>
-                                                    @{
-
-                                                        string GetCurrencyBadgeClass(ForexExchange.Models.Currency currency)
-                                                        {
-                                                            // Use DB-driven attributes for styling (base currency vs others)
-                                                            if (currency == null) return "bg-light";
-                                                            return currency.IsBaseCurrency ? "bg-secondary" : "bg-primary";
-                                                        }
-                                                    }
-
-                                                    <span class="badge @GetCurrencyBadgeClass(item.FromCurrency) me-1">
-                                                        @item.FromCurrency.Code
-                                                    </span>
-
-                                                    <i class="fas fa-arrow-right mx-1 text-muted"></i>
-
-                                                    <span class="badge @GetCurrencyBadgeClass(item.ToCurrency)">
-                                                        @item.ToCurrency.Code
-                                                    </span>
-                                                </div>
-
-
-                                            </td>
-                                            <td>@item.Amount.ToString("N2")</td>
-                                            <td>@item.Rate.ToString("N4")</td>
-
-                                            <td>
-                                                <a asp-action="Index" asp-route-statusFilter="@item.Status"
-                                                    asp-route-currentFilter="@ViewData["CurrentFilter"]"
-                                                    asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                                    asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
-                                                    class="text-decoration-none">
-                                                    @switch (item.Status)
-                                                    {
-                                                        case ForexExchange.Models.OrderStatus.Open:
-                                                            <span class="badge bg-warning">باز</span>
-                                                            break;
-                                                        case ForexExchange.Models.OrderStatus.Matched:
-                                                            <span class="badge bg-info">مچ شده</span>
-                                                            break;
-                                                        case ForexExchange.Models.OrderStatus.PartiallyFilled:
-                                                            <span class="badge bg-secondary">نیمه تکمیل</span>
-                                                            break;
-                                                        case ForexExchange.Models.OrderStatus.Completed:
-                                                            <span class="badge bg-success">تکمیل شده</span>
-                                                            break;
-                                                        case ForexExchange.Models.OrderStatus.Cancelled:
-                                                            <span class="badge bg-dark">لغو شده</span>
-                                                            break;
-                                                    }
-                                                </a>
-                                            </td>
-                                            <td>@item.CreatedAt.ToPersianDateTextify()</td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a asp-action="Details" asp-route-id="@item.Id"
-                                                        class="btn btn-sm btn-outline-primary">جزئیات</a>
-
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-4">
-                            <p class="text-muted">هیچ معاملهی موجود نیست.</p>
-                            <a asp-action="Create" class="btn btn-primary">ثبت اولین معامله</a>
-                        </div>
-                    }
                 </div>
+
+                <!-- Orders Table -->
+                @if (Model.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table modern-table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <a asp-action="Index" asp-route-sortOrder="@ViewData["IdSortParm"]"
+                                            asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                            asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                            asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                            asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                            class="sort-link">
+                                            <span>شماره معامله</span>
+                                            @if (ViewData["CurrentSort"]?.ToString() == "id_desc")
+                                            {
+                                                <i class="fas fa-sort-down sort-icon"></i>
+                                            }
+                                            else if (String.IsNullOrEmpty(ViewData["CurrentSort"]?.ToString()))
+                                            {
+                                                <i class="fas fa-sort-up sort-icon"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" asp-route-sortOrder="@ViewData["CustomerSortParm"]"
+                                            asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                            asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                            asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                            asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                            class="sort-link">
+                                            <span>مشتری</span>
+                                            @if (ViewData["CurrentSort"]?.ToString() == "Customer")
+                                            {
+                                                <i class="fas fa-sort-up sort-icon"></i>
+                                            }
+                                            else if (ViewData["CurrentSort"]?.ToString() == "customer_desc")
+                                            {
+                                                <i class="fas fa-sort-down sort-icon"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" asp-route-sortOrder="@ViewData["CurrencySortParm"]"
+                                            asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                            asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                            asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                            asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                            class="sort-link">
+                                            <span>جفت ارز</span>
+                                            @if (ViewData["CurrentSort"]?.ToString() == "Currency")
+                                            {
+                                                <i class="fas fa-sort-up sort-icon"></i>
+                                            }
+                                            else if (ViewData["CurrentSort"]?.ToString() == "currency_desc")
+                                            {
+                                                <i class="fas fa-sort-down sort-icon"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" asp-route-sortOrder="@ViewData["AmountSortParm"]"
+                                            asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                            asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                            asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                            asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                            class="sort-link">
+                                            <span>مبلغ</span>
+                                            @if (ViewData["CurrentSort"]?.ToString() == "Amount")
+                                            {
+                                                <i class="fas fa-sort-up sort-icon"></i>
+                                            }
+                                            else if (ViewData["CurrentSort"]?.ToString() == "amount_desc")
+                                            {
+                                                <i class="fas fa-sort-down sort-icon"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" asp-route-sortOrder="@ViewData["RateSortParm"]"
+                                            asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                            asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                            asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                            asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                            class="sort-link">
+                                            <span>نرخ</span>
+                                            @if (ViewData["CurrentSort"]?.ToString() == "Rate")
+                                            {
+                                                <i class="fas fa-sort-up sort-icon"></i>
+                                            }
+                                            else if (ViewData["CurrentSort"]?.ToString() == "rate_desc")
+                                            {
+                                                <i class="fas fa-sort-down sort-icon"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" asp-route-sortOrder="@ViewData["StatusSortParm"]"
+                                            asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                            asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                            asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                            asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                            class="sort-link">
+                                            <span>وضعیت</span>
+                                            @if (ViewData["CurrentSort"]?.ToString() == "Status")
+                                            {
+                                                <i class="fas fa-sort-up sort-icon"></i>
+                                            }
+                                            else if (ViewData["CurrentSort"]?.ToString() == "status_desc")
+                                            {
+                                                <i class="fas fa-sort-down sort-icon"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>
+                                        <a asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]"
+                                            asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                            asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                            asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                            asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                            class="sort-link">
+                                            <span>تاریخ ثبت</span>
+                                            @if (ViewData["CurrentSort"]?.ToString() == "Date")
+                                            {
+                                                <i class="fas fa-sort-up sort-icon"></i>
+                                            }
+                                            else if (ViewData["CurrentSort"]?.ToString() == "date_desc")
+                                            {
+                                                <i class="fas fa-sort-down sort-icon"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-sort sort-icon"></i>
+                                            }
+                                        </a>
+                                    </th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="fw-bold text-primary">#@item.Id</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-circle text-primary me-2"></i>
+                                                <div>
+                                                    <a asp-action="Profile" asp-controller="Customers" asp-route-id="@item.CustomerId"
+                                                       class="text-decoration-none fw-bold">
+                                                        @item.Customer.FullName
+                                                    </a>
+                                                    @if (!string.IsNullOrEmpty(item.Customer?.PhoneNumber))
+                                                    {
+                                                        <br><small class="text-muted">@item.Customer.PhoneNumber</small>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="currency-pair">
+                                                <span class="currency-badge from">@item.FromCurrency?.Code</span>
+                                                <i class="fas fa-arrow-right arrow-icon"></i>
+                                                <span class="currency-badge to">@item.ToCurrency?.Code</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-success">
+                                                @item.Amount.ToString("N2")
+                                                <br><small class="text-muted">@item.FromCurrency?.Code</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-info">@item.Rate.ToString("N4")</div>
+                                        </td>
+                                        <td>
+                                            <a asp-action="Index" asp-route-statusFilter="@item.Status"
+                                                asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
+                                                class="text-decoration-none">
+                                                @switch (item.Status)
+                                                {
+                                                    case ForexExchange.Models.OrderStatus.Open:
+                                                        <span class="status-badge-modern status-open">
+                                                            <i class="fas fa-clock me-1"></i>باز
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.Matched:
+                                                        <span class="status-badge-modern status-matched">
+                                                            <i class="fas fa-link me-1"></i>مچ شده
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.PartiallyFilled:
+                                                        <span class="status-badge-modern status-partial">
+                                                            <i class="fas fa-tasks me-1"></i>نیمه تکمیل
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.Completed:
+                                                        <span class="status-badge-modern status-completed">
+                                                            <i class="fas fa-check-circle me-1"></i>تکمیل شده
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.OrderStatus.Cancelled:
+                                                        <span class="status-badge-modern status-cancelled">
+                                                            <i class="fas fa-times-circle me-1"></i>لغو شده
+                                                        </span>
+                                                        break;
+                                                }
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <div class="fw-bold">@item.CreatedAt.ToPersianDateTextify()</div>
+                                                <small class="text-muted">@item.CreatedAt.ToString("HH:mm")</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a asp-action="Details" asp-route-id="@item.Id"
+                                                    class="btn btn-action btn-details">
+                                                    <i class="fas fa-eye me-1"></i>جزئیات
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <h3 class="empty-state-title">هیچ معامله‌ای یافت نشد</h3>
+                        <p class="empty-state-text">در حال حاضر هیچ معامله‌ای در سیستم ثبت نشده است.</p>
+                        <a asp-action="Create" class="modern-btn btn-primary-modern">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            ثبت اولین معامله
+                        </a>
+                    </div>
+                }
             </div>
         </div>
     </div>
