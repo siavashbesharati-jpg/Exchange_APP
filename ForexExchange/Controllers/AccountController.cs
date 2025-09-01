@@ -91,7 +91,8 @@ namespace ForexExchange.Controllers
                     Role = UserRole.Customer,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
-                    EmailConfirmed = !string.IsNullOrWhiteSpace(model.Email)
+                    EmailConfirmed = !string.IsNullOrWhiteSpace(model.Email),
+                    LockoutEnabled = false
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
@@ -156,18 +157,15 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
-            Console.WriteLine($"+++++ LOGIN ACTION CALLED - Phone: {model.PhoneNumber}, Password: {model.Password}");
 
             ViewData["ReturnUrl"] = returnUrl;
 
             if (ModelState.IsValid)
             {
-                Console.WriteLine($"+++++ MODEL STATE IS VALID");
 
                 // Find user by phone number
                 var user = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == model.PhoneNumber);
 
-                Console.WriteLine($"+++++ USER QUERY EXECUTED - Looking for phone: {model.PhoneNumber}");
 
                 if (user != null)
                 {
@@ -205,14 +203,7 @@ namespace ForexExchange.Controllers
                     ModelState.AddModelError(string.Empty, "شماره تلفن یا رمز عبور اشتباه است.");
                 }
             }
-            else
-            {
-                Console.WriteLine($"+++++ MODEL STATE IS INVALID");
-                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    Console.WriteLine($"+++++ MODEL ERROR: {error.ErrorMessage}");
-                }
-            }
+           
 
             return View(model);
         }
