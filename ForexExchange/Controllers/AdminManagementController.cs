@@ -203,20 +203,34 @@ namespace ForexExchange.Controllers
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateAdmin(string userName, string email, string password, UserRole role)
+        public async Task<IActionResult> CreateAdmin(string userName, string email, string password, UserRole role, string fullName)
         {
-            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(fullName))
             {
-                TempData["Error"] = "نام کاربری و رمز عبور الزامی هستند.";
+                TempData["Error"] = "نام و نام خانوادگی، شماره تلفن و رمز عبور الزامی هستند.";
+                return RedirectToAction("ManageAdmins");
+            }
+
+            // Check if phone number already exists
+            var existingUserByPhone = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.PhoneNumber == userName);
+            if (existingUserByPhone != null)
+            {
+                TempData["Error"] = "کاربری با این شماره تلفن قبلاً ثبت نام کرده است.";
                 return RedirectToAction("ManageAdmins");
             }
 
             var user = new ApplicationUser
             {
-                UserName = userName,
+                UserName = userName, // Use phone number as username (same as seeded admin)
+                PhoneNumber = userName, // Set phone number field for login lookup
                 Email = email,
+                FullName = fullName, // Set the full name
                 EmailConfirmed = true,
-                Role = role
+                Role = role,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                LockoutEnabled = false
             };
 
             var result = await _userManager.CreateAsync(user, password);
@@ -233,7 +247,7 @@ namespace ForexExchange.Controllers
                         currentUser.Id,
                         currentUser.UserName ?? "Unknown",
                         AdminActivityType.UserCreated,
-                        $"کاربر جدید ایجاد شد: {userName} با نقش {role}",
+                        $"کاربر جدید ایجاد شد: {fullName} ({userName}) با نقش {role}",
                         JsonSerializer.Serialize(new { UserId = user.Id, Role = role }),
                         "ApplicationUser",
                         null,
@@ -242,7 +256,7 @@ namespace ForexExchange.Controllers
                     );
                 }
 
-                TempData["Success"] = $"کاربر {userName} با موفقیت ایجاد شد.";
+                TempData["Success"] = $"کاربر {fullName} با شماره تلفن {userName} با موفقیت ایجاد شد.";
             }
             else
             {
