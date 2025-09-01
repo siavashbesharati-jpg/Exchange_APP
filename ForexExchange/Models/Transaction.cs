@@ -84,12 +84,18 @@ namespace ForexExchange.Models
         [Display(Name = "Completed At - تاریخ تکمیل")]
         public DateTime? CompletedAt { get; set; }
         
-        [StringLength(100)]
         [Display(Name = "Buyer Bank Account - حساب بانکی خریدار")]
+        public int? BuyerBankAccountId { get; set; }
+        
+        [Display(Name = "Seller Bank Account - حساب بانکی فروشنده")]
+        public int? SellerBankAccountId { get; set; }
+        
+        [StringLength(100)]
+        [Display(Name = "Buyer Bank Account (Legacy) - حساب بانکی خریدار (قدیمی)")]
         public string? BuyerBankAccount { get; set; }
         
         [StringLength(100)]
-        [Display(Name = "Seller Bank Account - حساب بانکی فروشنده")]
+        [Display(Name = "Seller Bank Account (Legacy) - حساب بانکی فروشنده (قدیمی)")]
         public string? SellerBankAccount { get; set; }
         
         [StringLength(500)]
@@ -114,6 +120,8 @@ namespace ForexExchange.Models
         public Order SellOrder { get; set; } = null!;
         public Customer BuyerCustomer { get; set; } = null!;
         public Customer SellerCustomer { get; set; } = null!;
+        public BankAccount? BuyerBankAccountNavigation { get; set; }
+        public BankAccount? SellerBankAccountNavigation { get; set; }
         public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
     }
 }

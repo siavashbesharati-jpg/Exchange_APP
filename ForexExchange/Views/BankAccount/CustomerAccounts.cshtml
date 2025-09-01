@@ -1,0 +1,149 @@
+@model IEnumerable<ForexExchange.Models.BankAccount>
+
+@{
+    ViewData["Title"] = "حساب‌های بانکی مشتری";
+    var customer = ViewBag.Customer as ForexExchange.Models.Customer;
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-university text-primary me-2"></i>
+                        حساب‌های بانکی مشتری
+                    </h1>
+                    @if (customer != null)
+                    {
+                        <p class="text-muted mt-1">
+                            <strong>@customer.FullName</strong>
+                            @if (customer.IsSystem)
+                            {
+                                <span class="badge bg-success ms-2">مشتری سیستم</span>
+                            }
+                        </p>
+                    }
+                </div>
+                <div>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        بازگشت
+                    </a>
+                    @if (customer != null && customer.IsSystem)
+                    {
+                        <a href="@Url.Action("Create", new { customerId = customer.Id })" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            حساب جدید
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Accounts List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        حساب‌های بانکی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>بانک</th>
+                                        <th>شماره حساب</th>
+                                        <th>ارز</th>
+                                        <th>وضعیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var account in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@account.BankName</strong>
+                                                @if (!string.IsNullOrEmpty(account.Branch))
+                                                {
+                                                    <br><small class="text-muted">@account.Branch</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <code>@account.AccountNumber</code>
+                                                @if (!string.IsNullOrEmpty(account.CardNumberLast4))
+                                                {
+                                                    <br><small class="text-muted">کارت: ****-****-****-@account.CardNumberLast4</small>
+                                                }
+                                                @if (!string.IsNullOrEmpty(account.IBAN))
+                                                {
+                                                    <br><small class="text-muted">شبا: @account.IBAN</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@account.CurrencyCode</span>
+                                                @if (account.IsDefault)
+                                                {
+                                                    <span class="badge bg-warning ms-1">پیش‌فرض</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (account.IsActive)
+                                                {
+                                                    <span class="badge bg-success">فعال</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">غیرفعال</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="@Url.Action("Edit", new { id = account.Id })"
+                                                       class="btn btn-sm btn-outline-warning"
+                                                       title="ویرایش">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Delete", new { id = account.Id })"
+                                                       class="btn btn-sm btn-outline-danger"
+                                                       title="حذف"
+                                                       onclick="return confirm('آیا از حذف این حساب بانکی اطمینان دارید؟')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-university fa-4x text-muted mb-3"></i>
+                            <h4 class="text-muted">هیچ حساب بانکی یافت نشد</h4>
+                            <p class="text-muted">این مشتری هنوز هیچ حساب بانکی ندارد.</p>
+                            @if (customer != null && customer.IsSystem)
+                            {
+                                <a href="@Url.Action("Create", new { customerId = customer.Id })" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i>
+                                    ایجاد حساب بانکی
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

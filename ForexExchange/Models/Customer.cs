@@ -21,15 +21,20 @@ namespace ForexExchange.Models
         public string NationalId { get; set; } = string.Empty;
         
         [StringLength(200)]
-    public string Address { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    public bool IsActive { get; set; } = true;        // Navigation properties
+        public bool IsActive { get; set; } = true;
+        
+        public bool IsSystem { get; set; } = false; // Indicates if this is a system customer (for exchange operations)
+        
+        // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         public ICollection<Transaction> BuyTransactions { get; set; } = new List<Transaction>();
         public ICollection<Transaction> SellTransactions { get; set; } = new List<Transaction>();
         public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        public ICollection<BankAccount> BankAccounts { get; set; } = new List<BankAccount>();
     }
 }

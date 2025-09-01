@@ -58,6 +58,9 @@ namespace ForexExchange.Services
                     CreatedAt = DateTime.Now
                 };
 
+                // Assign system bank accounts based on customer types and currencies
+                await AssignSystemBankAccountsAsync(transaction, buyOrder, sellOrder);
+
                 _context.Transactions.Add(transaction);
 
                 // Update order statuses
@@ -367,6 +370,91 @@ namespace ForexExchange.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send settlement notifications for transaction {TransactionId}", transaction.Id);
+            }
+        }
+
+        /// <summary>
+        /// Assign system bank accounts to transaction based on customer types and currencies
+        /// تخصیص حساب‌های بانکی سیستم به تراکنش بر اساس نوع مشتری و ارزها
+        /// </summary>
+        private async Task AssignSystemBankAccountsAsync(Transaction transaction, Order buyOrder, Order sellOrder)
+        {
+            // Get system customer and their bank accounts
+            var systemCustomer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.IsSystem);
+
+            if (systemCustomer == null)
+            {
+                _logger.LogWarning("System customer not found. Cannot assign system bank accounts.");
+                return;
+            }
+
+            var systemBankAccounts = await _context.BankAccounts
+                .Where(ba => ba.CustomerId == systemCustomer.Id && ba.IsActive)
+                .ToListAsync();
+
+            // Get buyer and seller customer details
+            var buyerCustomer = await _context.Customers.FindAsync(buyOrder.CustomerId);
+            var sellerCustomer = await _context.Customers.FindAsync(sellOrder.CustomerId);
+
+            // Strategy: System bank accounts are used for non-system customers
+            // استراتژی: حساب‌های بانکی سیستم برای مشتریان غیرسیستم استفاده می‌شود
+
+            // For buyer (receiving currency): if buyer is NOT system customer, assign system bank as receiver
+            if (buyerCustomer != null && !buyerCustomer.IsSystem)
+            {
+                var toCurrency = await _context.Currencies.FindAsync(transaction.ToCurrencyId);
+                var systemAccountForReceiver = systemBankAccounts
+                    .FirstOrDefault(ba => ba.CurrencyCode == toCurrency?.Code);
+
+                if (systemAccountForReceiver != null)
+                {
+                    transaction.BuyerBankAccountId = systemAccountForReceiver.Id;
+                    _logger.LogInformation($"Assigned system bank account {systemAccountForReceiver.Id} ({systemAccountForReceiver.BankName}) as receiver for buyer {buyerCustomer.FullName}");
+                }
+                else
+                {
+                    _logger.LogWarning($"No system bank account found for currency {toCurrency?.Code} to assign as receiver");
+                }
+            }
+
+            // For seller (sending currency): if seller is NOT system customer, assign system bank as sender
+            if (sellerCustomer != null && !sellerCustomer.IsSystem)
+            {
+                var fromCurrency = await _context.Currencies.FindAsync(transaction.FromCurrencyId);
+                var systemAccountForSender = systemBankAccounts
+                    .FirstOrDefault(ba => ba.CurrencyCode == fromCurrency?.Code);
+
+                if (systemAccountForSender != null)
+                {
+                    transaction.SellerBankAccountId = systemAccountForSender.Id;
+                    _logger.LogInformation($"Assigned system bank account {systemAccountForSender.Id} ({systemAccountForSender.BankName}) as sender for seller {sellerCustomer.FullName}");
+                }
+                else
+                {
+                    _logger.LogWarning($"No system bank account found for currency {fromCurrency?.Code} to assign as sender");
+                }
+            }
+
+            // If both customers are system customers, assign system accounts for both sides
+            if (buyerCustomer != null && buyerCustomer.IsSystem && sellerCustomer != null && sellerCustomer.IsSystem)
+            {
+                var fromCurrency = await _context.Currencies.FindAsync(transaction.FromCurrencyId);
+                var toCurrency = await _context.Currencies.FindAsync(transaction.ToCurrencyId);
+
+                var senderAccount = systemBankAccounts.FirstOrDefault(ba => ba.CurrencyCode == fromCurrency?.Code);
+                var receiverAccount = systemBankAccounts.FirstOrDefault(ba => ba.CurrencyCode == toCurrency?.Code);
+
+                if (senderAccount != null)
+                {
+                    transaction.SellerBankAccountId = senderAccount.Id;
+                }
+                if (receiverAccount != null)
+                {
+                    transaction.BuyerBankAccountId = receiverAccount.Id;
+                }
+
+                _logger.LogInformation("Both buyer and seller are system customers. Assigned system bank accounts for both sides.");
             }
         }
     }

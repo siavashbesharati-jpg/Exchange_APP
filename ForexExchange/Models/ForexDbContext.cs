@@ -24,6 +24,7 @@ namespace ForexExchange.Models
         public DbSet<CurrencyPool> CurrencyPools { get; set; }
         public DbSet<Currency> Currencies { get; set; }
         public DbSet<AdminActivity> AdminActivities { get; set; }
+        public DbSet<BankAccount> BankAccounts { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -246,6 +247,42 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.CreatedAt);
             });
+            
+            // BankAccount configurations
+            modelBuilder.Entity<BankAccount>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.Customer)
+                      .WithMany(e => e.BankAccounts)
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(e => e.BankName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.AccountNumber).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.AccountHolderName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.IBAN).HasMaxLength(34);
+                entity.Property(e => e.CardNumberLast4).HasMaxLength(4);
+                entity.Property(e => e.Branch).HasMaxLength(100);
+                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.Notes).HasMaxLength(500);
+                entity.HasIndex(e => new { e.CustomerId, e.IsActive });
+                entity.HasIndex(e => e.AccountNumber);
+                entity.HasIndex(e => e.IsDefault).HasFilter("[IsDefault] = 1");
+            });
+            
+          
+            
+            // Configure BankAccount-Transaction relationships
+            modelBuilder.Entity<Transaction>()
+                .HasOne(t => t.BuyerBankAccountNavigation)
+                .WithMany()
+                .HasForeignKey(t => t.BuyerBankAccountId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            modelBuilder.Entity<Transaction>()
+                .HasOne(t => t.SellerBankAccountNavigation)
+                .WithMany()
+                .HasForeignKey(t => t.SellerBankAccountId)
+                .OnDelete(DeleteBehavior.SetNull);
             
             // ApplicationUser configurations
             modelBuilder.Entity<ApplicationUser>(entity =>

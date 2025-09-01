@@ -1,0 +1,148 @@
+@model ForexExchange.Models.BankAccount
+
+@{
+    ViewData["Title"] = "حذف حساب بانکی";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-trash text-danger me-2"></i>
+                        حذف حساب بانکی
+                    </h1>
+                    <p class="text-muted mt-1">تایید حذف حساب بانکی @Model.BankName</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("CustomerAccounts", new { customerId = Model.CustomerId })" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        بازگشت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Alert -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>هشدار!</strong> این عملیات قابل برگشت نیست. آیا مطمئن هستید که می‌خواهید این حساب بانکی را حذف کنید؟
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Details -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        جزئیات حساب بانکی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">اطلاعات مشتری</h6>
+                            <p class="mb-2"><strong>مشتری:</strong> @Model.Customer?.FullName</p>
+                            <p class="mb-2"><strong>نوع مشتری:</strong>
+                                @if (Model.Customer?.IsSystem == true)
+                                {
+                                    <span class="badge bg-success">سیستم</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary">عادی</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">اطلاعات حساب</h6>
+                            <p class="mb-2"><strong>بانک:</strong> @Model.BankName</p>
+                            <p class="mb-2"><strong>شماره حساب:</strong> <code>@Model.AccountNumber</code></p>
+                            <p class="mb-2"><strong>ارز:</strong> <span class="badge bg-info">@Model.CurrencyCode</span></p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">وضعیت حساب</h6>
+                            <p class="mb-2"><strong>وضعیت:</strong>
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success">فعال</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">غیرفعال</span>
+                                }
+                            </p>
+                            <p class="mb-2"><strong>پیش‌فرض:</strong>
+                                @if (Model.IsDefault)
+                                {
+                                    <span class="badge bg-warning">بله</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark">خیر</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">اطلاعات تکمیلی</h6>
+                            @if (!string.IsNullOrEmpty(Model.IBAN))
+                            {
+                                <p class="mb-2"><strong>شبا:</strong> @Model.IBAN</p>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.CardNumberLast4))
+                            {
+                                <p class="mb-2"><strong>کارت:</strong> ****-****-****-@Model.CardNumberLast4</p>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Branch))
+                            {
+                                <p class="mb-2"><strong>شعبه:</strong> @Model.Branch</p>
+                            }
+                            <p class="mb-2"><strong>تاریخ ایجاد:</strong> @Model.CreatedAt.ToString("yyyy/MM/dd")</p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <hr>
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="text-muted mb-2">یادداشت‌ها</h6>
+                                <p class="mb-0">@Model.Notes</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Delete Form -->
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="@Url.Action("CustomerAccounts", new { customerId = Model.CustomerId })" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>
+                            انصراف
+                        </a>
+                        <form asp-action="DeleteConfirmed" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('آیا واقعاً از حذف این حساب بانکی اطمینان دارید؟ این عملیات قابل برگشت نیست.')">
+                                <i class="fas fa-trash me-1"></i>
+                                حذف حساب بانکی
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

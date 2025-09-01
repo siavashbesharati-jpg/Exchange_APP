@@ -1,0 +1,236 @@
+@model ForexExchange.Models.BankAccount
+
+@{
+    ViewData["Title"] = "ویرایش حساب بانکی";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-edit text-warning me-2"></i>
+                        ویرایش حساب بانکی
+                    </h1>
+                    <p class="text-muted mt-1">ویرایش اطلاعات حساب بانکی @Model.BankName</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("CustomerAccounts", new { customerId = Model.CustomerId })"
+                        class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        بازگشت
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>بانک:</strong> @Model.BankName</p>
+                            <p class="mb-1"><strong>شماره حساب:</strong> <code>@Model.AccountNumber</code></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">وضعیت حساب</h6>
+                            <p class="mb-1"><strong>ارز:</strong> <span class="badge bg-info">@Model.CurrencyCode</span>
+                            </p>
+                            <p class="mb-1"><strong>وضعیت:</strong>
+                                @if (Model.IsActive)
+                                {
+                                    <span class="badge bg-success">فعال</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">غیرفعال</span>
+                                }
+                                @if (Model.IsDefault)
+                                {
+                                    <span class="badge bg-warning ms-1">پیش‌فرض</span>
+                                }
+                            </p>
+                            <p class="mb-1"><strong>تاریخ ایجاد:</strong> @Model.CreatedAt.ToString("yyyy/MM/dd")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        ویرایش اطلاعات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <input type="hidden" asp-for="CustomerId" />
+
+                        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+
+                        <!-- Bank Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="BankName" class="form-label">
+                                        <i class="fas fa-university me-1"></i>
+                                        نام بانک <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="BankName" class="form-control" />
+                                    <span asp-validation-for="BankName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Branch" class="form-label">
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        شعبه
+                                    </label>
+                                    <input asp-for="Branch" class="form-control" />
+                                    <span asp-validation-for="Branch" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Account Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="AccountNumber" class="form-label">
+                                        <i class="fas fa-hashtag me-1"></i>
+                                        شماره حساب <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="AccountNumber" class="form-control" />
+                                    <span asp-validation-for="AccountNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="AccountHolderName" class="form-label">
+                                        <i class="fas fa-user-tag me-1"></i>
+                                        نام صاحب حساب <span class="text-danger">*</span>
+                                    </label>
+                                    <input asp-for="AccountHolderName" class="form-control" />
+                                    <span asp-validation-for="AccountHolderName" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Account Info -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="IBAN" class="form-label">
+                                        <i class="fas fa-code me-1"></i>
+                                        شماره شبا (IBAN)
+                                    </label>
+                                    <input asp-for="IBAN" class="form-control" />
+                                    <span asp-validation-for="IBAN" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="CardNumberLast4" class="form-label">
+                                        <i class="fas fa-credit-card me-1"></i>
+                                        ۴ رقم آخر کارت
+                                    </label>
+                                    <input asp-for="CardNumberLast4" class="form-control" maxlength="4" />
+                                    <span asp-validation-for="CardNumberLast4" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Currency and Settings -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="CurrencyCode" class="form-label">
+                                        <i class="fas fa-coins me-1"></i>
+                                        ارز حساب <span class="text-danger">*</span>
+                                    </label>
+                                    <select asp-for="CurrencyCode" class="form-select"
+                                        asp-items="@(new SelectList(ViewBag.Currencies, "Code", "Name"))">
+                                    </select>
+                                    <span asp-validation-for="CurrencyCode" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">تنظیمات حساب</label>
+                                    <div class="form-check">
+                                        <input asp-for="IsActive" class="form-check-input" />
+                                        <label asp-for="IsActive" class="form-check-label">
+                                            حساب فعال است
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input asp-for="IsDefault" class="form-check-input" />
+                                        <label asp-for="IsDefault" class="form-check-label">
+                                            این حساب پیش‌فرض مشتری باشد
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">
+                                <i class="fas fa-sticky-note me-1"></i>
+                                یادداشت‌ها
+                            </label>
+                            <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="@Url.Action("CustomerAccounts", new { customerId = Model.CustomerId })"
+                                class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>
+                                انصراف
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save me-1"></i>
+                                بروزرسانی حساب
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Auto-format IBAN input
+            $('#IBAN').on('input', function () {
+                var value = $(this).val().toUpperCase();
+                $(this).val(value);
+            });
+
+            // Auto-format card number input
+            $('#CardNumberLast4').on('input', function () {
+                var value = $(this).val().replace(/\D/g, '');
+                $(this).val(value);
+            });
+        });
+    </script>
+}

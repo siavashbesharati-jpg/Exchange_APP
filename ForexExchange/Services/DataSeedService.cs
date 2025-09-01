@@ -49,6 +49,8 @@ namespace ForexExchange.Services
                 // Seed exchange rates first
                 await SeedExchangeRatesAsync();
 
+                await CreateSystemCustomerAsync();
+
                 // Seed sample data
                 //await SeedSampleDataAsync();
 
@@ -170,6 +172,43 @@ namespace ForexExchange.Services
                 _logger.LogInformation("Admin user already exists");
             }
         }
+
+        /// <summary>
+        /// Create system customer for exchange operations
+        /// ایجاد مشتری سیستم برای عملیات صرافی
+        /// </summary>
+        private async Task CreateSystemCustomerAsync()
+        {
+            var systemCustomer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.IsSystem);
+
+            if (systemCustomer == null)
+            {
+                systemCustomer = new Customer
+                {
+                    FullName = "سیستم ",
+                    PhoneNumber = "0000000000",
+                    Email = "system@exchange.local",
+                    NationalId = "0000000000",
+                    Address = "سیستم داخلی",
+                    IsActive = true,
+                    IsSystem = true,
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.Customers.Add(systemCustomer);
+                await _context.SaveChangesAsync();
+
+
+                _logger.LogInformation("System customer created successfully");
+            }
+            else
+            {
+                _logger.LogInformation("System customer already exists");
+            }
+        }
+
+
 
         private async Task SeedExchangeRatesAsync()
         {

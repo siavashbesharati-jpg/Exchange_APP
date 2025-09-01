@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ForexExchange.Models
 {
     
-    
+   
     public enum OrderStatus
     {
         Open = 0,          // باز
@@ -21,7 +21,7 @@ namespace ForexExchange.Models
         [Required]
         public int CustomerId { get; set; }
         
- 
+       
         
         [Required]
         [Display(Name = "From Currency - از ارز")]
@@ -31,16 +31,7 @@ namespace ForexExchange.Models
         [Display(Name = "To Currency - به ارز")]
         public int ToCurrencyId { get; set; }
         
-        /// <summary>
-        /// Legacy field for backward compatibility - now maps to FromCurrencyId
-        /// فیلد قدیمی برای سازگاری - اکنون به FromCurrencyId نگاشت می‌شود
-        /// </summary>
-        [Required]
-        public int CurrencyId 
-        { 
-            get => FromCurrencyId; 
-            set => FromCurrencyId = value; 
-        }
+       
         
         [Required]
         [Column(TypeName = "decimal(18,2)")]
@@ -101,7 +92,7 @@ namespace ForexExchange.Models
         
         /// <summary>
         /// Check if order is cross-currency (not involving IRR/Toman)
-        /// بررسی آیا معامله متقابل است (شامل تومان نمی‌شود)
+        /// بررسی آیا سفارش متقابل است (شامل تومان نمی‌شود)
         /// </summary>
         public bool IsCrossCurrency => FromCurrency?.Code != "IRR" && ToCurrency?.Code != "IRR";
         
