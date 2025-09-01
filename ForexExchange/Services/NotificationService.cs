@@ -54,7 +54,7 @@ namespace ForexExchange.Services
                 await _emailService.SendEmailAsync(
                     customer.Email,
                     "تأیید ثبت معامله",
-                    $"سلام {customer.FullName}،\n\n{message}\n\nبا تشکر،\nسیستم صرافی"
+                    $"سلام {customer.FullName}،\n\n{message}\n\nبا تشکر،\nسیستم معاملات "
                 );
 
                 _logger.LogInformation("Order created notification sent for order {OrderId}", order.Id);

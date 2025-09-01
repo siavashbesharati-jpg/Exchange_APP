@@ -1,7 +1,7 @@
 @model IEnumerable<ForexExchange.Models.ExchangeRate>
 
 @{
-    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : "سامانه صرافی ایران اکسپدیا";
+    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : "سامانه معاملات  ایران اکسپدیا";
 }
 
 <div class="container-fluid">
@@ -11,7 +11,7 @@
                 <img src="~/favicon/android-chrome-512x512.png" alt="تابان" 
                      style="width: 250px; height: 250px; margin: 32px;" class="mb-3">
                 <h1 class="display-5 fw-bold text-primary">
-                    سامانه صرافی تابان
+                    سامانه معاملات  تابان
                 </h1>
                 <p class="text-muted fs-5">نرخ‌های ارز به‌روز و تبدیل آنلاین</p>
             </div>

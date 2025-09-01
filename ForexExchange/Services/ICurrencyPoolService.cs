@@ -112,19 +112,19 @@ namespace ForexExchange.Services
 
     /// <summary>
     /// Transaction type from exchange pool perspective
-    /// نوع تراکنش از منظر استخر صرافی
+    /// نوع تراکنش از منظر استخر معاملات 
     /// </summary>
     public enum PoolTransactionType
     {
         /// <summary>
         /// Exchange buys currency (positive to pool)
-        /// صرافی ارز می‌خرد (مثبت برای استخر)
+        /// معاملات  ارز می‌خرد (مثبت برای استخر)
         /// </summary>
         Buy,
 
         /// <summary>
         /// Exchange sells currency (negative to pool)
-        /// صرافی ارز می‌فروشد (منفی برای استخر)
+        /// معاملات  ارز می‌فروشد (منفی برای استخر)
         /// </summary>
         Sell
     }

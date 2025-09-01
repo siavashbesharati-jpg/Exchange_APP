@@ -69,7 +69,7 @@
         <div class="col-md-3">
             <div class="card text-white bg-info">
                 <div class="card-body">
-                    <h5 class="card-title">هزینه صرافی</h5>
+                    <h5 class="card-title">هزینه معاملات </h5>
                     <h2 class="mb-0">@Model.TotalExchangeFeesEarned.ToString("N0")</h2>
                     <small>تومان</small>
                 </div>
@@ -164,7 +164,7 @@
                                         <th>تعداد تراکنش</th>
                                         <th>حجم کل (تومان)</th>
                                         <th>کمیسیون (تومان)</th>
-                                        <th>هزینه صرافی (تومان)</th>
+                                        <th>هزینه معاملات  (تومان)</th>
                                         <th>کل درآمد (تومان)</th>
                                         <th>درصد کمیسیون</th>
                                     </tr>
@@ -251,7 +251,7 @@
                     backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     tension: 0.1
                 }, {
-                    label: 'هزینه صرافی (تومان)',
+                    label: 'هزینه معاملات  (تومان)',
                     data: [@string.Join(",", Model.DailyCommissions.OrderBy(d => d.Date).Select(d => d.ExchangeFeesEarned))],
                     borderColor: 'rgb(255, 99, 132)',
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
