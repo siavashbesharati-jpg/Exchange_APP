@@ -115,61 +115,68 @@ namespace ForexExchange.Services
 
         private async Task CreateAdminUserAsync()
         {
-            const string adminEmail = "admin@iranexpedia.ir";
-            const string adminPhone = "09120674032";
-            const string adminPassword = "123456"; // Changed to 6 characters
-
-            // Check if admin exists by email first (for existing installations)
-            var adminUser = await _userManager.FindByEmailAsync(adminEmail);
-
-            // If found with email username, update it to use phone number
-            if (adminUser != null && adminUser.UserName == adminEmail)
+            // Define multiple admin users with their phone numbers as passwords
+            var adminUsers = new[]
             {
-                adminUser.UserName = adminPhone;
-                var updateResult = await _userManager.UpdateAsync(adminUser);
-                if (updateResult.Succeeded)
+                new { Phone = "09120674032", Email = "admin1@iranexpedia.ir", FullName = "سیاوش", Password = "09120674032" },
+                new { Phone = "09391374624", Email = "admin2@iranexpedia.ir", FullName = "الهه", Password = "09391374624" },
+                new { Phone = "09194810612", Email = "admin3@iranexpedia.ir", FullName = "بهنام", Password = "09194810612" }
+            };
+
+            foreach (var adminData in adminUsers)
+            {
+                // Check if admin exists by email first (for existing installations)
+                var adminUser = await _userManager.FindByEmailAsync(adminData.Email);
+
+                // If found with email username, update it to use phone number
+                if (adminUser != null && adminUser.UserName == adminData.Email)
                 {
-                    _logger.LogInformation($"Updated existing admin user to use phone number as username: {adminPhone}");
+                    adminUser.UserName = adminData.Phone;
+                    var updateResult = await _userManager.UpdateAsync(adminUser);
+                    if (updateResult.Succeeded)
+                    {
+                        _logger.LogInformation($"Updated existing admin user to use phone number as username: {adminData.Phone}");
+                    }
+                    continue;
                 }
-                return;
-            }
 
-            // Check if admin exists by phone number
-            if (adminUser == null)
-            {
-                adminUser = await _userManager.FindByNameAsync(adminPhone);
-            }
-
-            if (adminUser == null)
-            {
-                adminUser = new ApplicationUser
+                // Check if admin exists by phone number
+                if (adminUser == null)
                 {
-                    UserName = adminPhone, // Use phone as username for login
-                    Email = adminEmail,
-                    FullName = "مدیر سیستم",
-                    Role = UserRole.Admin,
-                    IsActive = true,
-                    CreatedAt = DateTime.Now,
-                    EmailConfirmed = true,
-                    PhoneNumber = adminPhone
-                };
+                    adminUser = await _userManager.FindByNameAsync(adminData.Phone);
+                }
 
-                var result = await _userManager.CreateAsync(adminUser, adminPassword);
-
-                if (result.Succeeded)
+                if (adminUser == null)
                 {
-                    await _userManager.AddToRoleAsync(adminUser, "Admin");
-                    _logger.LogInformation($"Admin user created successfully with username: {adminPhone} and email: {adminEmail}");
+                    adminUser = new ApplicationUser
+                    {
+                        UserName = adminData.Phone, // Use phone as username for login
+                        Email = adminData.Email,
+                        FullName = adminData.FullName,
+                        Role = UserRole.Admin,
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        EmailConfirmed = true,
+                        PhoneNumber = adminData.Phone
+                    };
+
+                    var result = await _userManager.CreateAsync(adminUser, adminData.Password);
+
+                    if (result.Succeeded)
+                    {
+                        await _userManager.AddToRoleAsync(adminUser, "Admin");
+                        _logger.LogInformation($"Admin user created successfully with username: {adminData.Phone} and email: {adminData.Email}");
+                    }
+                    else
+                    {
+                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        _logger.LogError($"Failed to create admin user {adminData.Phone}: {errors}");
+                    }
                 }
                 else
                 {
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    _logger.LogError($"Failed to create admin user: {errors}");
+                    _logger.LogInformation($"Admin user {adminData.Phone} already exists");
                 }
-            }
-            else
-            {
-                _logger.LogInformation("Admin user already exists");
             }
         }
 

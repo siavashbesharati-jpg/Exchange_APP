@@ -89,6 +89,63 @@ public class HomeController : Controller
         return PartialView("_DebtCreditWidget", customerDebtCredits);
     }
 
+    // Debug action to check currency display order
+    public async Task<IActionResult> DebugCurrencyOrder()
+    {
+        var pools = await _poolService.GetAllPoolsAsync();
+        var currencies = pools.Select(p => new { 
+            Code = p.Currency?.Code,
+            Name = p.Currency?.PersianName,
+            DisplayOrder = p.Currency?.DisplayOrder
+        }).ToList();
+        
+        return Json(currencies);
+    }
+
+    // Temporary action to update currency display order
+    public async Task<IActionResult> UpdateCurrencyDisplayOrder()
+    {
+        try
+        {
+            // Get all currencies
+            var currencies = await _context.Currencies.ToListAsync();
+            
+            // Update display orders
+            foreach (var currency in currencies)
+            {
+                switch (currency.Code)
+                {
+                    case "IRR":
+                        currency.DisplayOrder = 1;
+                        break;
+                    case "OMR":
+                        currency.DisplayOrder = 2;
+                        break;
+                    case "AED":
+                        currency.DisplayOrder = 3;
+                        break;
+                    case "USD":
+                        currency.DisplayOrder = 4;
+                        break;
+                    case "EUR":
+                        currency.DisplayOrder = 5;
+                        break;
+                    case "TRY":
+                        currency.DisplayOrder = 6;
+                        break;
+                }
+            }
+            
+            await _context.SaveChangesAsync();
+            
+            return Json(new { success = true, message = "Currency DisplayOrder values updated successfully!" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = $"Error: {ex.Message}" });
+        }
+    }
+
     public IActionResult Privacy()
     {
         return View();

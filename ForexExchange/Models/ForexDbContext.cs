@@ -345,10 +345,10 @@ namespace ForexExchange.Models
             // Seed currencies
             modelBuilder.Entity<Currency>().HasData(
                 new Currency { Id = 1, Code = "IRR", Name = "Iranian Rial", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = seedDate },
-                new Currency { Id = 2, Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = seedDate },
-                new Currency { Id = 3, Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = seedDate },
-                new Currency { Id = 4, Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = seedDate },
-                new Currency { Id = 5, Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = seedDate },
+                new Currency { Id = 2, Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = seedDate },
+                new Currency { Id = 3, Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = seedDate },
+                new Currency { Id = 4, Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = seedDate },
+                new Currency { Id = 5, Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = seedDate },
                 new Currency { Id = 6, Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = seedDate }
             );
         }

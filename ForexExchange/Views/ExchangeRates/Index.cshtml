@@ -1,7 +1,14 @@
 @model IEnumerable<ForexExchange.Models.ExchangeRate>
 
 @{
-    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : "سامانه معاملات  ایران اکسپدیا";
+    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : "سامانه معاملات   تابان ";
+    
+    // Open Graph Tags for better WhatsApp sharing
+    ViewData["OGTitle"] = "سامانه معاملات تابان - نرخ‌های روز ارز";
+    ViewData["OGDescription"] = "مشاهده آخرین نرخ‌های ارز، دلار، یورو، پوند، درهم و سایر ارزها در سامانه معاملات تابان. نرخ‌های به‌روز و قابل اعتماد.";
+    ViewData["OGImage"] = Url.Content("~/favicon/android-chrome-512x512.png");
+    ViewData["OGImageAlt"] = "لوگو سامانه معاملات تابان";
+    ViewData["OGType"] = "website";
 }
 
 <div class="container-fluid">

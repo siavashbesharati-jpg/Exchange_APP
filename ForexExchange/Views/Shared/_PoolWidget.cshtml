@@ -165,61 +165,9 @@
                     </div>
                 }
             </div>
-
-            <!-- Enhanced Summary Dashboard -->
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            <h6 class="card-title mb-3">
-                                <i class="bi bi-bar-chart-line me-2"></i>
-                                خلاصه وضعیت استخرها
-                            </h6>
-                            <div class="row text-center g-3">
-                                <div class="col-md-3">
-                                    <div class="summary-item">
-                                        <div class="summary-value text-primary">@Model.Count</div>
-                                        <div class="summary-label">تعداد ارزها</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="summary-item">
-                                        <div class="summary-value text-success">@Model.Count(p => p.Balance > 0)</div>
-                                        <div class="summary-label">موجودی مثبت</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="summary-item">
-                                        <div class="summary-value text-danger">@Model.Count(p => p.Balance < 0)</div>
-                                        <div class="summary-label">موجودی منفی</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="summary-item">
-                                        <div class="summary-value text-warning">@Model.Count(p => p.RiskLevel >= ForexExchange.Models.PoolRiskLevel.High)</div>
-                                        <div class="summary-label">نیاز به توجه</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        
         }
-        else
-        {
-            <div class="text-center py-5">
-                <div class="empty-state">
-                    <i class="bi bi-bank2 text-muted" style="font-size: 3rem;"></i>
-                    <h5 class="text-muted mt-3">استخر ارزی خالی است</h5>
-                    <p class="text-muted">استخرهای ارزی پس از اولین تراکنش ایجاد می‌شوند</p>
-                    <a href="@Url.Action("Create", "Orders")" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i>
-                        ایجاد اولین معامله
-                    </a>
-                </div>
-            </div>
-        }
+       
     </div>
 </div>
 
