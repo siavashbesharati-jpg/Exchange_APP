@@ -43,6 +43,8 @@
 
                         <!-- Hidden field for CustomerId (automatically set to system customer) -->
                         <input type="hidden" asp-for="CustomerId" />
+                        <input type="hidden" asp-for="IsActive" class="form-check-input" checked />
+                        <input type="hidden" asp-for="IsDefault" class="form-check-input" />
 
                         <!-- Bank Information -->
                         <div class="row">
@@ -137,47 +139,30 @@
                                     <span asp-validation-for="CurrencyCode" class="text-danger"></span>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">تنظیمات حساب</label>
-                                    <div class="form-check">
-                                        <input asp-for="IsActive" class="form-check-input" checked />
-                                        <label asp-for="IsActive" class="form-check-label">
-                                            حساب فعال است
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input asp-for="IsDefault" class="form-check-input" />
-                                        <label asp-for="IsDefault" class="form-check-label">
-                                            این حساب پیش‌فرض مشتری باشد
-                                        </label>
-                                    </div>
-                                </div>
+
+
+                            <!-- Notes -->
+                            <div class="mb-3">
+                                <label asp-for="Notes" class="form-label">
+                                    <i class="fas fa-sticky-note me-1"></i>
+                                    یادداشت‌ها
+                                </label>
+                                <textarea asp-for="Notes" class="form-control" rows="3"
+                                    placeholder="یادداشت‌های اضافی..."></textarea>
+                                <span asp-validation-for="Notes" class="text-danger"></span>
                             </div>
-                        </div>
 
-                        <!-- Notes -->
-                        <div class="mb-3">
-                            <label asp-for="Notes" class="form-label">
-                                <i class="fas fa-sticky-note me-1"></i>
-                                یادداشت‌ها
-                            </label>
-                            <textarea asp-for="Notes" class="form-control" rows="3"
-                                placeholder="یادداشت‌های اضافی..."></textarea>
-                            <span asp-validation-for="Notes" class="text-danger"></span>
-                        </div>
-
-                        <!-- Submit Buttons -->
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="@Url.Action("Index")" class="btn btn-secondary">
-                                <i class="fas fa-times me-1"></i>
-                                انصراف
-                            </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save me-1"></i>
-                                ایجاد حساب بانکی
-                            </button>
-                        </div>
+                            <!-- Submit Buttons -->
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>
+                                    انصراف
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save me-1"></i>
+                                    ایجاد حساب بانکی
+                                </button>
+                            </div>
                     </form>
                 </div>
             </div>
