@@ -39,7 +39,7 @@
                                         <th>تصویر</th>
                                         <th>مشتری</th>
                                         <th>نوع رسید</th>
-                                        <th>مبلغ صندوق اج شده</th>
+                                        <th>مبلغ رسید  شده</th>
                                         <th>شماره پیگیری</th>
                                         <th>تاریخ آپلود</th>
                                         <th>وضعیت</th>
@@ -127,7 +127,8 @@
                                                             تأیید
                                                         </button>
                                                     }
-                                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                            @Html.AntiForgeryToken()
                                                         <button type="submit" class="btn btn-sm btn-outline-danger" 
                                                                 onclick="return confirm('آیا مطمئن هستید که می‌خواهید این رسید را حذف کنید؟')">
                                                             حذف
@@ -160,6 +161,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form asp-action="Verify" method="post">
+                        @Html.AntiForgeryToken()
                 <div class="modal-header">
                     <h5 class="modal-title" id="verifyModalLabel">تأیید رسید</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>

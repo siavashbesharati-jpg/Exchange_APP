@@ -516,11 +516,80 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
+            // Remove navigation properties and computed fields from validation; we bind by Ids
+            ModelState.Remove("Customer");
+            ModelState.Remove("Transactions");
+            ModelState.Remove("Receipts");
+            ModelState.Remove("FromCurrency");
+            ModelState.Remove("ToCurrency");
+            ModelState.Remove("TotalAmount");
+            ModelState.Remove("TotalInToman");
+
+            // Basic server-side validations (parity with Create)
+            if (order.CustomerId == 0)
+            {
+                ModelState.AddModelError("CustomerId", "انتخاب مشتری الزامی است.");
+            }
+            if (order.FromCurrencyId == 0)
+            {
+                ModelState.AddModelError("FromCurrencyId", "انتخاب ارز مبدأ الزامی است.");
+            }
+            if (order.ToCurrencyId == 0)
+            {
+                ModelState.AddModelError("ToCurrencyId", "انتخاب ارز مقصد الزامی است.");
+            }
+            if (order.FromCurrencyId == order.ToCurrencyId && order.FromCurrencyId != 0)
+            {
+                ModelState.AddModelError("ToCurrencyId", "ارز مبدأ و مقصد نمی‌توانند یکسان باشند.");
+            }
+            if (order.Rate <= 0)
+            {
+                ModelState.AddModelError("Rate", "نرخ ارز باید بزرگتر از صفر باشد.");
+            }
+
             if (ModelState.IsValid)
             {
                 try
                 {
+                    // Recompute totals on server for integrity
+                    var totalValue = order.Amount * order.Rate;
+
+                    // Calculate TotalInToman considering base currency
+                    var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                    if (baseCurrency != null)
+                    {
+                        if (order.FromCurrencyId == baseCurrency.Id)
+                        {
+                            order.TotalInToman = order.Amount;
+                        }
+                        else if (order.ToCurrencyId == baseCurrency.Id)
+                        {
+                            order.TotalInToman = totalValue;
+                        }
+                        else
+                        {
+                            // Approximate via USD if available
+                            var usdCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "USD" && c.IsActive);
+                            if (usdCurrency != null)
+                            {
+                                var usdRate = await _context.ExchangeRates
+                                    .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == usdCurrency.Id && r.IsActive);
+                                order.TotalInToman = totalValue * (usdRate?.Rate ?? 0);
+                            }
+                            else
+                            {
+                                order.TotalInToman = 0;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        order.TotalInToman = 0;
+                    }
+
+                    order.TotalAmount = totalValue;
                     order.UpdatedAt = DateTime.Now;
+
                     _context.Update(order);
                     await _context.SaveChangesAsync();
 

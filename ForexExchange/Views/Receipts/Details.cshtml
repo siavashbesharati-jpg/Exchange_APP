@@ -34,6 +34,21 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
         </div>
     }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
 
     <div class="row">
         <!-- Receipt Image -->
@@ -129,7 +144,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">اطلاعات صندوق اج شده (OCR)</h5>
+                        <h5 class="card-title mb-0">اطلاعات رسید  شده (OCR)</h5>
                     </div>
                     <div class="card-body">
                         @if (!string.IsNullOrEmpty(Model.ParsedAmount))
@@ -227,6 +242,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <form asp-action="Verify" method="post">
+                    @Html.AntiForgeryToken()
                     <div class="modal-header">
                         <h5 class="modal-title" id="verifyModalLabel">تأیید رسید</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>

@@ -1,730 +1,245 @@
 @model ForexExchange.Models.Order
 
 @{
-    ViewData["Title"] = "رسید معامله";
+    ViewData["Title"] = "جزئیات معامله";
 }
 
-<style>
-.receipt-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    background: #fff;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    border-radius: 15px;
-    overflow: hidden;
-}
-
-.receipt-header {
-    background: none;
-    color: black;
-    padding: 30px;
-    text-align: center;
-    position: relative;
-}
-
-.receipt-header::before {
-    display: none;
-}
-
-.receipt-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 10px;
-    text-shadow: none;
-}
-
-.receipt-subtitle {
-    font-size: 1.1rem;
-    opacity: 1;
-    margin-bottom: 0;
-}
-
-.receipt-body {
-    padding: 40px;
-}
-
-.info-section {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 25px;
-    margin-bottom: 25px;
-    border: 1px solid #e9ecef;
-    position: relative;
-}
-
-.info-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: #667eea;
-    border-radius: 12px 0 0 12px;
-}
-
-.section-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-}
-
-.section-title i {
-    margin-left: 10px;
-    color: #667eea;
-}
-
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.detail-row:last-child {
-    border-bottom: none;
-}
-
-.detail-label {
-    font-weight: 500;
-    color: #6c757d;
-    font-size: 0.95rem;
-}
-
-.detail-value {
-    font-weight: 600;
-    color: #495057;
-    font-size: 1rem;
-}
-
-.rate-display {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 20px 0;
-    border: 2px solid #e9ecef;
-}
-
-.rate-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #495057;
-    margin-bottom: 5px;
-}
-
-.rate-label {
-    font-size: 1rem;
-    color: #6c757d;
-    font-weight: 500;
-}
-
-.amount-highlight {
-    font-size: 1.5rem;
-    color: #28a745;
-    font-weight: 700;
-}
-
-.currency-pair {
-    display: inline-flex;
-    align-items: center;
-    gap: 15px;
-    margin: 15px 0;
-}
-
-.currency-badge {
-    padding: 8px 16px;
-    border-radius: 25px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.currency-badge.from {
-    background: #ff6b6b;
-    color: white;
-}
-
-.currency-badge.to {
-    background: #4ecdc4;
-    color: white;
-}
-
-.arrow-icon {
-    font-size: 1.2rem;
-    color: #6c757d;
-}
-
-.status-badge {
-    padding: 8px 20px;
-    border-radius: 25px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.table-modern {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-}
-
-.table-modern thead th {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 15px;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.table-modern tbody td {
-    padding: 15px;
-    border-bottom: 1px solid #f1f3f4;
-    vertical-align: middle;
-}
-
-.table-modern tbody tr:hover {
-    background: #f8f9fa;
-}
-
-.btn-modern {
-    padding: 10px 25px;
-    border-radius: 25px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    border: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.btn-modern:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-}
-
-.btn-primary-modern {
-    background: #667eea;
-    color: white;
-}
-
-.btn-danger-modern {
-    background: #ff6b6b;
-    color: white;
-}
-
-.btn-success-modern {
-    background: #51cf66;
-    color: white;
-}
-
-.alert-modern {
-    border-radius: 12px;
-    border: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    padding: 20px;
-}
-
-.customer-info {
-    background: #a8edea;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-    color: #495057;
-}
-
-.customer-name {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-
-.customer-phone {
-    opacity: 0.8;
-    font-size: 0.9rem;
-}
-
-.progress-modern {
-    height: 8px;
-    border-radius: 4px;
-    background: #e9ecef;
-    overflow: hidden;
-}
-
-.progress-bar-modern {
-    background: #667eea;
-    border-radius: 4px;
-}
-
-@@media (max-width: 768px) {
-    .receipt-container {
-        margin: 10px;
-        border-radius: 10px;
-    }
-
-    .receipt-header {
-        padding: 20px;
-    }
-
-    .receipt-title {
-        font-size: 2rem;
-    }
-
-    .receipt-body {
-        padding: 20px;
-    }
-
-    .detail-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-    }
-
-    .currency-pair {
-        flex-direction: column;
-        gap: 10px;
-    }
-}
-</style>
-
-<div class="container-fluid py-4">
-    <div class="receipt-container">
-        <!-- Receipt Header -->
-        <div class="receipt-header">
-            <div class="text-center mb-3">
-                <img src="~/favicon/android-chrome-512x512.png" alt="تابان"
-                     style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3);">
-            </div>
-            <h1 class="receipt-title">رسید معامله</h1>
-            <p class="receipt-subtitle">سامانه معاملات  تابان - شماره #@Model.Id</p>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>جزئیات معامله #@Model.Id</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+            <a asp-controller="Receipts" asp-action="Upload" asp-route-orderId="@Model.Id" class="btn btn-primary me-2">آپلود رسید برای این معامله</a>
+            @if (Model.Status == ForexExchange.Models.OrderStatus.Open)
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
+            }
         </div>
+    </div>
 
-        <!-- Receipt Body -->
-        <div class="receipt-body">
-            <!-- Status and Customer Info -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="info-section">
-                        <h5 class="section-title">
-                            <i class="fas fa-user-circle"></i>
-                            اطلاعات مشتری
-                        </h5>
-                        @if (Model.Customer != null)
-                        {
-                            <div class="customer-info">
-                                <div class="customer-name">@Model.Customer.FullName</div>
-                                <div class="customer-phone">@Model.Customer.PhoneNumber</div>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-muted">مشتری: @Model.CustomerId</div>
-                        }
-                    </div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">اطلاعات مشتری</h5>
                 </div>
-                <div class="col-md-6">
-                    <div class="info-section">
-                        <h5 class="section-title">
-                            <i class="fas fa-info-circle"></i>
-                            وضعیت معامله
-                        </h5>
-                        <div class="text-center">
-                            <span class="status-badge @(Model.Status switch {
-                                ForexExchange.Models.OrderStatus.Open => "bg-info",
-                                ForexExchange.Models.OrderStatus.Matched => "bg-warning",
-                                ForexExchange.Models.OrderStatus.PartiallyFilled => "bg-primary",
-                                ForexExchange.Models.OrderStatus.Completed => "bg-success",
-                                ForexExchange.Models.OrderStatus.Cancelled => "bg-danger",
-                                _ => "bg-secondary"
-                            })">
-                                @(Model.Status switch {
-                                    ForexExchange.Models.OrderStatus.Open => "باز",
-                                    ForexExchange.Models.OrderStatus.Matched => "مچ شده",
-                                    ForexExchange.Models.OrderStatus.PartiallyFilled => "نیمه تکمیل",
-                                    ForexExchange.Models.OrderStatus.Completed => "تکمیل شده",
-                                    ForexExchange.Models.OrderStatus.Cancelled => "لغو شده",
-                                    _ => "نامشخص"
-                                })
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Currency Exchange Info -->
-            <div class="info-section">
-                <h5 class="section-title">
-                    <i class="fas fa-exchange-alt"></i>
-                    جزئیات تبادل ارز
-                </h5>
-
-                <!-- Exchange Rate Display -->
-                <div class="text-center mb-4">
-                    <div class="rate-display">
-                        <div class="rate-value">@Model.Rate.ToString("N4")</div>
-                        <div class="rate-label">نرخ تبادل</div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="detail-row">
-                            <span class="detail-label">دریافتی مشتری:</span>
-                            <span class="detail-value">@Model.Amount.ToString("N2") @Model.FromCurrency?.Code</span>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="detail-row">
-                            <span class="detail-label">دریافتی ما:</span>
-                            <span class="detail-value amount-highlight">@Model.TotalAmount.ToString("N2") @Model.ToCurrency?.Code</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Transaction Details -->
-            <div class="info-section">
-                <h5 class="section-title">
-                    <i class="fas fa-calendar-alt"></i>
-                    اطلاعات زمانی
-                </h5>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="detail-row">
-                            <span class="detail-label">تاریخ ایجاد:</span>
-                            <span class="detail-value">@Model.CreatedAt.ToPersianDateTextify()</span>
-                        </div>
-                    </div>
-                    @if (Model.UpdatedAt.HasValue)
+                <div class="card-body">
+                    @if (Model.Customer != null)
                     {
-                        <div class="col-md-6">
-                            <div class="detail-row">
-                                <span class="detail-label">آخرین بروزرسانی:</span>
-                                <span class="detail-value">@Model.UpdatedAt.Value.ToString("yyyy/MM/dd HH:mm")</span>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-
-            @if (Model.Transactions != null && Model.Transactions.Any())
-            {
-                <div class="info-section">
-                    <h5 class="section-title">
-                        <i class="fas fa-list"></i>
-                        تراکنش‌های مرتبط
-                    </h5>
-                    <div class="table-responsive">
-                        <table class="table table-modern">
-                            <thead>
-                                <tr>
-                                    <th><i class="fas fa-hashtag"></i> شناسه</th>
-                                    <th><i class="fas fa-user"></i> طرف معامله</th>
-                                    <th><i class="fas fa-coins"></i> مقدار</th>
-                                    <th><i class="fas fa-chart-line"></i> نرخ</th>
-                                    <th><i class="fas fa-info-circle"></i> وضعیت</th>
-                                    <th><i class="fas fa-calendar"></i> تاریخ</th>
-                                    <th><i class="fas fa-eye"></i> جزئیات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var transaction in Model.Transactions)
-                                {
-                                    var isThisBuyOrder = transaction.BuyOrderId == Model.Id;
-                                    var counterpartOrder = isThisBuyOrder ? transaction.SellOrder : transaction.BuyOrder;
-                                    var counterpartCustomer = isThisBuyOrder ? transaction.SellerCustomer : transaction.BuyerCustomer;
-                                    var thisOrderBadgeClass = isThisBuyOrder ? "bg-success" : "bg-danger";
-                                    var counterpartOrderBadgeClass = isThisBuyOrder ? "bg-danger" : "bg-success";
-
-                                    <tr>
-                                        <td>
-                                            <span class="badge bg-secondary">@transaction.Id</span>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="me-2">
-                                                    <strong>@counterpartCustomer.FullName</strong>
-                                                    <br><small class="text-muted">@counterpartCustomer.PhoneNumber</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="fw-bold">@transaction.Amount.ToString("N2")</span>
-                                        </td>
-                                        <td>
-                                            <span class="fw-bold text-primary">@transaction.Rate.ToString("N4")</span>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge @(transaction.Status switch {
-                                                ForexExchange.Models.TransactionStatus.Pending => "bg-warning",
-                                                ForexExchange.Models.TransactionStatus.PaymentUploaded => "bg-info",
-                                                ForexExchange.Models.TransactionStatus.ReceiptConfirmed => "bg-primary",
-                                                ForexExchange.Models.TransactionStatus.Completed => "bg-success",
-                                                ForexExchange.Models.TransactionStatus.Failed => "bg-danger",
-                                                _ => "bg-secondary"
-                                            })">
-                                                @(transaction.Status switch {
-                                                    ForexExchange.Models.TransactionStatus.Pending => "در انتظار",
-                                                    ForexExchange.Models.TransactionStatus.PaymentUploaded => "رسید آپلود",
-                                                    ForexExchange.Models.TransactionStatus.ReceiptConfirmed => "تایید رسید",
-                                                    ForexExchange.Models.TransactionStatus.Completed => "تکمیل شده",
-                                                    ForexExchange.Models.TransactionStatus.Failed => "ناموفق",
-                                                    _ => "نامشخص"
-                                                })
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div>
-                                                <div>@transaction.CreatedAt.ToPersianDateTextify()</div>
-                                                <small class="text-muted">@transaction.CreatedAt.ToString("HH:mm")</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="btn-group-vertical" role="group">
-                                                <a href="@Url.Action("Details", "Orders", new { id = counterpartOrder.Id })"
-                                                   class="btn btn-sm btn-outline-primary btn-modern">
-                                                    <i class="fas fa-eye"></i> مشاهده معامله
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
-
-            @if (Model.Receipts != null && Model.Receipts.Any())
-            {
-                <div class="info-section">
-                    <h5 class="section-title">
-                        <i class="fas fa-file-alt"></i>
-                        فیش‌های مرتبط
-                    </h5>
-                    <div class="table-responsive">
-                        <table class="table table-modern">
-                            <thead>
-                                <tr>
-                                    <th><i class="fas fa-file"></i> نام فایل</th>
-                                    <th><i class="fas fa-tag"></i> نوع</th>
-                                    <th><i class="fas fa-check-circle"></i> وضعیت</th>
-                                    <th><i class="fas fa-calendar"></i> تاریخ</th>
-                                    <th><i class="fas fa-cogs"></i> عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var receipt in Model.Receipts)
-                                {
-                                    <tr>
-                                        <td>
-                                            <i class="fas fa-file-pdf text-danger me-2"></i>
-                                            @receipt.FileName
-                                        </td>
-                                        <td>
-                                            <span class="badge @(receipt.Type switch {
-                                                ForexExchange.Models.ReceiptType.PaymentReceipt => "bg-primary",
-                                                ForexExchange.Models.ReceiptType.BankStatement => "bg-info",
-                                                _ => "bg-secondary"
-                                            })">
-                                                @(receipt.Type switch {
-                                                    ForexExchange.Models.ReceiptType.PaymentReceipt => "رسید پرداخت",
-                                                    ForexExchange.Models.ReceiptType.BankStatement => "گردش حساب",
-                                                    _ => "نامشخص"
-                                                })
-                                            </span>
-                                        </td>
-                                        <td>
-                                            @if (receipt.IsVerified)
-                                            {
-                                                <span class="status-badge bg-success">
-                                                    <i class="fas fa-check"></i> تایید شده
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="status-badge bg-warning">
-                                                    <i class="fas fa-clock"></i> در انتظار
-                                                </span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <div>
-                                                <div>@receipt.UploadedAt.ToPersianDateTextify()</div>
-                                                <small class="text-muted">@receipt.UploadedAt.ToString("HH:mm")</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <a asp-controller="Receipts" asp-action="Details" asp-route-id="@receipt.Id"
-                                               class="btn btn-sm btn-outline-primary btn-modern">
-                                                <i class="fas fa-eye"></i> مشاهده
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
-
-            <!-- Available Orders for Matching -->
-            @if (Model.Status == ForexExchange.Models.OrderStatus.Open && ViewBag.AvailableOrders != null)
-            {
-                var availableOrders = ViewBag.AvailableOrders as List<ForexExchange.Models.Order>;
-
-                <div class="info-section">
-                    <h5 class="section-title">
-                        <i class="fas fa-exchange-alt"></i>
-                        معاملات قابل تطبیق
-                        @if (availableOrders?.Any() == true)
-                        {
-                            <span class="badge bg-success ms-2">@availableOrders.Count معامله</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-warning ms-2">هیچ موردی</span>
-                        }
-                    </h5>
-
-                    @if (availableOrders?.Any() == true)
-                    {
-                        <div class="alert alert-modern alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>راهنما:</strong> در لیست زیر معاملات قابل تطبیق با معامله شما بر اساس نرخ و مقدار نمایش داده شده‌اند.
-                            برای مچ کردن، روی دکمه "مچ کردن" هر معامله کلیک کنید.
-                        </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-modern">
-                                <thead>
-                                    <tr>
-                                        <th><i class="fas fa-user"></i> مشتری</th>
-                                        <th><i class="fas fa-coins"></i> مبلغ کل</th>
-                                        <th><i class="fas fa-chart-pie"></i> باقیمانده</th>
-                                        <th><i class="fas fa-hand-holding-usd"></i> دریافتی مشتری</th>
-                                        <th><i class="fas fa-chart-line"></i> نرخ معامله</th>
-                                        <th><i class="fas fa-calendar"></i> تاریخ</th>
-                                        <th><i class="fas fa-cogs"></i> عملیات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var availableOrder in availableOrders.Take(10))
-                                    {
-                                        var remainingAmount = availableOrder.Amount - availableOrder.FilledAmount;
-                                        var transactionRate = availableOrder.Rate;
-                                        var receivedAmount = remainingAmount * transactionRate;
-                                        <tr>
-                                            <td>
-                                                <a asp-action="Profile" asp-controller="Customers" asp-route-id="@availableOrder.Customer?.Id" class="text-decoration-none">
-                                                    <strong>@availableOrder.Customer?.FullName</strong>
-                                                </a>
-                                            </td>
-                                            <td class="fw-bold">@availableOrder.Amount.ToString("N2")</td>
-                                            <td class="fw-bold text-primary">@remainingAmount.ToString("N2")</td>
-                                            <td class="fw-bold text-info">@receivedAmount.ToString("N2") @availableOrder.ToCurrency?.Code</td>
-                                            <td class="fw-bold text-success">@transactionRate.ToString("N4")</td>
-                                            <td>
-                                                <div>
-                                                    <div>@availableOrder.CreatedAt.ToPersianDateTextify()</div>
-                                                    <small class="text-muted">@availableOrder.CreatedAt.ToString("HH:mm")</small>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <form asp-action="MatchOrders" asp-route-primaryOrderId="@Model.Id" asp-route-matchingOrderId="@availableOrder.Id" method="post" style="display: inline-block;"
-                                                      onsubmit="return confirm('آیا از مچ کردن این معامله با مشتری @availableOrder.Customer?.FullName اطمینان دارید؟')">
-                                                    @Html.AntiForgeryToken()
-                                                    <button type="submit" class="btn btn-success-modern">
-                                                        <i class="fas fa-exchange-alt"></i> مچ کردن
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-
-                        @if (availableOrders.Count > 10)
-                        {
-                            <div class="text-muted small text-center mt-3">
-                                <i class="fas fa-info-circle"></i>
-                                ... و @(availableOrders.Count - 10) معامله دیگر
-                            </div>
-                        }
+                        <div class="mb-2"><strong>نام:</strong> @Model.Customer.FullName</div>
+                        <div class="text-muted"><i class="fas fa-phone"></i> @Model.Customer.PhoneNumber</div>
                     }
                     else
                     {
-                        <div class="alert alert-modern alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <strong>دلیل عدم تطبیق:</strong> هیچ معامله با نرخ مناسب برای تطبیق وجود ندارد.
-                            <br><small class="text-muted">برای تطبیق، نرخ معامله شما باید با شرایط بازار هماهنگ باشد.</small>
-                        </div>
+                        <div class="text-muted">مشتری: @Model.CustomerId</div>
                     }
-                </div>
-            }
-
-            <!-- Action Buttons -->
-            <div class="info-section">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <a asp-action="Index" class="btn btn-secondary btn-modern">
-                        <i class="fas fa-arrow-left"></i> بازگشت به لیست
-                    </a>
-                    <div class="d-flex gap-2 flex-wrap">
-                        @if (Model.Status == ForexExchange.Models.OrderStatus.Open)
-                        {
-                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary-modern">
-                                <i class="fas fa-edit"></i> ویرایش
-                            </a>
-                        }
-                        @if (Model.Status != ForexExchange.Models.OrderStatus.Cancelled && Model.Status != ForexExchange.Models.OrderStatus.Completed)
-                        {
-                            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" style="display: inline-block;"
-                                  onsubmit="return confirm('آیا از لغو این معامله اطمینان دارید؟')">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-danger-modern">
-                                    <i class="fas fa-times"></i> لغو معامله
-                                </button>
-                            </form>
-                        }
-                    </div>
                 </div>
             </div>
         </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"> اطلاعات زمانی </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6"><strong>تاریخ ایجاد:</strong> @Model.CreatedAt.ToPersianDateTextify()
+                        </div>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <div class="col-md-6"><strong>آخرین بروزرسانی:</strong>
+                                @Model.UpdatedAt.Value.ToPersianDateTextify()</div>
+                        }
+                    </div>
+                </div>detail
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">جزئیات تبادل ارز</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4"><strong>جفت ارز:</strong> @Model.FromCurrency?.Code / @Model.ToCurrency?.Code
+                </div>
+                <div class="col-md-4"><strong>مبلغ:</strong> @Model.Amount.ToString("N2") @Model.FromCurrency?.Code
+                </div>
+                <div class="col-md-4"><strong>نرخ تبادل:</strong> @Model.Rate.ToString("N4")</div>
+            </div>
+            <div class="mt-2"><strong>مقدار کل:</strong> @Model.TotalAmount.ToString("N2") @Model.ToCurrency?.Code</div>
+        </div>
+    </div>
+
+
+
+    @if (Model.Transactions != null && Model.Transactions.Any())
+    {
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">تراکنش‌های مرتبط</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>طرف معامله</th>
+                                <th>مقدار</th>
+                                <th>نرخ</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ</th>
+                                <th>جزئیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var transaction in Model.Transactions)
+                            {
+                                var isThisBuyOrder = transaction.BuyOrderId == Model.Id;
+                                var counterpartOrder = isThisBuyOrder ? transaction.SellOrder : transaction.BuyOrder;
+                                var counterpartCustomer = isThisBuyOrder ? transaction.SellerCustomer :
+                                transaction.BuyerCustomer;
+                                var tStatusClass = transaction.Status switch
+                                {
+                                    ForexExchange.Models.TransactionStatus.Pending => "badge bg-warning",
+                                    ForexExchange.Models.TransactionStatus.PaymentUploaded => "badge bg-info",
+                                    ForexExchange.Models.TransactionStatus.ReceiptConfirmed => "badge bg-primary",
+                                    ForexExchange.Models.TransactionStatus.Completed => "badge bg-success",
+                                    ForexExchange.Models.TransactionStatus.Failed => "badge bg-danger",
+                                    _ => "badge bg-secondary"
+                                };
+                                var tStatusText = transaction.Status switch
+                                {
+                                    ForexExchange.Models.TransactionStatus.Pending => "در انتظار",
+                                    ForexExchange.Models.TransactionStatus.PaymentUploaded => "رسید آپلود شده",
+                                    ForexExchange.Models.TransactionStatus.ReceiptConfirmed => "رسید تأیید شد",
+                                    ForexExchange.Models.TransactionStatus.Completed => "تکمیل شده",
+                                    ForexExchange.Models.TransactionStatus.Failed => "ناموفق",
+                                    _ => "نامشخص"
+                                };
+                                <tr>
+                                    <td><span class="badge bg-secondary">@transaction.Id</span></td>
+                                    <td>
+                                        @if (counterpartCustomer != null)
+                                        {
+                                            <a asp-controller="Customers" asp-action="Details"
+                                                asp-route-id="@counterpartCustomer.Id" class="text-decoration-none">
+                                                @counterpartCustomer.FullName
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">نامشخص</span>
+                                        }
+                                    </td>
+                                    <td>@transaction.Amount.ToString("N2")</td>
+                                    <td class="text-primary fw-bold">@transaction.Rate.ToString("N4")</td>
+                                    <td><span class="@tStatusClass">@tStatusText</span></td>
+                                    <td>
+                                        <div>@transaction.CreatedAt.ToPersianDateTextify()</div>
+                                        <small class="text-muted">@transaction.CreatedAt.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        @if (counterpartOrder != null)
+                                        {
+                                            <a asp-controller="Orders" asp-action="Details" asp-route-id="@counterpartOrder.Id"
+                                                class="btn btn-sm btn-outline-primary">
+                                                مشاهده
+                                            </a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Receipts != null && Model.Receipts.Any())
+    {
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">فیش‌های مرتبط</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>نام فایل</th>
+                                <th>نوع</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var receipt in Model.Receipts)
+                            {
+                                <tr>
+                                    <td>@receipt.FileName</td>
+                                    <td>
+                                        <span
+                                            class="badge @(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "bg-primary" : "bg-info")">
+                                            @(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "رسید پرداخت" :
+                                                                                "گردش حساب بانکی")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (receipt.IsVerified)
+                                        {
+                                            <span class="badge bg-success">تأیید شده</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">در انتظار تأیید</span>
+                                        }
+                                    </td>
+                                    <td>@receipt.UploadedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                    <td>
+                                        <a asp-controller="Receipts" asp-action="Details" asp-route-id="@receipt.Id"
+                                            class="btn btn-sm btn-outline-secondary">جزئیات</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card mt-3">
+        <div class="card-body d-flex justify-content-between">
+            <a asp-action="Index" class="btn btn-secondary">بازگشت</a>
+            @if (Model.Status != ForexExchange.Models.OrderStatus.Cancelled && Model.Status !=
+                        ForexExchange.Models.OrderStatus.Completed)
+            {
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post"
+                    onsubmit="return confirm('آیا از لغو این معامله اطمینان دارید؟')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">لغو معامله</button>
+                </form>
+            }
+        </div>
     </div>
 </div>
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-modern alert-success position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
-        <i class="fas fa-check-circle"></i>
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-modern alert-danger position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
-        <i class="fas fa-exclamation-triangle"></i>
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-
-@if (TempData["InfoMessage"] != null)
-{
-    <div class="alert alert-modern alert-info position-fixed" style="top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
-        <i class="fas fa-info-circle"></i>
-        @TempData["InfoMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-}
-

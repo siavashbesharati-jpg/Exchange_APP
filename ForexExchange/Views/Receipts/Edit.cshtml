@@ -30,14 +30,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="CustomerId" class="form-label">مشتری</label>
-                                <select asp-for="CustomerId" class="form-select" required>
+                                <select asp-for="CustomerId" class="form-select" asp-items="@(ViewBag.CustomerOptions as List<SelectListItem>)" required>
                                     <option value="">انتخاب مشتری</option>
-                                    @foreach (var customer in (ViewBag.Customers as List<ForexExchange.Models.Customer>) ?? new List<ForexExchange.Models.Customer>())
-                                    {
-                                        <option value="@customer.Id" selected="@(customer.Id == Model.CustomerId)">
-                                            @customer.FullName - @customer.PhoneNumber
-                                        </option>
-                                    }
                                 </select>
                                 <span asp-validation-for="CustomerId" class="text-danger"></span>
                             </div>
@@ -55,27 +49,15 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="OrderId" class="form-label">معامله (اختیاری)</label>
-                                <select asp-for="OrderId" class="form-select">
+                                <select asp-for="OrderId" class="form-select" asp-items="@(ViewBag.OrderOptions as List<SelectListItem>)">
                                     <option value="">بدون معامله</option>
-                                    @foreach (var order in (ViewBag.Orders as List<ForexExchange.Models.Order>) ?? new List<ForexExchange.Models.Order>())
-                                    {
-                                        <option value="@order.Id" selected="@(order.Id == Model.OrderId)">
-                                            #@order.Id - @order.Customer?.FullName (@order.CurrencyPair - @order.Amount.ToString("N0"))
-                                        </option>
-                                    }
                                 </select>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label asp-for="TransactionId" class="form-label">تراکنش (اختیاری)</label>
-                                <select asp-for="TransactionId" class="form-select">
+                                <select asp-for="TransactionId" class="form-select" asp-items="@(ViewBag.TransactionOptions as List<SelectListItem>)">
                                     <option value="">بدون تراکنش</option>
-                                    @foreach (var transaction in (ViewBag.Transactions as List<ForexExchange.Models.Transaction>) ?? new List<ForexExchange.Models.Transaction>())
-                                    {
-                                        <option value="@transaction.Id" selected="@(transaction.Id == Model.TransactionId)">
-                                            #@transaction.Id - @transaction.BuyerCustomer?.FullName / @transaction.SellerCustomer?.FullName
-                                        </option>
-                                    }
                                 </select>
                             </div>
                         </div>

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ForexExchange.Controllers
 {
@@ -79,6 +80,11 @@ namespace ForexExchange.Controllers
                     .Include(o => o.ToCurrency)
                     .FirstOrDefaultAsync(o => o.Id == orderId.Value);
                 ViewBag.SelectedOrder = order;
+                if (order != null)
+                {
+                    ViewBag.SelectedCustomerId = order.CustomerId;
+                    ViewBag.SelectedCustomer = order.Customer;
+                }
             }
 
             if (transactionId.HasValue)
@@ -124,7 +130,7 @@ namespace ForexExchange.Controllers
         // POST: Receipts/Upload
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Upload(IFormFile receiptFile, int customerId, int? orderId, int? transactionId, ReceiptType type, string? manualAmount, string? manualReference, bool skipOcr = false)
+    public async Task<IActionResult> Upload(IFormFile receiptFile, int customerId, int? orderId, int? transactionId, ReceiptType type, string? manualAmount, string? manualReference, bool skipOcr = false)
         {
             try
             {
@@ -142,6 +148,41 @@ namespace ForexExchange.Controllers
                     ModelState.AddModelError("receiptFile", "فقط فایل‌های تصویری (JPG, PNG, GIF) مجاز هستند.");
                     await LoadUploadViewData(orderId, transactionId);
                     return View();
+                }
+
+                // Validate foreign keys and normalize IDs
+                // If an order is selected, enforce the receipt's customer to match the order's customer
+                if (orderId.HasValue)
+                {
+                    var existingOrder = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId.Value);
+                    if (existingOrder == null)
+                    {
+                        ModelState.AddModelError("orderId", "معامله انتخاب شده یافت نشد.");
+                        await LoadUploadViewData(orderId, transactionId);
+                        return View();
+                    }
+                    customerId = existingOrder.CustomerId;
+                }
+                else
+                {
+                    var customerExists = await _context.Customers.AsNoTracking().AnyAsync(c => c.Id == customerId);
+                    if (!customerExists)
+                    {
+                        ModelState.AddModelError("customerId", "مشتری انتخاب شده معتبر نیست.");
+                        await LoadUploadViewData(orderId, transactionId);
+                        return View();
+                    }
+                }
+
+                if (transactionId.HasValue)
+                {
+                    var txExists = await _context.Transactions.AsNoTracking().AnyAsync(t => t.Id == transactionId.Value);
+                    if (!txExists)
+                    {
+                        ModelState.AddModelError("transactionId", "تراکنش انتخاب شده یافت نشد.");
+                        await LoadUploadViewData(orderId, transactionId);
+                        return View();
+                    }
                 }
 
                 // Convert to byte array
@@ -275,15 +316,25 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
-            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
-            ViewBag.Orders = await _context.Orders
+            var customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            var orders = await _context.Orders
                 .Include(o => o.Customer)
                 .Where(o => o.Status != OrderStatus.Cancelled)
                 .ToListAsync();
-            ViewBag.Transactions = await _context.Transactions
+            var transactions = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
                 .ToListAsync();
+
+            ViewBag.CustomerOptions = customers
+                .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = $"{c.FullName} - {c.PhoneNumber}" })
+                .ToList();
+            ViewBag.OrderOptions = orders
+                .Select(o => new SelectListItem { Value = o.Id.ToString(), Text = $"#{o.Id} - {o.Customer?.FullName} ({o.CurrencyPair} - {o.Amount:N0})" })
+                .ToList();
+            ViewBag.TransactionOptions = transactions
+                .Select(t => new SelectListItem { Value = t.Id.ToString(), Text = $"#{t.Id} - {t.BuyerCustomer?.FullName} / {t.SellerCustomer?.FullName}" })
+                .ToList();
 
             return View(receipt);
         }
@@ -354,15 +405,25 @@ namespace ForexExchange.Controllers
                 }
             }
 
-            ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
-            ViewBag.Orders = await _context.Orders
+            var customers2 = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            var orders2 = await _context.Orders
                 .Include(o => o.Customer)
                 .Where(o => o.Status != OrderStatus.Cancelled)
                 .ToListAsync();
-            ViewBag.Transactions = await _context.Transactions
+            var transactions2 = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
                 .ToListAsync();
+
+            ViewBag.CustomerOptions = customers2
+                .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = $"{c.FullName} - {c.PhoneNumber}" })
+                .ToList();
+            ViewBag.OrderOptions = orders2
+                .Select(o => new SelectListItem { Value = o.Id.ToString(), Text = $"#{o.Id} - {o.Customer?.FullName} ({o.CurrencyPair} - {o.Amount:N0})" })
+                .ToList();
+            ViewBag.TransactionOptions = transactions2
+                .Select(t => new SelectListItem { Value = t.Id.ToString(), Text = $"#{t.Id} - {t.BuyerCustomer?.FullName} / {t.SellerCustomer?.FullName}" })
+                .ToList();
 
             return View(receipt);
         }

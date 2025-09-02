@@ -108,7 +108,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Extract country code from normalized phone number
-        /// صندوق اج کد کشور از شماره تلفن نرمال‌شده
+        /// رسید  کد کشور از شماره تلفن نرمال‌شده
         /// </summary>
         /// <param name="normalizedPhoneNumber">Normalized phone number</param>
         /// <returns>Country code (e.g., "98" for Iran)</returns>
