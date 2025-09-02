@@ -304,7 +304,8 @@ namespace ForexExchange.Models
                 new CurrencyPool { Id = 3, CurrencyId = 3, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Euro pool - initial setup" },
                 new CurrencyPool { Id = 4, CurrencyId = 4, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "UAE Dirham pool - initial setup" },
                 new CurrencyPool { Id = 5, CurrencyId = 5, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Omani Rial pool - initial setup" },
-                new CurrencyPool { Id = 6, CurrencyId = 6, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Turkish Lira pool - initial setup" }
+                new CurrencyPool { Id = 6, CurrencyId = 6, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Turkish Lira pool - initial setup" },
+                new CurrencyPool { Id = 7, CurrencyId = 7, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Chinese Yuan pool - initial setup" }
             );
 
             // Seed initial exchange rates - now with Currency IDs and cross-currency pairs
@@ -315,17 +316,20 @@ namespace ForexExchange.Models
                 new ExchangeRate { Id = 3, FromCurrencyId = 1, ToCurrencyId = 4, Rate = 18750, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 4, FromCurrencyId = 1, ToCurrencyId = 5, Rate = 178000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 5, FromCurrencyId = 1, ToCurrencyId = 6, Rate = 2000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 15, FromCurrencyId = 1, ToCurrencyId = 7, Rate = 9600, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 // Reverse rates (other currencies to IRR)
                 new ExchangeRate { Id = 6, FromCurrencyId = 2, ToCurrencyId = 1, Rate = 1.0m/68500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 7, FromCurrencyId = 3, ToCurrencyId = 1, Rate = 1.0m/72500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 8, FromCurrencyId = 4, ToCurrencyId = 1, Rate = 1.0m/18750, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 9, FromCurrencyId = 5, ToCurrencyId = 1, Rate = 1.0m/178000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 10, FromCurrencyId = 6, ToCurrencyId = 1, Rate = 1.0m/2000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 16, FromCurrencyId = 7, ToCurrencyId = 1, Rate = 1.0m/9600, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 // Sample cross-currency rates (USD to other currencies)
                 new ExchangeRate { Id = 11, FromCurrencyId = 2, ToCurrencyId = 3, Rate = 0.93m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 12, FromCurrencyId = 2, ToCurrencyId = 4, Rate = 3.68m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new ExchangeRate { Id = 13, FromCurrencyId = 2, ToCurrencyId = 5, Rate = 0.385m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 14, FromCurrencyId = 2, ToCurrencyId = 6, Rate = 34.85m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
+                new ExchangeRate { Id = 14, FromCurrencyId = 2, ToCurrencyId = 6, Rate = 34.85m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
+                new ExchangeRate { Id = 17, FromCurrencyId = 2, ToCurrencyId = 7, Rate = 7.14m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
             );
 
             // Seed initial system settings
@@ -349,7 +353,8 @@ namespace ForexExchange.Models
                 new Currency { Id = 3, Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = seedDate },
                 new Currency { Id = 4, Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = seedDate },
                 new Currency { Id = 5, Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = seedDate },
-                new Currency { Id = 6, Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = seedDate }
+                new Currency { Id = 6, Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = seedDate },
+                new Currency { Id = 7, Code = "CNY", Name = "Chinese Yuan", PersianName = "یوان چین", Symbol = "¥", IsActive = true, IsBaseCurrency = false, DisplayOrder = 7, CreatedAt = seedDate }
             );
         }
     }

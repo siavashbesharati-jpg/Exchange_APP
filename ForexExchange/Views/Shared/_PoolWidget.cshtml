@@ -48,14 +48,15 @@
                                 <div class="d-flex align-items-center">
                                     <span class="currency-flag me-2" style="font-size: 1.5em;">
                                         @{
-                                            var flagEmoji = pool.Currency?.Symbol switch
+                                            var flagEmoji = pool.Currency?.Code switch
                                             {
-                                                "IRR" or "TMN" => "🇮🇷",
+                                                "IRR" => "🇮🇷",
                                                 "USD" => "🇺🇸",
                                                 "EUR" => "🇪🇺",
                                                 "AED" => "🇦🇪",
                                                 "OMR" => "🇴🇲",
                                                 "TRY" => "🇹🇷",
+                                                "CNY" => "🇨🇳",
                                                 _ => "💱"
                                             };
                                         }

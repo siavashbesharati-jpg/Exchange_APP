@@ -230,6 +230,20 @@ namespace ForexExchange.Models
         BulkOperation = 11,
 
         /// <summary>
+        /// Pool balance change
+        /// تغییر موجودی استخر
+        /// </summary>
+        [Display(Name = "Pool Balance Changed - موجودی استخر تغییر یافت")]
+        PoolBalanceChanged = 15,
+
+        /// <summary>
+        /// Pool statistics reset
+        /// ریست آمار استخر
+        /// </summary>
+        [Display(Name = "Pool Stats Reset - ریست آمار استخر")]
+        PoolStatsReset = 16,
+
+        /// <summary>
         /// Other administrative activities
         /// سایر فعالیت‌های مدیریتی
         /// </summary>

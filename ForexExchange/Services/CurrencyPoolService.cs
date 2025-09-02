@@ -85,6 +85,17 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
+        /// Get pool details by pool ID
+        /// دریافت جزئیات استخر بر اساس شناسه استخر
+        /// </summary>
+        public async Task<CurrencyPool?> GetPoolByIdAsync(int poolId)
+        {
+            return await _context.CurrencyPools
+                .Include(p => p.Currency)
+                .FirstOrDefaultAsync(p => p.Id == poolId && p.IsActive);
+        }
+
+        /// <summary>
         /// Get all active currency pools
         /// دریافت تمام استخرهای ارزی فعال
         /// </summary>
@@ -334,6 +345,31 @@ namespace ForexExchange.Services
                 pool.RiskLevel = PoolRiskLevel.Critical;
 
             await Task.CompletedTask; // For async consistency
+        }
+
+        /// <summary>
+        /// Direct pool update for admin operations
+        /// بروزرسانی مستقیم استخر برای عملیات ادمین
+        /// </summary>
+        public async Task<CurrencyPool> UpdatePoolDirectAsync(CurrencyPool pool)
+        {
+            try
+            {
+                // Update risk level
+                await UpdatePoolRiskLevel(pool);
+                
+                // Update the pool
+                _context.CurrencyPools.Update(pool);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation($"Pool directly updated: ID={pool.Id}, Balance={pool.Balance}");
+                return pool;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error in direct pool update for pool ID {pool.Id}");
+                throw;
+            }
         }
     }
 }

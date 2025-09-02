@@ -47,7 +47,7 @@ namespace ForexExchange.Services
                     "try" => "/html/body/div[1]/div/div/div/section[1]/div/div[1]/div/div/div/div/table/tbody/tr[5]/td[3]/div/div/div/section/div/div/div/div/div/div/div/table/tbody/tr/td",
                     "aed" => "/html/body/div[1]/div/div/div/section[1]/div/div[1]/div/div/div/div/table/tbody/tr[6]/td[3]/div/div/div/section/div/div/div/div/div/div/div/table/tbody/tr/td",
                     "omr" => "/html/body/div[1]/div/div/div/section[1]/div/div[2]/div/div/div/div/table/tbody/tr[5]/td[3]/div/div/div/section/div/div/div/div/div/div/div/table/tbody/tr/td",
-                    "CNY" => "/html/body/div[1]/div/div/div/section[1]/div/div[2]/div/div/div/div/table/tbody/tr[11]/td[3]/div/div/div/section/div/div/div/div/div/div/div/table/tbody/tr/td", 
+                    "cny" => "/html/body/div[1]/div/div/div/section[1]/div/div[2]/div/div/div/div/table/tbody/tr[11]/td[3]/div/div/div/section/div/div/div/div/div/div/div/table/tbody/tr/td", 
                     _ => null
                 };
 

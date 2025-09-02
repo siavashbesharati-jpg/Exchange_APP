@@ -322,5 +322,103 @@ namespace ForexExchange.Services
 
             return stats;
         }
+
+        /// <summary>
+        /// Log pool balance change activity
+        /// لاگ کردن فعالیت تغییر موجودی استخر
+        /// </summary>
+        public async Task LogPoolBalanceChangeAsync(
+            int poolId,
+            string currencyCode,
+            decimal oldBalance,
+            decimal newBalance,
+            decimal difference,
+            string reason,
+            string adminUserId,
+            string adminUsername)
+        {
+            var details = new
+            {
+                PoolId = poolId,
+                CurrencyCode = currencyCode,
+                OldBalance = oldBalance,
+                NewBalance = newBalance,
+                Difference = difference,
+                Reason = reason,
+                UpdatedAt = DateTime.Now
+            };
+
+            await LogActivityAsync(
+                adminUserId,
+                adminUsername,
+                AdminActivityType.PoolBalanceChanged,
+                $"موجودی استخر {currencyCode} از {oldBalance:N0} به {newBalance:N0} تغییر یافت",
+                JsonSerializer.Serialize(details),
+                "CurrencyPool",
+                poolId,
+                oldBalance.ToString("N0"),
+                newBalance.ToString("N0")
+            );
+        }
+
+        /// <summary>
+        /// Log pool statistics reset activity
+        /// لاگ کردن فعالیت ریست آمار استخر
+        /// </summary>
+        public async Task LogPoolStatsResetAsync(
+            int poolId,
+            string currencyCode,
+            decimal oldTotalBought,
+            decimal oldTotalSold,
+            string reason,
+            string adminUserId,
+            string adminUsername)
+        {
+            var details = new
+            {
+                PoolId = poolId,
+                CurrencyCode = currencyCode,
+                OldTotalBought = oldTotalBought,
+                OldTotalSold = oldTotalSold,
+                Reason = reason,
+                ResetAt = DateTime.Now
+            };
+
+            await LogActivityAsync(
+                adminUserId,
+                adminUsername,
+                AdminActivityType.PoolStatsReset,
+                $"آمار استخر {currencyCode} ریست شد (خرید: {oldTotalBought:N0}, فروش: {oldTotalSold:N0})",
+                JsonSerializer.Serialize(details),
+                "CurrencyPool",
+                poolId,
+                $"خرید: {oldTotalBought:N0}, فروش: {oldTotalSold:N0}",
+                "ریست شده"
+            );
+        }
+
+        /// <summary>
+        /// Log user edit activity
+        /// لاگ ویرایش کاربر
+        /// </summary>
+        public async Task LogUserEditAsync(
+            string adminUserId,
+            string adminUsername,
+            string targetUserId,
+            string targetUsername,
+            string changes)
+        {
+            await LogActivityAsync(
+                adminUserId,
+                adminUsername,
+                AdminActivityType.UserUpdated,
+                $"اطلاعات کاربر {targetUsername} ویرایش شد",
+                changes,
+                "ApplicationUser",
+                null,
+                null,
+                changes
+            );
+        }
     }
 }

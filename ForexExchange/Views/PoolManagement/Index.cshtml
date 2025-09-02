@@ -1,0 +1,534 @@
+@model List<ForexExchange.Models.CurrencyPool>
+@{
+    ViewData["Title"] = "مدیریت استخرهای ارزی";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="h4 mb-1">
+                        <i class="fas fa-swimming-pool text-primary me-2"></i>
+                        مدیریت استخرهای ارزی
+                    </h2>
+                    <p class="text-muted mb-0">مدیریت موجودی و آمار استخرهای ارزی</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-primary" onclick="refreshPools()">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        بروزرسانی
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            <div id="alertContainer"></div>
+
+            <!-- Currency Pools Grid -->
+            <div class="row g-4">
+                @foreach (var pool in Model)
+                {
+                    var riskColorClass = pool.RiskLevel switch
+                    {
+                        ForexExchange.Models.PoolRiskLevel.Low => "success",
+                        ForexExchange.Models.PoolRiskLevel.Medium => "warning",
+                        ForexExchange.Models.PoolRiskLevel.High => "danger",
+                        ForexExchange.Models.PoolRiskLevel.Critical => "dark",
+                        _ => "secondary"
+                    };
+
+                    var balanceColorClass = pool.Balance >= 0 ? "success" : "danger";
+                    var balanceIcon = pool.Balance >= 0 ? "fas fa-arrow-up" : "fas fa-arrow-down";
+
+                    <div class="col-xl-4 col-lg-6 col-md-12">
+                        <div class="card border-0 shadow-sm h-100">
+                            <!-- Currency Header -->
+                            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <span class="currency-flag me-2" style="font-size: 1.2em;">
+                                        @{
+                                            var flagEmoji = pool.Currency?.Code switch
+                                            {
+                                                "IRR" => "🇮🇷",
+                                                "USD" => "🇺🇸",
+                                                "EUR" => "🇪🇺",
+                                                "AED" => "🇦🇪",
+                                                "OMR" => "🇴🇲",
+                                                "TRY" => "🇹🇷",
+                                                "CNY" => "🇨🇳",
+                                                _ => "💱"
+                                            };
+                                        }
+                                        @flagEmoji
+                                    </span>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">@pool.Currency?.PersianName</h6>
+                                        <small class="opacity-75">@pool.Currency?.Code</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-@riskColorClass">
+                                    @switch (pool.RiskLevel)
+                                    {
+                                        case ForexExchange.Models.PoolRiskLevel.Low: <text>کم</text> break;
+                                        case ForexExchange.Models.PoolRiskLevel.Medium: <text>متوسط</text> break;
+                                        case ForexExchange.Models.PoolRiskLevel.High: <text>بالا</text> break;
+                                        case ForexExchange.Models.PoolRiskLevel.Critical: <text>بحرانی</text> break;
+                                        default: <text>نامشخص</text> break;
+                                    }
+                                </span>
+                            </div>
+
+                            <!-- Pool Details -->
+                            <div class="card-body">
+                                <!-- Current Balance -->
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">موجودی فعلی</label>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h4 class="text-@balanceColorClass mb-0 fw-bold" id="balance-@pool.Id">
+                                            <i class="@balanceIcon me-1"></i>
+                                            @pool.Balance.ToString("N0")
+                                        </h4>
+                                        <small class="text-muted">@pool.Currency?.Symbol</small>
+                                    </div>
+                                </div>
+
+                                <!-- Statistics -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">کل خرید</small>
+                                            <strong class="text-success" id="bought-@pool.Id">@pool.TotalBought.ToString("N0")</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center p-2 bg-light rounded">
+                                            <small class="text-muted d-block">کل فروش</small>
+                                            <strong class="text-danger" id="sold-@pool.Id">@pool.TotalSold.ToString("N0")</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Active Orders -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <div class="text-center p-2 border rounded">
+                                            <small class="text-muted d-block">سفارش خرید</small>
+                                            <strong class="text-info">@pool.ActiveBuyOrderCount</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center p-2 border rounded">
+                                            <small class="text-muted d-block">سفارش فروش</small>
+                                            <strong class="text-warning">@pool.ActiveSellOrderCount</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Last Updated -->
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        آخرین بروزرسانی: <span id="lastUpdated-@pool.Id">@pool.LastUpdated.ToString("yyyy/MM/dd HH:mm")</span>
+                                    </small>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="editPoolBalance(@pool.Id)">
+                                        <i class="fas fa-edit me-2"></i>
+                                        ویرایش موجودی
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="resetPoolStats(@pool.Id)">
+                                        <i class="fas fa-undo me-2"></i>
+                                        ریست آمار
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Pool Balance Modal -->
+<div class="modal fade" id="editBalanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>
+                    ویرایش موجودی استخر
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editBalanceForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editPoolId" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">ارز:</label>
+                        <div id="editCurrencyInfo" class="p-3 bg-light rounded">
+                            <!-- Currency info will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">موجودی فعلی:</label>
+                        <div id="editCurrentBalance" class="p-2 border rounded bg-white">
+                            <!-- Current balance will be shown here -->
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="newBalance" class="form-label">موجودی جدید: <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="newBalance" step="0.01" required>
+                        <div class="form-text">
+                            مقدار مثبت: افزایش موجودی، مقدار منفی: کاهش موجودی
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="balanceReason" class="form-label">دلیل تغییر:</label>
+                        <textarea class="form-control" id="balanceReason" rows="3" placeholder="دلیل تغییر موجودی را وارد کنید..."></textarea>
+                    </div>
+
+                    <div id="balanceDifference" class="alert alert-info" style="display: none;">
+                        <!-- Difference calculation will be shown here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        ذخیره تغییرات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Stats Modal -->
+<div class="modal fade" id="resetStatsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-undo me-2"></i>
+                    ریست آمار استخر
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="resetStatsForm">
+                <div class="modal-body">
+                    <input type="hidden" id="resetPoolId" />
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>هشدار:</strong> این عمل آمار کل خرید و فروش را به صفر تنظیم می‌کند و قابل برگشت نیست.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">ارز:</label>
+                        <div id="resetCurrencyInfo" class="p-3 bg-light rounded">
+                            <!-- Currency info will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">آمار فعلی:</label>
+                        <div id="resetCurrentStats" class="p-3 border rounded">
+                            <!-- Current stats will be shown here -->
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="resetReason" class="form-label">دلیل ریست:</label>
+                        <textarea class="form-control" id="resetReason" rows="3" placeholder="دلیل ریست آمار را وارد کنید..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-undo me-2"></i>
+                        ریست آمار
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPoolData = {};
+
+        // Edit pool balance
+        function editPoolBalance(poolId) {
+            fetch(`/PoolManagement/GetPoolDetails?poolId=${poolId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentPoolData = data.pool;
+                        populateEditModal(data.pool);
+                        new bootstrap.Modal(document.getElementById('editBalanceModal')).show();
+                    } else {
+                        showAlert('error', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('error', 'خطا در دریافت اطلاعات استخر');
+                });
+        }
+
+        // Populate edit modal
+        function populateEditModal(pool) {
+            document.getElementById('editPoolId').value = pool.id;
+            document.getElementById('editCurrencyInfo').innerHTML = `
+                <div class="d-flex align-items-center">
+                    <span class="me-2" style="font-size: 1.5em;">${getFlagEmoji(pool.currencyCode)}</span>
+                    <div>
+                        <strong>${pool.currencyName}</strong>
+                        <br><small class="text-muted">${pool.currencyCode}</small>
+                    </div>
+                </div>
+            `;
+            document.getElementById('editCurrentBalance').innerHTML = `
+                <strong class="${pool.balance >= 0 ? 'text-success' : 'text-danger'}">
+                    ${formatNumber(pool.balance)} ${pool.currencyCode}
+                </strong>
+            `;
+            document.getElementById('newBalance').value = pool.balance;
+            document.getElementById('balanceReason').value = '';
+            updateBalanceDifference();
+        }
+
+        // Reset pool stats
+        function resetPoolStats(poolId) {
+            fetch(`/PoolManagement/GetPoolDetails?poolId=${poolId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        populateResetModal(data.pool);
+                        new bootstrap.Modal(document.getElementById('resetStatsModal')).show();
+                    } else {
+                        showAlert('error', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('error', 'خطا در دریافت اطلاعات استخر');
+                });
+        }
+
+        // Populate reset modal
+        function populateResetModal(pool) {
+            document.getElementById('resetPoolId').value = pool.id;
+            document.getElementById('resetCurrencyInfo').innerHTML = `
+                <div class="d-flex align-items-center">
+                    <span class="me-2" style="font-size: 1.5em;">${getFlagEmoji(pool.currencyCode)}</span>
+                    <div>
+                        <strong>${pool.currencyName}</strong>
+                        <br><small class="text-muted">${pool.currencyCode}</small>
+                    </div>
+                </div>
+            `;
+            document.getElementById('resetCurrentStats').innerHTML = `
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">کل خرید:</small><br>
+                        <strong class="text-success">${formatNumber(pool.totalBought)}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">کل فروش:</small><br>
+                        <strong class="text-danger">${formatNumber(pool.totalSold)}</strong>
+                    </div>
+                </div>
+            `;
+            document.getElementById('resetReason').value = '';
+        }
+
+        // Update balance difference
+        function updateBalanceDifference() {
+            const newBalance = parseFloat(document.getElementById('newBalance').value) || 0;
+            const currentBalance = currentPoolData.balance || 0;
+            const difference = newBalance - currentBalance;
+            
+            const diffElement = document.getElementById('balanceDifference');
+            if (difference !== 0) {
+                const sign = difference > 0 ? '+' : '';
+                const color = difference > 0 ? 'success' : 'danger';
+                diffElement.innerHTML = `
+                    <i class="fas fa-calculator me-2"></i>
+                    <strong>تغییر: ${sign}${formatNumber(difference)} ${currentPoolData.currencyCode}</strong>
+                `;
+                diffElement.className = `alert alert-${color}`;
+                diffElement.style.display = 'block';
+            } else {
+                diffElement.style.display = 'none';
+            }
+        }
+
+        // Handle edit balance form submission
+        document.getElementById('editBalanceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('poolId', document.getElementById('editPoolId').value);
+            formData.append('newBalance', document.getElementById('newBalance').value);
+            formData.append('reason', document.getElementById('balanceReason').value);
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch('/PoolManagement/UpdateBalance', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    updatePoolDisplay(data);
+                    bootstrap.Modal.getInstance(document.getElementById('editBalanceModal')).hide();
+                } else {
+                    showAlert('error', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'خطا در بروزرسانی موجودی');
+            });
+        });
+
+        // Handle reset stats form submission
+        document.getElementById('resetStatsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('poolId', document.getElementById('resetPoolId').value);
+            formData.append('reason', document.getElementById('resetReason').value);
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            fetch('/PoolManagement/ResetPoolStats', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    // Reset the displayed statistics
+                    const poolId = document.getElementById('resetPoolId').value;
+                    document.getElementById(`bought-${poolId}`).textContent = '0';
+                    document.getElementById(`sold-${poolId}`).textContent = '0';
+                    document.getElementById(`lastUpdated-${poolId}`).textContent = data.lastUpdated;
+                    bootstrap.Modal.getInstance(document.getElementById('resetStatsModal')).hide();
+                } else {
+                    showAlert('error', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'خطا در ریست آمار');
+            });
+        });
+
+        // Update pool display after balance change
+        function updatePoolDisplay(data) {
+            const poolId = document.getElementById('editPoolId').value;
+            const balanceElement = document.getElementById(`balance-${poolId}`);
+            const lastUpdatedElement = document.getElementById(`lastUpdated-${poolId}`);
+            
+            // Update balance
+            balanceElement.innerHTML = `
+                <i class="${data.newBalance >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'} me-1"></i>
+                ${formatNumber(data.newBalance)}
+            `;
+            balanceElement.className = `text-${data.newBalance >= 0 ? 'success' : 'danger'} mb-0 fw-bold`;
+            
+            // Update last updated
+            lastUpdatedElement.textContent = data.lastUpdated;
+        }
+
+        // Listen for balance input changes
+        document.getElementById('newBalance').addEventListener('input', updateBalanceDifference);
+
+        // Refresh pools
+        function refreshPools() {
+            location.reload();
+        }
+
+        // Utility functions
+        function getFlagEmoji(currencyCode) {
+            const flags = {
+                'IRR': '🇮🇷',
+                'USD': '🇺🇸',
+                'EUR': '🇪🇺',
+                'AED': '🇦🇪',
+                'OMR': '🇴🇲',
+                'TRY': '🇹🇷',
+                'CNY': '🇨🇳'
+            };
+            return flags[currencyCode] || '💱';
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('fa-IR').format(num);
+        }
+
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertIcon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="${alertIcon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    bootstrap.Alert.getInstance(alert)?.close();
+                }
+            }, 5000);
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        }
+        
+        .pool-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .pool-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .currency-flag {
+            line-height: 1;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+        
+        .modal-header .btn-close {
+            filter: invert(1);
+        }
+    </style>
+}

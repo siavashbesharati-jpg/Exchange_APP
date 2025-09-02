@@ -118,9 +118,9 @@ namespace ForexExchange.Services
             // Define multiple admin users with their phone numbers as passwords
             var adminUsers = new[]
             {
-                new { Phone = "09120674032", Email = "admin1@iranexpedia.ir", FullName = "سیاوش", Password = "09120674032" },
-                new { Phone = "09391374624", Email = "admin2@iranexpedia.ir", FullName = "الهه", Password = "09391374624" },
-                new { Phone = "09194810612", Email = "admin3@iranexpedia.ir", FullName = "بهنام", Password = "09194810612" }
+                new { Phone = "00989120674032", Email = "siavash@taban-gorpup.com", FullName = "سیاوش", Password = "09120674032" },
+                new { Phone = "00989391377624", Email = "elahe@taban-gorpup.com", FullName = "الهه", Password = "09391377624" },
+                new { Phone = "00989194810612", Email = "behnam@taban-gorpup.com", FullName = "بهنام", Password = "09194810612" }
             };
 
             foreach (var adminData in adminUsers)

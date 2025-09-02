@@ -36,6 +36,14 @@ namespace ForexExchange.Services
         Task<CurrencyPool?> GetPoolAsync(int currencyId);
 
         /// <summary>
+        /// Get pool details by pool ID
+        /// دریافت جزئیات استخر بر اساس شناسه استخر
+        /// </summary>
+        /// <param name="poolId">Pool ID</param>
+        /// <returns>Pool details or null if not found</returns>
+        Task<CurrencyPool?> GetPoolByIdAsync(int poolId);
+
+        /// <summary>
         /// Get all active currency pools
         /// دریافت تمام استخرهای ارزی فعال
         /// </summary>
@@ -108,6 +116,14 @@ namespace ForexExchange.Services
         /// </summary>
         /// <returns>Task</returns>
         Task UpdateAllOrderCountsAsync();
+
+        /// <summary>
+        /// Direct pool update for admin operations
+        /// بروزرسانی مستقیم استخر برای عملیات ادمین
+        /// </summary>
+        /// <param name="pool">Pool to update</param>
+        /// <returns>Updated pool</returns>
+        Task<CurrencyPool> UpdatePoolDirectAsync(CurrencyPool pool);
     }
 
     /// <summary>

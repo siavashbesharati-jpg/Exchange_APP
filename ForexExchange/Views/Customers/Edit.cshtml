@@ -27,8 +27,9 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <label asp-for="PhoneNumber" class="form-label">شماره تلفن *</label>
-                                <input asp-for="PhoneNumber" type="tel" class="form-control" placeholder="09xxxxxxxxx" required />
+                                <label asp-for="PhoneNumber" class="form-label">شماره تلفن</label>
+                                <input asp-for="PhoneNumber" type="text" class="form-control" placeholder="هر فرمت شماره تلفن قابل قبول است" />
+                                <small class="form-text text-muted">شماره تلفن با کد کشور (+98، 0098) یا بدون کد کشور (برای ایران)</small>
                                 <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                             </div>
                         </div>
@@ -106,15 +107,6 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script>
-        // Phone number validation
-        document.querySelector('input[name="PhoneNumber"]').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-            if (value.length > 11) {
-                value = value.substring(0, 11);
-            }
-            e.target.value = value;
-        });
-        
         // National ID validation
         var nationalIdInput = document.querySelector('input[name="NationalId"]');
         if (nationalIdInput) {

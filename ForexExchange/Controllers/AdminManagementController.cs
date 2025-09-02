@@ -211,9 +211,19 @@ namespace ForexExchange.Controllers
                 return RedirectToAction("ManageAdmins");
             }
 
-            // Check if phone number already exists
+            // Normalize phone number
+            string normalizedPhoneNumber = PhoneNumberService.NormalizePhoneNumber(userName);
+            
+            // Validate normalized phone number
+            if (!PhoneNumberService.IsValidNormalizedPhoneNumber(normalizedPhoneNumber))
+            {
+                TempData["Error"] = "فرمت شماره تلفن صحیح نیست. لطفاً شماره تلفن معتبر وارد کنید.";
+                return RedirectToAction("ManageAdmins");
+            }
+
+            // Check if normalized phone number already exists
             var existingUserByPhone = await _userManager.Users
-                .FirstOrDefaultAsync(u => u.PhoneNumber == userName);
+                .FirstOrDefaultAsync(u => u.PhoneNumber == normalizedPhoneNumber || u.UserName == normalizedPhoneNumber);
             if (existingUserByPhone != null)
             {
                 TempData["Error"] = "کاربری با این شماره تلفن قبلاً ثبت نام کرده است.";
@@ -222,8 +232,8 @@ namespace ForexExchange.Controllers
 
             var user = new ApplicationUser
             {
-                UserName = userName, // Use phone number as username (same as seeded admin)
-                PhoneNumber = userName, // Set phone number field for login lookup
+                UserName = normalizedPhoneNumber, // Use normalized phone number as username
+                PhoneNumber = normalizedPhoneNumber, // Set normalized phone number
                 Email = email,
                 FullName = fullName, // Set the full name
                 EmailConfirmed = true,
@@ -247,8 +257,8 @@ namespace ForexExchange.Controllers
                         currentUser.Id,
                         currentUser.UserName ?? "Unknown",
                         AdminActivityType.UserCreated,
-                        $"کاربر جدید ایجاد شد: {fullName} ({userName}) با نقش {role}",
-                        JsonSerializer.Serialize(new { UserId = user.Id, Role = role }),
+                        $"کاربر جدید ایجاد شد: {fullName} ({normalizedPhoneNumber}) با نقش {role}",
+                        JsonSerializer.Serialize(new { UserId = user.Id, Role = role, OriginalInput = userName, NormalizedPhone = normalizedPhoneNumber }),
                         "ApplicationUser",
                         null,
                         null,
@@ -256,7 +266,7 @@ namespace ForexExchange.Controllers
                     );
                 }
 
-                TempData["Success"] = $"کاربر {fullName} با شماره تلفن {userName} با موفقیت ایجاد شد.";
+                TempData["Success"] = $"کاربر {fullName} با شماره تلفن {PhoneNumberService.GetDisplayFormat(normalizedPhoneNumber)} با موفقیت ایجاد شد.";
             }
             else
             {
@@ -484,6 +494,66 @@ namespace ForexExchange.Controllers
 
             var fileName = $"admin_activities_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
             return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
+        }
+
+        /// <summary>
+        /// Edit Admin User
+        /// ویرایش کاربر ادمین
+        /// </summary>
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditAdmin(string userId, string email, string fullName)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "کاربر یافت نشد" });
+                }
+
+                // Don't allow editing self
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser?.Id == userId)
+                {
+                    return Json(new { success = false, message = "شما نمی‌توانید اطلاعات خود را ویرایش کنید" });
+                }
+
+                var oldEmail = user.Email;
+                var oldFullName = user.FullName;
+
+                // Update user information
+                user.Email = email;
+                user.FullName = fullName;
+
+                var result = await _userManager.UpdateAsync(user);
+                if (result.Succeeded)
+                {
+                    // Log the activity
+                    if (currentUser != null)
+                    {
+                        await _adminActivityService.LogUserEditAsync(
+                            currentUser.Id,
+                            currentUser.UserName ?? "Unknown",
+                            user.Id,
+                            user.UserName ?? "Unknown",
+                            $"Email: {oldEmail} → {email}, FullName: {oldFullName} → {fullName}"
+                        );
+                    }
+
+                    return Json(new { success = true, message = "اطلاعات کاربر با موفقیت بروزرسانی شد" });
+                }
+                else
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    return Json(new { success = false, message = $"خطا در بروزرسانی: {errors}" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "خطا در بروزرسانی اطلاعات کاربر" });
+            }
         }
     }
 }

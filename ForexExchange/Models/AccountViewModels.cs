@@ -11,9 +11,7 @@ namespace ForexExchange.Models
         [Display(Name = "ایمیل (اختیاری)")]
         public string? Email { get; set; }
 
-        [Required(ErrorMessage = "شماره تلفن الزامی است")]
         [Display(Name = "شماره تلفن")]
-        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
         public string PhoneNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "رمز عبور الزامی است")]
@@ -36,9 +34,7 @@ namespace ForexExchange.Models
 
     public class LoginViewModel
     {
-        [Required(ErrorMessage = "شماره تلفن الزامی است")]
         [Display(Name = "شماره تلفن")]
-        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
         public string PhoneNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "رمز عبور الزامی است")]
@@ -79,9 +75,7 @@ namespace ForexExchange.Models
        
         public string? Email { get; set; }
 
-        [Required(ErrorMessage = "شماره تلفن الزامی است")]
         [Display(Name = "شماره تلفن")]
-        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
         public string PhoneNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "رمز عبور الزامی است")]
@@ -118,9 +112,7 @@ namespace ForexExchange.Models
         [Display(Name = "ایمیل (اختیاری)")]
         public string? Email { get; set; }
 
-        [Required(ErrorMessage = "شماره تلفن الزامی است")]
         [Display(Name = "شماره تلفن")]
-        [RegularExpression(@"^09[0-9]{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
         public string PhoneNumber { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]

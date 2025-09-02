@@ -165,9 +165,18 @@ namespace ForexExchange.Controllers
                     }
                 }
 
-                // Check if phone number already exists
+                // Check if phone number already exists (normalize first)
+                string normalizedPhoneNumber = PhoneNumberService.NormalizePhoneNumber(model.PhoneNumber);
+                
+                // Validate normalized phone number
+                if (!PhoneNumberService.IsValidNormalizedPhoneNumber(normalizedPhoneNumber))
+                {
+                    ModelState.AddModelError("PhoneNumber", "فرمت شماره تلفن صحیح نیست. لطفاً شماره تلفن معتبر وارد کنید.");
+                    return View(model);
+                }
+
                 var existingCustomer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.PhoneNumber == model.PhoneNumber && c.IsActive);
+                    .FirstOrDefaultAsync(c => c.PhoneNumber == normalizedPhoneNumber && c.IsActive);
 
                 if (existingCustomer != null)
                 {
@@ -180,7 +189,7 @@ namespace ForexExchange.Controllers
                 {
                     FullName = model.FullName,
                     Email = model.Email ?? string.Empty,
-                    PhoneNumber = model.PhoneNumber,
+                    PhoneNumber = normalizedPhoneNumber, // Use normalized phone number
                     NationalId = model.NationalId ?? string.Empty,
                     Address = model.Address ?? string.Empty,
                     CreatedAt = DateTime.Now,
@@ -193,9 +202,9 @@ namespace ForexExchange.Controllers
                 // Create corresponding ApplicationUser
                 var user = new ApplicationUser
                 {
-                    UserName = model.PhoneNumber, // Use phone number as username instead of email
+                    UserName = normalizedPhoneNumber, // Use normalized phone number as username
                     Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email,
-                    PhoneNumber = model.PhoneNumber,
+                    PhoneNumber = normalizedPhoneNumber, // Use normalized phone number
                     FullName = model.FullName,
                     NationalId = model.NationalId ?? string.Empty,
                     Address = model.Address ?? string.Empty,
@@ -289,6 +298,16 @@ namespace ForexExchange.Controllers
                         return NotFound();
                     }
 
+                    // Normalize phone number for validation and storage
+                    string normalizedPhoneNumber = PhoneNumberService.NormalizePhoneNumber(model.PhoneNumber);
+                    
+                    // Validate normalized phone number
+                    if (!PhoneNumberService.IsValidNormalizedPhoneNumber(normalizedPhoneNumber))
+                    {
+                        ModelState.AddModelError("PhoneNumber", "فرمت شماره تلفن صحیح نیست. لطفاً شماره تلفن معتبر وارد کنید.");
+                        return View(model);
+                    }
+
                     // Check if email changed and if new email exists (only if email is provided)
                     if (customer.Email != model.Email && !string.IsNullOrWhiteSpace(model.Email))
                     {
@@ -300,11 +319,11 @@ namespace ForexExchange.Controllers
                         }
                     }
 
-                    // Check if phone number changed and if new phone exists
-                    if (customer.PhoneNumber != model.PhoneNumber)
+                    // Check if phone number changed and if new normalized phone exists
+                    if (customer.PhoneNumber != normalizedPhoneNumber)
                     {
                         var existingCustomer = await _context.Customers
-                            .FirstOrDefaultAsync(c => c.PhoneNumber == model.PhoneNumber && c.IsActive && c.Id != id);
+                            .FirstOrDefaultAsync(c => c.PhoneNumber == normalizedPhoneNumber && c.IsActive && c.Id != id);
 
                         if (existingCustomer != null)
                         {
@@ -316,7 +335,7 @@ namespace ForexExchange.Controllers
                     // Update customer entity
                     customer.FullName = model.FullName;
                     customer.Email = model.Email ?? string.Empty;
-                    customer.PhoneNumber = model.PhoneNumber;
+                    customer.PhoneNumber = normalizedPhoneNumber; // Use normalized phone number
                     customer.NationalId = model.NationalId ?? string.Empty;
                     customer.Address = model.Address ?? string.Empty;
                     customer.IsActive = model.IsActive;
@@ -327,9 +346,9 @@ namespace ForexExchange.Controllers
                     var user = await _userManager.Users.FirstOrDefaultAsync(u => u.CustomerId == customer.Id);
                     if (user != null)
                     {
-                        user.UserName = model.PhoneNumber; // Always use phone number as username
+                        user.UserName = normalizedPhoneNumber; // Use normalized phone number as username
                         user.Email = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email;
-                        user.PhoneNumber = model.PhoneNumber;
+                        user.PhoneNumber = normalizedPhoneNumber; // Use normalized phone number
                         user.FullName = model.FullName;
                         user.NationalId = model.NationalId ?? string.Empty;
                         user.Address = model.Address ?? string.Empty;
