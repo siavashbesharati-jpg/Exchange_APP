@@ -130,7 +130,7 @@ namespace ForexExchange.Controllers
         // POST: Receipts/Upload
         [HttpPost]
         [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile receiptFile, int customerId, int? orderId, int? transactionId, ReceiptType type, string? manualAmount, string? manualReference, bool skipOcr = false)
+    public async Task<IActionResult> Upload(IFormFile receiptFile, int customerId, int? orderId, int? transactionId, ReceiptType receiptType, string? manualAmount, string? manualReference, bool skipOcr = false)
         {
             try
             {
@@ -179,9 +179,95 @@ namespace ForexExchange.Controllers
                     var txExists = await _context.Transactions.AsNoTracking().AnyAsync(t => t.Id == transactionId.Value);
                     if (!txExists)
                     {
-                        ModelState.AddModelError("transactionId", "تراکنش انتخاب شده یافت نشد.");
-                        await LoadUploadViewData(orderId, transactionId);
-                        return View();
+                        // If an order is provided, fall back to auto-create flow instead of erroring out
+                        if (orderId.HasValue)
+                        {
+                            transactionId = null; // trigger auto-create/reuse logic below
+                        }
+                        else
+                        {
+                            ModelState.AddModelError("transactionId", "تراکنش انتخاب شده یافت نشد.");
+                            await LoadUploadViewData(orderId, transactionId);
+                            return View();
+                        }
+                    }
+                }
+
+                // If no transaction specified but an order is selected, auto-create or reuse a transaction
+                if (!transactionId.HasValue && orderId.HasValue)
+                {
+                    // Try to reuse latest pending/payment-uploaded transaction for this order
+                    var existingTx = await _context.Transactions
+                        .Where(t => t.BuyOrderId == orderId.Value || t.SellOrderId == orderId.Value)
+                        .OrderByDescending(t => t.CreatedAt)
+                        .FirstOrDefaultAsync();
+
+                    if (existingTx != null && (existingTx.Status == TransactionStatus.Pending || existingTx.Status == TransactionStatus.PaymentUploaded))
+                    {
+                        transactionId = existingTx.Id;
+                    }
+                    else
+                    {
+                        // Create a minimal self-linked transaction to anchor the receipt
+                        var linkedOrder = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orderId.Value);
+                        if (linkedOrder == null)
+                        {
+                            ModelState.AddModelError("orderId", "معامله انتخاب شده یافت نشد.");
+                            await LoadUploadViewData(orderId, transactionId);
+                            return View();
+                        }
+
+                        // Compute totals
+                        var totalAmount = linkedOrder.Amount * linkedOrder.Rate;
+
+                        // Determine if ToCurrency is base currency to set TotalInToman
+                        var baseCurrencyId = await _context.Currencies.Where(c => c.IsBaseCurrency).Select(c => c.Id).FirstOrDefaultAsync();
+                        decimal totalInToman = 0;
+                        if (baseCurrencyId > 0)
+                        {
+                            if (linkedOrder.FromCurrencyId == baseCurrencyId)
+                            {
+                                totalInToman = linkedOrder.Amount;
+                            }
+                            else if (linkedOrder.ToCurrencyId == baseCurrencyId)
+                            {
+                                totalInToman = totalAmount;
+                            }
+                            else
+                            {
+                                // Approximate via USD base (optional)
+                                var usdId = await _context.Currencies.Where(c => c.Code == "USD" && c.IsActive).Select(c => c.Id).FirstOrDefaultAsync();
+                                if (usdId > 0)
+                                {
+                                    var usdRate = await _context.ExchangeRates
+                                        .Where(r => r.FromCurrencyId == baseCurrencyId && r.ToCurrencyId == usdId && r.IsActive)
+                                        .Select(r => r.Rate)
+                                        .FirstOrDefaultAsync();
+                                    totalInToman = totalAmount * (usdRate);
+                                }
+                            }
+                        }
+
+                        var newTx = new Transaction
+                        {
+                            BuyOrderId = linkedOrder.Id,
+                            SellOrderId = linkedOrder.Id, // self-link as a minimal placeholder
+                            BuyerCustomerId = linkedOrder.CustomerId,
+                            SellerCustomerId = linkedOrder.CustomerId,
+                            FromCurrencyId = linkedOrder.FromCurrencyId,
+                            ToCurrencyId = linkedOrder.ToCurrencyId,
+                            Amount = linkedOrder.Amount,
+                            Rate = linkedOrder.Rate,
+                            TotalAmount = totalAmount,
+                            TotalInToman = totalInToman,
+                            Status = TransactionStatus.Pending,
+                            CreatedAt = DateTime.Now,
+                            Notes = "ایجاد خودکار هنگام آپلود رسید"
+                        };
+
+                        _context.Transactions.Add(newTx);
+                        await _context.SaveChangesAsync();
+                        transactionId = newTx.Id;
                     }
                 }
 
@@ -199,7 +285,7 @@ namespace ForexExchange.Controllers
                     CustomerId = customerId,
                     OrderId = orderId,
                     TransactionId = transactionId,
-                    Type = type,
+                    Type = receiptType,
                     FileName = receiptFile.FileName,
                     ContentType = receiptFile.ContentType,
                     ImageData = imageData,
