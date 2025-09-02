@@ -211,12 +211,29 @@
                             <div class="text-info mb-3">
                                 <i class="fas fa-swimming-pool fa-3x"></i>
                             </div>
-                            <h5 class="card-title">مدیریت استخرهای ارزی</h5>
-                            <p class="card-text">مدیریت موجودی و آمار استخرهای ارزی</p>
-                            <a href="@Url.Action("Index", "PoolManagement")" class="btn btn-info">مدیریت استخرها</a>
+                            <h5 class="card-title">مدیریت صندوق های ارزی</h5>
+                            <p class="card-text">مدیریت موجودی و آمار صندوق های ارزی</p>
+                            <a href="@Url.Action("Index", "PoolManagement")" class="btn btn-info">مدیریت صندوق ها</a>
                         </div>
                     </div>
                 </div>
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <!-- Database Management (Admin Only) -->
+                    <div class="col-lg-6 col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <div class="text-dark mb-3">
+                                    <i class="fas fa-database fa-3x"></i>
+                                </div>
+                                <h5 class="card-title">مدیریت پایگاه داده</h5>
+                                <p class="card-text">پشتیبان‌گیری، بازیابی و پاکسازی پایگاه داده</p>
+                                <a href="@Url.Action("Index", "Database")" class="btn btn-dark">مدیریت پایگاه داده</a>
+                            </div>
+                        </div>
+                    </div>
+                }
 
                 @if (User.IsInRole("Admin"))
                 {

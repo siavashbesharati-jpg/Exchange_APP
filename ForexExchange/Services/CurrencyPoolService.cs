@@ -5,7 +5,7 @@ namespace ForexExchange.Services
 {
     /// <summary>
     /// Currency Pool Service Implementation for Cross-Currency Trading
-    /// پیاده‌سازی سرویس استخر ارزی برای تجارت متقابل ارزها
+    /// پیاده‌سازی سرویس صندوق  ارزی برای تجارت متقابل ارزها
     /// </summary>
     public class CurrencyPoolService : ICurrencyPoolService
     {
@@ -20,7 +20,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update pool balance after a transaction
-        /// بروزرسانی موجودی استخر پس از تراکنش
+        /// بروزرسانی موجودی صندوق  پس از تراکنش
         /// </summary>
         public async Task<CurrencyPool> UpdatePoolAsync(int currencyId, decimal amount, PoolTransactionType transactionType, decimal rate)
         {
@@ -30,8 +30,8 @@ namespace ForexExchange.Services
             {
                 _logger.LogWarning($"Currency pool not found for currency ID {currencyId}");
                 throw new InvalidOperationException($"Currency pool not found for currency ID {currencyId}");
-                  
-          
+
+
             }
 
             // Update balances based on transaction type
@@ -75,7 +75,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details for a currency
-        /// دریافت جزئیات استخر برای یک ارز
+        /// دریافت جزئیات صندوق  برای یک ارز
         /// </summary>
         public async Task<CurrencyPool?> GetPoolAsync(int currencyId)
         {
@@ -86,7 +86,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details by pool ID
-        /// دریافت جزئیات استخر بر اساس شناسه استخر
+        /// دریافت جزئیات صندوق  بر اساس شناسه صندوق 
         /// </summary>
         public async Task<CurrencyPool?> GetPoolByIdAsync(int poolId)
         {
@@ -97,7 +97,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get all active currency pools
-        /// دریافت تمام استخرهای ارزی فعال
+        /// دریافت تمام صندوق های ارزی فعال
         /// </summary>
         public async Task<List<CurrencyPool>> GetAllPoolsAsync()
         {
@@ -110,7 +110,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Initialize a new currency pool
-        /// ایجاد استخر جدید برای یک ارز
+        /// ایجاد صندوق  جدید برای یک ارز
         /// </summary>
         public async Task<CurrencyPool> CreatePoolAsync(int currencyId, decimal initialBalance = 0)
         {
@@ -175,7 +175,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pools with high risk levels
-        /// دریافت استخرهای با سطح ریسک بالا
+        /// دریافت صندوق های با سطح ریسک بالا
         /// </summary>
         public async Task<List<CurrencyPool>> GetHighRiskPoolsAsync(PoolRiskLevel riskLevel = PoolRiskLevel.High)
         {
@@ -189,7 +189,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update risk levels for all pools
-        /// بروزرسانی سطح ریسک برای تمام استخرها
+        /// بروزرسانی سطح ریسک برای تمام صندوق ها
         /// </summary>
         public async Task<int> UpdateRiskLevelsAsync(decimal lowThreshold = 1000, decimal highThreshold = 5000)
         {
@@ -219,7 +219,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool performance statistics
-        /// دریافت آمار عملکرد استخر
+        /// دریافت آمار عملکرد صندوق 
         /// </summary>
         public async Task<PoolPerformance> GetPoolPerformanceAsync(int currencyId, decimal currentRate)
         {
@@ -250,7 +250,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Process transaction and update corresponding pools
-        /// پردازش تراکنش و بروزرسانی استخرهای مربوطه
+        /// پردازش تراکنش و بروزرسانی صندوق های مربوطه
         /// </summary>
         public async Task<List<CurrencyPool>> ProcessTransactionAsync(Transaction transaction)
         {
@@ -282,7 +282,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for a currency pool
-        /// بروزرسانی تعداد معاملهات برای استخر ارزی
+        /// بروزرسانی تعداد معاملهات برای صندوق  ارزی
         /// </summary>
         public async Task UpdateOrderCountsAsync(int currencyId)
         {
@@ -313,7 +313,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for all currency pools
-        /// بروزرسانی تعداد معاملهات برای همه استخرهای ارزی
+        /// بروزرسانی تعداد معاملهات برای همه صندوق های ارزی
         /// </summary>
         public async Task UpdateAllOrderCountsAsync()
         {
@@ -329,7 +329,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update risk level for a single pool
-        /// بروزرسانی سطح ریسک برای یک استخر
+        /// بروزرسانی سطح ریسک برای یک صندوق 
         /// </summary>
         private async Task UpdatePoolRiskLevel(CurrencyPool pool, decimal lowThreshold = 1000, decimal highThreshold = 5000)
         {
@@ -349,7 +349,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Direct pool update for admin operations
-        /// بروزرسانی مستقیم استخر برای عملیات ادمین
+        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
         /// </summary>
         public async Task<CurrencyPool> UpdatePoolDirectAsync(CurrencyPool pool)
         {
@@ -357,17 +357,52 @@ namespace ForexExchange.Services
             {
                 // Update risk level
                 await UpdatePoolRiskLevel(pool);
-                
+
                 // Update the pool
                 _context.CurrencyPools.Update(pool);
                 await _context.SaveChangesAsync();
-                
+
                 _logger.LogInformation($"Pool directly updated: ID={pool.Id}, Balance={pool.Balance}");
                 return pool;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error in direct pool update for pool ID {pool.Id}");
+                throw;
+            }
+        }
+        
+          /// <summary>
+        /// Direct pool update for admin operations
+        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
+        /// </summary>
+        public async Task<bool> CleanPullAsync()
+        {
+            try
+            {
+                // Update risk level
+                var pools = await _context.CurrencyPools.ToListAsync();
+
+                foreach (var pool in pools)
+                {
+                    pool.ActiveBuyOrderCount = 0;
+                    pool.ActiveSellOrderCount = 0;
+                    pool.RiskLevel = PoolRiskLevel.Low;
+                    pool.Balance = 0;
+                    pool.LastUpdated = DateTime.Now;
+                     _context.CurrencyPools.Update(pool);
+                   
+                }
+                
+               
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation($"Pool set to zero ");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error in clean pools");
                 throw;
             }
         }

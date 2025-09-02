@@ -28,7 +28,7 @@ namespace ForexExchange.Controllers
 
         /// <summary>
         /// Display currency pools management page
-        /// صفحه مدیریت استخرهای ارزی
+        /// صفحه مدیریت صندوق های ارزی
         /// </summary>
         public async Task<IActionResult> Index()
         {
@@ -40,14 +40,14 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading currency pools management page");
-                TempData["ErrorMessage"] = "خطا در بارگذاری صفحه مدیریت استخرها";
+                TempData["ErrorMessage"] = "خطا در بارگذاری صفحه مدیریت صندوق ها";
                 return RedirectToAction("Index", "Home");
             }
         }
 
         /// <summary>
         /// Update pool balance
-        /// بروزرسانی موجودی استخر
+        /// بروزرسانی موجودی صندوق 
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -59,7 +59,7 @@ namespace ForexExchange.Controllers
                 var pool = await _poolService.GetPoolByIdAsync(poolId);
                 if (pool == null)
                 {
-                    return Json(new { success = false, message = "استخر ارزی یافت نشد" });
+                    return Json(new { success = false, message = "صندوق  ارزی یافت نشد" });
                 }
 
                 var oldBalance = pool.Balance;
@@ -103,13 +103,13 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error updating pool balance for pool ID {poolId}");
-                return Json(new { success = false, message = "خطا در بروزرسانی موجودی استخر" });
+                return Json(new { success = false, message = "خطا در بروزرسانی موجودی صندوق " });
             }
         }
 
         /// <summary>
         /// Reset pool statistics
-        /// ریست کردن آمار استخر
+        /// ریست کردن آمار صندوق 
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -120,7 +120,7 @@ namespace ForexExchange.Controllers
                 var pool = await _poolService.GetPoolAsync(poolId);
                 if (pool == null)
                 {
-                    return Json(new { success = false, message = "استخر ارزی یافت نشد" });
+                    return Json(new { success = false, message = "صندوق  ارزی یافت نشد" });
                 }
 
                 var oldData = new
@@ -163,13 +163,13 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error resetting pool statistics for pool ID {poolId}");
-                return Json(new { success = false, message = "خطا در ریست کردن آمار استخر" });
+                return Json(new { success = false, message = "خطا در ریست کردن آمار صندوق " });
             }
         }
 
         /// <summary>
         /// Get pool details for modal
-        /// دریافت جزئیات استخر برای مودال
+        /// دریافت جزئیات صندوق  برای مودال
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetPoolDetails(int poolId)
@@ -179,7 +179,7 @@ namespace ForexExchange.Controllers
                 var pool = await _poolService.GetPoolAsync(poolId);
                 if (pool == null)
                 {
-                    return Json(new { success = false, message = "استخر ارزی یافت نشد" });
+                    return Json(new { success = false, message = "صندوق  ارزی یافت نشد" });
                 }
 
                 return Json(new { 
@@ -201,7 +201,7 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error getting pool details for pool ID {poolId}");
-                return Json(new { success = false, message = "خطا در دریافت جزئیات استخر" });
+                return Json(new { success = false, message = "خطا در دریافت جزئیات صندوق " });
             }
         }
     }

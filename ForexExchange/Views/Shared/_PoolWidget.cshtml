@@ -5,7 +5,7 @@
     <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
         <div>
             <i class="bi bi-bank2 me-2"></i>
-            <strong>استخر ارزی - Currency Pool</strong>
+            <strong>صندوق  ارزی - Currency Pool</strong>
         </div>
         <div class="d-flex align-items-center">
             <small id="pool-last-update" class="me-3">
@@ -39,7 +39,12 @@
 
                     var balanceColorClass = pool.Balance >= 0 ? "success" : "danger";
                     var balanceIcon = pool.Balance >= 0 ? "bi-graph-up-arrow" : "bi-graph-down-arrow";
-                    var balancePercent = pool.Balance > 0 ? Math.Min(100, (pool.Balance / (pool.TotalBought + pool.TotalSold)) * 100) : 0;
+                    // Prevent divide-by-zero if totals are zero or negative (after manual edits)
+                    var denom = pool.TotalBought + pool.TotalSold;
+                    var balancePercentDec = (pool.Balance > 0 && denom > 0)
+                        ? Math.Min(100m, (denom == 0 ? 0 : (pool.Balance / denom) * 100m))
+                        : 0m;
+                    var balancePercent = (int)Math.Round(balancePercentDec, MidpointRounding.AwayFromZero);
 
                     <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
                         <div class="card h-100 border-0 shadow-sm pool-card" data-currency="@pool.Currency?.Code">
@@ -261,10 +266,10 @@ function refreshPoolWidget() {
         $('#pool-last-update').html('<i class="bi bi-clock-history me-1"></i>' + new Date().toLocaleTimeString('fa-IR'));
 
         // Show success feedback
-        showNotification('استخر ارزی بروزرسانی شد', 'success');
+        showNotification('صندوق  ارزی بروزرسانی شد', 'success');
     }).fail(function(xhr, status, error) {
-        console.error('خطا در بروزرسانی ویجت استخر:', error);
-        showNotification('خطا در بروزرسانی استخر ارزی', 'error');
+        console.error('خطا در بروزرسانی ویجت صندوق :', error);
+        showNotification('خطا در بروزرسانی صندوق  ارزی', 'error');
     }).always(function() {
         // Remove loading state
         container.removeClass('refreshing');
@@ -302,7 +307,7 @@ function showPoolDetails(currencyCode) {
     const riskBadge = poolCard.find('.risk-badge').text();
 
     // You can replace this with a proper modal implementation
-    alert(`جزئیات استخر ${currencyName} (${currencyCode}):\n\n` +
+    alert(`جزئیات صندوق  ${currencyName} (${currencyCode}):\n\n` +
           `موجودی: ${balance}\n` +
           `سطح ریسک: ${riskBadge}\n\n` +
           `برای مشاهده جزئیات بیشتر به صفحه نرخ‌های ارز مراجعه کنید.`);

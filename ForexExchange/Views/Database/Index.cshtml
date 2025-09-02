@@ -1,0 +1,228 @@
+@using ForexExchange.Models
+@model DatabaseManagementViewModel
+@{
+    ViewData["Title"] = "مدیریت پایگاه داده";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-4" dir="rtl">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-database me-2"></i>
+                        مدیریت پایگاه داده
+                    </h4>
+                </div>
+                <div class="card-body">
+
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success">@TempData["Success"]</div>
+                    }
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger">@TempData["Error"]</div>
+                    }
+
+                    <!-- Database Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">آمار پایگاه داده</h5>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="card bg-info text-white text-center">
+                                <div class="card-body">
+                                    <h4>@Model.CustomersCount</h4>
+                                    <small>مشتریان</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="card bg-success text-white text-center">
+                                <div class="card-body">
+                                    <h4>@Model.OrdersCount</h4>
+                                    <small>سفارشات</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="card bg-warning text-white text-center">
+                                <div class="card-body">
+                                    <h4>@Model.CurrencyPoolsCount</h4>
+                                    <small>صندوق های ارز</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="card bg-secondary text-white text-center">
+                                <div class="card-body">
+                                    <h4>@Model.TransactionsCount</h4>
+                                    <small>تراکنش‌ها</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="card bg-danger text-white text-center">
+                                <div class="card-body">
+                                    <h4>@Model.ExchangeRatesCount</h4>
+                                    <small>نرخ‌های ارز</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-3">
+                            <div class="card bg-dark text-white text-center">
+                                <div class="card-body">
+                                    <h4>@Model.ReceiptsCount</h4>
+                                    <small>رسیدها</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Backup & Restore Section -->
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-download me-2"></i>
+                                        پشتیبان‌گیری و بازیابی
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <button type="button" class="btn btn-success w-100 mb-2" onclick="createBackup()">
+                                            <i class="fas fa-download me-2"></i>
+                                            ایجاد پشتیبان (قابل دانلود)
+                                        </button>
+                                    </div>
+                                    
+                                    <form asp-action="RestoreDatabase" method="post" enctype="multipart/form-data">
+                                        @Html.AntiForgeryToken()
+                                        <div class="mb-3">
+                                            <label for="backupFile" class="form-label">فایل پشتیبان برای بازیابی:</label>
+                                            <input type="file" class="form-control" id="backupFile" name="backupFile" accept=".db,.sql" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning w-100" onclick="return confirmRestore()">
+                                            <i class="fas fa-upload me-2"></i>
+                                            بازیابی پایگاه داده
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cleaning Operations -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-trash me-2"></i>
+                                        عملیات پاکسازی
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>هشدار:</strong> این عملیات غیرقابل بازگشت است!
+                                    </div>
+                                    
+                                        <form asp-action="CleanCustomers" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام مشتریان عادی و حساب‌های کاربری آنها را پاک کنید؟ (مشتری سیستم حفظ خواهد شد)')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger w-100 mb-2">
+                                                <i class="fas fa-users me-2"></i>
+                                                پاکسازی مشتریان
+                                            </button>
+                                        </form>
+                                    
+                                        <form asp-action="CleanOrders" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام سفارشات را پاک کنید؟')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger w-100 mb-2">
+                                                <i class="fas fa-shopping-cart me-2"></i>
+                                                پاکسازی سفارشات
+                                            </button>
+                                        </form>
+                                    
+                                        <form asp-action="CleanPools" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام صندوق های ارز را پاک کنید؟')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-danger w-100">
+                                                <i class="fas fa-coins me-2"></i>
+                                                پاکسازی صندوق های ارز
+                                            </button>
+                                        </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">در حال پردازش...</span>
+                </div>
+                <div class="mt-3">در حال پردازش، لطفاً صبر کنید...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function createBackup() {
+            $('#loadingModal').modal('show');
+
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '@Url.Action("CreateBackup")';
+            form.style.display = 'none';
+
+            var token = $('input[name="__RequestVerificationToken"]').val();
+            if (token) {
+                var csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '__RequestVerificationToken';
+                csrfInput.value = token;
+                form.appendChild(csrfInput);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+
+            setTimeout(function () {
+                $('#loadingModal').modal('hide');
+                Swal.fire('موفق!', 'پشتیبان با موفقیت ایجاد و دانلود شد!', 'success');
+            }, 1000);
+        }
+
+        function confirmRestore() {
+            return confirm('آیا مطمئن هستید که می‌خواهید پایگاه داده را بازیابی کنید؟ این عمل تمام اطلاعات فعلی را جایگزین خواهد کرد.');
+        }
+
+        function cleanCustomers() {
+        }
+
+        function cleanOrders() {
+        }
+
+        function cleanPools() {
+        }
+        // Clean actions are now regular POST forms to ensure TempData shows after redirect
+    </script>
+}
+
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.3/dist/sweetalert2.all.min.js"></script>

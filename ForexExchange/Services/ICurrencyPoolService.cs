@@ -4,13 +4,13 @@ namespace ForexExchange.Services
 {
     /// <summary>
     /// Interface for Currency Pool Service
-    /// رابط سرویس استخر ارزی
+    /// رابط سرویس صندوق  ارزی
     /// </summary>
     public interface ICurrencyPoolService
     {
         /// <summary>
         /// Update pool balance after a transaction
-        /// بروزرسانی موجودی استخر پس از تراکنش
+        /// بروزرسانی موجودی صندوق  پس از تراکنش
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <param name="amount">Transaction amount</param>
@@ -29,7 +29,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details for a currency
-        /// دریافت جزئیات استخر برای یک ارز
+        /// دریافت جزئیات صندوق  برای یک ارز
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <returns>Pool details or null if not found</returns>
@@ -37,7 +37,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details by pool ID
-        /// دریافت جزئیات استخر بر اساس شناسه استخر
+        /// دریافت جزئیات صندوق  بر اساس شناسه صندوق 
         /// </summary>
         /// <param name="poolId">Pool ID</param>
         /// <returns>Pool details or null if not found</returns>
@@ -45,14 +45,14 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get all active currency pools
-        /// دریافت تمام استخرهای ارزی فعال
+        /// دریافت تمام صندوق های ارزی فعال
         /// </summary>
         /// <returns>List of all pools</returns>
         Task<List<CurrencyPool>> GetAllPoolsAsync();
 
         /// <summary>
         /// Initialize a new currency pool
-        /// ایجاد استخر جدید برای یک ارز
+        /// ایجاد صندوق  جدید برای یک ارز
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <param name="initialBalance">Initial balance (optional)</param>
@@ -70,7 +70,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pools with high risk levels
-        /// دریافت استخرهای با سطح ریسک بالا
+        /// دریافت صندوق های با سطح ریسک بالا
         /// </summary>
         /// <param name="riskLevel">Minimum risk level</param>
         /// <returns>High risk pools</returns>
@@ -78,7 +78,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update risk levels for all pools
-        /// بروزرسانی سطح ریسک برای تمام استخرها
+        /// بروزرسانی سطح ریسک برای تمام صندوق ها
         /// </summary>
         /// <param name="lowThreshold">Low risk threshold</param>
         /// <param name="highThreshold">High risk threshold</param>
@@ -87,7 +87,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool performance statistics
-        /// دریافت آمار عملکرد استخر
+        /// دریافت آمار عملکرد صندوق 
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <param name="currentRate">Current market rate</param>
@@ -96,7 +96,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Process transaction and update corresponding pools
-        /// پردازش تراکنش و بروزرسانی استخرهای مربوطه
+        /// پردازش تراکنش و بروزرسانی صندوق های مربوطه
         /// </summary>
         /// <param name="transaction">Transaction to process</param>
         /// <returns>Updated pools</returns>
@@ -104,7 +104,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for a currency pool
-        /// بروزرسانی تعداد معاملهات برای استخر ارزی
+        /// بروزرسانی تعداد معاملهات برای صندوق  ارزی
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <returns>Task</returns>
@@ -112,42 +112,50 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for all currency pools
-        /// بروزرسانی تعداد معاملهات برای همه استخرهای ارزی
+        /// بروزرسانی تعداد معاملهات برای همه صندوق های ارزی
         /// </summary>
         /// <returns>Task</returns>
         Task UpdateAllOrderCountsAsync();
 
         /// <summary>
         /// Direct pool update for admin operations
-        /// بروزرسانی مستقیم استخر برای عملیات ادمین
+        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
         /// </summary>
         /// <param name="pool">Pool to update</param>
         /// <returns>Updated pool</returns>
         Task<CurrencyPool> UpdatePoolDirectAsync(CurrencyPool pool);
+
+        /// <summary>
+        /// Direct pool update for admin operations
+        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
+        /// </summary>
+        /// <param name="pool">Pool to update</param>
+        /// <returns>Updated pool</returns>
+        Task<bool> CleanPullAsync();
     }
 
     /// <summary>
     /// Transaction type from exchange pool perspective
-    /// نوع تراکنش از منظر استخر معاملات 
+    /// نوع تراکنش از منظر صندوق  معاملات 
     /// </summary>
     public enum PoolTransactionType
     {
         /// <summary>
         /// Exchange buys currency (positive to pool)
-        /// معاملات  ارز می‌خرد (مثبت برای استخر)
+        /// معاملات  ارز می‌خرد (مثبت برای صندوق )
         /// </summary>
         Buy,
 
         /// <summary>
         /// Exchange sells currency (negative to pool)
-        /// معاملات  ارز می‌فروشد (منفی برای استخر)
+        /// معاملات  ارز می‌فروشد (منفی برای صندوق )
         /// </summary>
         Sell
     }
 
     /// <summary>
     /// Pool performance statistics
-    /// آمار عملکرد استخر
+    /// آمار عملکرد صندوق 
     /// </summary>
     public class PoolPerformance
     {

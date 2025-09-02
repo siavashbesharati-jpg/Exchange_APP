@@ -137,4 +137,14 @@ namespace ForexExchange.Models
 
         public DateTime CreatedAt { get; set; }
     }
+
+    public class DatabaseManagementViewModel
+    {
+        public int CustomersCount { get; set; }
+        public int OrdersCount { get; set; }
+        public int CurrencyPoolsCount { get; set; }
+        public int TransactionsCount { get; set; }
+        public int ExchangeRatesCount { get; set; }
+        public int ReceiptsCount { get; set; }
+    }
 }
