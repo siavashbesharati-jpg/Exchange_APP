@@ -100,6 +100,15 @@
                                             ایجاد پشتیبان (قابل دانلود)
                                         </button>
                                     </div>
+                                    <div class="mb-3">
+                                        <form asp-action="ExportSql" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-success w-100">
+                                                <i class="fas fa-file-code me-2"></i>
+                                                خروجی SQL داده‌ها (بدون داده‌های اولیه)
+                                            </button>
+                                        </form>
+                                    </div>
                                     
                                     <form asp-action="RestoreDatabase" method="post" enctype="multipart/form-data">
                                         @Html.AntiForgeryToken()
@@ -110,6 +119,19 @@
                                         <button type="submit" class="btn btn-warning w-100" onclick="return confirmRestore()">
                                             <i class="fas fa-upload me-2"></i>
                                             بازیابی پایگاه داده
+                                        </button>
+                                    </form>
+
+                                    <hr />
+                                    <form asp-action="ImportSql" method="post" enctype="multipart/form-data">
+                                        @Html.AntiForgeryToken()
+                                        <div class="mb-3">
+                                            <label for="sqlFile" class="form-label">فایل SQL برای بازیابی داده‌ها:</label>
+                                            <input type="file" class="form-control" id="sqlFile" name="sqlFile" accept=".sql" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-outline-warning w-100" onclick="return confirm('آیا مطمئن هستید؟ داده‌های SQL به صورت الحاقی (Append) درج می‌شوند و رکوردهای موجود حذف یا بازنویسی نمی‌شوند.')">
+                                            <i class="fas fa-database me-2"></i>
+                                            افزودن داده‌ها از SQL (Append)
                                         </button>
                                     </form>
                                 </div>

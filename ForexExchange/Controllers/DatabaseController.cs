@@ -14,12 +14,14 @@ namespace ForexExchange.Controllers
         private readonly IWebHostEnvironment _environment;
 
         private readonly ICurrencyPoolService _currencyPoolService;
+        private readonly ISqlBackupService _sqlBackupService;
 
-        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment, ICurrencyPoolService currencyPoolService)
+        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment, ICurrencyPoolService currencyPoolService, ISqlBackupService sqlBackupService)
         {
             _context = context;
             _environment = environment;
             _currencyPoolService = currencyPoolService;
+            _sqlBackupService = sqlBackupService;
         }
 
         public IActionResult Index()
@@ -37,7 +39,7 @@ namespace ForexExchange.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateBackup()
+    public IActionResult CreateBackup()
         {
             try
             {
@@ -94,6 +96,49 @@ namespace ForexExchange.Controllers
                 TempData["Error"] = $"خطا در دانلود فایل: {ex.Message}";
                 return RedirectToAction("Index");
             }
+        }
+
+        // New: Export data as SQL script
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExportSql()
+        {
+            try
+            {
+                var bytes = await _sqlBackupService.ExportDataSqlAsync();
+                var fileName = $"ForexExchange_Data_{DateTime.Now:yyyyMMdd_HHmmss}.sql";
+                return File(bytes, "application/sql", fileName);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در تولید خروجی SQL: {ex.Message}";
+                return RedirectToAction("Index");
+            }
+        }
+
+        // New: Import data from SQL script
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ImportSql(IFormFile sqlFile)
+        {
+            if (sqlFile == null || sqlFile.Length == 0)
+            {
+                TempData["Error"] = "لطفاً فایل SQL را انتخاب کنید";
+                return RedirectToAction("Index");
+            }
+
+            try
+            {
+                await using var stream = sqlFile.OpenReadStream();
+                await _sqlBackupService.ImportDataSqlAsync(stream);
+                TempData["Success"] = "بازیابی داده‌ها از SQL با موفقیت انجام شد";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در وارد کردن SQL: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
         }
 
         [HttpPost]

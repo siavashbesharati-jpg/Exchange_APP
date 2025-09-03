@@ -71,6 +71,7 @@ builder.Services.AddScoped<IRateCalculationService, RateCalculationService>();
 builder.Services.AddScoped<AdminActivityService>();
 builder.Services.AddScoped<AdminNotificationService>();
 builder.Services.AddScoped<CustomerDebtCreditService>();
+builder.Services.AddScoped<ISqlBackupService, SqliteSqlBackupService>();
 
 
 var app = builder.Build();
