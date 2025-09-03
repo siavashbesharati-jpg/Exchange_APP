@@ -110,7 +110,7 @@
                                         <th>فروشنده</th>
                                         <th>مبلغ</th>
                                         <th>نرخ</th>
-                                        <th>مجموع (تومان)</th>
+                                        
                                         <th>وضعیت</th>
                                         <th>رسیدها</th>
                                         <th>عملیات</th>
@@ -134,7 +134,7 @@
                                             </td>
                                             <td>@item.Amount.ToString("N0") @item.FromCurrency?.PersianName <small class="text-muted">(@item.CurrencyPair)</small></td>
                                             <td>@item.Rate.ToString("N0")</td>
-                                            <td>@item.TotalInToman.ToString("N0")</td>
+                                            
                                             <td>
                                                 @if (item.Status == ForexExchange.Models.TransactionStatus.Pending)
                                                 {

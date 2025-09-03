@@ -247,7 +247,7 @@
                         
                         <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#confirmPaymentModal">
                             <i class="fas fa-check me-2"></i>
-                            تأیید پرداخت (@Model.TotalInToman.ToString("N0") تومان)
+                            تأیید پرداخت
                         </button>
                     </div>
                 </div>
@@ -473,10 +473,7 @@
                     </div>
                     
                     <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>مبلغ پرداختی:</strong>
-                            <div class="h5 text-danger">@Model.TotalInToman.ToString("N0") تومان</div>
-                        </div>
+                        
                         <div class="col-md-6">
                             <strong>مقدار ارز دریافتی:</strong>
                             <div class="h5 text-primary">@((Model.Amount * Model.Rate).ToString("N2")) @Model.ToCurrency?.Code <small class="text-muted">(@Model.CurrencyPair)</small></div>

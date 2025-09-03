@@ -189,7 +189,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">معامله/تراکنش مرتبط</h5>
+                        <h5 class="card-title mb-0">معامله  مرتبط</h5>
                     </div>
                     <div class="card-body">
                         @if (Model.Order != null)
@@ -199,20 +199,11 @@
                                 <p class="mb-1"><strong>شماره معامله:</strong> #@Model.Order.Id</p>
                                 <!-- Removed OrderType display, now just show currency pair or amount -->
                                 <p class="mb-1"><strong>مبلغ:</strong> @Model.Order.Amount.ToString("N0") @((Model?.Order?.FromCurrency?.PersianName ?? Model?.Order?.FromCurrency?.Code) ?? "")</p>
-                                <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.Order.Id" class="btn btn-sm btn-primary">مشاهده جزئیات معامله</a>
+                                <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model?.Order.Id" class="btn btn-sm btn-primary">مشاهده جزئیات معامله</a>
                             </div>
                         }
 
-                        @if (Model.Transaction != null)
-                        {
-                            <div class="alert alert-success">
-                                <h6><i class="fas fa-exchange-alt"></i> تراکنش مرتبط</h6>
-                                <p class="mb-1"><strong>شماره تراکنش:</strong> #@Model.Transaction.Id</p>
-                                <p class="mb-1"><strong>مبلغ:</strong> @Model.Transaction.Amount.ToString("N0") @((Model?.Transaction?.FromCurrency?.PersianName ?? Model?.Transaction?.FromCurrency?.Code) ?? "")</p>
-                                <p class="mb-1"><strong>وضعیت:</strong> @Model.Transaction.Status</p>
-                                <a asp-controller="Transactions" asp-action="Details" asp-route-id="@Model.Transaction.Id" class="btn btn-sm btn-success">مشاهده جزئیات تراکنش</a>
-                            </div>
-                        }
+                      
                     </div>
                 </div>
             </div>

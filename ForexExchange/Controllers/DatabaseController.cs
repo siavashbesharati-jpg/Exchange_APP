@@ -114,7 +114,7 @@ namespace ForexExchange.Controllers
             {
                 // Create automatic backup before restore (file copy)
                 var now = DateTime.Now;
-                var backupFileName = $"-AutoTaban_Backup_{now.GetPersianYear()}-{now.GetPersianMonth()}-{now.GetPersianDayOfMonth()}-{now.Hour}-{now.Minute}.tbn";
+                var backupFileName = $"-Auto-Taban_Backup_{now.GetPersianYear()}-{now.GetPersianMonth()}-{now.GetPersianDayOfMonth()}-{now.Hour}-{now.Minute}.tbn";
                 var backupPath = Path.Combine(_environment.WebRootPath, "backups");
                 if (!Directory.Exists(backupPath))
                 {

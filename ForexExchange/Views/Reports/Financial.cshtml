@@ -590,7 +590,7 @@
                                         <th class="border-0">نوع ارز</th>
                                         <th class="border-0 text-center">مقدار</th>
                                         <th class="border-0 text-center">نرخ</th>
-                                        <th class="border-0 text-center">کل (تومان)</th>
+                                        
                                         <th class="border-0 text-center">وضعیت</th>
                                     </tr>
                                 </thead>
@@ -621,10 +621,7 @@
                                                 <span class="fw-bold text-success">@transaction.Rate.ToString("N0")</span>
                                                 <small class="text-muted d-block">تومان</small>
                                             </td>
-                                            <td class="text-center">
-                                                <span class="fw-bold text-info">@transaction.TotalInToman.ToString("N0")</span>
-                                                <small class="text-muted d-block">تومان</small>
-                                            </td>
+                                            
                                             <td class="text-center">
                                                 @switch (transaction.Status)
                                                 {
