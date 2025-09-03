@@ -135,11 +135,19 @@ namespace ForexExchange.Controllers
         public IActionResult Create()
         {
             // supply currency dropdown
-            ViewBag.CurrencyOptions = _context.Currencies
+            var currencyOptions = _context.Currencies
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new { c.Code, c.PersianName })
                 .ToList();
+                
+            _logger.LogInformation($"GET Create: Loading {currencyOptions.Count} currency options");
+            foreach (var currency in currencyOptions)
+            {
+                _logger.LogInformation($"Currency option: {currency.Code} - {currency.PersianName}");
+            }
+                
+            ViewBag.CurrencyOptions = currencyOptions;
             return View(new CustomerCreateViewModel());
         }
 
@@ -148,6 +156,22 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CustomerCreateViewModel model)
         {
+            Console.WriteLine("\n=== CREATE CUSTOMER - SERVER SIDE ===");
+            Console.WriteLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+            
+            // Log client debug info if available
+            var clientDebugInfo = Request.Form["ClientDebugInfo"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(clientDebugInfo))
+            {
+                Console.WriteLine("🔍 CLIENT DEBUG INFO RECEIVED:");
+                Console.WriteLine(clientDebugInfo);
+                Console.WriteLine("--- END CLIENT DEBUG ---\n");
+            }
+            else
+            {
+                Console.WriteLine("⚠️ No ClientDebugInfo received from client");
+            }
+
             // Remove any email validation errors from ModelState first
             ModelState.Remove("Email");
             
@@ -228,30 +252,34 @@ namespace ForexExchange.Controllers
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, "Customer");
-                    // Persist initial balances from form (robust to locale)
-                    var formBalancesCreate = ExtractInitialBalancesFromForm();
-                    if (formBalancesCreate.Count == 0 && model.InitialBalances != null && model.InitialBalances.Count > 0)
+                    // Extract and save initial balances with robust parsing
+                    var initialBalances = ExtractInitialBalancesFromForm();
+                    _logger.LogInformation($"CREATE: Processing {initialBalances.Count} initial balances");
+                    
+                    foreach (var balance in initialBalances)
                     {
-                        // fallback to model in case JS didn't run
-                        formBalancesCreate = model.InitialBalances
-                            .Where(kv => !string.IsNullOrWhiteSpace(kv.Key))
-                            .ToDictionary(kv => kv.Key.Trim().ToUpperInvariant(), kv => kv.Value);
-                    }
-
-                    if (formBalancesCreate.Count > 0)
-                    {
-                        foreach (var kv in formBalancesCreate)
+                        var code = balance.Key?.Trim().ToUpperInvariant();
+                        var amount = balance.Value; // Preserve original value (including negative)
+                        
+                        if (string.IsNullOrWhiteSpace(code) || code.Length != 3)
                         {
-                            var code = (kv.Key ?? string.Empty).Trim().ToUpperInvariant();
-                            if (string.IsNullOrWhiteSpace(code) || code.Length != 3) continue;
-                            _context.CustomerInitialBalances.Add(new CustomerInitialBalance
-                            {
-                                CustomerId = customer.Id,
-                                CurrencyCode = code,
-                                Amount = kv.Value
-                            });
+                            _logger.LogWarning($"CREATE: Skipping invalid currency code: '{code}'");
+                            continue;
                         }
+                        
+                        _logger.LogInformation($"CREATE: Saving {code} = {amount}");
+                        _context.CustomerInitialBalances.Add(new CustomerInitialBalance
+                        {
+                            CustomerId = customer.Id,
+                            CurrencyCode = code,
+                            Amount = amount
+                        });
+                    }
+                    
+                    if (initialBalances.Count > 0)
+                    {
                         await _context.SaveChangesAsync();
+                        _logger.LogInformation($"CREATE: Successfully saved {initialBalances.Count} initial balances");
                     }
                     TempData["SuccessMessage"] = "مشتری و حساب کاربری با موفقیت ایجاد شد.";
                     return RedirectToAction(nameof(Details), new { id = customer.Id });
@@ -321,6 +349,23 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, CustomerEditViewModel model)
         {
+            Console.WriteLine("\n=== EDIT CUSTOMER - SERVER SIDE ===");
+            Console.WriteLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+            Console.WriteLine($"Customer ID: {id}");
+            
+            // Log client debug info if available
+            var clientDebugInfo = Request.Form["ClientDebugInfo"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(clientDebugInfo))
+            {
+                Console.WriteLine("🔍 CLIENT DEBUG INFO RECEIVED:");
+                Console.WriteLine(clientDebugInfo);
+                Console.WriteLine("--- END CLIENT DEBUG ---\n");
+            }
+            else
+            {
+                Console.WriteLine("⚠️ No ClientDebugInfo received from client");
+            }
+
             if (id != model.Id)
             {
                 return NotFound();
@@ -430,45 +475,52 @@ namespace ForexExchange.Controllers
                         }
                     }
 
-                    // Upsert initial balances for this customer (parse from form to handle locale)
-                    var provided = ExtractInitialBalancesFromForm();
-                    if (provided.Count == 0 && model.InitialBalances != null)
-                    {
-                        provided = model.InitialBalances
-                            .Where(kv => !string.IsNullOrWhiteSpace(kv.Key))
-                            .ToDictionary(kv => kv.Key.Trim().ToUpperInvariant(), kv => kv.Value);
-                    }
-
-                    var existing = await _context.CustomerInitialBalances
+                    // Extract and update initial balances with robust parsing
+                    var providedBalances = ExtractInitialBalancesFromForm();
+                    _logger.LogInformation($"EDIT: Processing {providedBalances.Count} initial balances");
+                    
+                    var existingBalances = await _context.CustomerInitialBalances
                         .Where(b => b.CustomerId == customer.Id)
                         .ToListAsync();
 
-                    // Delete removed codes
-                    foreach (var bal in existing)
+                    // Delete balances not in the provided list
+                    foreach (var existingBalance in existingBalances)
                     {
-                        if (!provided.ContainsKey(bal.CurrencyCode))
+                        if (!providedBalances.ContainsKey(existingBalance.CurrencyCode))
                         {
-                            _context.CustomerInitialBalances.Remove(bal);
+                            _logger.LogInformation($"EDIT: Removing {existingBalance.CurrencyCode} balance");
+                            _context.CustomerInitialBalances.Remove(existingBalance);
                         }
                     }
 
-                    // Add/update provided
-                    foreach (var kv in provided)
+                    // Add or update provided balances
+                    foreach (var balance in providedBalances)
                     {
-                        var found = existing.FirstOrDefault(b => b.CurrencyCode == kv.Key);
-                        if (found == null)
+                        var code = balance.Key?.Trim().ToUpperInvariant();
+                        var amount = balance.Value; // Preserve original value (including negative)
+                        
+                        if (string.IsNullOrWhiteSpace(code) || code.Length != 3)
                         {
+                            _logger.LogWarning($"EDIT: Skipping invalid currency code: '{code}'");
+                            continue;
+                        }
+
+                        var existingBalance = existingBalances.FirstOrDefault(b => b.CurrencyCode == code);
+                        if (existingBalance == null)
+                        {
+                            _logger.LogInformation($"EDIT: Adding new {code} = {amount}");
                             _context.CustomerInitialBalances.Add(new CustomerInitialBalance
                             {
                                 CustomerId = customer.Id,
-                                CurrencyCode = kv.Key,
-                                Amount = kv.Value
+                                CurrencyCode = code,
+                                Amount = amount
                             });
                         }
                         else
                         {
-                            found.Amount = kv.Value;
-                            _context.CustomerInitialBalances.Update(found);
+                            _logger.LogInformation($"EDIT: Updating {code} from {existingBalance.Amount} to {amount}");
+                            existingBalance.Amount = amount;
+                            _context.CustomerInitialBalances.Update(existingBalance);
                         }
                     }
 
@@ -506,18 +558,32 @@ namespace ForexExchange.Controllers
             var result = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
             try
             {
-                foreach (var kv in Request?.Form ?? new Microsoft.AspNetCore.Http.FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>()))
+                var form = Request?.Form ?? new Microsoft.AspNetCore.Http.FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
+                _logger.LogInformation($"=== EXTRACTING INITIAL BALANCES FROM FORM ===");
+                _logger.LogInformation($"Form has {form.Count} total keys: {string.Join(", ", form.Keys)}");
+                
+                // Method 1: Try dictionary-style inputs (InitialBalances[CODE])
+                _logger.LogInformation("Method 1: Looking for InitialBalances[CODE] inputs...");
+                var dictionaryInputs = form.Keys.Where(k => k.StartsWith("InitialBalances[")).ToList();
+                _logger.LogInformation($"Found {dictionaryInputs.Count} dictionary-style inputs: {string.Join(", ", dictionaryInputs)}");
+                
+                foreach (var name in dictionaryInputs)
                 {
-                    var name = kv.Key;
                     if (name.StartsWith("InitialBalances[", StringComparison.Ordinal) && name.EndsWith("]", StringComparison.Ordinal))
                     {
                         var inner = name.Substring("InitialBalances[".Length);
                         var code = inner.Substring(0, inner.Length - 1).Trim().ToUpperInvariant();
-                        var raw = kv.Value.ToString().Trim();
-                        if (string.IsNullOrWhiteSpace(code)) continue;
+                        var raw = form[name].ToString().Trim();
+                        _logger.LogInformation($"Processing dictionary input: {name} = '{raw}'");
+                        
+                        if (string.IsNullOrWhiteSpace(code)) 
+                        {
+                            _logger.LogWarning($"Skipping empty currency code from {name}");
+                            continue;
+                        }
 
                         // Normalize Persian/Arabic digits and separators
-                        raw = raw.Replace("\u066C", "").Replace("\u066B", "."); // Arabic thousands/decimal
+                        raw = (raw ?? "").Replace("\u066C", "").Replace("\u066B", "."); // Arabic thousands/decimal
                         // If string has comma but no dot, treat comma as decimal separator; otherwise remove commas (thousands)
                         if (raw.Contains(',') && !raw.Contains('.'))
                             raw = raw.Replace(',', '.');
@@ -527,12 +593,85 @@ namespace ForexExchange.Controllers
 
                         if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
                         {
+                            // Preserve original value (including negative)
+                           
                             result[code] = amount;
+                            _logger.LogInformation($"SUCCESS: Added {code} = {amount} from dictionary method");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"FAILED: Could not parse amount '{raw}' for currency {code}");
                         }
                     }
                 }
+
+                // Method 2: Try paired arrays (ib_code[], ib_amount[])
+                _logger.LogInformation("Method 2: Looking for ib_code/ib_amount arrays...");
+                var codes = form["ib_code"]; // multiple
+                var amounts = form["ib_amount"]; // multiple
+                
+                _logger.LogInformation($"Found {codes.Count} codes and {amounts.Count} amounts");
+                for (int i = 0; i < codes.Count && i < amounts.Count; i++)
+                {
+                    _logger.LogInformation($"Array item {i}: code='{codes[i]}', amount='{amounts[i]}'");
+                }
+
+                if (codes.Count > 0 && amounts.Count > 0)
+                {
+                    for (int i = 0; i < Math.Min(codes.Count, amounts.Count); i++)
+                    {
+                        var code = codes[i]?.Trim().ToUpperInvariant();
+                        var raw = amounts[i]?.Trim();
+                        
+                        _logger.LogInformation($"Processing array item {i}: code='{code}', amount='{raw}'");
+                        
+                        if (string.IsNullOrWhiteSpace(code)) 
+                        {
+                            _logger.LogWarning($"Skipping empty currency code at index {i}");
+                            continue;
+                        }
+                        
+                        if (string.IsNullOrWhiteSpace(raw))
+                        {
+                            _logger.LogWarning($"Skipping empty amount for currency {code} at index {i}");
+                            continue;
+                        }
+                        
+                        raw = (raw ?? "").Replace("\u066C", "").Replace("\u066B", ".");
+                        if (raw.Contains(',') && !raw.Contains('.')) raw = raw.Replace(',', '.');
+                        else raw = raw.Replace(",", "");
+                        raw = raw.Replace(" ", "");
+                        
+                        if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
+                        {
+                            // Preserve original value (including negative)
+                            if (!result.ContainsKey(code))
+                            {
+                                result[code] = amount;
+                                _logger.LogInformation($"SUCCESS: Added from arrays {code} = {amount}");
+                            }
+                            else
+                            {
+                                _logger.LogInformation($"SKIPPED: {code} already exists from dictionary method");
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"FAILED: Could not parse amount '{raw}' for currency {code}");
+                        }
+                    }
+                }
+
+                _logger.LogInformation($"=== FINAL RESULT: {result.Count} currencies ===");
+                foreach (var kvp in result)
+                {
+                    _logger.LogInformation($"Final: {kvp.Key} = {kvp.Value}");
+                }
             }
-            catch { /* ignore parse errors */ }
+            catch (Exception ex) 
+            { 
+                _logger.LogError(ex, "Error in ExtractInitialBalancesFromForm");
+            }
             return result;
         }
 
