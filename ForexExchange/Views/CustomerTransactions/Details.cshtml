@@ -241,7 +241,7 @@
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            رسید پرداخت شما آپلود شده و توسط سیستم پردازش شده است. 
+                            رسید دریافت وجه شما آپلود شده و توسط سیستم پردازش شده است. 
                             اگر پرداخت را انجام داده‌اید، لطفاً آن را تأیید کنید تا فروشنده بتواند ارز را منتقل کند.
                         </div>
                         
@@ -400,7 +400,7 @@
                                     {
                                         <tr>
                                             <td>
-                                                @(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "رسید پرداخت" : "گردش حساب")
+                                                @(receipt.Type == ForexExchange.Models.ReceiptType.RecivreRecipt ? "رسید دریافت وجه" : "گردش حساب")
                                             </td>
                                             <td>@receipt.FileName</td>
                                             <td>

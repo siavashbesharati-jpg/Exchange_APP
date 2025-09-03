@@ -110,6 +110,12 @@ namespace ForexExchange.Models
                       .WithMany(e => e.Receipts)
                       .HasForeignKey(e => e.TransactionId)
                       .OnDelete(DeleteBehavior.SetNull);
+
+            // Optional system bank account link
+            entity.HasOne(e => e.SystemBankAccount)
+                .WithMany()
+                .HasForeignKey(e => e.SystemBankAccountId)
+                .OnDelete(DeleteBehavior.SetNull);
             });
             
             // ExchangeRate configurations

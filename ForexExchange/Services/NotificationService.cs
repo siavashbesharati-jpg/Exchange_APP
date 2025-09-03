@@ -311,12 +311,12 @@ namespace ForexExchange.Services
             return transaction.Status switch
             {
                 TransactionStatus.PaymentUploaded => (
-                    "لطفاً رسید پرداخت خود را آپلود کنید تا فرآیند تسویه ادامه یابد.",
-                    "منتظر آپلود رسید پرداخت از طرف خریدار هستیم.",
+                    "لطفاً رسید دریافت وجه خود را آپلود کنید تا فرآیند تسویه ادامه یابد.",
+                    "منتظر آپلود رسید دریافت وجه از طرف خریدار هستیم.",
                     NotificationPriority.High
                 ),
                 TransactionStatus.ReceiptConfirmed => (
-                    "رسید پرداخت شما تأیید شد. منتظر انتقال ارز از طرف فروشنده باشید.",
+                    "رسید دریافت وجه شما تأیید شد. منتظر انتقال ارز از طرف فروشنده باشید.",
                     "پرداخت خریدار تأیید شد. لطفاً انتقال ارز را انجام دهید.",
                     NotificationPriority.High
                 ),
@@ -359,8 +359,8 @@ namespace ForexExchange.Services
         {
             return receiptType switch
             {
-                ReceiptType.PaymentReceipt => "رسید پرداخت",
-                ReceiptType.BankStatement => "گردش حساب",
+                ReceiptType.RecivreRecipt => "رسید دریافت وجه",
+                ReceiptType.SendRecipt => "گردش حساب",
                 _ => receiptType.ToString()
             };
         }

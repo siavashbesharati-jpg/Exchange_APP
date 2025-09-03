@@ -9,7 +9,7 @@
         <div class="col-md-10">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title mb-0">آپلود رسید پرداخت</h4>
+                    <h4 class="card-title mb-0">آپلود رسید دریافت وجه</h4>
                 </div>
                 <div class="card-body">
                     
@@ -254,30 +254,74 @@
                             </div>
                         </div>
 
+                        <!-- OCR Preview (No Save) -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="card-title mb-0">پیش‌نمایش OCR (بدون ذخیره)</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <button type="button" id="btnOcrPreview" class="btn btn-outline-primary" disabled onclick="ocrPreview()">
+                                            <i class="fas fa-magic"></i> استخراج متن از تصویر
+                                        </button>
+                                        <span id="ocrLoading" class="ms-2 text-muted" style="display:none;">
+                                            <i class="fas fa-spinner fa-spin"></i> در حال پردازش...
+                                        </span>
+
+                                        <div id="ocrPreview" class="mt-3" style="display:none;">
+                                            <div class="mb-2">
+                                                <label class="form-label">متن استخراج‌شده:</label>
+                                                <textarea class="form-control" id="ocrRawText" rows="6" readonly></textarea>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-md-3"><strong>مبلغ:</strong> <span id="ocrAmount"></span></div>
+                                                <div class="col-md-3"><strong>مرجع:</strong> <span id="ocrReference"></span></div>
+                                                <div class="col-md-3"><strong>تاریخ:</strong> <span id="ocrDate"></span></div>
+                                                <div class="col-md-3"><strong>حساب:</strong> <span id="ocrAccount"></span></div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <button type="button" class="btn btn-sm btn-secondary" onclick="applyOcrToManual()">
+                                                    قرار دادن در فیلدهای دستی
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Receipt Information -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="customerId" class="form-label">مشتری *</label>
-                                @if (ViewBag.IsTransactionSpecific == true)
+                                @{
+                                    var systemCustomer = ViewBag.SystemCustomer as ForexExchange.Models.Customer;
+                                    var selectedCustomerId = ViewBag.SelectedCustomerId as int?;
+                                    var selectedCustomer = ViewBag.SelectedCustomer as ForexExchange.Models.Customer;
+                                }
+                                @if (ViewBag.SelectedOrder != null)
                                 {
-                                    <!-- Disabled customer dropdown when coming from transaction -->
+                                    <!-- Limit to order's customer + system customer; disable selection -->
                                     <select id="customerId" name="customerId" class="form-select" required disabled>
-                                        @if (ViewBag.SelectedCustomer != null)
+                                        @if (selectedCustomer != null)
                                         {
-                                            <option value="@ViewBag.SelectedCustomerId" selected>
-                                                @ViewBag.SelectedCustomer.FullName - @ViewBag.SelectedCustomer.PhoneNumber
-                                            </option>
+                                            <option value="@selectedCustomer.Id" selected>@selectedCustomer.FullName - @selectedCustomer.PhoneNumber</option>
+                                        }
+                                        @if (systemCustomer != null && (selectedCustomer == null || systemCustomer.Id != selectedCustomer.Id))
+                                        {
+                                            <option value="@systemCustomer.Id">@systemCustomer.FullName - @systemCustomer.PhoneNumber</option>
                                         }
                                     </select>
-                                    <!-- Hidden field to ensure the value is posted -->
-                                    <input type="hidden" name="customerId" value="@ViewBag.SelectedCustomerId" />
+                                    <!-- Hidden actual value defaults to order's customer -->
+                                    <input type="hidden" name="customerId" value="@selectedCustomerId" />
                                     <div class="form-text text-info">
-                                        <i class="fas fa-info-circle"></i> مشتری از تراکنش انتخاب شده تعیین شده است
+                                        <i class="fas fa-info-circle"></i> مشتری مرتبط با معامله از پیش تعیین شده است.
                                     </div>
                                 }
                                 else
                                 {
-                                    <!-- Normal customer dropdown -->
+                                    <!-- When no order is selected, keep normal list -->
                                     <select id="customerId" name="customerId" class="form-select" required>
                                         <option value="">انتخاب مشتری</option>
                                         @if (ViewBag.Customers != null)
@@ -296,17 +340,17 @@
                                 <label for="receiptType" class="form-label">نوع رسید *</label>
                                 <select id="receiptType" name="receiptType" class="form-select" required>
                                     <option value="">انتخاب نوع</option>
-                                    <option value="0">رسید پرداخت</option>
+                                    <option value="0">رسید دریافت وجه</option>
                                     <option value="1">گردش حساب بانکی</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Related Order/Transaction -->
+                        <!-- Related Order/System Bank Account -->
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="orderId" class="form-label">معامله مرتبط (اختیاری)</label>
-                                @if (ViewBag.IsTransactionSpecific == true)
+                                @if (ViewBag.SelectedOrder != null)
                                 {
                                     <!-- Disabled order dropdown when coming from transaction -->
                                     <select id="orderId" name="orderId" class="form-select" disabled>
@@ -343,22 +387,22 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <label for="transactionId" class="form-label">تراکنش مرتبط (اختیاری)</label>
-                                @if (ViewBag.IsTransactionSpecific == true)
-                                {
-                                    <!-- Disabled transaction field when coming from transaction -->
-                                    <input type="number" id="transactionId" name="transactionId" class="form-control" 
-                                           value="@ViewBag.SelectedTransactionId" readonly disabled>
-                                    <div class="form-text text-info">
-                                        <i class="fas fa-info-circle"></i> شماره تراکنش ثابت است
-                                    </div>
-                                }
-                                else
-                                {
-                                    <!-- Normal transaction field -->
-                                    <input type="number" id="transactionId" name="transactionId" class="form-control" 
-                                           value="@ViewBag.SelectedTransactionId" placeholder="شماره تراکنش">
-                                }
+                                <label for="systemBankAccountId" class="form-label">حساب بانکی مشتری سیستم</label>
+                                <select id="systemBankAccountId" name="SystemBankAccountId" class="form-select">
+                                    <option value="">انتخاب حساب بانکی سیستم</option>
+                                    @{
+                                        var sysAccounts = ViewBag.SystemBankAccounts as List<ForexExchange.Models.BankAccount>;
+                                    }
+                                    @if (sysAccounts != null && sysAccounts.Any())
+                                    {
+                                        foreach (var acc in sysAccounts)
+                                        {
+                                            var label = $"{acc.BankName} - {acc.AccountNumber} {(string.IsNullOrEmpty(acc.IBAN) ? "" : "| شبا: " + acc.IBAN)}";
+                                            <option value="@acc.Id">@label</option>
+                                        }
+                                    }
+                                </select>
+                                <div class="form-text">در صورت نیاز، حساب بانکی سیستم برای دریافت وجه را انتخاب کنید.</div>
                             </div>
                         </div>
 
@@ -370,15 +414,7 @@
                                         <h6 class="card-title mb-0">تنظیمات پردازش خودکار (OCR)</h6>
                                     </div>
                                     <div class="card-body">
-                                        <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="skipOcr" name="skipOcr" onchange="toggleManualFields()">
-                                            <label class="form-check-label" for="skipOcr">
-                                                <strong>عدم استفاده از OCR و وارد کردن دستی اطلاعات</strong>
-                                            </label>
-                                            <div class="form-text">اگر این گزینه را انتخاب کنید، اطلاعات رسید را به صورت دستی وارد کنید.</div>
-                                        </div>
-                                        
-                                        <div id="manualFields" style="display: none;">
+                                        <div id="manualFields">
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <label for="manualAmount" class="form-label">مبلغ (ارز مبدأ)</label>
@@ -395,7 +431,7 @@
                                         
                                         <div id="ocrInfo" class="alert alert-info mt-3">
                                             <i class="fas fa-info-circle"></i>
-                                            <strong>OCR فعال:</strong> سیستم به طور خودکار اطلاعات مبلغ، شماره پیگیری و تاریخ را از تصویر رسید  خواهد کرد.
+                                            <strong>OCR:</strong> می‌توانید متن را از تصویر استخراج کرده و سپس در فیلدهای دستی ویرایش/ذخیره کنید.
                                         </div>
                                     </div>
                                 </div>
@@ -457,24 +493,68 @@
                     document.getElementById('imagePreview').style.display = 'block';
                 };
                 reader.readAsDataURL(input.files[0]);
+                // Enable OCR preview button and reset previous preview
+                var btn = document.getElementById('btnOcrPreview');
+                if (btn) btn.disabled = false;
+                var oPrev = document.getElementById('ocrPreview');
+                if (oPrev) oPrev.style.display = 'none';
+                var raw = document.getElementById('ocrRawText');
+                if (raw) raw.value = '';
+                ['ocrAmount','ocrReference','ocrDate','ocrAccount'].forEach(function(id){
+                    var el = document.getElementById(id); if (el) el.textContent = '';
+                });
             }
         }
         
-        function toggleManualFields() {
-            var skipOcr = document.getElementById('skipOcr').checked;
-            var manualFields = document.getElementById('manualFields');
-            var ocrInfo = document.getElementById('ocrInfo');
-            var submitBtn = document.getElementById('submitBtn');
-            
-            if (skipOcr) {
-                manualFields.style.display = 'block';
-                ocrInfo.style.display = 'none';
-                submitBtn.innerHTML = '<i class="fas fa-upload"></i> آپلود رسید (دستی)';
-            } else {
-                manualFields.style.display = 'none';
-                ocrInfo.style.display = 'block';
-                submitBtn.innerHTML = '<i class="fas fa-upload"></i> آپلود رسید (با OCR)';
+    // Manual fields are always visible; no toggle needed
+
+        async function ocrPreview() {
+            var fileInput = document.getElementById('receiptFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('لطفاً یک فایل تصویر انتخاب کنید.');
+                return;
             }
+
+            var fd = new FormData();
+            fd.append('receiptFile', fileInput.files[0]);
+            var tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+            var headers = {};
+            if (tokenEl) headers['RequestVerificationToken'] = tokenEl.value;
+
+            var btn = document.getElementById('btnOcrPreview');
+            var loading = document.getElementById('ocrLoading');
+            if (btn) btn.disabled = true;
+            if (loading) loading.style.display = 'inline';
+
+            try {
+                var res = await fetch('/Receipts/OcrPreview', {
+                    method: 'POST',
+                    headers: headers,
+                    body: fd
+                });
+                var data = await res.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'خطا در پردازش OCR');
+                }
+                document.getElementById('ocrRawText').value = data.rawText || '';
+                document.getElementById('ocrAmount').textContent = data.amount || '';
+                document.getElementById('ocrReference').textContent = data.referenceId || '';
+                document.getElementById('ocrDate').textContent = data.date || '';
+                document.getElementById('ocrAccount').textContent = data.accountNumber || '';
+                document.getElementById('ocrPreview').style.display = 'block';
+            } catch (err) {
+                alert(err.message || 'خطایی رخ داد. دوباره تلاش کنید.');
+            } finally {
+                if (btn) btn.disabled = false;
+                if (loading) loading.style.display = 'none';
+            }
+        }
+
+        function applyOcrToManual() {
+            var amt = (document.getElementById('ocrAmount').textContent || '').trim();
+            var ref = (document.getElementById('ocrReference').textContent || '').trim();
+            if (amt) document.getElementById('manualAmount').value = amt;
+            if (ref) document.getElementById('manualReference').value = ref;
         }
         
         // Form validation

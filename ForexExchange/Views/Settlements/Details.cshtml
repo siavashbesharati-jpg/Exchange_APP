@@ -103,7 +103,7 @@
                                     {
                                         <div class="alert alert-info">
                                             <i class="fas fa-upload"></i> 
-                                            <strong>عمل بعدی:</strong> رسید پرداخت خریدار را آپلود کنید.
+                                            <strong>عمل بعدی:</strong> رسید دریافت وجه خریدار را آپلود کنید.
                                         </div>
                                     }
                                 }
@@ -310,9 +310,9 @@
                                             <td>#@receipt.Id</td>
                                             <td>@receipt.Customer?.FullName</td>
                                             <td>
-                                                @if (receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt)
+                                                @if (receipt.Type == ForexExchange.Models.ReceiptType.RecivreRecipt)
                                                 {
-                                                    <span class="badge bg-primary">رسید پرداخت</span>
+                                                    <span class="badge bg-primary">رسید دریافت وجه</span>
                                                 }
                                                 else
                                                 {

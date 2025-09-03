@@ -561,7 +561,7 @@
                                         activities.Add(new { 
                                             Date = receipt.UploadedAt,
                                             Type = "رسید",
-                                            Description = $"آپلود رسید {(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "پرداخت" : "گردش حساب")}",
+                                            Description = $"آپلود رسید {(receipt.Type == ForexExchange.Models.ReceiptType.RecivreRecipt ? "دریافت وجه" : "گردش حساب")}",
                                             Status = receipt.IsVerified ? "تأیید شده" : "در انتظار",
                                             Icon = "fas fa-receipt",
                                             Color = receipt.IsVerified ? "success" : "warning"

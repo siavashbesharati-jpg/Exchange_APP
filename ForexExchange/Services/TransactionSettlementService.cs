@@ -127,7 +127,7 @@ namespace ForexExchange.Services
 
                 // Update transaction status
                 transaction.Status = TransactionStatus.PaymentUploaded;
-                transaction.Notes = "فرآیند تسویه آغاز شد - در انتظار آپلود رسید پرداخت خریدار";
+                transaction.Notes = "فرآیند تسویه آغاز شد - در انتظار آپلود رسید دریافت وجه خریدار";
 
                 await _context.SaveChangesAsync();
 
@@ -164,7 +164,7 @@ namespace ForexExchange.Services
 
                 // Update transaction status
                 transaction.Status = TransactionStatus.ReceiptConfirmed;
-                transaction.Notes = $"رسید پرداخت خریدار تأیید شد (رسید #{receiptId}) - در انتظار انتقال فروشنده";
+                transaction.Notes = $"رسید دریافت وجه خریدار تأیید شد (رسید #{receiptId}) - در انتظار انتقال فروشنده";
 
                 await _context.SaveChangesAsync();
 

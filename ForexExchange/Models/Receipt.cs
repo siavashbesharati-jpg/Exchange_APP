@@ -4,8 +4,8 @@ namespace ForexExchange.Models
 {
     public enum ReceiptType
     {
-        PaymentReceipt = 0,    // رسید پرداخت
-        BankStatement = 1      // گردش حساب
+        RecivreRecipt = 0,    // رسید دریافت وجه
+        SendRecipt = 1      //رسید ارسال وجه
     }
     
     public class Receipt
@@ -53,5 +53,9 @@ namespace ForexExchange.Models
         public Customer Customer { get; set; } = null!;
         public Order? Order { get; set; }
         public Transaction? Transaction { get; set; }
+
+    // Optional link to a System Customer bank account used for this receipt
+    public int? SystemBankAccountId { get; set; }
+    public BankAccount? SystemBankAccount { get; set; }
     }
 }

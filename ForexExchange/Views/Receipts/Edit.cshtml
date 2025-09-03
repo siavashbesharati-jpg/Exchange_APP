@@ -39,8 +39,8 @@
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Type" class="form-label">نوع رسید</label>
                                 <select asp-for="Type" class="form-select" required>
-                                    <option value="@ForexExchange.Models.ReceiptType.PaymentReceipt" selected="@(Model.Type == ForexExchange.Models.ReceiptType.PaymentReceipt)">رسید پرداخت</option>
-                                    <option value="@ForexExchange.Models.ReceiptType.BankStatement" selected="@(Model.Type == ForexExchange.Models.ReceiptType.BankStatement)">گردش حساب</option>
+                                    <option value="@ForexExchange.Models.ReceiptType.RecivreRecipt" selected="@(Model.Type == ForexExchange.Models.ReceiptType.RecivreRecipt)">رسید دریافت وجه</option>
+                                    <option value="@ForexExchange.Models.ReceiptType.SendRecipt" selected="@(Model.Type == ForexExchange.Models.ReceiptType.SendRecipt)">گردش حساب</option>
                                 </select>
                                 <span asp-validation-for="Type" class="text-danger"></span>
                             </div>

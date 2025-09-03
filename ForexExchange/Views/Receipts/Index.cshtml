@@ -9,7 +9,6 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="h3">مدیریت رسیدها</h1>
-                <a asp-action="Upload" class="btn btn-primary">آپلود رسید جدید</a>
             </div>
         </div>
     </div>
@@ -43,7 +42,7 @@
                                         <th>شماره پیگیری</th>
                                         <th>تاریخ آپلود</th>
                                         <th>وضعیت</th>
-                                        <th>معامله/تراکنش</th>
+                                        <th>معامله</th>
                                         <th>عملیات</th>
                                     </tr>
                                 </thead>
@@ -59,9 +58,9 @@
                                             </td>
                                             <td>@item.Customer.FullName</td>
                                             <td>
-                                                @if (item.Type == ForexExchange.Models.ReceiptType.PaymentReceipt)
+                                                @if (item.Type == ForexExchange.Models.ReceiptType.RecivreRecipt)
                                                 {
-                                                    <span class="badge bg-primary">رسید پرداخت</span>
+                                                    <span class="badge bg-primary">رسید دریافت وجه</span>
                                                 }
                                                 else
                                                 {
@@ -104,12 +103,6 @@
                                                 {
                                                     <a asp-controller="Orders" asp-action="Details" asp-route-id="@item.OrderId" class="btn btn-sm btn-outline-primary">
                                                         معامله #@item.OrderId
-                                                    </a>
-                                                }
-                                                @if (item.Transaction != null)
-                                                {
-                                                    <a asp-controller="Transactions" asp-action="Details" asp-route-id="@item.TransactionId" class="btn btn-sm btn-outline-secondary">
-                                                        تراکنش #@item.TransactionId
                                                     </a>
                                                 }
                                                 @if (item.Order == null && item.Transaction == null)

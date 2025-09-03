@@ -48,8 +48,8 @@ namespace ForexExchange.Services
                 var imageFormat = GetImageFormat(imageData);
 
                 // Create the prompt based on document type
-                var prompt = documentType == "receipt" 
-                    ? CreateReceiptPrompt() 
+                var prompt = documentType == "receipt"
+                    ? CreateReceiptPrompt()
                     : CreateBankStatementPrompt();
 
                 // Prepare the request
@@ -92,7 +92,7 @@ namespace ForexExchange.Services
                 _httpClient.DefaultRequestHeaders.Add("X-Title", "IranExpedia Forex System");
 
                 var response = await _httpClient.PostAsync($"{baseUrl}/chat/completions", httpContent);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();

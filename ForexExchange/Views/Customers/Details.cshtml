@@ -189,7 +189,7 @@
                                         <div class="border rounded p-2 mb-2">
                                             <small>
                                                 <strong>#@receipt.Id</strong> - 
-                                                @(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "پرداخت" : "گردش حساب")
+                                                @(receipt.Type == ForexExchange.Models.ReceiptType.RecivreRecipt ? "دریافت وجه" : "گردش حساب")
                                                 @if (receipt.IsVerified)
                                                 {
                                                     <span class="badge bg-success">✓</span>

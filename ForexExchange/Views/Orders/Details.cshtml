@@ -115,8 +115,8 @@
                                     <td>@receipt.FileName</td>
                                     <td>
                                         <span
-                                            class="badge @(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "bg-primary" : "bg-info")">
-                                            @(receipt.Type == ForexExchange.Models.ReceiptType.PaymentReceipt ? "رسید پرداخت" :
+                                            class="badge @(receipt.Type == ForexExchange.Models.ReceiptType.RecivreRecipt ? "bg-primary" : "bg-info")">
+                                            @(receipt.Type == ForexExchange.Models.ReceiptType.RecivreRecipt ? "رسید دریافت وجه" :
                                                                                 "گردش حساب بانکی")
                                         </span>
                                     </td>

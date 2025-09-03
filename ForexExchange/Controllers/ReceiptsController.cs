@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 using ForexExchange.Models;
 using ForexExchange.Services;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -61,6 +60,17 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Upload(int? orderId, int? transactionId)
         {
             ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            // Provide system customer for limiting selection in view
+            var systemCustomer = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.IsSystem);
+            ViewBag.SystemCustomer = systemCustomer;
+            if (systemCustomer != null)
+            {
+                ViewBag.SystemBankAccounts = await _context.BankAccounts
+                    .Where(b => b.CustomerId == systemCustomer.Id && b.IsActive)
+                    .OrderByDescending(b => b.IsDefault)
+                    .ThenBy(b => b.BankName)
+                    .ToListAsync();
+            }
             ViewBag.OpenOrders = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
@@ -71,7 +81,7 @@ namespace ForexExchange.Controllers
             // Flag to indicate if coming from settlement details (transaction-specific upload)
             ViewBag.IsTransactionSpecific = transactionId.HasValue;
 
-            if (orderId.HasValue)
+                if (orderId.HasValue)
             {
                 ViewBag.SelectedOrderId = orderId.Value;
                 var order = await _context.Orders
@@ -108,16 +118,16 @@ namespace ForexExchange.Controllers
                     .Include(t => t.SellOrder)
                     .ThenInclude(o => o.ToCurrency)
                     .FirstOrDefaultAsync(t => t.Id == transactionId.Value);
-                
+
                 if (transaction != null)
                 {
                     ViewBag.SelectedTransaction = transaction;
-                    
+
                     // Set the customer based on transaction type
                     // For receipt uploads from settlements, we typically use the buyer customer
                     ViewBag.SelectedCustomerId = transaction.BuyerCustomerId;
                     ViewBag.SelectedCustomer = transaction.BuyerCustomer;
-                    
+
                     // Set the buy order as the primary order for the receipt
                     ViewBag.SelectedOrderId = transaction.BuyOrderId;
                     ViewBag.SelectedOrder = transaction.BuyOrder;
@@ -130,7 +140,7 @@ namespace ForexExchange.Controllers
         // POST: Receipts/Upload
         [HttpPost]
         [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Upload(IFormFile receiptFile, int customerId, int? orderId, int? transactionId, ReceiptType receiptType, string? manualAmount, string? manualReference, bool skipOcr = false)
+        public async Task<IActionResult> Upload(IFormFile receiptFile, int customerId, int? orderId, int? transactionId, ReceiptType receiptType, string? manualAmount, string? manualReference, int? SystemBankAccountId, bool skipOcr = true)
         {
             try
             {
@@ -161,7 +171,17 @@ namespace ForexExchange.Controllers
                         await LoadUploadViewData(orderId, transactionId);
                         return View();
                     }
-                    customerId = existingOrder.CustomerId;
+                    // Allow only order's customer OR system customer
+                    var systemCustomerId = await _context.Customers.AsNoTracking()
+                        .Where(c => c.IsSystem)
+                        .Select(c => (int?)c.Id)
+                        .FirstOrDefaultAsync();
+                    if (customerId != existingOrder.CustomerId && (!systemCustomerId.HasValue || customerId != systemCustomerId.Value))
+                    {
+                        ModelState.AddModelError("customerId", "فقط انتخاب مشتری معامله یا مشتری سیستم مجاز است.");
+                        await LoadUploadViewData(orderId, transactionId);
+                        return View();
+                    }
                 }
                 else
                 {
@@ -190,6 +210,21 @@ namespace ForexExchange.Controllers
                             await LoadUploadViewData(orderId, transactionId);
                             return View();
                         }
+                    }
+                }
+
+                // Validate selected system bank account if provided
+                if (SystemBankAccountId.HasValue)
+                {
+                    var sysAcc = await _context.BankAccounts
+                        .Include(b => b.Customer)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(b => b.Id == SystemBankAccountId.Value && b.IsActive);
+                    if (sysAcc == null || sysAcc.Customer == null || !sysAcc.Customer.IsSystem)
+                    {
+                        ModelState.AddModelError("SystemBankAccountId", "حساب بانکی سیستم معتبر نیست.");
+                        await LoadUploadViewData(orderId, transactionId);
+                        return View();
                     }
                 }
 
@@ -285,6 +320,7 @@ namespace ForexExchange.Controllers
                     CustomerId = customerId,
                     OrderId = orderId,
                     TransactionId = transactionId,
+                    SystemBankAccountId = SystemBankAccountId,
                     Type = receiptType,
                     FileName = receiptFile.FileName,
                     ContentType = receiptFile.ContentType,
@@ -293,30 +329,11 @@ namespace ForexExchange.Controllers
                     IsVerified = false
                 };
 
-                // Process OCR if not skipped
-                if (!skipOcr)
+                // By default, do NOT persist OCR data on upload. Allow optional manual fields.
+                receipt.ParsedAmount = manualAmount;
+                receipt.ParsedReferenceId = manualReference;
+                if (!string.IsNullOrWhiteSpace(manualAmount) || !string.IsNullOrWhiteSpace(manualReference))
                 {
-                    try
-                    {
-                        var ocrResult = await _ocrService.ProcessReceiptAsync(imageData);
-                        receipt.ExtractedText = ocrResult.RawText;
-                        receipt.OcrText = ocrResult.RawText; // For view compatibility
-                        receipt.ParsedAmount = ocrResult.Amount;
-                        receipt.ParsedReferenceId = ocrResult.ReferenceId;
-                        receipt.ParsedDate = ocrResult.Date;
-                        receipt.ParsedAccountNumber = ocrResult.AccountNumber;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "OCR processing failed for receipt upload");
-                        receipt.Notes = "خطا در پردازش OCR: " + ex.Message;
-                    }
-                }
-                else
-                {
-                    // Use manual data if OCR is skipped
-                    receipt.ParsedAmount = manualAmount;
-                    receipt.ParsedReferenceId = manualReference;
                     receipt.Notes = "اطلاعات به صورت دستی وارد شده است.";
                 }
 
@@ -344,6 +361,50 @@ namespace ForexExchange.Controllers
                 ModelState.AddModelError("", "خطا در آپلود رسید: " + ex.Message);
                 await LoadUploadViewData(orderId, transactionId);
                 return View();
+            }
+        }
+
+        // POST: Receipts/OcrPreview
+        // Returns OCR-extracted data for a given image WITHOUT saving anything to the database
+        [HttpPost]
+        public async Task<IActionResult> OcrPreview(IFormFile receiptFile)
+        {
+            try
+            {
+                if (receiptFile == null || receiptFile.Length == 0)
+                {
+                    return BadRequest(new { success = false, message = "لطفاً یک فایل تصویر انتخاب کنید." });
+                }
+
+                var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
+                if (!allowedTypes.Contains(receiptFile.ContentType.ToLower()))
+                {
+                    return BadRequest(new { success = false, message = "فقط فایل‌های تصویری (JPG, PNG, GIF) مجاز هستند." });
+                }
+
+                byte[] imageData;
+                using (var ms = new MemoryStream())
+                {
+                    await receiptFile.CopyToAsync(ms);
+                    imageData = ms.ToArray();
+                }
+
+                var ocr = await _ocrService.ProcessReceiptAsync(imageData);
+
+                return Ok(new
+                {
+                    success = true,
+                    rawText = ocr.RawText,
+                    amount = ocr.Amount,
+                    referenceId = ocr.ReferenceId,
+                    date = ocr.Date,
+                    accountNumber = ocr.AccountNumber
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "OCR preview failed");
+                return StatusCode(500, new { success = false, message = "خطایی در پردازش OCR رخ داد." });
             }
         }
 
@@ -396,7 +457,7 @@ namespace ForexExchange.Controllers
                 .Include(r => r.Order)
                 .Include(r => r.Transaction)
                 .FirstOrDefaultAsync(r => r.Id == id);
-            
+
             if (receipt == null)
             {
                 return NotFound();
@@ -474,7 +535,7 @@ namespace ForexExchange.Controllers
 
                     _context.Update(existingReceipt);
                     await _context.SaveChangesAsync();
-                    
+
                     TempData["SuccessMessage"] = "رسید با موفقیت بروزرسانی شد.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
@@ -545,6 +606,16 @@ namespace ForexExchange.Controllers
         private async Task LoadUploadViewData(int? orderId, int? transactionId)
         {
             ViewBag.Customers = await _context.Customers.Where(c => c.IsActive).ToListAsync();
+            var systemCustomer = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.IsSystem);
+            ViewBag.SystemCustomer = systemCustomer;
+            if (systemCustomer != null)
+            {
+                ViewBag.SystemBankAccounts = await _context.BankAccounts
+                    .Where(b => b.CustomerId == systemCustomer.Id && b.IsActive)
+                    .OrderByDescending(b => b.IsDefault)
+                    .ThenBy(b => b.BankName)
+                    .ToListAsync();
+            }
             ViewBag.OpenOrders = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
@@ -587,16 +658,16 @@ namespace ForexExchange.Controllers
                     .Include(t => t.SellOrder)
                     .ThenInclude(o => o.ToCurrency)
                     .FirstOrDefaultAsync(t => t.Id == transactionId.Value);
-                
+
                 if (transaction != null)
                 {
                     ViewBag.SelectedTransaction = transaction;
-                    
+
                     // Set the customer based on transaction type
                     // For receipt uploads from settlements, we typically use the buyer customer
                     ViewBag.SelectedCustomerId = transaction.BuyerCustomerId;
                     ViewBag.SelectedCustomer = transaction.BuyerCustomer;
-                    
+
                     // Set the buy order as the primary order for the receipt
                     ViewBag.SelectedOrderId = transaction.BuyOrderId;
                     ViewBag.SelectedOrder = transaction.BuyOrder;
