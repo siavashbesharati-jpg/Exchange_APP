@@ -63,6 +63,7 @@
                                         <th>بانک</th>
                                         <th>شماره حساب</th>
                                         <th>ارز</th>
+                                        <th>موجودی اولیه</th>
                                         <th>وضعیت</th>
                                         <th>عملیات</th>
                                     </tr>
@@ -95,6 +96,9 @@
                                                 {
                                                     <span class="badge bg-warning ms-1">پیش‌فرض</span>
                                                 }
+                                            </td>
+                                            <td>
+                                                @account.InitialBalance.ToString("N2")
                                             </td>
                                             <td>
                                                 @if (account.IsActive)

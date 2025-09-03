@@ -127,6 +127,15 @@ namespace ForexExchange.Models
         [Display(Name = "Notes - یادداشت‌ها")]
         public string? Notes { get; set; }
 
+        /// <summary>
+        /// Initial balance at the time of account creation (in account currency)
+        /// موجودی اولیه در زمان ایجاد حساب (بر حسب ارز حساب)
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        [Range(0, double.MaxValue, ErrorMessage = "موجودی اولیه نمی‌تواند منفی باشد")]
+        [Display(Name = "Initial Balance - موجودی اولیه")]
+        public decimal InitialBalance { get; set; } = 0m;
+
         // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
