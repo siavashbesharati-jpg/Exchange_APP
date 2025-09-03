@@ -73,6 +73,28 @@
                             </div>
                         </div>
 
+                        <hr />
+                        <div class="mb-3">
+                            <label class="form-label">موجودی‌های اولیه مشتری (اختیاری)</label>
+                            <div id="initial-balances">
+                                <div class="row g-2 align-items-center mb-2 balance-row d-none" id="balance-row-template">
+                                    <div class="col-4">
+                                        <select class="form-select currency-code">
+                                            <option value="" selected disabled>انتخاب ارز</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" step="0.01" class="form-control currency-amount" placeholder="مبلغ (منفی یا مثبت)" />
+                                    </div>
+                                    <div class="col-2 text-start">
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-row">حذف</button>
+                                    </div>
+                                </div>
+                                <div id="balance-rows"></div>
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-balance">افزودن ارز</button>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-between">
                             <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
                             <button type="submit" class="btn btn-primary">ثبت مشتری و حساب کاربری</button>
@@ -137,5 +159,67 @@
         emailField.removeAttribute('data-val-required');
         emailField.removeAttribute('data-val-email');
         emailField.removeAttribute('data-val-email-msg');
+
+        // Initial balances dynamic rows -> bind to hidden inputs for dictionary
+        (function() {
+            const currencyOptions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrencyOptions ?? new object[0]));
+            const addBtn = document.getElementById('add-balance');
+            const rowsContainer = document.getElementById('balance-rows');
+            const template = document.getElementById('balance-row-template');
+
+            function buildOptions(selectEl, selectedCode) {
+                // Clear and add placeholder
+                selectEl.innerHTML = '';
+                const ph = document.createElement('option');
+                ph.value = '';
+                ph.textContent = 'انتخاب ارز';
+                ph.disabled = true;
+                ph.selected = !selectedCode;
+                selectEl.appendChild(ph);
+                // Add options
+                (currencyOptions || []).forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.Code;
+                    opt.textContent = `${o.PersianName} (${o.Code})`;
+                    if (selectedCode && selectedCode.toUpperCase() === o.Code) opt.selected = true;
+                    selectEl.appendChild(opt);
+                });
+            }
+
+            function addRow(code = '', amount = '') {
+                const row = template.cloneNode(true);
+                row.id = '';
+                row.classList.remove('d-none');
+                rowsContainer.appendChild(row);
+
+                const codeInput = row.querySelector('.currency-code');
+                const amountInput = row.querySelector('.currency-amount');
+                buildOptions(codeInput, code);
+                amountInput.value = amount;
+
+                const removeBtn = row.querySelector('.remove-row');
+                removeBtn.addEventListener('click', () => row.remove());
+            }
+
+            addBtn.addEventListener('click', function() { addRow(); });
+
+            // On submit, convert rows to hidden inputs matching Dictionary binding
+            document.querySelector('form').addEventListener('submit', function(e) {
+                // Remove existing hidden fields
+                this.querySelectorAll('input[type="hidden"][data-gen="ib"]').forEach(x => x.remove());
+                const rows = rowsContainer.querySelectorAll('.balance-row');
+                rows.forEach((row, idx) => {
+                    const code = (row.querySelector('.currency-code').value || '').trim().toUpperCase();
+                    const amount = row.querySelector('.currency-amount').value.trim();
+                    if (!code) return;
+                    const keyInput = document.createElement('input');
+                    keyInput.type = 'hidden';
+                    keyInput.name = `InitialBalances[${code}]`;
+                    keyInput.value = amount || '0';
+                    keyInput.setAttribute('data-gen', 'ib');
+                    this.appendChild(keyInput);
+                });
+            });
+        })();
     </script>
 }

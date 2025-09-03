@@ -99,6 +99,9 @@ namespace ForexExchange.Models
 
         [Display(Name = "فعال")]
         public bool IsActive { get; set; } = true;
+
+    // Initial balances per currency (code -> amount). Allow negative and positive.
+    public Dictionary<string, decimal> InitialBalances { get; set; } = new();
     }
 
     public class CustomerEditViewModel
@@ -136,6 +139,9 @@ namespace ForexExchange.Models
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; }
+
+    // Initial balances per currency (code -> amount). Allow negative and positive.
+    public Dictionary<string, decimal> InitialBalances { get; set; } = new();
     }
 
     public class DatabaseManagementViewModel

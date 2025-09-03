@@ -36,5 +36,6 @@ namespace ForexExchange.Models
         public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<BankAccount> BankAccounts { get; set; } = new List<BankAccount>();
+    public ICollection<CustomerInitialBalance> InitialBalances { get; set; } = new List<CustomerInitialBalance>();
     }
 }

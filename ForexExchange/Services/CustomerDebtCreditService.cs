@@ -12,7 +12,7 @@ namespace ForexExchange.Services
             _context = context;
         }
 
-        public async Task<List<CustomerDebtCredit>> GetCustomerDebtCreditSummaryAsync()
+    public async Task<List<CustomerDebtCredit>> GetCustomerDebtCreditSummaryAsync()
         {
             // Get all active orders (Open or PartiallyFilled)
             var activeOrders = await _context.Orders
@@ -32,8 +32,11 @@ namespace ForexExchange.Services
                 var customer = customerGroup.First().Customer;
                 var orders = customerGroup.ToList();
 
-                // Calculate currency balances
-                var currencyBalances = CalculateCurrencyBalances(orders);
+                // Start with initial balances per currency (can be +/-)
+                var currencyBalances = await SeedInitialBalancesAsync(customer.Id);
+
+                // Apply order-based deltas
+                ApplyOrderDeltas(orders, currencyBalances);
 
                 // Calculate net balance (using IRR as primary currency if available, otherwise first currency)
                 var primaryCurrency = currencyBalances.FirstOrDefault(c => c.CurrencyCode == "IRR")?.CurrencyCode
@@ -60,19 +63,19 @@ namespace ForexExchange.Services
             return result.OrderByDescending(c => Math.Abs(c.NetBalance)).ToList();
         }
 
-        private List<CurrencyBalance> CalculateCurrencyBalances(List<Order> orders)
+        private void ApplyOrderDeltas(List<Order> orders, List<CurrencyBalance> currencyBalances)
         {
-            var currencyBalances = new Dictionary<string, CurrencyBalance>();
+            var dict = currencyBalances.ToDictionary(c => c.CurrencyCode, c => c);
 
             foreach (var order in orders)
             {
                 var fromCurrency = order.FromCurrency.Code;
                 var toCurrency = order.ToCurrency.Code;
 
-                // Initialize currency balances if not exists
-                if (!currencyBalances.ContainsKey(fromCurrency))
+                // Initialize entries if missing
+                if (!dict.TryGetValue(fromCurrency, out var fromEntry))
                 {
-                    currencyBalances[fromCurrency] = new CurrencyBalance
+                    fromEntry = new CurrencyBalance
                     {
                         CurrencyCode = fromCurrency,
                         CurrencyName = order.FromCurrency.PersianName,
@@ -80,11 +83,12 @@ namespace ForexExchange.Services
                         DebtAmount = 0,
                         CreditAmount = 0
                     };
+                    dict[fromCurrency] = fromEntry;
                 }
 
-                if (!currencyBalances.ContainsKey(toCurrency))
+                if (!dict.TryGetValue(toCurrency, out var toEntry))
                 {
-                    currencyBalances[toCurrency] = new CurrencyBalance
+                    toEntry = new CurrencyBalance
                     {
                         CurrencyCode = toCurrency,
                         CurrencyName = order.ToCurrency.PersianName,
@@ -92,6 +96,7 @@ namespace ForexExchange.Services
                         DebtAmount = 0,
                         CreditAmount = 0
                     };
+                    dict[toCurrency] = toEntry;
                 }
 
                 // Calculate amounts based on order status
@@ -116,32 +121,42 @@ namespace ForexExchange.Services
 
                 // Update balances
                 // Customer owes the FromCurrency (debt)
-                currencyBalances[fromCurrency].DebtAmount += fromAmount;
-                currencyBalances[fromCurrency].Balance -= fromAmount;
+                fromEntry.DebtAmount += fromAmount;
+                fromEntry.Balance -= fromAmount;
 
                 // Customer receives the ToCurrency (credit)
-                currencyBalances[toCurrency].CreditAmount += toAmount;
-                currencyBalances[toCurrency].Balance += toAmount;
+                toEntry.CreditAmount += toAmount;
+                toEntry.Balance += toAmount;
             }
-
-            return currencyBalances.Values.ToList();
+            // sync dict back to list (preserve order loosely)
+            currencyBalances.Clear();
+            currencyBalances.AddRange(dict.Values);
         }
 
         public async Task<CustomerDebtCredit?> GetCustomerDebtCreditAsync(int customerId)
         {
+            // Load customer explicitly to support cases with only initial balances
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+            if (customer == null) return null;
+
             var orders = await _context.Orders
-                .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
                 .Where(o => o.CustomerId == customerId &&
                            (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled))
                 .ToListAsync();
 
-            if (!orders.Any())
-                return null;
+            var currencyBalances = await SeedInitialBalancesAsync(customer.Id);
 
-            var customer = orders.First().Customer;
-            var currencyBalances = CalculateCurrencyBalances(orders);
+            // Apply order-based deltas if any
+            if (orders.Any())
+            {
+                ApplyOrderDeltas(orders, currencyBalances);
+            }
+
+            // If no orders and no initial balances, return null (no financial data)
+            if (!orders.Any() && !currencyBalances.Any())
+                return null;
 
             var primaryCurrency = currencyBalances.FirstOrDefault(c => c.CurrencyCode == "IRR")?.CurrencyCode
                                 ?? currencyBalances.FirstOrDefault()?.CurrencyCode
@@ -159,6 +174,38 @@ namespace ForexExchange.Services
                 ActiveOrderCount = orders.Count,
                 CurrencyBalances = currencyBalances.OrderByDescending(c => Math.Abs(c.Balance)).ToList()
             };
+        }
+
+        private async Task<List<CurrencyBalance>> SeedInitialBalancesAsync(int customerId)
+        {
+            var list = new List<CurrencyBalance>();
+
+            var initBalances = await _context.CustomerInitialBalances
+                .Where(b => b.CustomerId == customerId)
+                .ToListAsync();
+
+            if (!initBalances.Any()) return list;
+
+            // Map currency codes to Persian names when available
+            var codeToName = await _context.Currencies
+                .ToDictionaryAsync(c => c.Code, c => c.PersianName);
+
+            foreach (var b in initBalances)
+            {
+                var code = (b.CurrencyCode ?? string.Empty).Trim().ToUpperInvariant();
+                codeToName.TryGetValue(code, out var persianName);
+
+                list.Add(new CurrencyBalance
+                {
+                    CurrencyCode = code,
+                    CurrencyName = string.IsNullOrWhiteSpace(persianName) ? code : persianName,
+                    Balance = b.Amount,
+                    DebtAmount = b.Amount < 0 ? Math.Abs(b.Amount) : 0,
+                    CreditAmount = b.Amount > 0 ? b.Amount : 0
+                });
+            }
+
+            return list;
         }
     }
 }

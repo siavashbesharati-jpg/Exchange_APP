@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using System.Globalization;
 
 namespace ForexExchange.Controllers
 {
@@ -45,6 +46,7 @@ namespace ForexExchange.Controllers
             }
 
             var customer = await _context.Customers
+                .Include(c => c.InitialBalances)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.FromCurrency)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
@@ -81,6 +83,7 @@ namespace ForexExchange.Controllers
             }
 
             var customer = await _context.Customers
+                .Include(c => c.InitialBalances)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.FromCurrency)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
@@ -131,6 +134,12 @@ namespace ForexExchange.Controllers
         // GET: Customers/Create
         public IActionResult Create()
         {
+            // supply currency dropdown
+            ViewBag.CurrencyOptions = _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new { c.Code, c.PersianName })
+                .ToList();
             return View(new CustomerCreateViewModel());
         }
 
@@ -219,6 +228,31 @@ namespace ForexExchange.Controllers
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, "Customer");
+                    // Persist initial balances from form (robust to locale)
+                    var formBalancesCreate = ExtractInitialBalancesFromForm();
+                    if (formBalancesCreate.Count == 0 && model.InitialBalances != null && model.InitialBalances.Count > 0)
+                    {
+                        // fallback to model in case JS didn't run
+                        formBalancesCreate = model.InitialBalances
+                            .Where(kv => !string.IsNullOrWhiteSpace(kv.Key))
+                            .ToDictionary(kv => kv.Key.Trim().ToUpperInvariant(), kv => kv.Value);
+                    }
+
+                    if (formBalancesCreate.Count > 0)
+                    {
+                        foreach (var kv in formBalancesCreate)
+                        {
+                            var code = (kv.Key ?? string.Empty).Trim().ToUpperInvariant();
+                            if (string.IsNullOrWhiteSpace(code) || code.Length != 3) continue;
+                            _context.CustomerInitialBalances.Add(new CustomerInitialBalance
+                            {
+                                CustomerId = customer.Id,
+                                CurrencyCode = code,
+                                Amount = kv.Value
+                            });
+                        }
+                        await _context.SaveChangesAsync();
+                    }
                     TempData["SuccessMessage"] = "مشتری و حساب کاربری با موفقیت ایجاد شد.";
                     return RedirectToAction(nameof(Details), new { id = customer.Id });
                 }
@@ -234,6 +268,12 @@ namespace ForexExchange.Controllers
                     }
                 }
             }
+            // repopulate currency dropdown on error
+            ViewBag.CurrencyOptions = _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new { c.Code, c.PersianName })
+                .ToList();
             return View(model);
         }
 
@@ -245,7 +285,9 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
-            var customer = await _context.Customers.FindAsync(id);
+            var customer = await _context.Customers
+                .Include(c => c.InitialBalances)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (customer == null)
             {
                 return NotFound();
@@ -259,8 +301,17 @@ namespace ForexExchange.Controllers
                 PhoneNumber = customer.PhoneNumber,
                 NationalId = customer.NationalId,
                 Address = customer.Address,
-                IsActive = customer.IsActive
+                IsActive = customer.IsActive,
+                CreatedAt = customer.CreatedAt,
+                InitialBalances = customer.InitialBalances?.ToDictionary(b => b.CurrencyCode, b => b.Amount) ?? new Dictionary<string, decimal>()
             };
+
+            // supply currency dropdown
+            ViewBag.CurrencyOptions = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new { c.Code, c.PersianName })
+                .ToListAsync();
 
             return View(model);
         }
@@ -277,6 +328,12 @@ namespace ForexExchange.Controllers
 
             // Remove any email validation errors from ModelState first
             ModelState.Remove("Email");
+            // Make NationalId optional: if empty, remove validation so it won't block updates
+            if (string.IsNullOrWhiteSpace(model.NationalId))
+            {
+                model.NationalId = null;
+                ModelState.Remove("NationalId");
+            }
             
             // Custom email validation - validate format only if email is provided
             if (!string.IsNullOrWhiteSpace(model.Email))
@@ -292,7 +349,7 @@ namespace ForexExchange.Controllers
             {
                 try
                 {
-                    var customer = await _context.Customers.FindAsync(id);
+                    var customer = await _context.Customers.Include(c => c.InitialBalances).FirstOrDefaultAsync(c => c.Id == id);
                     if (customer == null)
                     {
                         return NotFound();
@@ -373,6 +430,48 @@ namespace ForexExchange.Controllers
                         }
                     }
 
+                    // Upsert initial balances for this customer (parse from form to handle locale)
+                    var provided = ExtractInitialBalancesFromForm();
+                    if (provided.Count == 0 && model.InitialBalances != null)
+                    {
+                        provided = model.InitialBalances
+                            .Where(kv => !string.IsNullOrWhiteSpace(kv.Key))
+                            .ToDictionary(kv => kv.Key.Trim().ToUpperInvariant(), kv => kv.Value);
+                    }
+
+                    var existing = await _context.CustomerInitialBalances
+                        .Where(b => b.CustomerId == customer.Id)
+                        .ToListAsync();
+
+                    // Delete removed codes
+                    foreach (var bal in existing)
+                    {
+                        if (!provided.ContainsKey(bal.CurrencyCode))
+                        {
+                            _context.CustomerInitialBalances.Remove(bal);
+                        }
+                    }
+
+                    // Add/update provided
+                    foreach (var kv in provided)
+                    {
+                        var found = existing.FirstOrDefault(b => b.CurrencyCode == kv.Key);
+                        if (found == null)
+                        {
+                            _context.CustomerInitialBalances.Add(new CustomerInitialBalance
+                            {
+                                CustomerId = customer.Id,
+                                CurrencyCode = kv.Key,
+                                Amount = kv.Value
+                            });
+                        }
+                        else
+                        {
+                            found.Amount = kv.Value;
+                            _context.CustomerInitialBalances.Update(found);
+                        }
+                    }
+
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = "اطلاعات مشتری با موفقیت به‌روزرسانی شد.";
                     return RedirectToAction(nameof(Details), new { id = customer.Id });
@@ -389,7 +488,52 @@ namespace ForexExchange.Controllers
                     }
                 }
             }
+            // Before return on validation errors, repopulate currency options
+            if (!ModelState.IsValid)
+            {
+                ViewBag.CurrencyOptions = await _context.Currencies
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.DisplayOrder)
+                    .Select(c => new { c.Code, c.PersianName })
+                    .ToListAsync();
+                return View(model);
+            }
             return View(model);
+        }
+
+        private Dictionary<string, decimal> ExtractInitialBalancesFromForm()
+        {
+            var result = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                foreach (var kv in Request?.Form ?? new Microsoft.AspNetCore.Http.FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>()))
+                {
+                    var name = kv.Key;
+                    if (name.StartsWith("InitialBalances[", StringComparison.Ordinal) && name.EndsWith("]", StringComparison.Ordinal))
+                    {
+                        var inner = name.Substring("InitialBalances[".Length);
+                        var code = inner.Substring(0, inner.Length - 1).Trim().ToUpperInvariant();
+                        var raw = kv.Value.ToString().Trim();
+                        if (string.IsNullOrWhiteSpace(code)) continue;
+
+                        // Normalize Persian/Arabic digits and separators
+                        raw = raw.Replace("\u066C", "").Replace("\u066B", "."); // Arabic thousands/decimal
+                        // If string has comma but no dot, treat comma as decimal separator; otherwise remove commas (thousands)
+                        if (raw.Contains(',') && !raw.Contains('.'))
+                            raw = raw.Replace(',', '.');
+                        else
+                            raw = raw.Replace(",", "");
+                        raw = raw.Replace(" ", "");
+
+                        if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
+                        {
+                            result[code] = amount;
+                        }
+                    }
+                }
+            }
+            catch { /* ignore parse errors */ }
+            return result;
         }
 
         // GET: Customers/Delete/5

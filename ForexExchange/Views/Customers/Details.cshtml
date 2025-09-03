@@ -75,6 +75,27 @@
                     <h5 class="card-title mb-0">خلاصه فعالیت</h5>
                 </div>
                 <div class="card-body">
+                    @{
+                        // Try to show customer's initial balances if available via navigation property
+                        var initialBalances = Model.InitialBalances?.ToList() ?? new List<ForexExchange.Models.CustomerInitialBalance>();
+                    }
+                    @if (initialBalances.Any())
+                    {
+                        <div class="mb-3">
+                            <h6 class="mb-2">موجودی اولیه مشتری</h6>
+                            <div class="row g-2">
+                                @foreach (var b in initialBalances)
+                                {
+                                    <div class="col-6">
+                                        <div class="border rounded p-2 small d-flex justify-content-between">
+                                            <span class="text-muted">@b.CurrencyCode</span>
+                                            <strong dir="ltr">@b.Amount.ToString("N2")</strong>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
                     <div class="row text-center">
                         <div class="col-6 mb-3">
                             <div class="card bg-primary text-white">

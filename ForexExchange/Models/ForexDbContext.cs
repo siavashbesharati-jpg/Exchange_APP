@@ -25,6 +25,7 @@ namespace ForexExchange.Models
         public DbSet<Currency> Currencies { get; set; }
         public DbSet<AdminActivity> AdminActivities { get; set; }
         public DbSet<BankAccount> BankAccounts { get; set; }
+    public DbSet<CustomerInitialBalance> CustomerInitialBalances { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -179,6 +180,19 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => new { e.IsActive, e.DisplayOrder });
                 // Ignore legacy navigation not mapped on ExchangeRate
                 entity.Ignore(e => e.LegacyRates);
+            });
+
+            // CustomerInitialBalance configurations
+            modelBuilder.Entity<CustomerInitialBalance>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+                entity.HasOne(e => e.Customer)
+                      .WithMany(c => c.InitialBalances)
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => new { e.CustomerId, e.CurrencyCode }).IsUnique();
             });
             
             // ExchangeRate configurations - Updated for cross-currency support
