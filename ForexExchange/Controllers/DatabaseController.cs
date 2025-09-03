@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
-using System.IO.Compression;
 using ForexExchange.Services;
+using DNTPersianUtils.Core;
 
 namespace ForexExchange.Controllers
 {
@@ -14,14 +14,12 @@ namespace ForexExchange.Controllers
         private readonly IWebHostEnvironment _environment;
 
         private readonly ICurrencyPoolService _currencyPoolService;
-        private readonly ISqlBackupService _sqlBackupService;
 
-        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment, ICurrencyPoolService currencyPoolService, ISqlBackupService sqlBackupService)
+        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment, ICurrencyPoolService currencyPoolService )
         {
             _context = context;
             _environment = environment;
             _currencyPoolService = currencyPoolService;
-            _sqlBackupService = sqlBackupService;
         }
 
         public IActionResult Index()
@@ -39,11 +37,12 @@ namespace ForexExchange.Controllers
         }
 
         [HttpPost]
-    public IActionResult CreateBackup()
+        public IActionResult CreateBackup()
         {
             try
             {
-                var backupFileName = $"ForexExchange_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                var now = DateTime.Now;
+                var backupFileName = $"Taban_Backup_{now.GetPersianYear()}-{now.GetPersianMonth()}-{now.GetPersianDayOfMonth()}-{now.Hour}-{now.Minute}.tbn";
                 var backupPath = Path.Combine(_environment.WebRootPath, "backups");
 
                 if (!Directory.Exists(backupPath))
@@ -98,48 +97,9 @@ namespace ForexExchange.Controllers
             }
         }
 
-        // New: Export data as SQL script
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ExportSql()
-        {
-            try
-            {
-                var bytes = await _sqlBackupService.ExportDataSqlAsync();
-                var fileName = $"ForexExchange_Data_{DateTime.Now:yyyyMMdd_HHmmss}.sql";
-                return File(bytes, "application/sql", fileName);
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"خطا در تولید خروجی SQL: {ex.Message}";
-                return RedirectToAction("Index");
-            }
-        }
+      
 
-        // New: Import data from SQL script
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ImportSql(IFormFile sqlFile)
-        {
-            if (sqlFile == null || sqlFile.Length == 0)
-            {
-                TempData["Error"] = "لطفاً فایل SQL را انتخاب کنید";
-                return RedirectToAction("Index");
-            }
-
-            try
-            {
-                await using var stream = sqlFile.OpenReadStream();
-                await _sqlBackupService.ImportDataSqlAsync(stream);
-                TempData["Success"] = "بازیابی داده‌ها از SQL با موفقیت انجام شد";
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"خطا در وارد کردن SQL: {ex.Message}";
-            }
-
-            return RedirectToAction("Index");
-        }
+        
 
         [HttpPost]
         public async Task<IActionResult> RestoreDatabase(IFormFile backupFile)
@@ -153,7 +113,8 @@ namespace ForexExchange.Controllers
             try
             {
                 // Create automatic backup before restore (file copy)
-                var backupFileName = $"ForexExchange_BeforeRestore_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                var now = DateTime.Now;
+                var backupFileName = $"-AutoTaban_Backup_{now.GetPersianYear()}-{now.GetPersianMonth()}-{now.GetPersianDayOfMonth()}-{now.Hour}-{now.Minute}.tbn";
                 var backupPath = Path.Combine(_environment.WebRootPath, "backups");
                 if (!Directory.Exists(backupPath))
                 {
@@ -178,14 +139,26 @@ namespace ForexExchange.Controllers
 
                 // Use SQLite backup API to copy contents from uploaded DB into the live database
                 // This avoids deleting/replacing the file while it's in use
-                var busyDest = $"Data Source={dbPath};Cache=Shared;BusyTimeout=5000";
-                var busySrc = $"Data Source={tempPath};Mode=ReadOnly;Cache=Shared;BusyTimeout=5000";
+                var busyDest = $"Data Source={dbPath};Cache=Shared";
+                var busySrc = $"Data Source={tempPath};Mode=ReadOnly;Cache=Shared";
 
                 using (var dest = new Microsoft.Data.Sqlite.SqliteConnection(busyDest))
                 using (var src = new Microsoft.Data.Sqlite.SqliteConnection(busySrc))
                 {
                     await dest.OpenAsync();
                     await src.OpenAsync();
+
+                    // Set busy timeout via PRAGMA on both connections (connection string keyword not supported)
+                    using (var cmd = dest.CreateCommand())
+                    {
+                        cmd.CommandText = "PRAGMA busy_timeout=5000;";
+                        cmd.ExecuteNonQuery();
+                    }
+                    using (var cmd = src.CreateCommand())
+                    {
+                        cmd.CommandText = "PRAGMA busy_timeout=5000;";
+                        cmd.ExecuteNonQuery();
+                    }
 
                     // Ensure WAL is checkpointed to reduce locks
                     using (var cmd = dest.CreateCommand())
@@ -210,8 +183,28 @@ namespace ForexExchange.Controllers
                     }
                 }
 
-                // Cleanup
-                System.IO.File.Delete(tempPath);
+                // Cleanup temp file with a few retries; ignore failures
+                try
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(tempPath);
+                            break;
+                        }
+                        catch (IOException)
+                        {
+                            await Task.Delay(200);
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            await Task.Delay(200);
+                        }
+                    }
+                }
+                catch { /* ignore cleanup issues */ }
+
                 _context.ChangeTracker.Clear();
 
                 TempData["Success"] = $"بازیابی پایگاه داده با موفقیت انجام شد. پشتیبان خودکار ایجاد شد: {backupFileName}";

@@ -36,14 +36,18 @@ namespace ForexExchange.Services
             if (string.IsNullOrWhiteSpace(cs))
                 throw new InvalidOperationException("Database connection string is not configured");
 
-            // Ensure shared cache and a reasonable busy timeout to cooperate with EF's open connections
+            // Ensure shared cache; busy timeout will be set via PRAGMA
             if (!cs.Contains("Cache=Shared", StringComparison.OrdinalIgnoreCase))
                 cs = cs.TrimEnd(';') + ";Cache=Shared";
-            if (!cs.Contains("BusyTimeout=", StringComparison.OrdinalIgnoreCase))
-                cs += ";BusyTimeout=5000";
 
             await using var conn = new SqliteConnection(cs);
             await conn.OpenAsync(ct);
+            // Set busy timeout via PRAGMA instead of connection string
+            await using (var busy = conn.CreateCommand())
+            {
+                busy.CommandText = "PRAGMA busy_timeout=5000;";
+                await busy.ExecuteNonQueryAsync(ct);
+            }
 
             // Get user tables from sqlite_master, excluding internal tables
             var tables = new List<string>();
