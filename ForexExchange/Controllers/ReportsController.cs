@@ -167,7 +167,7 @@ namespace ForexExchange.Controllers
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Where(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled);
+                .Where(o => o.Status == OrderStatus.Open);
 
             if (currencyId.HasValue)
             {

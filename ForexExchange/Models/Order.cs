@@ -9,7 +9,6 @@ namespace ForexExchange.Models
     {
         Open = 0,          // باز
         Matched = 1,       // مچ شده
-        PartiallyFilled = 2, // نیمه تکمیل
         Completed = 3,     // تکمیل شده
         Cancelled = 4      // لغو شده
     }

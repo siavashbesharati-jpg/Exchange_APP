@@ -66,7 +66,7 @@
                                 @Model.UpdatedAt.Value.ToPersianDateTextify()</div>
                         }
                     </div>
-                </div>detail
+                </div>
             </div>
         </div>
     </div>
@@ -77,13 +77,17 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-4"><strong>جفت ارز:</strong> @Model.FromCurrency?.Code / @Model.ToCurrency?.Code
+                <div class="col-md-6"><strong>جفت ارز:</strong> @Model.FromCurrency?.Code / @Model.ToCurrency?.Code
                 </div>
-                <div class="col-md-4"><strong>مبلغ:</strong> @Model.Amount.ToString("N2") @Model.FromCurrency?.Code
-                </div>
-                <div class="col-md-4"><strong>نرخ تبادل:</strong> @Model.Rate.ToString("N4")</div>
+              
+                <div class="col-md-6"><strong>نرخ تبادل:</strong> @Model.Rate.ToString("N4")</div>
+                
             </div>
-            <div class="mt-2"><strong>مقدار کل:</strong> @Model.TotalAmount.ToString("N2") @Model.ToCurrency?.Code</div>
+            <div class="row mt-2">
+                        <div class="col-md-6"><strong> پرداخت می کند :</strong> @Model.Amount.ToString("N2") @Model.FromCurrency?.Code
+                        <div class="col-md-6"><strong> دریافت می کند  :</strong> @Model.TotalAmount.ToString("N2") @Model.ToCurrency?.Code</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -139,6 +143,84 @@
                             }
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Available Orders for Matching (Display Only - No Action Buttons) -->
+    @if (ViewBag.AvailableOrders != null && ((List<ForexExchange.Models.Order>)ViewBag.AvailableOrders).Any())
+    {
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    معاملات قابل مچ
+                </h5>
+                <small class="text-muted">معاملاتی که با این معامله قابل تطبیق هستند (فقط نمایش)</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>شناسه</th>
+                                <th>مشتری</th>
+                                <th>جفت ارز</th>
+                                <th>مبلغ</th>
+                                <th>نرخ</th>
+                                <th>مقدار باقیمانده</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var availableOrder in (List<ForexExchange.Models.Order>)ViewBag.AvailableOrders)
+                            {
+                                <tr>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@availableOrder.Id" class="text-decoration-none">
+                                            #@availableOrder.Id
+                                        </a>
+                                    </td>
+                                    <td>@availableOrder.Customer?.FullName</td>
+                                    <td>
+                                        <strong>@availableOrder.FromCurrency?.Code</strong>
+                                        <i class="fas fa-arrow-right mx-1"></i>
+                                        <strong>@availableOrder.ToCurrency?.Code</strong>
+                                    </td>
+                                    <td>@availableOrder.Amount.ToString("N2") @availableOrder.FromCurrency?.Code</td>
+                                    <td>@availableOrder.Rate.ToString("N4")</td>
+                                    <td>
+                                        @{
+                                            var remaining = availableOrder.Amount - availableOrder.FilledAmount;
+                                        }
+                                        <strong>@remaining.ToString("N2")</strong> @availableOrder.FromCurrency?.Code
+                                        <br>
+                                        <small class="text-muted">از @availableOrder.Amount.ToString("N2")</small>
+                                    </td>
+                                    <td>
+                                        @switch (availableOrder.Status)
+                                        {
+                                            case ForexExchange.Models.OrderStatus.Open:
+                                                <span class="badge bg-primary">باز</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        <small>@availableOrder.CreatedAt.ToString("yyyy/MM/dd")</small>
+                                        <br>
+                                        <small class="text-muted">@availableOrder.CreatedAt.ToString("HH:mm")</small>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>توضیح:</strong> این لیست معاملاتی را نشان می‌دهد که با معامله فعلی قابل تطبیق هستند. 
+                    برای مشاهده جزئیات هر معامله، روی شناسه آن کلیک کنید.
                 </div>
             </div>
         </div>

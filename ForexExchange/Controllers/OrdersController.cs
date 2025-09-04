@@ -227,13 +227,14 @@ namespace ForexExchange.Controllers
             }
 
             // Load available orders for matching if this order is still open or partially filled
-            if (order.Status == OrderStatus.Open || order.Status == OrderStatus.PartiallyFilled)
+            // Display available orders but without matching buttons (per user request)
+            if (order.Status == OrderStatus.Open)
             {
                 var availableOrders = await _context.Orders
                     .Include(o => o.Customer)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
-                    .Where(o => (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled) &&
+                    .Where(o => o.Status == OrderStatus.Open &&
                                // Find complementary currency pairs
                                ((o.FromCurrencyId == order.ToCurrencyId && o.ToCurrencyId == order.FromCurrencyId)) &&
                                o.Id != order.Id &&
@@ -664,7 +665,7 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (originalOrder.Status != OrderStatus.Open && originalOrder.Status != OrderStatus.PartiallyFilled)
+            if (originalOrder.Status != OrderStatus.Open)
             {
                 TempData["ErrorMessage"] = "این معامله قابل لغو نیست.";
                 return RedirectToAction(nameof(Details), new { id });
@@ -747,15 +748,21 @@ namespace ForexExchange.Controllers
         }
 
         // POST: Orders/Match/5 - Show available orders for manual matching
+        // Note: Disabled per user request - UI buttons removed but logic kept
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Match(int id)
+        public IActionResult Match(int id)
         {
+            // UI matching disabled - redirect to details
+            TempData["InfoMessage"] = "عملیات مچ کردن دستی از رابط کاربری غیرفعال شده است.";
+            return RedirectToAction(nameof(Details), new { id });
+            
+            /*
             var order = await _context.Orders
                 .Include(o => o.Customer)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (order == null || (order.Status != OrderStatus.Open && order.Status != OrderStatus.PartiallyFilled) || order.Amount <= order.FilledAmount)
+            if (order == null || order.Status != OrderStatus.Open || order.Amount <= order.FilledAmount)
             {
                 TempData["ErrorMessage"] = "معامله موجود نیست یا قابل مچ کردن نمی‌باشد.";
                 return RedirectToAction(nameof(Details), new { id });
@@ -764,6 +771,7 @@ namespace ForexExchange.Controllers
             // Just redirect to Details page where available orders are already shown
             TempData["InfoMessage"] = "لیست معاملهات قابل مچ نمایش داده شده است. لطفاً معامله مورد نظر را انتخاب کنید.";
             return RedirectToAction(nameof(Details), new { id });
+            */
         }
 
         // POST: Orders/MatchOrders - Match two specific orders manually
@@ -789,14 +797,14 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
-            if ((primaryOrder.Status != OrderStatus.Open && primaryOrder.Status != OrderStatus.PartiallyFilled) ||
+            if (primaryOrder.Status != OrderStatus.Open ||
                 primaryOrder.Amount <= primaryOrder.FilledAmount)
             {
                 TempData["ErrorMessage"] = "معامله اصلی قابل مچ کردن نیست.";
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
-            if ((matchingOrder.Status != OrderStatus.Open && matchingOrder.Status != OrderStatus.PartiallyFilled) ||
+            if (matchingOrder.Status != OrderStatus.Open ||
                 matchingOrder.Amount <= matchingOrder.FilledAmount)
             {
                 TempData["ErrorMessage"] = "معامله مقابل قابل مچ کردن نیست.";
@@ -875,26 +883,144 @@ namespace ForexExchange.Controllers
             primaryOrder.FilledAmount += matchAmount;
             matchingOrder.FilledAmount += matchAmount;
 
-            // Update order statuses
-            if (primaryOrder.FilledAmount == primaryOrder.Amount)
+            // Update order statuses - orders are either Open or Completed (no partial fills)
+            if (primaryOrder.FilledAmount >= primaryOrder.Amount)
                 primaryOrder.Status = OrderStatus.Completed;
-            else if (primaryOrder.FilledAmount > 0)
-                primaryOrder.Status = OrderStatus.PartiallyFilled;
+            // else stays Open
 
-            if (matchingOrder.FilledAmount == matchingOrder.Amount)
+            if (matchingOrder.FilledAmount >= matchingOrder.Amount)
                 matchingOrder.Status = OrderStatus.Completed;
-            else if (matchingOrder.FilledAmount > 0)
-                matchingOrder.Status = OrderStatus.PartiallyFilled;
+            // else stays Open
 
             primaryOrder.UpdatedAt = DateTime.Now;
             matchingOrder.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 
+            // Update currency pools when orders are matched/completed
+            if (primaryOrder.Status == OrderStatus.Completed)
+            {
+                // When an order is completed, we need to reverse the initial pool allocation
+                // and then apply the actual transaction amounts
+                await _poolService.UpdatePoolAsync(primaryOrder.FromCurrencyId, -primaryOrder.Amount, PoolTransactionType.Sell, primaryOrder.Rate);
+                await _poolService.UpdatePoolAsync(primaryOrder.ToCurrencyId, -(primaryOrder.Amount * primaryOrder.Rate), PoolTransactionType.Buy, primaryOrder.Rate);
+                
+                // Apply the actual completed transaction
+                await _poolService.UpdatePoolAsync(primaryOrder.FromCurrencyId, -matchAmount, PoolTransactionType.Buy, transactionRate);
+                await _poolService.UpdatePoolAsync(primaryOrder.ToCurrencyId, matchAmount * transactionRate, PoolTransactionType.Sell, transactionRate);
+            }
+
+            if (matchingOrder.Status == OrderStatus.Completed)
+            {
+                // When an order is completed, we need to reverse the initial pool allocation
+                // and then apply the actual transaction amounts
+                await _poolService.UpdatePoolAsync(matchingOrder.FromCurrencyId, -matchingOrder.Amount, PoolTransactionType.Sell, matchingOrder.Rate);
+                await _poolService.UpdatePoolAsync(matchingOrder.ToCurrencyId, -(matchingOrder.Amount * matchingOrder.Rate), PoolTransactionType.Buy, matchingOrder.Rate);
+                
+                // Apply the actual completed transaction
+                await _poolService.UpdatePoolAsync(matchingOrder.FromCurrencyId, -matchAmount, PoolTransactionType.Buy, transactionRate);
+                await _poolService.UpdatePoolAsync(matchingOrder.ToCurrencyId, matchAmount * transactionRate, PoolTransactionType.Sell, transactionRate);
+            }
+
+            // Update order counts for all affected currencies
+            await _poolService.UpdateOrderCountsAsync(primaryOrder.FromCurrencyId);
+            await _poolService.UpdateOrderCountsAsync(primaryOrder.ToCurrencyId);
+            await _poolService.UpdateOrderCountsAsync(matchingOrder.FromCurrencyId);
+            await _poolService.UpdateOrderCountsAsync(matchingOrder.ToCurrencyId);
+
+            // Update average rates for both currency pairs
+            await UpdateAverageRatesForPairAsync(primaryOrder.FromCurrencyId, primaryOrder.ToCurrencyId);
+            await UpdateAverageRatesForPairAsync(matchingOrder.FromCurrencyId, matchingOrder.ToCurrencyId);
+
             _logger.LogInformation($"Manually matched Order {primaryOrder.Id} with Order {matchingOrder.Id}: {matchAmount} units at rate {transactionRate}");
 
             TempData["SuccessMessage"] = $"معاملهات با موفقیت مچ شدند. تراکنش ایجاد شد.";
             return RedirectToAction(nameof(Details), new { id = primaryOrderId });
+        }
+
+        // POST: Orders/CompleteOrder - Manually complete an order
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CompleteOrder(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+            {
+                TempData["ErrorMessage"] = "معامله یافت نشد.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (order.Status != OrderStatus.Open)
+            {
+                TempData["ErrorMessage"] = "این معامله قابل تکمیل دستی نیست.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Mark order as completed
+                    var previousStatus = order.Status;
+                    order.Status = OrderStatus.Completed;
+                    order.FilledAmount = order.Amount; // Mark as fully filled
+                    order.UpdatedAt = DateTime.Now;
+                    _context.Update(order);
+
+                    // Update currency pools
+                    if (previousStatus == OrderStatus.Open)
+                    {
+                        // If it was open, we need to reverse the initial pool allocation
+                        // When order was created, we added Amount to FromCurrency pool (reduce available) 
+                        // and added Amount*Rate to ToCurrency pool (increase available)
+                        
+                        // Reverse the initial allocation
+                        await _poolService.UpdatePoolAsync(order.FromCurrencyId, -order.Amount, PoolTransactionType.Sell, order.Rate);
+                        await _poolService.UpdatePoolAsync(order.ToCurrencyId, -(order.Amount * order.Rate), PoolTransactionType.Buy, order.Rate);
+                    }
+
+                    // Apply the actual completed transaction to pools
+                    // When order completes: we lose FromCurrency and gain ToCurrency
+                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, -order.Amount, PoolTransactionType.Buy, order.Rate);
+                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
+
+                    // Update order counts
+                    await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
+                    await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
+
+                    // Update average rates for this currency pair
+                    await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    // Log admin activity
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        // Note: LogOrderCompletedAsync method needs to be added to AdminActivityService
+                        // await _adminActivityService.LogOrderCompletedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
+                        await _adminNotificationService.SendOrderNotificationAsync(order, "manually completed");
+                    }
+
+                    _logger.LogInformation($"Order {id} manually completed by admin. From: {order.Amount} {order.FromCurrency?.Code}, To: {order.Amount * order.Rate} {order.ToCurrency?.Code}");
+
+                    TempData["SuccessMessage"] = $"معامله با موفقیت تکمیل شد. {order.Amount:N2} {order.FromCurrency?.Code} به {(order.Amount * order.Rate):N2} {order.ToCurrency?.Code} تبدیل شد.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, $"Error manually completing order {id}");
+                    TempData["ErrorMessage"] = "خطا در تکمیل دستی معامله.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+            }
         }
 
         private bool OrderExists(int id)
@@ -925,10 +1051,8 @@ namespace ForexExchange.Controllers
             }).ToList();
 
             // Load minimal customer data for dropdown (just ID and FullName)
-            var customers = await _context.Customers
-                .Where(c => c.IsActive)
-                .Select(c => new { c.Id, c.FullName })
-                .ToListAsync();
+            var customers = _context.Customers
+                .Where(c => c.IsActive && c.IsSystem == false);
 
             ViewBag.Customers = customers.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {

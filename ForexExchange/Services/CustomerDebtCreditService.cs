@@ -14,12 +14,12 @@ namespace ForexExchange.Services
 
     public async Task<List<CustomerDebtCredit>> GetCustomerDebtCreditSummaryAsync()
         {
-            // Get all active orders (Open or PartiallyFilled)
+            // Get all active orders (Open only - no partial fills)
             var activeOrders = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Where(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled)
+                .Where(o => o.Status == OrderStatus.Open)
                 .ToListAsync();
 
             // Group by customer
@@ -108,15 +108,9 @@ namespace ForexExchange.Services
                     fromAmount = order.Amount;
                     toAmount = order.Amount * order.Rate;
                 }
-                else if (order.Status == OrderStatus.PartiallyFilled)
-                {
-                    // Use filled amount for partially filled orders
-                    fromAmount = order.FilledAmount;
-                    toAmount = order.FilledAmount * order.Rate;
-                }
                 else
                 {
-                    continue; // Skip other statuses
+                    continue; // Skip other statuses (only process Open orders)
                 }
 
                 // Update balances
@@ -143,7 +137,7 @@ namespace ForexExchange.Services
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
                 .Where(o => o.CustomerId == customerId &&
-                           (o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled))
+                           o.Status == OrderStatus.Open)
                 .ToListAsync();
 
             var currencyBalances = await SeedInitialBalancesAsync(customer.Id);

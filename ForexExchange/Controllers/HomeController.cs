@@ -40,14 +40,14 @@ public class HomeController : Controller
         // Get open and partially filled orders (public information for transparency)
         var availableOrders = await _context.Orders
             .Include(o => o.Customer)
-            .Where(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled)
+            .Where(o => o.Status == OrderStatus.Open)
             .OrderByDescending(o => o.CreatedAt)
             .Take(20)
             .ToListAsync();
 
         // Basic statistics (public)
         var totalActiveOrders = await _context.Orders
-            .CountAsync(o => o.Status == OrderStatus.Open || o.Status == OrderStatus.PartiallyFilled);
+            .CountAsync(o => o.Status == OrderStatus.Open);
         var today = DateTime.Now.Date;
         var completedTransactionsToday = await _context.Transactions
             .CountAsync(t => t.Status == TransactionStatus.Completed && t.CreatedAt.Date == today);

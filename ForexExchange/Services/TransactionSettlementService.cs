@@ -63,19 +63,17 @@ namespace ForexExchange.Services
 
                 _context.Transactions.Add(transaction);
 
-                // Update order statuses
+                // Update order statuses - orders are either Open or Completed (no partial fills)
                 buyOrder.FilledAmount += matchedAmount;
                 sellOrder.FilledAmount += matchedAmount;
 
                 if (buyOrder.FilledAmount >= buyOrder.Amount)
                     buyOrder.Status = OrderStatus.Completed;
-                else
-                    buyOrder.Status = OrderStatus.PartiallyFilled;
+                // else stays Open
 
                 if (sellOrder.FilledAmount >= sellOrder.Amount)
                     sellOrder.Status = OrderStatus.Completed;
-                else
-                    sellOrder.Status = OrderStatus.PartiallyFilled;
+                // else stays Open
 
                 buyOrder.UpdatedAt = DateTime.Now;
                 sellOrder.UpdatedAt = DateTime.Now;
@@ -272,8 +270,9 @@ namespace ForexExchange.Services
                 transaction.SellOrder.FilledAmount -= transaction.Amount;
 
                 // Update order statuses based on remaining filled amounts
-                transaction.BuyOrder.Status = transaction.BuyOrder.FilledAmount > 0 ? OrderStatus.PartiallyFilled : OrderStatus.Open;
-                transaction.SellOrder.Status = transaction.SellOrder.FilledAmount > 0 ? OrderStatus.PartiallyFilled : OrderStatus.Open;
+                // Orders are either Open or Completed (no partial status)
+                transaction.BuyOrder.Status = transaction.BuyOrder.FilledAmount >= transaction.BuyOrder.Amount ? OrderStatus.Completed : OrderStatus.Open;
+                transaction.SellOrder.Status = transaction.SellOrder.FilledAmount >= transaction.SellOrder.Amount ? OrderStatus.Completed : OrderStatus.Open;
 
                 // Mark transaction as failed
                 transaction.Status = TransactionStatus.Failed;
