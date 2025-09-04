@@ -75,15 +75,46 @@ builder.Services.AddScoped<CustomerDebtCreditService>();
 
 var app = builder.Build();
 
-// Create database and run migrations
+// Auto-apply migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ForexDbContext>();
-    dbContext.Database.EnsureCreated();
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    
+    try
+    {
+        var dbContext = services.GetRequiredService<ForexDbContext>();
+        
+        // Check if there are pending migrations
+        var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+        if (pendingMigrations.Any())
+        {
+            logger.LogInformation("Found {Count} pending migrations. Applying...", pendingMigrations.Count());
+            foreach (var migration in pendingMigrations)
+            {
+                logger.LogInformation("Pending migration: {Migration}", migration);
+            }
+            
+            // Apply all pending migrations
+            await dbContext.Database.MigrateAsync();
+            logger.LogInformation("All migrations applied successfully");
+        }
+        else
+        {
+            logger.LogInformation("Database is up to date. No pending migrations found");
+        }
 
-    // Seed initial data
-    var dataSeedService = scope.ServiceProvider.GetRequiredService<IDataSeedService>();
-    await dataSeedService.SeedDataAsync();
+        // Seed initial data
+        var dataSeedService = services.GetRequiredService<IDataSeedService>();
+        await dataSeedService.SeedDataAsync();
+        
+        logger.LogInformation("Application startup completed successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while migrating or seeding the database");
+        throw; // Re-throw to prevent app from starting with incomplete database
+    }
 }
 
 // Configure the HTTP request pipeline.

@@ -24,7 +24,8 @@
                             
                             <div class="col-md-6">
                                 <label asp-for="PhoneNumber" class="form-label">شماره تلفن</label>
-                                <input asp-for="PhoneNumber" type="text" class="form-control" placeholder="هر فرمت شماره تلفن قابل قبول است" />
+                                <input asp-for="PhoneNumber" type="text" class="form-control" placeholder="هر فرمت شماره تلفن قابل قبول است
+                                " />
                                 <small class="form-text text-muted">مثال: 0096871746098 یا +98912xxxxxxx یا 0912xxxxxxx</small>
                                 <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                             </div>
@@ -162,13 +163,7 @@
 
         // Initial balances dynamic rows -> bind to hidden inputs for dictionary
         (function() {
-            console.log('=== CUSTOMER CREATE JS STARTED ===');
-            console.log('Form element found:', !!document.getElementById('customer-create-form'));
-            console.log('Balance rows container found:', !!document.getElementById('balance-rows'));
-            console.log('Add button found:', !!document.getElementById('add-balance'));
-            
             const currencyOptions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrencyOptions ?? new object[0]));
-            console.log('Currency options loaded:', currencyOptions.length);
             
             const addBtn = document.getElementById('add-balance');
             const rowsContainer = document.getElementById('balance-rows');
@@ -230,55 +225,28 @@
             // On submit, convert rows to hidden inputs matching Dictionary binding
             const targetForm = document.getElementById('customer-create-form');
             if (!targetForm) {
-                console.error('ERROR: Could not find form with ID customer-create-form');
                 return;
             }
             
             targetForm.addEventListener('submit', function(e) {
-                console.log('=== CREATE FORM SUBMIT HANDLER STARTED ===');
-                
-                // Create debug display element
-                const debugDiv = document.createElement('div');
-                debugDiv.id = 'submit-debug-info';
-                debugDiv.style.cssText = `
-                    background: #f8f9fa; border: 2px solid #007bff; padding: 15px; margin: 15px 0;
-                    border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-line;
-                    position: relative; z-index: 1000;
-                `;
-                
-                let debugText = '=== CUSTOMER CREATE FORM DEBUG INFO ===\n';
-                debugText += `Timestamp: ${new Date().toLocaleString()}\n`;
-                
-                // Remove existing debug info and hidden fields
-                document.querySelectorAll('#submit-debug-info').forEach(x => x.remove());
+                // Remove existing hidden fields
                 this.querySelectorAll('input[type="hidden"][data-gen="ib"]').forEach(x => x.remove());
                 
                 // Get all visible balance rows (not the template)
                 const rows = rowsContainer.querySelectorAll('.balance-row:not(.d-none):not(#balance-row-template)');
-                debugText += `Found ${rows.length} visible balance rows\n\n`;
                 
-                let processedCount = 0;
                 rows.forEach((row, idx) => {
                     const codeSelect = row.querySelector('.currency-code');
                     const amountInput = row.querySelector('.currency-amount');
                     
                     if (!codeSelect || !amountInput) {
-                        debugText += `Row ${idx + 1}: ERROR - Missing elements\n`;
                         return;
                     }
                     
                     const code = (codeSelect.value || '').trim().toUpperCase();
                     const amount = amountInput.value.trim();
                     
-                    debugText += `Row ${idx + 1}: Currency="${code}", Amount="${amount}"`;
-                    
-                    if (!code) {
-                        debugText += ' → SKIPPED (no currency)\n';
-                        return;
-                    }
-                    
-                    if (!amount || parseFloat(amount) === 0) {
-                        debugText += ' → SKIPPED (empty/zero amount)\n';
+                    if (!code || !amount || parseFloat(amount) === 0) {
                         return;
                     }
                     
@@ -289,32 +257,7 @@
                     keyInput.value = amount;
                     keyInput.setAttribute('data-gen', 'ib');
                     this.appendChild(keyInput);
-                    
-                    processedCount++;
-                    debugText += ' → PROCESSED ✓\n';
                 });
-                
-                debugText += `\nProcessed ${processedCount} currencies successfully\n`;
-                debugText += '=== END DEBUG INFO ===';
-                
-                // Show debug info at top of form
-                debugDiv.textContent = debugText;
-                this.insertBefore(debugDiv, this.firstChild);
-                
-                // Also create hidden field with debug info for server
-                const debugInput = document.createElement('input');
-                debugInput.type = 'hidden';
-                debugInput.name = 'ClientDebugInfo';
-                debugInput.value = debugText;
-                this.appendChild(debugInput);
-                
-                console.log('=== CREATE FORM SUBMIT HANDLER COMPLETED ===\n');
-                
-                // Prevent immediate submission to show debug info
-                e.preventDefault();
-                setTimeout(() => {
-                    this.submit();
-                }, 2000); // 2 second delay to read debug info
             });
         })();
     </script>
