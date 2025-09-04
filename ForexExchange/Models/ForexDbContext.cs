@@ -55,8 +55,14 @@ namespace ForexExchange.Models
             {
                 entity.HasKey(e => e.Id);
                 
-                entity.HasOne(e => e.BuyOrder)
+                // New single order-based transaction relationship
+                entity.HasOne(e => e.Order)
                       .WithMany(e => e.Transactions)
+                      .HasForeignKey(e => e.OrderId)
+                      .OnDelete(DeleteBehavior.SetNull);
+                
+                entity.HasOne(e => e.BuyOrder)
+                      .WithMany()  // No inverse navigation to avoid conflict
                       .HasForeignKey(e => e.BuyOrderId)
                       .OnDelete(DeleteBehavior.Restrict);
                       

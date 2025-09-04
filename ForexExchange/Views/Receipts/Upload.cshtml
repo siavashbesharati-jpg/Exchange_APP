@@ -36,7 +36,7 @@
                                 <div class="card-header bg-primary text-white">
                                     <h6 class="card-title mb-0">
                                         <i class="fas fa-exchange-alt me-2"></i>
-                                        جزئیات تراکنش #@transaction.Id
+                                        جزئیات تراکنش #@transaction?.Id
                                     </h6>
                                 </div>
                                 <div class="card-body">
@@ -47,7 +47,7 @@
                                             <table class="table table-sm table-borderless">
                                                 <tr>
                                                     <td class="fw-bold text-muted">شماره تراکنش:</td>
-                                                    <td>#@transaction.Id</td>
+                                                    <td>#@transaction?.Id</td>
                                                 </tr>
                                                 <tr>
                                                     <td class="fw-bold text-muted">ارز:</td>
@@ -338,7 +338,7 @@
                                 <select id="receiptType" name="receiptType" class="form-select" required>
                                     <option value="">انتخاب نوع</option>
                                     <option value="0">رسید دریافت وجه</option>
-                                    <option value="1">گردش حساب بانکی</option>
+                                    <option value="1"> انتقال وجه </option>
                                 </select>
                             </div>
                         </div>
