@@ -16,37 +16,13 @@ namespace ForexExchange.Models
     {
         public int Id { get; set; }
         
-        [Required]
-        public int BuyOrderId { get; set; }
+        // Single order-based transaction (new approach)
+        public int? OrderId { get; set; }
+        public Order? Order { get; set; }
         
-        [Required]
-        public int SellOrderId { get; set; }
-        
-        [Required]
-        public int BuyerCustomerId { get; set; }
-        
-        [Required]
-        public int SellerCustomerId { get; set; }
-        
-        [Required]
-        [Display(Name = "From Currency - از ارز")]
-        public int FromCurrencyId { get; set; }
-        
-        [Required]
-        [Display(Name = "To Currency - به ارز")]
-        public int ToCurrencyId { get; set; }
-        
-        /// <summary>
-        /// Navigation property for From Currency
-        /// خاصیت ناوبری برای ارز مبدأ
-        /// </summary>
-        public Currency FromCurrency { get; set; } = null!;
-        
-        /// <summary>
-        /// Navigation property for To Currency
-        /// خاصیت ناوبری برای ارز مقصد
-        /// </summary>
-        public Currency ToCurrency { get; set; } = null!;
+        // Receipt that created this transaction
+        public int? ReceiptId { get; set; }
+        public Receipt? Receipt { get; set; }
         
         [Required]
         [Column(TypeName = "decimal(18,2)")]
@@ -54,14 +30,43 @@ namespace ForexExchange.Models
         public decimal Amount { get; set; }
         
         [Required]
-        [Column(TypeName = "decimal(18,4)")]
-        [Display(Name = "Exchange Rate - نرخ تبدیل")]
-        public decimal Rate { get; set; }
+        [StringLength(3)]
+        public string CurrencyCode { get; set; } = string.Empty;
+        
+        [Display(Name = "Transaction Date - تاریخ تراکنش")]
+        public DateTime TransactionDate { get; set; } = DateTime.Now;
         
         [Required]
+        [Display(Name = "Status - وضعیت")]
+        public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
+        
+        [StringLength(500)]
+        [Display(Name = "Description - توضیحات")]
+        public string? Description { get; set; }
+        
+        [StringLength(500)]
+        [Display(Name = "Notes - یادداشت‌ها")]
+        public string? Notes { get; set; }
+        
+        // Legacy fields for buy/sell matching (kept for backward compatibility)
+        public int? BuyOrderId { get; set; }
+        public int? SellOrderId { get; set; }
+        public int? BuyerCustomerId { get; set; }
+        public int? SellerCustomerId { get; set; }
+        
+        [Display(Name = "From Currency - از ارز")]
+        public int? FromCurrencyId { get; set; }
+        
+        [Display(Name = "To Currency - به ارز")]
+        public int? ToCurrencyId { get; set; }
+        
+        [Column(TypeName = "decimal(18,4)")]
+        [Display(Name = "Exchange Rate - نرخ تبدیل")]
+        public decimal? Rate { get; set; }
+        
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Total Amount - مقدار کل")]
-        public decimal TotalAmount { get; set; }
+        public decimal? TotalAmount { get; set; }
         
         /// <summary>
         /// Legacy field for backward compatibility
@@ -70,19 +75,9 @@ namespace ForexExchange.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalInToman 
         { 
-            get => ToCurrency?.Code == "IRR" ? TotalAmount : 0; 
+            get => ToCurrency?.Code == "IRR" ? (TotalAmount ?? 0) : 0; 
             set { if (ToCurrency?.Code == "IRR") TotalAmount = value; }
         }
-        
-        [Required]
-        [Display(Name = "Status - وضعیت")]
-        public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
-
-        [Display(Name = "Created At - تاریخ ایجاد")]
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        
-        [Display(Name = "Completed At - تاریخ تکمیل")]
-        public DateTime? CompletedAt { get; set; }
         
         [Display(Name = "Buyer Bank Account - حساب بانکی خریدار")]
         public int? BuyerBankAccountId { get; set; }
@@ -98,10 +93,6 @@ namespace ForexExchange.Models
         [Display(Name = "Seller Bank Account (Legacy) - حساب بانکی فروشنده (قدیمی)")]
         public string? SellerBankAccount { get; set; }
         
-        [StringLength(500)]
-        [Display(Name = "Notes - یادداشت‌ها")]
-        public string? Notes { get; set; }
-        
         /// <summary>
         /// Cross-currency pair identifier (e.g., "USD/EUR", "AED/TRY")
         /// شناسه جفت ارز متقابل
@@ -115,11 +106,29 @@ namespace ForexExchange.Models
         /// </summary>
         public bool IsCrossCurrency => FromCurrency?.Code != "IRR" && ToCurrency?.Code != "IRR";
         
-        // Navigation properties
-        public Order BuyOrder { get; set; } = null!;
-        public Order SellOrder { get; set; } = null!;
-        public Customer BuyerCustomer { get; set; } = null!;
-        public Customer SellerCustomer { get; set; } = null!;
+        [Display(Name = "Created At - تاریخ ایجاد")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        
+        [Display(Name = "Completed At - تاریخ تکمیل")]
+        public DateTime? CompletedAt { get; set; }
+        
+        /// <summary>
+        /// Navigation property for From Currency
+        /// خاصیت ناوبری برای ارز مبدأ
+        /// </summary>
+        public Currency? FromCurrency { get; set; }
+        
+        /// <summary>
+        /// Navigation property for To Currency
+        /// خاصیت ناوبری برای ارز مقصد
+        /// </summary>
+        public Currency? ToCurrency { get; set; }
+        
+        // Legacy navigation properties
+        public Order? BuyOrder { get; set; }
+        public Order? SellOrder { get; set; }
+        public Customer? BuyerCustomer { get; set; }
+        public Customer? SellerCustomer { get; set; }
         public BankAccount? BuyerBankAccountNavigation { get; set; }
         public BankAccount? SellerBankAccountNavigation { get; set; }
         public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();

@@ -124,7 +124,7 @@ namespace ForexExchange.Controllers
                 // Add notification for seller
                 var notification = new Notification
                 {
-                    CustomerId = transaction.SellerCustomerId,
+                    CustomerId = transaction.SellerCustomerId ?? 0,
                     Title = "تأیید پرداخت خریدار",
                     Message = $"خریدار تراکنش #{transaction.Id} پرداخت خود را تأیید کرده است. لطفاً نسبت به انتقال ارز اقدام نمایید.",
                     Type = NotificationType.TransactionStatusChanged,
@@ -186,7 +186,7 @@ namespace ForexExchange.Controllers
                 // Add notification for buyer
                 var notification = new Notification
                 {
-                    CustomerId = transaction.BuyerCustomerId,
+                    CustomerId = transaction.BuyerCustomerId ?? 0,
                     Title = "تکمیل تراکنش",
                     Message = $"تراکنش #{transaction.Id} با موفقیت تکمیل شد. ارز مورد نظر به حساب شما منتقل شده است.",
                     Type = NotificationType.TransactionStatusChanged,

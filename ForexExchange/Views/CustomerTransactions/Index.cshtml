@@ -87,8 +87,8 @@
                                                 <span class="badge bg-info">@transaction.CurrencyPair</span>
                                             </td>
                                             <td class="fw-bold">@transaction.Amount.ToString("N2") @transaction.FromCurrency?.Code</td>
-                                            <td class="text-success fw-bold">@transaction.Rate.ToString("N0")</td>
-                                            <td class="text-primary fw-bold">@((transaction.Amount * transaction.Rate).ToString("N2")) @transaction.ToCurrency?.Code</td>
+                                            <td class="text-success fw-bold">@(transaction.Rate?.ToString("N0") ?? "0")</td>
+                                            <td class="text-primary fw-bold">@((transaction.Amount * (transaction.Rate ?? 0)).ToString("N2")) @transaction.ToCurrency?.Code</td>
                                             <td>
                                                 @switch(transaction.Status)
                                                 {

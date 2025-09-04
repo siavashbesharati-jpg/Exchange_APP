@@ -163,7 +163,7 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-sm-5"><strong>نرخ:</strong></div>
-                        <div class="col-sm-7">@Model.Rate.ToString("N0") تومان</div>
+                        <div class="col-sm-7">@(Model.Rate?.ToString("N0") ?? "0") تومان</div>
                     </div>
                     
                     @if (Model.CompletedAt.HasValue)

@@ -43,6 +43,12 @@ namespace ForexExchange.Models
         
         public DateTime UploadedAt { get; set; } = DateTime.Now;
         
+        [Required]
+        public decimal Amount { get; set; }
+        
+        public bool IsProcessed { get; set; } = false;
+        public DateTime? ProcessedAt { get; set; }
+        
         public bool IsVerified { get; set; } = false;
         public DateTime? VerifiedAt { get; set; }
         

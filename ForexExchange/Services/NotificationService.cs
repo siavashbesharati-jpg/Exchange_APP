@@ -80,7 +80,7 @@ namespace ForexExchange.Services
                                      $"کل قابل پرداخت: {transaction.TotalInToman:N0} تومان.";
 
                     await CreateNotificationAsync(
-                        customerId: transaction.BuyerCustomerId,
+                        customerId: transaction.BuyerCustomerId ?? 0,
                         title: "تطبیق معامله خرید",
                         message: buyerMessage,
                         type: NotificationType.OrderMatched,
@@ -99,7 +99,7 @@ namespace ForexExchange.Services
                                       $"کل دریافتی: {transaction.TotalInToman:N0} تومان.";
 
                     await CreateNotificationAsync(
-                        customerId: transaction.SellerCustomerId,
+                        customerId: transaction.SellerCustomerId ?? 0,
                         title: "تطبیق معامله فروش",
                         message: sellerMessage,
                         type: NotificationType.OrderMatched,
@@ -130,7 +130,7 @@ namespace ForexExchange.Services
                 if (buyer != null && !string.IsNullOrEmpty(buyerMessage))
                 {
                     await CreateNotificationAsync(
-                        customerId: transaction.BuyerCustomerId,
+                        customerId: transaction.BuyerCustomerId ?? 0,
                         title: "تغییر وضعیت تراکنش",
                         message: buyerMessage,
                         type: NotificationType.TransactionStatusChanged,
@@ -144,7 +144,7 @@ namespace ForexExchange.Services
                 if (seller != null && !string.IsNullOrEmpty(sellerMessage))
                 {
                     await CreateNotificationAsync(
-                        customerId: transaction.SellerCustomerId,
+                        customerId: transaction.SellerCustomerId ?? 0,
                         title: "تغییر وضعیت تراکنش",
                         message: sellerMessage,
                         type: NotificationType.TransactionStatusChanged,

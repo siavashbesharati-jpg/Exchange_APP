@@ -79,7 +79,8 @@ namespace ForexExchange.Controllers
 
             // Currency breakdown - include all transactions, not just completed ones
             report.CurrencyBreakdown = transactions
-                .GroupBy(t => t.FromCurrencyId)
+                .Where(t => t.FromCurrencyId.HasValue)
+                .GroupBy(t => t.FromCurrencyId.Value)
                 .Select(g => new CurrencyVolumeReport
                 {
                     CurrencyId = g.Key,
@@ -88,7 +89,7 @@ namespace ForexExchange.Controllers
                     TotalVolume = g.Sum(t => t.Amount),
                     TransactionCount = g.Count(),
                     TotalValueInToman = g.Sum(t => t.TotalInToman),
-                    AverageRate = g.Average(t => t.Rate)
+                    AverageRate = g.Average(t => t.Rate ?? 0)
                 })
                 .ToList();
 

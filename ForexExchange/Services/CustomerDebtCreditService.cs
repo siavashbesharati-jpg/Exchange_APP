@@ -14,16 +14,17 @@ namespace ForexExchange.Services
 
     public async Task<List<CustomerDebtCredit>> GetCustomerDebtCreditSummaryAsync()
         {
-            // Get all active orders (Open only - no partial fills)
-            var activeOrders = await _context.Orders
+            // Get all orders that have associated transactions (completed orders)
+            var ordersWithTransactions = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Where(o => o.Status == OrderStatus.Open)
+                .Include(o => o.Transactions)
+                .Where(o => o.Transactions.Any(t => t.Status == TransactionStatus.Completed))
                 .ToListAsync();
 
             // Group by customer
-            var customerGroups = activeOrders.GroupBy(o => o.CustomerId);
+            var customerGroups = ordersWithTransactions.GroupBy(o => o.CustomerId);
 
             var result = new List<CustomerDebtCredit>();
 
@@ -99,18 +100,23 @@ namespace ForexExchange.Services
                     dict[toCurrency] = toEntry;
                 }
 
-                // Calculate amounts based on order status
+                // Calculate amounts based on transactions
                 decimal fromAmount, toAmount;
 
-                if (order.Status == OrderStatus.Open)
+                // For orders with completed transactions, use actual transaction amounts
+                var completedTransactions = order.Transactions
+                    .Where(t => t.Status == TransactionStatus.Completed)
+                    .ToList();
+
+                if (completedTransactions.Any())
                 {
-                    // Use full amount for open orders
-                    fromAmount = order.Amount;
-                    toAmount = order.Amount * order.Rate;
+                    // Use the sum of all completed transaction amounts
+                    fromAmount = completedTransactions.Sum(t => t.Amount);
+                    toAmount = completedTransactions.Sum(t => t.Amount * order.Rate);
                 }
                 else
                 {
-                    continue; // Skip other statuses (only process Open orders)
+                    continue; // Skip orders without completed transactions
                 }
 
                 // Update balances
@@ -136,8 +142,9 @@ namespace ForexExchange.Services
             var orders = await _context.Orders
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
+                .Include(o => o.Transactions)
                 .Where(o => o.CustomerId == customerId &&
-                           o.Status == OrderStatus.Open)
+                           o.Transactions.Any(t => t.Status == TransactionStatus.Completed))
                 .ToListAsync();
 
             var currencyBalances = await SeedInitialBalancesAsync(customer.Id);

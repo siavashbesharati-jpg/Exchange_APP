@@ -88,7 +88,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-primary">@((Model.Amount * Model.Rate).ToString("N2")) @Model.ToCurrency?.Code</div>
+                                <div class="h4 text-primary">@((Model.Amount * (Model.Rate ?? 0)).ToString("N2")) @Model.ToCurrency?.Code</div>
                                 <small class="text-muted">مقدار دریافتی</small>
                             </div>
                         </div>
@@ -99,7 +99,7 @@
                     <div class="row">
                         <div class="col-md-4">
                             <strong>نرخ تبدیل:</strong>
-                            <span class="text-success fw-bold">@Model.Rate.ToString("N0") ریال</span>
+                            <span class="text-success fw-bold">@(Model.Rate?.ToString("N0") ?? "0") ریال</span>
                         </div>
                         <div class="col-md-4">
                             <strong>تاریخ ایجاد:</strong>
@@ -476,7 +476,7 @@
                         
                         <div class="col-md-6">
                             <strong>مقدار ارز دریافتی:</strong>
-                            <div class="h5 text-primary">@((Model.Amount * Model.Rate).ToString("N2")) @Model.ToCurrency?.Code <small class="text-muted">(@Model.CurrencyPair)</small></div>
+                            <div class="h5 text-primary">@((Model.Amount * (Model.Rate ?? 0)).ToString("N2")) @Model.ToCurrency?.Code <small class="text-muted">(@Model.CurrencyPair)</small></div>
                         </div>
                     </div>
                     

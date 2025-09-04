@@ -12,12 +12,14 @@ namespace ForexExchange.Controllers
     {
         private readonly ForexDbContext _context;
         private readonly IOcrService _ocrService;
+        private readonly IReceiptService _receiptService;
         private readonly ILogger<ReceiptsController> _logger;
 
-        public ReceiptsController(ForexDbContext context, IOcrService ocrService, ILogger<ReceiptsController> logger)
+        public ReceiptsController(ForexDbContext context, IOcrService ocrService, IReceiptService receiptService, ILogger<ReceiptsController> logger)
         {
             _context = context;
             _ocrService = ocrService;
+            _receiptService = receiptService;
             _logger = logger;
         }
 
@@ -340,19 +342,31 @@ namespace ForexExchange.Controllers
                 _context.Add(receipt);
                 await _context.SaveChangesAsync();
 
-                // Update transaction status when receipt is uploaded
-                if (transactionId.HasValue)
+                // Process the receipt to create a transaction if it has amount and is linked to an order
+                if (receipt.Amount > 0 && receipt.OrderId.HasValue)
                 {
-                    var transaction = await _context.Transactions.FindAsync(transactionId.Value);
-                    if (transaction != null && transaction.Status == TransactionStatus.Pending)
+                    try
                     {
-                        transaction.Status = TransactionStatus.PaymentUploaded;
-                        _context.Update(transaction);
-                        await _context.SaveChangesAsync();
+                        var transaction = await _receiptService.ProcessReceiptUploadAsync(receipt);
+                        if (transaction != null)
+                        {
+                            TempData["SuccessMessage"] = "رسید با موفقیت آپلود شد و تراکنش ایجاد گردید.";
+                        }
+                        else
+                        {
+                            TempData["WarningMessage"] = "رسید آپلود شد اما تراکنش ایجاد نشد. لطفاً بررسی کنید.";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error processing receipt {ReceiptId}", receipt.Id);
+                        TempData["WarningMessage"] = "رسید آپلود شد اما در ایجاد تراکنش خطا رخ داد.";
                     }
                 }
-
-                TempData["SuccessMessage"] = "رسید با موفقیت آپلود شد.";
+                else
+                {
+                    TempData["SuccessMessage"] = "رسید با موفقیت آپلود شد.";
+                }
                 return RedirectToAction(nameof(Details), new { id = receipt.Id });
             }
             catch (Exception ex)

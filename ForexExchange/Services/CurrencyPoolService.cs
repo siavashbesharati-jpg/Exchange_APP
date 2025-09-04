@@ -267,8 +267,8 @@ namespace ForexExchange.Services
             {
                 // Update pools based on the exchange perspective
                 // When a customer buys USD with Toman, exchange sells USD and buys Toman
-                var fromCurrencyPool = await UpdatePoolAsync(buyOrder.FromCurrencyId, transaction.Amount, PoolTransactionType.Buy, transaction.Rate);
-                var toCurrencyPool = await UpdatePoolAsync(buyOrder.ToCurrencyId, transaction.TotalAmount, PoolTransactionType.Sell, transaction.Rate);
+                var fromCurrencyPool = await UpdatePoolAsync(buyOrder.FromCurrencyId, transaction.Amount, PoolTransactionType.Buy, transaction.Rate ?? 0);
+                var toCurrencyPool = await UpdatePoolAsync(buyOrder.ToCurrencyId, transaction.TotalAmount ?? 0, PoolTransactionType.Sell, transaction.Rate ?? 0);
 
                 updatedPools.Add(fromCurrencyPool);
                 if (toCurrencyPool.Id != fromCurrencyPool.Id)
