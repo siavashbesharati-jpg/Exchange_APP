@@ -303,7 +303,7 @@ Thumbs.db
 appsettings.Development.json
 appsettings.Production.json
 **/appsettings.*.json
-!**/appsettings.json
+# Main appsettings.json should also be ignored for security
 
 # Entity Framework
 Migrations/
@@ -319,3 +319,14 @@ ForexExchange.db
 *.user
 *.userosscache
 *.sln.docstates
+
+# Enhanced appsettings protection
+appsettings.json
+appsettings.*.json
+appsettings.Local.json
+appsettings.Staging.json
+
+# Additional sensitive configuration files
+secrets.json
+connectionstrings.json
+*.secrets.json
