@@ -11,13 +11,13 @@
         <div class="text-center mb-4">
             <img src="~/favicon/android-chrome-512x512.png" alt="تابان"
                 style="width: 250px; height: 250px; margin: 32px;" class="mb-3" />
-            <h12class="display-5 fw-bold text-primary">
+            <h2 class="display-5 fw-bold text-primary">
                 سامانه معاملات تابان
+            </h2>
+            <h4 class="display-5 fw-bold text-primary">
+                </h1>
+                @Model.FullName
                 </h2>
-                <h4 class="display-5 fw-bold text-primary">
-                    </h1>
-                    @Model.FullName
-                    </h2>
         </div>
     </div>
 
@@ -186,25 +186,12 @@
                                                                 <div class="card-body text-center">
                                                                     <h6 class="card-title">@balance.CurrencyName
                                                                         (@balance.CurrencyCode)</h6>
-                                                                    <div class="mb-2">
+                                                                    <div class="mb-2" dir="ltr">
                                                                         <strong class="fs-5">@(balance.CurrencyCode == "IRR" ?
                                                                                                                                                 balance.Balance.ToString("N0") :
                                                                                                                                                 balance.Balance.ToString("N2"))</strong>
                                                                     </div>
-                                                                    <div class="row text-center">
-                                                                        <div class="col-6" dir="ltr">
-                                                                            <small class="text-muted">بدهی</small>
-                                                                            <div class="text-danger">@(balance.CurrencyCode ==
-                                                                                                                                                        "IRR" ? balance.DebtAmount.ToString("N0") :
-                                                                                                                                                        balance.DebtAmount.ToString("N2"))</div>
-                                                                        </div>
-                                                                        <div class="col-6" dir="ltr">
-                                                                            <small class="text-muted">بستانکاری</small>
-                                                                            <div class="text-success">@(balance.CurrencyCode ==
-                                                                                                                                                        "IRR" ? balance.CreditAmount.ToString("N0") :
-                                                                                                                                                        balance.CreditAmount.ToString("N2"))</div>
-                                                                        </div>
-                                                                    </div>
+                                                                  
                                                                 </div>
                                                             </div>
                                                         </div>
