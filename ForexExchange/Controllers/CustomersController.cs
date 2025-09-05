@@ -107,28 +107,20 @@ namespace ForexExchange.Controllers
                     .ThenInclude(o => o.FromCurrency)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.ToCurrency)
-                // TODO: Include AccountingDocuments in new architecture
-                /*
-                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.SellerCustomer)
-                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.FromCurrency)
-                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.ToCurrency)
-                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.BuyerCustomer)
-                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.FromCurrency)
-                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.ToCurrency)
-                .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
-                */
+                .Include(c => c.PayerDocuments.OrderByDescending(d => d.CreatedAt))
+                .Include(c => c.ReceiverDocuments.OrderByDescending(d => d.CreatedAt))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (customer == null)
             {
                 return NotFound();
             }
+
+            // Load all accounting documents for this customer
+            var allAccountingDocuments = await _context.AccountingDocuments
+                .Where(d => d.CustomerId == id)
+                .OrderByDescending(d => d.CreatedAt)
+                .ToListAsync();
 
             // Calculate customer statistics
             var stats = new CustomerProfileStats
@@ -139,8 +131,8 @@ namespace ForexExchange.Controllers
                 // TODO: Re-implement with new architecture
                 TotalTransactions = 0, // customer.BuyTransactions.Count + customer.SellTransactions.Count,
                 CompletedTransactions = 0, // customer.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + customer.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
-                TotalAccountingDocuments = 0, // customer.Receipts.Count,
-                VerifiedAccountingDocuments = 0, // customer.Receipts.Count(r => r.IsVerified),
+                TotalAccountingDocuments = allAccountingDocuments.Count,
+                VerifiedAccountingDocuments = allAccountingDocuments.Count(d => d.IsVerified),
                 TotalVolumeInToman = 0, // Removed TotalInToman from Order model
                 RegistrationDays = (DateTime.Now - customer.CreatedAt).Days
             };
@@ -150,6 +142,7 @@ namespace ForexExchange.Controllers
 
             ViewBag.CustomerStats = stats;
             ViewBag.CustomerDebtCredit = customerDebtCredit;
+            ViewBag.AllAccountingDocuments = allAccountingDocuments;
             return View(customer);
         }
 

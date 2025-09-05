@@ -89,7 +89,7 @@
                                     <div class="col-6">
                                         <div class="border rounded p-2 small d-flex justify-content-between">
                                             <span class="text-muted">@b.CurrencyCode</span>
-                                            <strong dir="ltr">@b.Balance.ToString("N2")</strong>
+                                            <strong dir="ltr">@(b.CurrencyCode == "IRR" ? b.Balance.ToString("N0") : b.Balance.ToString("N2"))</strong>
                                         </div>
                                     </div>
                                 }
@@ -163,7 +163,7 @@
                                             <small>
                                                 <strong>#@order.Id</strong> - 
                                                 <!-- Removed OrderType display, now just show currency pair or amount -->
-                                                @order.Amount.ToString("N0") @order.FromCurrency?.PersianName <small class="text-muted">(@order.CurrencyPair)</small>
+                                                @(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2")) @order.FromCurrency?.PersianName <small class="text-muted">(@order.CurrencyPair)</small>
                                                 <br>
                                                 <span class="text-muted">@order.CreatedAt.ToString("MM/dd HH:mm")</span>
                                             </small>
@@ -192,7 +192,7 @@
                                             <small>
                                                 <strong>#@transaction.Id</strong> - 
                                                 @(transaction.BuyerCustomerId == Model.Id ? "خرید" : "فروش")
-                                                @transaction.Amount.ToString("N0") @transaction.FromCurrency?.PersianName <small class="text-muted">(@transaction.CurrencyPair)</small>
+                                                @(transaction.FromCurrency?.Code == "IRR" ? transaction.Amount.ToString("N0") : transaction.Amount.ToString("N2")) @transaction.FromCurrency?.PersianName <small class="text-muted">(@transaction.CurrencyPair)</small>
                                                 <br>
                                                 <span class="text-muted">@transaction.CreatedAt.ToString("MM/dd HH:mm")</span>
                                             </small>

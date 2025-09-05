@@ -80,20 +80,16 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a asp-action="Details" asp-route-id="@customer.Id" 
-                                               class="btn btn-sm btn-outline-primary" 
-                                               title="مشاهده جزئیات">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a asp-action="Edit" asp-route-id="@customer.Id" 
-                                               class="btn btn-sm btn-outline-warning" 
-                                               title="ویرایش">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                           
                                             <a asp-action="Profile" asp-route-id="@customer.Id" 
                                                class="btn btn-sm btn-outline-info" 
                                                title="پروفایل مشتری">
                                                 <i class="fas fa-user"></i>
+                                            </a>
+                                             <a asp-action="Edit" asp-route-id="@customer.Id" 
+                                               class="btn btn-sm btn-outline-warning" 
+                                               title="ویرایش">
+                                                <i class="fas fa-edit"></i>
                                             </a>
                                         </div>
                                     </td>

@@ -168,9 +168,9 @@
                                                                         <td>
                                                                             <small>@order.Customer?.FullName</small>
                                                                         </td>
-                                                                        <td>@order.Amount.ToString("N2")</td>
-                                                                        <td class="fw-bold">@remainingAmount.ToString("N2")</td>
-                                                                        <td>@order.Rate.ToString("N0")</td>
+                                                                        <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</td>
+                                                                        <td class="fw-bold">@(order.FromCurrency?.Code == "IRR" ? remainingAmount.ToString("N0") : remainingAmount.ToString("N2"))</td>
+                                                                        <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
                                                                         <td>
                                                                             <small>@order.CreatedAt.ToString("MM/dd HH:mm")</small>
                                                                         </td>

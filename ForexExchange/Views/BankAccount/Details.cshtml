@@ -75,7 +75,7 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">موجودی حساب</label>
                                 <p class="form-control-plaintext" dir="ltr">
-                                    <strong>@Model.AccountBalance.ToString("N0") @Model.CurrencyCode</strong>
+                                    <strong>@(Model.CurrencyCode == "IRR" ? Model.AccountBalance.ToString("N0") : Model.AccountBalance.ToString("N2")) @Model.CurrencyCode</strong>
                                 </p>
                             </div>
                         </div>

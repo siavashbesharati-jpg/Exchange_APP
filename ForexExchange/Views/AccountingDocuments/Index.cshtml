@@ -140,7 +140,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <strong>@item.Amount.ToString("N0") @item.CurrencyCode</strong>
+                                        <strong>@(item.CurrencyCode == "IRR" ? item.Amount.ToString("N0") : item.Amount.ToString("N2")) @item.CurrencyCode</strong>
                                     </td>
                                     <td>@item.DocumentDate.ToPersianDateTextify()</td>
                                     <td>

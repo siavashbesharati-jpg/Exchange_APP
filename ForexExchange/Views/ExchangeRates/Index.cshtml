@@ -93,7 +93,7 @@
                                                     <span class="badge @badgeClass mb-2">@fromName</span>
                                                     <div class="text-center">
                                                         <small class="text-muted">نرخ</small>
-                                                        <div class="fw-bold text-primary fs-4">@item.Rate.ToString("N0")</div>
+                                                        <div class="fw-bold text-primary fs-4">@(item.ToCurrency?.Code == "IRR" ? item.Rate.ToString("N0") : item.Rate.ToString("N2"))</div>
                                                     </div>
                                                     <small class="text-muted">@item.UpdatedAt.ToString("HH:mm")</small>
                                                 </div>
@@ -170,7 +170,7 @@
                                                         <span class="badge @badgeClass mb-2">@fromName</span>
                                                         <div class="text-center">
                                                             <small class="text-muted">نرخ</small>
-                                                            <div class="fw-bold text-primary fs-4">@item.Rate.ToString("N4")</div>
+                                                            <div class="fw-bold text-primary fs-4">@(item.ToCurrency?.Code == "IRR" ? item.Rate.ToString("N0") : item.Rate.ToString("N2"))</div>
                                                         </div>
                                                         <small class="text-muted">@item.UpdatedAt.ToString("HH:mm")</small>
                                                     </div>

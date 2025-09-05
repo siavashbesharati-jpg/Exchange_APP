@@ -125,7 +125,7 @@
                                                 }
                                             </td>
                                             <td>
-                                                @account.AccountBalance.ToString("N2")
+                                                @(account.CurrencyCode == "IRR" ? account.AccountBalance.ToString("N0") : account.AccountBalance.ToString("N2"))
                                             </td>
                                             <td>
                                                 @if (account.IsActive)

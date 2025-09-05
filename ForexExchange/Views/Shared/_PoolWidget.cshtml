@@ -90,34 +90,25 @@
                                     <div class="balance-amount">
                                         <h4 class="text-@balanceColorClass mb-1 fw-bold">
                                             <i class="bi @balanceIcon me-1"></i>
-                                            @pool.Balance.ToString("N0")
+                                            @pool.Balance
                                         </h4>
                                         <small class="text-muted">موجودی فعلی (@pool.Currency?.Symbol)</small>
                                     </div>
 
-                                    <!-- Balance Progress Bar -->
-                                    <div class="progress mt-2" style="height: 6px;">
-                                        <div class="progress-bar bg-@balanceColorClass"
-                                             role="progressbar"
-                                             style="width: @balancePercent%"
-                                             aria-valuenow="@balancePercent"
-                                             aria-valuemin="0"
-                                             aria-valuemax="100">
-                                        </div>
-                                    </div>
+                                    
                                 </div>
 
                                 <!-- Quick Stats -->
                                 <div class="row g-2 mb-3">
                                     <div class="col-6">
                                         <div class="stat-card bg-success bg-opacity-10 p-2 rounded">
-                                            <div class="text-success fw-bold small">@pool.TotalBought.ToString("N0")</div>
+                                            <div class="text-success fw-bold small">@(pool.CurrencyCode == "IRR" ? pool.TotalBought.ToString("N0") : pool.TotalBought.ToString("N2"))</div>
                                             <div class="text-muted tiny">خرید کل</div>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="stat-card bg-danger bg-opacity-10 p-2 rounded">
-                                            <div class="text-danger fw-bold small">@pool.TotalSold.ToString("N0")</div>
+                                            <div class="text-danger fw-bold small">@(pool.CurrencyCode == "IRR" ? pool.TotalSold.ToString("N0") : pool.TotalSold.ToString("N2"))</div>
                                             <div class="text-muted tiny">فروش کل</div>
                                         </div>
                                     </div>

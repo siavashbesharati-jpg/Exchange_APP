@@ -88,7 +88,7 @@
                                     <div class="d-flex align-items-center justify-content-between">
                                         <h4 class="text-@balanceColorClass mb-0 fw-bold" id="balance-@pool.Id">
                                             <i class="@balanceIcon me-1"></i>
-                                            @pool.Balance.ToString("N0")
+                                            @(pool.CurrencyCode == "IRR" ? pool.Balance.ToString("N0") : pool.Balance.ToString("N2"))
                                         </h4>
                                         <small class="text-muted">@pool.Currency?.Symbol</small>
                                     </div>
@@ -99,13 +99,13 @@
                                     <div class="col-6">
                                         <div class="text-center p-2 bg-light rounded">
                                             <small class="text-muted d-block">کل خرید</small>
-                                            <strong class="text-success" id="bought-@pool.Id">@pool.TotalBought.ToString("N0")</strong>
+                                            <strong class="text-success" id="bought-@pool.Id">@(pool.CurrencyCode == "IRR" ? pool.TotalBought.ToString("N0") : pool.TotalBought.ToString("N2"))</strong>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="text-center p-2 bg-light rounded">
                                             <small class="text-muted d-block">کل فروش</small>
-                                            <strong class="text-danger" id="sold-@pool.Id">@pool.TotalSold.ToString("N0")</strong>
+                                            <strong class="text-danger" id="sold-@pool.Id">@(pool.CurrencyCode == "IRR" ? pool.TotalSold.ToString("N0") : pool.TotalSold.ToString("N2"))</strong>
                                         </div>
                                     </div>
                                 </div>

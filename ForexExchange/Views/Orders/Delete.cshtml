@@ -63,13 +63,13 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-2">
-                                    <strong>مبلغ:</strong> @Model.Amount.ToString("N2")
+                                    <strong>مبلغ:</strong> @(Model.FromCurrency?.Code == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2"))
                                 </div>
                                 <div class="mb-2">
-                                    <strong>نرخ:</strong> @Model.Rate.ToString("N4")
+                                    <strong>نرخ:</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.Rate.ToString("N0") : Model.Rate.ToString("N2"))
                                 </div>
                                 <div class="mb-2">
-                                    <strong>مجموع:</strong> @Model.TotalAmount.ToString("N2")
+                                    <strong>مجموع:</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.TotalAmount.ToString("N0") : Model.TotalAmount.ToString("N2"))
                                 </div>
                             </div>
                         </div>
@@ -104,14 +104,14 @@
                                             </label>
                                             <input type="number" id="reverseRate" name="reverseRate"
                                                 class="form-control" 
-                                                value="@Model.Rate.ToString("N4")" required>
+                                                value="@(Model.ToCurrency?.Code == "IRR" ? Model.Rate.ToString("N0") : Model.Rate.ToString("N2"))" required>
                                             <div class="form-text">
                                                 نرخ سفارش معکوس را تعیین کنید
                                             </div>
                                         </div>
                                         <div class="mb-2">
                                             <strong>مجموع:</strong>
-                                            <span id="reverseTotal">@(Model.TotalAmount.ToString("N4"))</span>
+                                            <span id="reverseTotal">@(Model.ToCurrency?.Code == "IRR" ? Model.TotalAmount.ToString("N0") : Model.TotalAmount.ToString("N4"))</span>
                                         </div>
                                     </div>
                                 </div>

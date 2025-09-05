@@ -59,7 +59,7 @@
 
                         <dt class="col-sm-4">مبلغ:</dt>
                         <dd class="col-sm-8">
-                            <strong>@Model.Amount.ToString("N0") @Model.CurrencyCode</strong>
+                            <strong>@(Model.CurrencyCode == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2")) @Model.CurrencyCode</strong>
                         </dd>
 
                         <dt class="col-sm-4">تاریخ سند:</dt>

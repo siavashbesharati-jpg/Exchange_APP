@@ -27,5 +27,23 @@ namespace ForexExchange.Extensions
             }
             return enumValue.ToString();
         }
+
+        /// <summary>
+        /// Get display name from Display attribute for DocumentType
+        /// دریافت نام نمایشی از ویژگی Display برای DocumentType
+        /// </summary>
+        public static string GetDisplayName(this DocumentType enumValue)
+        {
+            var memberInfo = enumValue.GetType().GetMember(enumValue.ToString()).FirstOrDefault();
+            if (memberInfo != null)
+            {
+                var displayAttribute = memberInfo.GetCustomAttribute<DisplayAttribute>();
+                if (displayAttribute != null)
+                {
+                    return displayAttribute.Name ?? enumValue.ToString();
+                }
+            }
+            return enumValue.ToString();
+        }
     }
 }

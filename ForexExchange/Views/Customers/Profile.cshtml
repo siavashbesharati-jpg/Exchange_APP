@@ -1,67 +1,27 @@
 @model ForexExchange.Models.Customer
+@using ForexExchange.Extensions
 
 @{
     ViewData["Title"] = "پروفایل مشتری";
     var stats = ViewBag.CustomerStats as ForexExchange.Models.CustomerProfileStats;
 }
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">پروفایل مشتری: @Model.FullName</h1>
-                <div>
-                    <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
-                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">ویرایش</a>
-                </div>
-            </div>
+<div class="container-fluid" dir="rtl">
+    <div class="col-12">
+        <div class="text-center mb-4">
+            <img src="~/favicon/android-chrome-512x512.png" alt="تابان"
+                 style="width: 250px; height: 250px; margin: 32px;" class="mb-3" />
+            <h1 class="display-5 fw-bold text-primary">
+                سامانه معاملات تابان
+            </h1>
         </div>
     </div>
 
-    <!-- Customer Overview Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-shopping-cart fa-2x mb-2"></i>
-                    <h5>@stats?.TotalOrders</h5>
-                    <p class="mb-0">کل معامله‌ها</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-check-circle fa-2x mb-2"></i>
-                    <h5>@stats?.CompletedTransactions</h5>
-                    <p class="mb-0">تراکنش‌های موفق</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-file-invoice fa-2x mb-2"></i>
-                    <h5>@stats?.TotalAccountingDocuments</h5>
-                    <p class="mb-0">اسناد حسابداری</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-coins fa-2x mb-2"></i>
-                    <h5>@stats?.TotalVolumeInToman.ToString("N0")</h5>
-                    <p class="mb-0">حجم کل (تومان)</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
+    <!-- Two-column layout -->
+    <div class="row g-4">
         <!-- Customer Information -->
-        <div class="col-md-4">
-            <div class="card">
+        <div class="col-lg-6 col-md-12">
+            <div class="card h-100">
                 <div class="card-header">
                     <h5 class="card-title mb-0">اطلاعات شخصی</h5>
                 </div>
@@ -71,7 +31,7 @@
                             <i class="fas fa-user fa-2x text-muted"></i>
                         </div>
                     </div>
-                    
+
                     <div class="row mb-2">
                         <div class="col-sm-5"><strong>نام کامل:</strong></div>
                         <div class="col-sm-7">@Model.FullName</div>
@@ -109,7 +69,7 @@
                             }
                         </div>
                     </div>
-                    
+
                     @if (!string.IsNullOrEmpty(Model.Address))
                     {
                         <div class="row mb-2">
@@ -119,46 +79,11 @@
                     }
                 </div>
             </div>
-
-            <!-- Customer Statistics -->
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">آمار عملکرد</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">نرخ تکمیل معامله‌ها</label>
-                        <div class="progress mb-1">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: @stats?.CompletionRate.ToString("F1")%" aria-valuenow="@stats?.CompletionRate" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <small class="text-muted">@stats?.CompletionRate.ToString("F1")% (@stats?.CompletedOrders از @stats?.TotalOrders)</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">نرخ تأیید اسناد حسابداری</label>
-                        <div class="progress mb-1">
-                            <div class="progress-bar bg-info" role="progressbar" style="width: @stats?.VerificationRate.ToString("F1")%" aria-valuenow="@stats?.VerificationRate" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <small class="text-muted">@stats?.VerificationRate.ToString("F1")% (@stats?.VerifiedAccountingDocuments از @stats?.TotalAccountingDocuments)</small>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-6">
-                            <small class="text-muted">میانگین معامله:</small>
-                            <div class="fw-bold">@stats?.AverageOrderValue.ToString("N0") تومان</div>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted">معامله‌های باز:</small>
-                            <div class="fw-bold text-warning">@stats?.PendingOrders</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- Activity Timeline -->
-        <div class="col-md-8">
-            <div class="card">
+        <!-- Orders & Balance Info -->
+        <div class="col-lg-6 col-md-12">
+            <div class="card h-100">
                 <div class="card-header">
                     <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -167,24 +92,8 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions" type="button" role="tab">
-                                تراکنش‌ها (@ViewBag.CustomerStats.TotalTransactions)
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="receipts-tab" data-bs-toggle="tab" data-bs-target="#receipts" type="button" role="tab">
-                                اسناد حسابداری (@ViewBag.CustomerStats.TotalAccountingDocuments)
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab">
-                                <i class="fas fa-chart-line me-1"></i>
-                                وضعیت مالی
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
-                                فعالیت‌ها
+                            <button class="nav-link" id="debts-tab" data-bs-toggle="tab" data-bs-target="#debts" type="button" role="tab">
+                                بدهکاری و بستانکاری
                             </button>
                         </li>
                     </ul>
@@ -204,7 +113,6 @@
                                                 <th>به ارز</th>
                                                 <th>مبلغ</th>
                                                 <th>نرخ</th>
-                                                <th>وضعیت</th>
                                                 <th>تاریخ</th>
                                                 <th>عملیات</th>
                                             </tr>
@@ -216,8 +124,8 @@
                                                     <td>#@order.Id</td>
                                                     <td>@order.FromCurrency?.Code</td>
                                                     <td>@order.ToCurrency?.Code</td>
-                                                    <td>@order.Amount.ToString("N0")</td>
-                                                    <td>@order.Rate.ToString("N4")</td>
+                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</td>
+                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
                                                     <td>@order.CreatedAt.ToString("MM/dd")</td>
                                                     <td>
                                                         <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
@@ -240,377 +148,117 @@
                             {
                                 <div class="text-center py-4">
                                     <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">هیچ معاملهی ثبت نشده است.</p>
+                                    <p class="text-muted">هیچ معامله‌ای ثبت نشده است.</p>
                                 </div>
                             }
                         </div>
 
-                        <!-- Transactions Tab -->
-                        <div class="tab-pane fade" id="transactions" role="tabpanel">
-                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
-                            @*
+                        <!-- Debts and Credits Tab -->
+                        <div class="tab-pane fade" id="debts" role="tabpanel">
+                            <h5>بدهکاری و بستانکاری</h5>
                             @{
-                                var allTransactions = Model.BuyTransactions.Concat(Model.SellTransactions)
-                                    .OrderByDescending(t => t.CreatedAt)
-                                    .ToList();
+                                var debtCreditInfo = ViewBag.CustomerDebtCredit as ForexExchange.Models.CustomerDebtCredit;
                             }
-                            @if (allTransactions.Any())
+                            @if (debtCreditInfo != null && debtCreditInfo.CurrencyBalances.Any())
                             {
-                                <div class="table-responsive">
-                                    <table class="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>شماره</th>
-                                                <th>مبلغ</th>
-                                                <th>وضعیت</th>
-                                                <th>تاریخ</th>
-                                                <th>عملیات</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var transaction in allTransactions.Take(10))
-                                            {
-                                                <tr>
-                                                    <td>#@transaction.Id</td>
-                                                   
-                                                
-                                                    <td>
-                                                        @transaction.Amount.ToString("N0") @transaction.FromCurrency?.PersianName
-                                                        <small class="text-muted">(@transaction.CurrencyPair)</small>
-                                                    </td>
-                                                    <td>
-                                                        @if (transaction.Status == ForexExchange.Models.TransactionStatus.Completed)
-                                                        {
-                                                            <span class="badge bg-success">تکمیل</span>
-                                                        }
-                                                        else if (transaction.Status == ForexExchange.Models.TransactionStatus.Pending)
-                                                        {
-                                                            <span class="badge bg-secondary">در انتظار</span>
-                                                        }
-                                                        else if (transaction.Status == ForexExchange.Models.TransactionStatus.Failed)
-                                                        {
-                                                            <span class="badge bg-danger">ناموفق</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-info">در حال پردازش</span>
-                                                        }
-                                                    </td>
-                                                    <td>@transaction.CreatedAt.ToString("MM/dd")</td>
-                                                    <td>
-                                                        <a asp-controller="Settlements" asp-action="Details" asp-route-id="@transaction.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="text-center py-4">
-                                    <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">هیچ تراکنشی انجام نشده است.</p>
-                                </div>
-                            }
-                            *@
-                            <div class="text-center py-4">
-                                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Transaction data will be available after implementing the new AccountingDocument architecture.</p>
-                            </div>
-                        </div>
-
-                        <!-- Receipts Tab -->
-                        <div class="tab-pane fade" id="receipts" role="tabpanel">
-                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
-                            @*
-                            @if (Model.Receipts.Any())
-                            {
-                                <div class="row">
-                                    @foreach (var receipt in Model.Receipts.Take(12))
-                                    {
-                                        <div class="col-md-4 mb-3">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h6 class="card-title">
-                                                        رسید #@receipt.Id
-                                                        @if (receipt.IsVerified)
-                                                        {
-                                                            <span class="badge bg-success">تأیید شده</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge bg-warning">در انتظار</span>
-                                                        }
-                                                    </h6>
-                                                    <p class="card-text">
-                                                        <small class="text-muted">@receipt.UploadedAt.ToString("yyyy/MM/dd HH:mm")</small><br>
-                                                        @if (!string.IsNullOrEmpty(receipt.ParsedAmount))
-                                                        {
-                                                            <strong>مبلغ:</strong> @receipt.ParsedAmount<br>
-                                                        }
-                                                        @if (!string.IsNullOrEmpty(receipt.ParsedReferenceId))
-                                                        {
-                                                            <strong>پیگیری:</strong> @receipt.ParsedReferenceId
-                                                        }
-                                                    </p>
-                                                    <a asp-controller="Receipts" asp-action="Details" asp-route-id="@receipt.Id" class="btn btn-sm btn-primary">مشاهده</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="text-center py-4">
-                                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">هیچ رسیدی آپلود نشده است.</p>
-                                </div>
-                            }
-                            *@
-                            <div class="text-center py-4">
-                                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Receipt data will be available after implementing the new AccountingDocument architecture.</p>
-                            </div>
-                        </div>
-
-                        <!-- Financial Status Tab -->
-                        <div class="tab-pane fade" id="financial" role="tabpanel">
-                            @{
-                                var customerDebtCredit = ViewBag.CustomerDebtCredit as ForexExchange.Models.CustomerDebtCredit;
-                            }
-                            @if (customerDebtCredit != null)
-                            {
-                                 var customerBalances = Model.Balances?.ToList() ?? new List<ForexExchange.Models.CustomerBalance>(); 
-                                @if (customerBalances.Any())
-                                {
-                                    <div class="row mb-3">
-                                        <div class="col-12">
-                                            <div class="card border-0 shadow-sm">
-                                                <div class="card-header bg-light">
-                                                    <strong>موجودی‌های اولیه مشتری</strong>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="row g-2">
-                                                        @foreach (var b in customerBalances)
-                                                        {
-                                                            <div class="col-md-3 col-sm-4 col-6">
-                                                                <div class="border rounded p-2 d-flex justify-content-between small">
-                                                                    <span class="text-muted">@b.CurrencyCode</span>
-                                                                    <strong dir="ltr">@b.Balance.ToString("N2")</strong>
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
                                 <div class="row mb-4">
-                                    <!-- Net Balance Overview -->
-                                    <div class="col-md-4">
-                                        <div class="card h-100 border-0 shadow-sm">
-                                            <div class="card-header bg-light text-center">
-                                                <h5 class="mb-0">
-                                                    <i class="bi bi-cash-stack me-2"></i>
-                                                   ارزهای فعال
-                                                </h5>
-                                            </div>
-                                            <div class="card-body text-center">
-                                                <div class="balance-display mb-3">
-
-                                                    <h3 class="text-success mb-2 fw-bold">
-                                                         @customerDebtCredit.CurrencyBalances.Count
-                                                    </h3>
-                                                </div>
-                                              
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Active Orders Summary -->
-                                    <div class="col-md-4">
-                                        <div class="card h-100 border-0 shadow-sm">
-                                            <div class="card-header bg-light text-center">
-                                                <h5 class="mb-0">
-                                                    <i class="bi bi-clipboard-data me-2"></i>
-                                                    معاملات فعال
-                                                </h5>
-                                            </div>
-                                            <div class="card-body text-center">
-                                                <h3 class="text-primary mb-2 fw-bold">@customerDebtCredit.ActiveOrderCount</h3>
-                                                <small class="text-muted">معامله باز یا نیمه تکمیل</small>
-                                                <div class="mt-3">
-                                                    <a href="@Url.Action("Create", "Orders", new { customerId = Model.Id })" class="btn btn-success btn-sm">
-                                                        <i class="bi bi-plus-circle me-1"></i>
-                                                        معامله جدید
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Quick Actions -->
-                                    <div class="col-md-4">
-                                        <div class="card h-100 border-0 shadow-sm">
-                                            <div class="card-header bg-light text-center">
-                                                <h5 class="mb-0">
-                                                    <i class="bi bi-gear me-2"></i>
-                                                    عملیات سریع
-                                                </h5>
-                                            </div>
-                                            <div class="card-body text-center">
-                                                <div class="d-grid gap-2">
-                                                    <a href="@Url.Action("Index", "Orders", new { customerId = Model.Id })" class="btn btn-outline-primary btn-sm">
-                                                        <i class="bi bi-list me-1"></i>
-                                                        همه معاملات
-                                                    </a>
-                                                    <a href="@Url.Action("Index", "CustomerTransactions", new { customerId = Model.Id })" class="btn btn-outline-info btn-sm">
-                                                        <i class="bi bi-arrow-left-right me-1"></i>
-                                                        تراکنش‌ها
-                                                    </a>
-                                                    <a href="@Url.Action("Index", "Receipts", new { customerId = Model.Id })" class="btn btn-outline-secondary btn-sm">
-                                                        <i class="bi bi-receipt me-1"></i>
-                                                        رسیدها
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Currency Breakdown -->
-                                @if (customerDebtCredit.CurrencyBalances.Any())
-                                {
-                                    <div class="row mb-4">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h5 class="mb-0">
-                                                        <i class="bi bi-currency-exchange me-2"></i>
-                                                       تراز ارزی
-                                                    </h5>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="row g-3">
-                                                        @foreach (var currencyBalance in customerDebtCredit.CurrencyBalances)
-                                                        {
-                                                            <div class="col-xl-3 col-lg-4 col-md-6">
-                                                                <div class="card h-100 border-0 shadow-sm currency-card">
-                                                                    <div class="card-body text-center">
-                                                                        <div class="currency-header mb-2">
-                                                                            <h6 class="mb-1 fw-bold">@currencyBalance.CurrencyName</h6>
-                                                                            <small class="text-muted">@currencyBalance.CurrencyCode</small>
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header bg-light"></div>
+                                            <div class="card-body">
+                                                <div class="row g-3">
+                                                    @foreach (var balance in debtCreditInfo.CurrencyBalances)
+                                                    {
+                                                        <div class="col-md-6 col-lg-4">
+                                                            <div class="card h-100 @(balance.Balance >= 0 ? "border-success" : "border-danger")">
+                                                                <div class="card-body text-center">
+                                                                    <h6 class="card-title">@balance.CurrencyName (@balance.CurrencyCode)</h6>
+                                                                    <div class="mb-2">
+                                                                        <strong class="fs-5">@(balance.CurrencyCode == "IRR" ? balance.Balance.ToString("N0") : balance.Balance.ToString("N2"))</strong>
+                                                                    </div>
+                                                                    <div class="row text-center">
+                                                                        <div class="col-6" dir="ltr">
+                                                                            <small class="text-muted">بدهی</small>
+                                                                            <div class="text-danger">@(balance.CurrencyCode == "IRR" ? balance.DebtAmount.ToString("N0") : balance.DebtAmount.ToString("N2"))</div>
                                                                         </div>
-
-                                                                        <div class="balance-info">
-                                                                            <div class="balance-amount mb-2" dir=ltr>
-                                                                                <span class="fw-bold @(currencyBalance.Balance >= 0 ? "text-success" : "text-danger")">
-                                                                                    @currencyBalance.Balance.ToString("N0")
-                                                                                </span>
-                                                                            </div>
-
-                                                                            <div class="balance-breakdown small">
-                                                                                @if (currencyBalance.DebtAmount > 0)
-                                                                                {
-                                                                                    <div class="text-danger">
-                                                                                        <i class="bi bi-dash-circle me-1"></i>
-                                                                                        بدهی: @currencyBalance.DebtAmount.ToString("N0")
-                                                                                    </div>
-                                                                                }
-                                                                                @if (currencyBalance.CreditAmount > 0)
-                                                                                {
-                                                                                    <div class="text-success">
-                                                                                        <i class="bi bi-plus-circle me-1"></i>
-                                                                                        بستانکاری: @currencyBalance.CreditAmount.ToString("N0")
-                                                                                    </div>
-                                                                                }
-                                                                            </div>
+                                                                        <div class="col-6" dir="ltr">
+                                                                            <small class="text-muted">بستانکاری</small>
+                                                                            <div class="text-success">@(balance.CurrencyCode == "IRR" ? balance.CreditAmount.ToString("N0") : balance.CreditAmount.ToString("N2"))</div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                        }
-                                                    </div>
+                                                        </div>
+                                                    }
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                }
+                                </div>
 
-                              
+                                <!-- Recent Accounting Documents -->
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6>آخرین اسناد حسابداری</h6>
+                                        @{
+                                            var allDocs = ViewBag.AllAccountingDocuments as List<AccountingDocument> ?? new List<AccountingDocument>();
+                                            var sortedRecentDocs = allDocs.Where(d => d.CreatedAt > DateTime.Now.AddDays(-30))
+                                                                         .OrderByDescending(d => d.CreatedAt)
+                                                                         .Take(5)
+                                                                         .ToList();
+                                        }
+                                        @if (sortedRecentDocs.Any())
+                                        {
+                                            <div class="table-responsive">
+                                                <table class="table table-sm">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>تاریخ</th>
+                                                            <th>نوع</th>
+                                                            <th>مبلغ</th>
+                                                            <th>وضعیت</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var doc in sortedRecentDocs)
+                                                        {
+                                                            <tr>
+                                                                <td>@doc.CreatedAt.ToString("MM/dd")</td>
+                                                                <td>@doc.Type.GetDisplayName()</td>
+                                                                <td>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") : doc.Amount.ToString("N2"))</td>
+                                                                <td>
+                                                                    @if (doc.IsVerified)
+                                                                    {
+                                                                        <span class="badge bg-success">تأیید شده</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="badge bg-warning">در انتظار</span>
+                                                                    }
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center py-3">
+                                                <small class="text-muted">هیچ سند حسابداری در ۳۰ روز گذشته یافت نشد.</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
                             }
                             else
                             {
                                 <div class="text-center py-5">
-                                    <div class="empty-state">
-                                        <i class="bi bi-cash-stack text-muted" style="font-size: 3rem;"></i>
-                                        <h5 class="text-muted mt-3">اطلاعات مالی یافت نشد</h5>
-                                        <p class="text-muted">این مشتری هنوز هیچ معامله فعالی ندارد</p>
-                                        <a href="@Url.Action("Create", "Orders", new { customerId = Model.Id })" class="btn btn-primary">
-                                            <i class="bi bi-plus-circle me-1"></i>
-                                            ایجاد اولین معامله
-                                        </a>
-                                    </div>
+                                    <i class="fas fa-balance-scale fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted mt-3">اطلاعات بدهکاری و بستانکاری یافت نشد</h5>
+                                    <p class="text-muted">این مشتری هنوز هیچ تراکنش مالی ندارد</p>
                                 </div>
                             }
-                        </div>
-
-                        <!-- Activity Timeline Tab -->
-                        <div class="tab-pane fade" id="activity" role="tabpanel">
-                            <div class="timeline">
-                                @{
-                                    var activities = new List<object>();
-                                    
-                                    // Add orders
-                                    foreach (var order in Model.Orders.Take(5))
-                                    {
-                                        activities.Add(new { 
-                                            Date = order.CreatedAt,
-                                            Type = "معامله",
-                                            Description = $"معامله {order.Amount:N0} {order.FromCurrency?.PersianName} ({order.CurrencyPair})",
-                                            Status = "N/A",
-                                            Icon = "fas fa-shopping-cart",
-                                            Color = "primary"
-                                        });
-                                    }
-                                    
-                                    // Add receipts
-                                    @* TODO: Replace with AccountingDocument display when implementing new architecture *@
-                                    /*
-                                    foreach (var receipt in Model.Receipts.Take(5))
-                                    {
-                                        activities.Add(new { 
-                                            Date = receipt.UploadedAt,
-                                            Type = "رسید",
-                                            Description = $"آپلود رسید {(receipt.Type == ForexExchange.Models.ReceiptType.RecivreRecipt ? "دریافت وجه" : "گردش حساب")}",
-                                            Status = receipt.IsVerified ? "تأیید شده" : "در انتظار",
-                                            Icon = "fas fa-receipt",
-                                            Color = receipt.IsVerified ? "success" : "warning"
-                                        });
-                                    }
-                                    */
-                                    
-                                    var sortedActivities = activities.OrderByDescending(a => ((DateTime)((dynamic)a).Date)).Take(10);
-                                }
-                                
-                                @foreach (var activity in sortedActivities)
-                                {
-                                    var act = (dynamic)activity;
-                                    <div class="timeline-item">
-                                        <div class="timeline-marker">
-                                            <i class="@act.Icon text-@act.Color"></i>
-                                        </div>
-                                        <div class="timeline-content">
-                                            <h6 class="timeline-title">@act.Type</h6>
-                                            <p class="timeline-text">@act.Description</p>
-                                            <small class="text-muted">@(((DateTime)act.Date).ToPersianDateTextify())</small>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -625,13 +273,13 @@
             position: relative;
             padding: 20px 0;
         }
-        
+
         .timeline-item {
             position: relative;
             padding-left: 60px;
             margin-bottom: 30px;
         }
-        
+
         .timeline-marker {
             position: absolute;
             left: 0;
@@ -646,19 +294,19 @@
             border: 3px solid #fff;
             box-shadow: 0 0 0 3px #dee2e6;
         }
-        
+
         .timeline-content {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
             border-left: 4px solid #007bff;
         }
-        
+
         .timeline-title {
             margin-bottom: 5px;
             color: #495057;
         }
-        
+
         .timeline-text {
             margin-bottom: 5px;
             color: #6c757d;
@@ -744,7 +392,7 @@
             }
         }
     </style>
-    
+
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 }
