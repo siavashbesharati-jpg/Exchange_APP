@@ -10,10 +10,14 @@
     <div class="col-12">
         <div class="text-center mb-4">
             <img src="~/favicon/android-chrome-512x512.png" alt="تابان"
-                 style="width: 250px; height: 250px; margin: 32px;" class="mb-3" />
-            <h1 class="display-5 fw-bold text-primary">
+                style="width: 250px; height: 250px; margin: 32px;" class="mb-3" />
+            <h12class="display-5 fw-bold text-primary">
                 سامانه معاملات تابان
-            </h1>
+                </h2>
+                <h4 class="display-5 fw-bold text-primary">
+                    </h1>
+                    @Model.FullName
+                    </h2>
         </div>
     </div>
 
@@ -27,7 +31,8 @@
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-3">
-                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style="width: 80px; height: 80px;">
                             <i class="fas fa-user fa-2x text-muted"></i>
                         </div>
                     </div>
@@ -87,12 +92,14 @@
                 <div class="card-header">
                     <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">
+                            <button class="nav-link active" id="orders-tab" data-bs-toggle="tab"
+                                data-bs-target="#orders" type="button" role="tab">
                                 معامله‌ها (@Model.Orders.Count)
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="debts-tab" data-bs-toggle="tab" data-bs-target="#debts" type="button" role="tab">
+                            <button class="nav-link" id="debts-tab" data-bs-toggle="tab" data-bs-target="#debts"
+                                type="button" role="tab">
                                 بدهکاری و بستانکاری
                             </button>
                         </li>
@@ -124,11 +131,14 @@
                                                     <td>#@order.Id</td>
                                                     <td>@order.FromCurrency?.Code</td>
                                                     <td>@order.ToCurrency?.Code</td>
-                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</td>
-                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
+                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") :
+                                                                                                        order.Amount.ToString("N2"))</td>
+                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") :
+                                                                                                        order.Rate.ToString("N2"))</td>
                                                     <td>@order.CreatedAt.ToString("MM/dd")</td>
                                                     <td>
-                                                        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
+                                                        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id"
+                                                            class="btn btn-sm btn-outline-primary">جزئیات</a>
                                                     </td>
                                                 </tr>
                                             }
@@ -138,7 +148,8 @@
                                 @if (Model.Orders.Count > 10)
                                 {
                                     <div class="text-center">
-                                        <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id" class="btn btn-outline-primary">
+                                        <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id"
+                                            class="btn btn-outline-primary">
                                             مشاهده همه معامله‌ها (@Model.Orders.Count)
                                         </a>
                                     </div>
@@ -170,20 +181,28 @@
                                                     @foreach (var balance in debtCreditInfo.CurrencyBalances)
                                                     {
                                                         <div class="col-md-6 col-lg-4">
-                                                            <div class="card h-100 @(balance.Balance >= 0 ? "border-success" : "border-danger")">
+                                                            <div
+                                                                class="card h-100 @(balance.Balance >= 0 ? "border-success" : "border-danger")">
                                                                 <div class="card-body text-center">
-                                                                    <h6 class="card-title">@balance.CurrencyName (@balance.CurrencyCode)</h6>
+                                                                    <h6 class="card-title">@balance.CurrencyName
+                                                                        (@balance.CurrencyCode)</h6>
                                                                     <div class="mb-2">
-                                                                        <strong class="fs-5">@(balance.CurrencyCode == "IRR" ? balance.Balance.ToString("N0") : balance.Balance.ToString("N2"))</strong>
+                                                                        <strong class="fs-5">@(balance.CurrencyCode == "IRR" ?
+                                                                                                                                                balance.Balance.ToString("N0") :
+                                                                                                                                                balance.Balance.ToString("N2"))</strong>
                                                                     </div>
                                                                     <div class="row text-center">
                                                                         <div class="col-6" dir="ltr">
                                                                             <small class="text-muted">بدهی</small>
-                                                                            <div class="text-danger">@(balance.CurrencyCode == "IRR" ? balance.DebtAmount.ToString("N0") : balance.DebtAmount.ToString("N2"))</div>
+                                                                            <div class="text-danger">@(balance.CurrencyCode ==
+                                                                                                                                                        "IRR" ? balance.DebtAmount.ToString("N0") :
+                                                                                                                                                        balance.DebtAmount.ToString("N2"))</div>
                                                                         </div>
                                                                         <div class="col-6" dir="ltr">
                                                                             <small class="text-muted">بستانکاری</small>
-                                                                            <div class="text-success">@(balance.CurrencyCode == "IRR" ? balance.CreditAmount.ToString("N0") : balance.CreditAmount.ToString("N2"))</div>
+                                                                            <div class="text-success">@(balance.CurrencyCode ==
+                                                                                                                                                        "IRR" ? balance.CreditAmount.ToString("N0") :
+                                                                                                                                                        balance.CreditAmount.ToString("N2"))</div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -201,11 +220,12 @@
                                     <div class="col-12">
                                         <h6>آخرین اسناد حسابداری</h6>
                                         @{
-                                            var allDocs = ViewBag.AllAccountingDocuments as List<AccountingDocument> ?? new List<AccountingDocument>();
+                                            var allDocs = ViewBag.AllAccountingDocuments as List<AccountingDocument> ?? new
+                                            List<AccountingDocument>();
                                             var sortedRecentDocs = allDocs.Where(d => d.CreatedAt > DateTime.Now.AddDays(-30))
-                                                                         .OrderByDescending(d => d.CreatedAt)
-                                                                         .Take(5)
-                                                                         .ToList();
+                                            .OrderByDescending(d => d.CreatedAt)
+                                            .Take(5)
+                                            .ToList();
                                         }
                                         @if (sortedRecentDocs.Any())
                                         {
@@ -225,7 +245,8 @@
                                                             <tr>
                                                                 <td>@doc.CreatedAt.ToString("MM/dd")</td>
                                                                 <td>@doc.Type.GetDisplayName()</td>
-                                                                <td>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") : doc.Amount.ToString("N2"))</td>
+                                                                <td>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") :
+                                                                                                                            doc.Amount.ToString("N2"))</td>
                                                                 <td>
                                                                     @if (doc.IsVerified)
                                                                     {
@@ -316,7 +337,7 @@
         .balance-display h3 {
             font-size: 2rem;
             margin: 0;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .currency-card {
@@ -326,7 +347,7 @@
 
         .currency-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
         }
 
         .currency-header {
@@ -349,7 +370,7 @@
         .summary-item {
             padding: 1rem;
             border-radius: 8px;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255, 255, 255, 0.8);
             margin-bottom: 0.5rem;
         }
 
