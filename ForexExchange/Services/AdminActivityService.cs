@@ -109,7 +109,7 @@ namespace ForexExchange.Services
             {
                 OrderId = order.Id,
                 CustomerId = order.CustomerId,
-                Status = order.Status.ToString(),
+                Status = "N/A",
                 UpdatedAt = order.UpdatedAt
             };
 

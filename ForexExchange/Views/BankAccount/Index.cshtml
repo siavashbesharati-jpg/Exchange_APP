@@ -48,7 +48,7 @@
                                         <th>بانک</th>
                                         <th>شماره حساب</th>
                                         <th>ارز</th>
-                                        <th>موجودی اولیه</th>
+                                        <th>موجودی </th>
                                         <th>وضعیت</th>
                                         <th>عملیات</th>
                                     </tr>
@@ -79,8 +79,8 @@
                                                     <span class="badge bg-warning ms-1">پیش‌فرض</span>
                                                 }
                                             </td>
-                                            <td>
-                                                @account.InitialBalance.ToString("N2")
+                                            <td  dir="ltr">
+                                                @account.AccountBalance.ToString("N0")
                                             </td>
                                             <td>
                                                 @if (account.IsActive)

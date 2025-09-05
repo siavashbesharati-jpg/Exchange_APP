@@ -7,14 +7,14 @@ namespace ForexExchange.Models
         public int PendingOrders { get; set; }
         public int TotalTransactions { get; set; }
         public int CompletedTransactions { get; set; }
-        public int TotalReceipts { get; set; }
-        public int VerifiedReceipts { get; set; }
+        public int TotalAccountingDocuments { get; set; }
+        public int VerifiedAccountingDocuments { get; set; }
         public decimal TotalVolumeInToman { get; set; }
         public int RegistrationDays { get; set; }
         
         // Calculated properties
         public double CompletionRate => TotalOrders > 0 ? (double)CompletedOrders / TotalOrders * 100 : 0;
-        public double VerificationRate => TotalReceipts > 0 ? (double)VerifiedReceipts / TotalReceipts * 100 : 0;
+        public double VerificationRate => TotalAccountingDocuments > 0 ? (double)VerifiedAccountingDocuments / TotalAccountingDocuments * 100 : 0;
         public decimal AverageOrderValue => CompletedOrders > 0 ? TotalVolumeInToman / CompletedOrders : 0;
     }
 

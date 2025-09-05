@@ -252,6 +252,8 @@ namespace ForexExchange.Services
         /// Process transaction and update corresponding pools
         /// پردازش تراکنش و بروزرسانی صندوق های مربوطه
         /// </summary>
+        /*
+        // TODO: Re-implement with new architecture
         public async Task<List<CurrencyPool>> ProcessTransactionAsync(Transaction transaction)
         {
             var updatedPools = new List<CurrencyPool>();
@@ -279,6 +281,7 @@ namespace ForexExchange.Services
 
             return updatedPools;
         }
+        */
 
         /// <summary>
         /// Update order counts for a currency pool
@@ -291,14 +294,12 @@ namespace ForexExchange.Services
 
             // Count active buy orders (orders where FromCurrencyId = currencyId, meaning the exchange to buy this currency)
             var activeBuyOrders = await _context.Orders
-                .Where(o => o.FromCurrencyId == currencyId &&
-                           o.Status != OrderStatus.Cancelled)
+                .Where(o => o.FromCurrencyId == currencyId)
                 .CountAsync();
 
             // Count active sell orders (orders where ToCurrencyId = currencyId, meaning the  exchange want to sell this currency)
             var activeSellOrders = await _context.Orders
-                .Where(o => o.ToCurrencyId == currencyId &&
-                           o.Status != OrderStatus.Cancelled)
+                .Where(o => o.ToCurrencyId == currencyId)
                 .CountAsync();
 
             pool.ActiveBuyOrderCount = activeBuyOrders;
@@ -403,6 +404,53 @@ namespace ForexExchange.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error in clean pools");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Process accounting document and update currency pool balances
+        /// </summary>
+        public async Task ProcessAccountingDocumentAsync(AccountingDocument document)
+        {
+            try
+            {
+                // Get the currency for this document
+                var currency = await _context.Currencies
+                    .FirstOrDefaultAsync(c => c.Code == document.CurrencyCode);
+
+                if (currency == null)
+                {
+                    _logger.LogWarning($"Currency not found for code {document.CurrencyCode}");
+                    return;
+                }
+
+                // Determine transaction type from pool perspective
+                PoolTransactionType transactionType;
+                string reason;
+
+                if (document.PayerType == PayerType.System)
+                {
+                    // System is paying - system is giving currency (like selling)
+                    transactionType = PoolTransactionType.Sell;
+                    reason = $"System payment - Document #{document.Id} - {document.Title}";
+                }
+                else // PayerType.Customer
+                {
+                    // Customer is paying - system is receiving currency (like buying)
+                    transactionType = PoolTransactionType.Buy;
+                    reason = $"Customer payment - Document #{document.Id} - {document.Title}";
+                }
+
+                // Update the currency pool
+                await UpdatePoolAsync(currency.Id, document.Amount, transactionType, 1.0m);
+
+                _logger.LogInformation("Processed accounting document {DocumentId} for currency pool {CurrencyCode}",
+                    document.Id, document.CurrencyCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error processing accounting document {document.Id}");
                 throw;
             }
         }

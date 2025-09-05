@@ -10,22 +10,25 @@ namespace ForexExchange.Controllers
     public class SettlementsController : Controller
     {
         private readonly ForexDbContext _context;
-        private readonly ITransactionSettlementService _settlementService;
+        // TODO: Re-enable settlement service with new architecture
+        // private readonly ITransactionSettlementService _settlementService;
         private readonly ILogger<SettlementsController> _logger;
 
         public SettlementsController(
             ForexDbContext context,
-            ITransactionSettlementService settlementService,
+            /* ITransactionSettlementService settlementService, */
             ILogger<SettlementsController> logger)
         {
             _context = context;
-            _settlementService = settlementService;
+            // _settlementService = settlementService;
             _logger = logger;
         }
 
         // GET: Settlements
         public async Task<IActionResult> Index()
         {
+            // TODO: Replace with AccountingDocument-based settlement tracking
+            /*
             var pendingSettlements = await _settlementService.GetPendingSettlementsAsync();
             var allTransactions = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
@@ -41,11 +44,17 @@ namespace ForexExchange.Controllers
 
             ViewBag.PendingSettlements = pendingSettlements;
             return View(allTransactions);
+            */
+            
+            // Placeholder for new architecture
+            return View(new List<object>());
         }
 
         // GET: Settlements/Details/5
         public async Task<IActionResult> Details(int id)
         {
+            // TODO: Replace with AccountingDocument-based settlement details
+            /*
             var transaction = await _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
@@ -66,6 +75,10 @@ namespace ForexExchange.Controllers
             ViewBag.SettlementCalculation = calculation;
 
             return View(transaction);
+            */
+            
+            // Placeholder for new architecture
+            return NotFound();
         }
 
         // POST: Settlements/Initiate/5
@@ -75,7 +88,9 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var success = await _settlementService.InitiateSettlementAsync(id);
+                // TODO: Re-implement with new architecture
+                // var success = await _settlementService.InitiateSettlementAsync(id);
+                var success = false; // Temporary placeholder
                 if (success)
                 {
                     TempData["SuccessMessage"] = "فرآیند تسویه با موفقیت آغاز شد.";
@@ -101,7 +116,9 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var success = await _settlementService.ConfirmBuyerPaymentAsync(transactionId, receiptId);
+                // TODO: Re-implement with new architecture
+                // var success = await _settlementService.ConfirmBuyerPaymentAsync(transactionId, receiptId);
+                var success = false; // Temporary placeholder
                 if (success)
                 {
                     TempData["SuccessMessage"] = "پرداخت خریدار تأیید شد.";
@@ -127,9 +144,13 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var success = await _settlementService.ConfirmSellerPaymentAsync(transactionId, bankReference);
+                // TODO: Re-implement with new architecture
+                // var success = await _settlementService.ConfirmSellerPaymentAsync(transactionId, bankReference);
+                var success = false; // Temporary placeholder
                 if (success)
                 {
+                    // TODO: Update AccountingDocument notes in new architecture
+                    /*
                     // Update transaction notes if provided
                     if (!string.IsNullOrEmpty(notes))
                     {
@@ -140,6 +161,7 @@ namespace ForexExchange.Controllers
                             await _context.SaveChangesAsync();
                         }
                     }
+                    */
 
                     TempData["SuccessMessage"] = "انتقال فروشنده تأیید شد.";
                 }
@@ -164,7 +186,9 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var success = await _settlementService.CompleteTransactionAsync(id);
+                // TODO: Re-implement with new architecture
+                // var success = await _settlementService.CompleteTransactionAsync(id);
+                var success = false; // Temporary placeholder
                 if (success)
                 {
                     TempData["SuccessMessage"] = "تراکنش با موفقیت تکمیل شد.";
@@ -196,7 +220,9 @@ namespace ForexExchange.Controllers
                     return RedirectToAction(nameof(Details), new { id = transactionId });
                 }
 
-                var success = await _settlementService.FailTransactionAsync(transactionId, reason);
+                // TODO: Re-implement with new architecture
+                // var success = await _settlementService.FailTransactionAsync(transactionId, reason);
+                var success = false; // Temporary placeholder
                 if (success)
                 {
                     TempData["SuccessMessage"] = "تراکنش به عنوان ناموفق ثبت شد.";
@@ -218,7 +244,9 @@ namespace ForexExchange.Controllers
         // GET: Settlements/Queue
         public async Task<IActionResult> Queue()
         {
-            var pendingSettlements = await _settlementService.GetPendingSettlementsAsync();
+            // TODO: Re-implement with new architecture
+            // var pendingSettlements = await _settlementService.GetPendingSettlementsAsync();
+            var pendingSettlements = new List<object>(); // Temporary placeholder
             return View(pendingSettlements);
         }
 
@@ -226,6 +254,8 @@ namespace ForexExchange.Controllers
         [HttpGet]
         public async Task<IActionResult> GetCalculation(int transactionId)
         {
+            // TODO: Replace with AccountingDocument-based calculation
+            /*
             try
             {
                 var transaction = await _context.Transactions.FindAsync(transactionId);
@@ -242,6 +272,10 @@ namespace ForexExchange.Controllers
                 _logger.LogError(ex, "Error getting settlement calculation for transaction {TransactionId}", transactionId);
                 return BadRequest(new { error = ex.Message });
             }
+            */
+            
+            // Placeholder for new architecture
+            return NotFound();
         }
     }
 }

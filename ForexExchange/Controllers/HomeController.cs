@@ -11,17 +11,18 @@ public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly ForexDbContext _context;
-    private readonly ITransactionSettlementService _settlementService;
+    // TODO: Re-enable settlement service with new architecture
+    // private readonly ITransactionSettlementService _settlementService;
     private readonly ICurrencyPoolService _poolService;
     private readonly CustomerDebtCreditService _debtCreditService;
 
 
 
-    public HomeController(ILogger<HomeController> logger, ForexDbContext context, ITransactionSettlementService settlementService, ICurrencyPoolService poolService, CustomerDebtCreditService debtCreditService)
+    public HomeController(ILogger<HomeController> logger, ForexDbContext context, /* ITransactionSettlementService settlementService, */ ICurrencyPoolService poolService, CustomerDebtCreditService debtCreditService)
     {
         _logger = logger;
         _context = context;
-        _settlementService = settlementService;
+        // _settlementService = settlementService;
         _poolService = poolService;
         _debtCreditService = debtCreditService;
     }
@@ -40,17 +41,17 @@ public class HomeController : Controller
         // Get open and partially filled orders (public information for transparency)
         var availableOrders = await _context.Orders
             .Include(o => o.Customer)
-            .Where(o => o.Status == OrderStatus.Open)
             .OrderByDescending(o => o.CreatedAt)
             .Take(20)
             .ToListAsync();
 
         // Basic statistics (public)
         var totalActiveOrders = await _context.Orders
-            .CountAsync(o => o.Status == OrderStatus.Open);
+            .CountAsync();
         var today = DateTime.Now.Date;
-        var completedTransactionsToday = await _context.Transactions
-            .CountAsync(t => t.Status == TransactionStatus.Completed && t.CreatedAt.Date == today);
+        // TODO: Replace with AccountingDocument-based stats
+        var completedTransactionsToday = 0; // await _context.Transactions
+            // .CountAsync(t => t.Status == TransactionStatus.Completed && t.CreatedAt.Date == today);
 
         ViewBag.ExchangeRates = exchangeRates;
         ViewBag.AvailableOrders = availableOrders;

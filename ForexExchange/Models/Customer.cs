@@ -31,11 +31,13 @@ namespace ForexExchange.Models
         
         // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
-        public ICollection<Transaction> BuyTransactions { get; set; } = new List<Transaction>();
-        public ICollection<Transaction> SellTransactions { get; set; } = new List<Transaction>();
-        public ICollection<Receipt> Receipts { get; set; } = new List<Receipt>();
+        
         public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<BankAccount> BankAccounts { get; set; } = new List<BankAccount>();
-    public ICollection<CustomerInitialBalance> InitialBalances { get; set; } = new List<CustomerInitialBalance>();
+        
+        // New navigation properties for the updated architecture
+        public ICollection<CustomerBalance> Balances { get; set; } = new List<CustomerBalance>();
+        public ICollection<AccountingDocument> PayerDocuments { get; set; } = new List<AccountingDocument>();
+        public ICollection<AccountingDocument> ReceiverDocuments { get; set; } = new List<AccountingDocument>();
     }
 }

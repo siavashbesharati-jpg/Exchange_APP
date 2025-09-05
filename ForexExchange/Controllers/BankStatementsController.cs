@@ -132,8 +132,8 @@ namespace ForexExchange.Controllers
             try
             {
                 // Here you would implement the logic to confirm a transaction match
-                // This could involve updating the transaction status or creating audit records
-
+                // TODO: Implement confirmation logic with AccountingDocuments in new architecture
+                /*
                 var transaction = await _context.Transactions.FindAsync(transactionId);
                 if (transaction != null)
                 {
@@ -147,6 +147,9 @@ namespace ForexExchange.Controllers
                 {
                     TempData["ErrorMessage"] = "تراکنش یافت نشد.";
                 }
+                */
+
+                TempData["SuccessMessage"] = "این قابلیت در حال توسعه است.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -164,6 +167,8 @@ namespace ForexExchange.Controllers
         {
             try
             {
+                // TODO: Implement with AccountingDocuments in new architecture
+                /*
                 var transactions = await _context.Transactions
                     .Include(t => t.FromCurrency)
                     .Include(t => t.ToCurrency)
@@ -175,18 +180,22 @@ namespace ForexExchange.Controllers
                     {
                         id = t.Id,
                         amount = t.TotalInToman,
-                        fromCurrency = t.FromCurrency.Code,
-                        toCurrency = t.ToCurrency.Code,
-                        createdAt = t.CreatedAt.ToString("yyyy/MM/dd"),
-                        status = t.Status.ToString()
+                        fromCurrency = t.FromCurrency!.Code,
+                        toCurrency = t.ToCurrency!.Code,
+                        status = t.Status.ToString(),
+                        createdAt = t.CreatedAt.ToString("yyyy/MM/dd HH:mm")
                     })
                     .ToListAsync();
+                */
+
+                // For now return empty results
+                var transactions = new List<dynamic>();
 
                 return Json(transactions);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting customer transactions");
+                // _logger.LogError(ex, "Error getting customer transactions");
                 return BadRequest();
             }
         }

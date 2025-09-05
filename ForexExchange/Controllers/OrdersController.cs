@@ -101,14 +101,6 @@ namespace ForexExchange.Controllers
                 }
             }
 
-            if (!String.IsNullOrEmpty(statusFilter))
-            {
-                if (Enum.TryParse<OrderStatus>(statusFilter, out var status))
-                {
-                    ordersQuery = ordersQuery.Where(o => o.Status == status);
-                }
-            }
-
             // Apply database-level sorting only for non-decimal fields
             // Load data first, then apply all sorting client-side
             List<Order> orders;
@@ -139,12 +131,6 @@ namespace ForexExchange.Controllers
                         break;
                     case "currency_desc":
                         ordersQuery = ordersQuery.OrderByDescending(o => o.FromCurrency.Code).ThenByDescending(o => o.ToCurrency.Code);
-                        break;
-                    case "Status":
-                        ordersQuery = ordersQuery.OrderBy(o => o.Status);
-                        break;
-                    case "status_desc":
-                        ordersQuery = ordersQuery.OrderByDescending(o => o.Status);
                         break;
                     case "Date":
                         ordersQuery = ordersQuery.OrderBy(o => o.CreatedAt);
@@ -191,8 +177,8 @@ namespace ForexExchange.Controllers
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Include(o => o.Transactions)
-                .Include(o => o.Receipts)
+                // .Include(o => o.Transactions)
+                // .Include(o => o.Receipts)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (order == null)
@@ -210,8 +196,10 @@ namespace ForexExchange.Controllers
                 _logger.LogWarning($"Order {id} has missing ToCurrency (ToCurrencyId: {order.ToCurrencyId})");
             }
 
-            if (order.Transactions.Any())
-            {
+            // if (order.Transactions.Any())
+            // {
+                // TODO: Replace with AccountingDocument-based tracking for new architecture
+                /*
                 // Load the related customers and orders for transactions separately
                 var transactionIds = order.Transactions.Select(t => t.Id).ToList();
 
@@ -224,25 +212,8 @@ namespace ForexExchange.Controllers
                     .Include(t => t.SellOrder)
                         .ThenInclude(so => so.Customer)
                     .LoadAsync();
-            }
-
-            // Load available orders for matching if this order is still open or partially filled
-            // Display available orders but without matching buttons (per user request)
-            if (order.Status == OrderStatus.Open)
-            {
-                var availableOrders = await _context.Orders
-                    .Include(o => o.Customer)
-                    .Include(o => o.FromCurrency)
-                    .Include(o => o.ToCurrency)
-                    .Where(o => o.Status == OrderStatus.Open &&
-                               // Find complementary currency pairs
-                               ((o.FromCurrencyId == order.ToCurrencyId && o.ToCurrencyId == order.FromCurrencyId)) &&
-                               o.Id != order.Id &&
-                               o.Amount > o.FilledAmount)
-                    .ToListAsync();
-
-                ViewBag.AvailableOrders = availableOrders;
-            }
+                */
+            // }
 
             return View(order);
         }
@@ -281,7 +252,6 @@ namespace ForexExchange.Controllers
             ModelState.Remove("FromCurrency");
             ModelState.Remove("ToCurrency");
             ModelState.Remove("TotalAmount"); // TotalAmount is calculated server-side
-            ModelState.Remove("TotalInToman"); // TotalInToman is calculated server-side
 
             // Keep Rate in ModelState for manual rate validation
             // ModelState.Remove("Rate"); // Removed - now we validate manual rates
@@ -409,42 +379,7 @@ namespace ForexExchange.Controllers
                 order.Rate = finalExchangeRate;
                 var totalValue = order.Amount * order.Rate;
 
-                // Calculate TotalInToman for reporting (approximate if not IRR-based)
-                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
-                if (baseCurrency != null)
-                {
-                    if (order.FromCurrencyId == baseCurrency.Id)
-                    {
-                        order.TotalInToman = order.Amount;
-                    }
-                    else if (order.ToCurrencyId == baseCurrency.Id)
-                    {
-                        order.TotalInToman = totalValue;
-                    }
-                    else
-                    {
-                        // Approximate IRR value using USD rate as base
-                        var usdCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "USD" && c.IsActive);
-                        if (usdCurrency != null)
-                        {
-                            var usdRate = await _context.ExchangeRates
-                                .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id &&
-                                                         r.ToCurrencyId == usdCurrency.Id && r.IsActive);
-                            order.TotalInToman = totalValue * (usdRate?.Rate ?? 0);
-                        }
-                        else
-                        {
-                            order.TotalInToman = totalValue * 0; // Default fallback
-                        }
-                    }
-                }
-                else
-                {
-                    order.TotalInToman = totalValue * 0; // Default fallback
-                }
-
                 order.CreatedAt = DateTime.Now;
-                order.Status = OrderStatus.Open;
                 order.FilledAmount = 0;
 
                 _context.Add(order);
@@ -463,21 +398,18 @@ namespace ForexExchange.Controllers
                     await _adminNotificationService.SendOrderNotificationAsync(order, "created");
                 }
 
-                // Update currency pools if order is open/pending
-                if (order.Status == OrderStatus.Open)
-                {
-                    // Add to FromCurrency pool (reduce available currency)
-                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.Amount, PoolTransactionType.Buy, order.Rate);
-                    // Add to ToCurrency pool (increase available currency)
-                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
+                // Update currency pools
+                // Add to FromCurrency pool (reduce available currency)
+                await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.Amount, PoolTransactionType.Buy, order.Rate);
+                // Add to ToCurrency pool (increase available currency)
+                await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
 
-                    // Update order counts for both currencies
-                    await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
-                    await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
+                // Update order counts for both currencies
+                await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
+                await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
 
-                    // Update average rates for this currency pair
-                    await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
-                }
+                // Update average rates for this currency pair
+                await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
 
                 _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {finalExchangeRate} ({finalRateSource}), Total: {totalValue}");
 
@@ -524,7 +456,6 @@ namespace ForexExchange.Controllers
             ModelState.Remove("FromCurrency");
             ModelState.Remove("ToCurrency");
             ModelState.Remove("TotalAmount");
-            ModelState.Remove("TotalInToman");
 
             // Basic server-side validations (parity with Create)
             if (order.CustomerId == 0)
@@ -549,49 +480,14 @@ namespace ForexExchange.Controllers
             }
 
             if (ModelState.IsValid)
-            {
-                try
                 {
-                    // Recompute totals on server for integrity
-                    var totalValue = order.Amount * order.Rate;
-
-                    // Calculate TotalInToman considering base currency
-                    var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
-                    if (baseCurrency != null)
+                    try
                     {
-                        if (order.FromCurrencyId == baseCurrency.Id)
-                        {
-                            order.TotalInToman = order.Amount;
-                        }
-                        else if (order.ToCurrencyId == baseCurrency.Id)
-                        {
-                            order.TotalInToman = totalValue;
-                        }
-                        else
-                        {
-                            // Approximate via USD if available
-                            var usdCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "USD" && c.IsActive);
-                            if (usdCurrency != null)
-                            {
-                                var usdRate = await _context.ExchangeRates
-                                    .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == usdCurrency.Id && r.IsActive);
-                                order.TotalInToman = totalValue * (usdRate?.Rate ?? 0);
-                            }
-                            else
-                            {
-                                order.TotalInToman = 0;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        order.TotalInToman = 0;
-                    }
+                        // Recompute totals on server for integrity
+                        var totalValue = order.Amount * order.Rate;
 
-                    order.TotalAmount = totalValue;
-                    order.UpdatedAt = DateTime.Now;
-
-                    _context.Update(order);
+                        order.TotalAmount = totalValue;
+                        order.UpdatedAt = DateTime.Now;                    _context.Update(order);
                     await _context.SaveChangesAsync();
 
                     // Load related entities for notification
@@ -665,12 +561,6 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (originalOrder.Status != OrderStatus.Open)
-            {
-                TempData["ErrorMessage"] = "این معامله قابل لغو نیست.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
             // Validate reverse rate
             if (reverseRate <= 0)
             {
@@ -684,7 +574,6 @@ namespace ForexExchange.Controllers
                 try
                 {
 
-                    originalOrder.Status = OrderStatus.Completed;
                     originalOrder.UpdatedAt = DateTime.Now;
                     _context.Update(originalOrder);
 
@@ -697,10 +586,8 @@ namespace ForexExchange.Controllers
                         Amount = originalOrder.TotalAmount,              // Total from original order: 10,300,000 IRR
                         Rate = reverseRate,                              // User-input rate: 104,000
                         CreatedAt = DateTime.Now,
-                        Status = OrderStatus.Completed,
                         FilledAmount = originalOrder.TotalAmount / reverseRate,  // Correct calculation: 10,300,000 / 104,000 = 99
-                        TotalAmount = originalOrder.TotalAmount / reverseRate,   // Same as FilledAmount: 99
-                        TotalInToman = 0
+                        TotalAmount = originalOrder.TotalAmount / reverseRate   // Same as FilledAmount: 99
                     };
 
 
@@ -797,15 +684,13 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
-            if (primaryOrder.Status != OrderStatus.Open ||
-                primaryOrder.Amount <= primaryOrder.FilledAmount)
+            if (primaryOrder.Amount <= primaryOrder.FilledAmount)
             {
                 TempData["ErrorMessage"] = "معامله اصلی قابل مچ کردن نیست.";
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
             }
 
-            if (matchingOrder.Status != OrderStatus.Open ||
-                matchingOrder.Amount <= matchingOrder.FilledAmount)
+            if (matchingOrder.Amount <= matchingOrder.FilledAmount)
             {
                 TempData["ErrorMessage"] = "معامله مقابل قابل مچ کردن نیست.";
                 return RedirectToAction(nameof(Details), new { id = primaryOrderId });
@@ -858,6 +743,8 @@ namespace ForexExchange.Controllers
             decimal transactionRate = Math.Min(primaryOrder.Rate, matchingOrder.Rate);
 
             // Create transaction
+            // TODO: Replace with AccountingDocument-based tracking for new architecture
+            /*
             var transaction = new Transaction
             {
                 BuyOrderId = buyOrderId,
@@ -871,26 +758,17 @@ namespace ForexExchange.Controllers
                 Amount = matchAmount,
                 Rate = transactionRate,
                 TotalAmount = matchAmount * transactionRate,
-                TotalInToman = (sellOrder.ToCurrency.IsBaseCurrency) ? (matchAmount * transactionRate) :
-                             (sellOrder.FromCurrency.IsBaseCurrency ? matchAmount : (matchAmount * transactionRate * 65000)),
                 Status = TransactionStatus.Pending,
                 CreatedAt = DateTime.Now
             };
 
-            _context.Transactions.Add(transaction);
+            // TODO: Replace with CustomerBalanceService for direct balance updates
+            // _context.Transactions.Add(transaction);
+            */
 
             // Update order statuses and filled amounts
             primaryOrder.FilledAmount += matchAmount;
             matchingOrder.FilledAmount += matchAmount;
-
-            // Update order statuses - orders are either Open or Completed (no partial fills)
-            if (primaryOrder.FilledAmount >= primaryOrder.Amount)
-                primaryOrder.Status = OrderStatus.Completed;
-            // else stays Open
-
-            if (matchingOrder.FilledAmount >= matchingOrder.Amount)
-                matchingOrder.Status = OrderStatus.Completed;
-            // else stays Open
 
             primaryOrder.UpdatedAt = DateTime.Now;
             matchingOrder.UpdatedAt = DateTime.Now;
@@ -898,7 +776,7 @@ namespace ForexExchange.Controllers
             await _context.SaveChangesAsync();
 
             // Update currency pools when orders are matched/completed
-            if (primaryOrder.Status == OrderStatus.Completed)
+            if (primaryOrder.FilledAmount >= primaryOrder.Amount)
             {
                 // When an order is completed, we need to reverse the initial pool allocation
                 // and then apply the actual transaction amounts
@@ -910,7 +788,7 @@ namespace ForexExchange.Controllers
                 await _poolService.UpdatePoolAsync(primaryOrder.ToCurrencyId, matchAmount * transactionRate, PoolTransactionType.Sell, transactionRate);
             }
 
-            if (matchingOrder.Status == OrderStatus.Completed)
+            if (matchingOrder.FilledAmount >= matchingOrder.Amount)
             {
                 // When an order is completed, we need to reverse the initial pool allocation
                 // and then apply the actual transaction amounts
@@ -955,34 +833,19 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (order.Status != OrderStatus.Open)
-            {
-                TempData["ErrorMessage"] = "این معامله قابل تکمیل دستی نیست.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
                     // Mark order as completed
-                    var previousStatus = order.Status;
-                    order.Status = OrderStatus.Completed;
                     order.FilledAmount = order.Amount; // Mark as fully filled
                     order.UpdatedAt = DateTime.Now;
                     _context.Update(order);
 
                     // Update currency pools
-                    if (previousStatus == OrderStatus.Open)
-                    {
-                        // If it was open, we need to reverse the initial pool allocation
-                        // When order was created, we added Amount to FromCurrency pool (reduce available) 
-                        // and added Amount*Rate to ToCurrency pool (increase available)
-                        
-                        // Reverse the initial allocation
-                        await _poolService.UpdatePoolAsync(order.FromCurrencyId, -order.Amount, PoolTransactionType.Sell, order.Rate);
-                        await _poolService.UpdatePoolAsync(order.ToCurrencyId, -(order.Amount * order.Rate), PoolTransactionType.Buy, order.Rate);
-                    }
+                    // Reverse the initial allocation
+                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, -order.Amount, PoolTransactionType.Sell, order.Rate);
+                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, -(order.Amount * order.Rate), PoolTransactionType.Buy, order.Rate);
 
                     // Apply the actual completed transaction to pools
                     // When order completes: we lose FromCurrency and gain ToCurrency
@@ -1287,8 +1150,7 @@ namespace ForexExchange.Controllers
             // Calculate average buy rate (orders where ToCurrencyId matches)
             var buyOrders = await _context.Orders
                 .Where(o => o.FromCurrencyId == fromCurrencyId &&
-                           o.ToCurrencyId == toCurrencyId &&
-                           o.Status != OrderStatus.Cancelled)
+                           o.ToCurrencyId == toCurrencyId)
                 .ToListAsync();
 
             if (buyOrders.Any())
@@ -1308,8 +1170,7 @@ namespace ForexExchange.Controllers
             // Calculate average sell rate (orders where FromCurrencyId matches)
             var sellOrders = await _context.Orders
                 .Where(o => o.FromCurrencyId == toCurrencyId &&
-                           o.ToCurrencyId == fromCurrencyId &&
-                           o.Status != OrderStatus.Cancelled)
+                           o.ToCurrencyId == fromCurrencyId)
                 .ToListAsync();
 
             if (sellOrders.Any())

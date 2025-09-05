@@ -1,0 +1,230 @@
+@model ForexExchange.Models.AccountingDocument
+
+@{
+    ViewData["Title"] = $"ویرایش سند حسابداری #{Model.Id}";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">ویرایش سند حسابداری</h2>
+            <div class="text-muted small">سند #@Model.Id</div>
+        </div>
+        <div>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info me-2">
+                <i class="fas fa-eye"></i> مشاهده جزئیات
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> بازگشت به لیست
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <form asp-action="Edit" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="CreatedAt" />
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">اطلاعات سند حسابداری</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Type" class="form-label">نوع سند <span
+                                            class="text-danger">*</span></label>
+                                    <select asp-for="Type" class="form-select"
+                                        asp-items="Html.GetEnumSelectList<DocumentType>()">
+                                        <option value="">انتخاب کنید...</option>
+                                    </select>
+                                    <span asp-validation-for="Type" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Title" class="form-label">عنوان سند <span
+                                            class="text-danger">*</span></label>
+                                    <input asp-for="Title" class="form-control" />
+                                    <span asp-validation-for="Title" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Amount" class="form-label">مبلغ <span
+                                            class="text-danger">*</span></label>
+                                    <input asp-for="Amount" class="form-control" type="number" step="0.01" min="0" />
+                                    <span asp-validation-for="Amount" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="CurrencyCode" class="form-label">واحد پول <span
+                                            class="text-danger">*</span></label>
+                                    <select asp-for="CurrencyCode" class="form-select">
+                                        <option value="">انتخاب کنید...</option>
+                                        @foreach (var currency in ViewData["Currencies"] as
+                                                                                IEnumerable<ForexExchange.Models.Currency>)
+                                        {
+                                            <option value="@currency.Code">@currency.Name (@currency.Code)</option>
+                                        }
+                                    </select>
+                                    <span asp-validation-for="CurrencyCode" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DocumentDate" class="form-label">تاریخ سند <span
+                                            class="text-danger">*</span></label>
+                                    <input asp-for="DocumentDate" class="form-control" type="datetime-local" />
+                                    <span asp-validation-for="DocumentDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="ReferenceNumber" class="form-label">شماره مرجع</label>
+                                    <input asp-for="ReferenceNumber" class="form-control" />
+                                    <span asp-validation-for="ReferenceNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="CustomerId" class="form-label">مشتری <span
+                                            class="text-danger">*</span></label>
+                                    <select asp-for="CustomerId" class="form-select" required>
+                                        <option value="">انتخاب مشتری...</option>
+                                        @if (ViewData["Customers"] is IEnumerable<ForexExchange.Models.Customer>
+                                                                                customers)
+                                        {
+                                            @foreach (var customer in customers)
+                                            {
+                                                <option value="@customer.Id">@customer.FullName (@customer.PhoneNumber)</option>
+                                            }
+                                        }
+                                    </select>
+                                    <span asp-validation-for="CustomerId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="BankAccountId" class="form-label">حساب بانکی</label>
+                                    <select asp-for="BankAccountId" class="form-select">
+                                        <option value="">انتخاب حساب بانکی (اختیاری)...</option>
+                                        @if (ViewData["BankAccounts"] is IEnumerable<ForexExchange.Models.BankAccount>
+                                                                                bankAccounts)
+                                        {
+                                            @foreach (var account in bankAccounts)
+                                            {
+                                                <option value="@account.Id">@account.AccountNumber - @account.BankName</option>
+                                            }
+                                        }
+                                    </select>
+                                    <div id="currency-warning" class="alert alert-warning mt-2" style="display: none;">
+                                        <small><i class="fas fa-exclamation-triangle"></i> ارز سند باید با ارز حساب
+                                            بانکی انتخاب شده مطابقت داشته باشد.</small>
+                                    </div>
+                                    <span asp-validation-for="BankAccountId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">فایل جدید (اختیاری)</label>
+                                    <input type="file" name="documentFile" class="form-control"
+                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                                    <div class="form-text">
+                                        فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX (حداکثر ۱۰ مگابایت)
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(Model.FileName))
+                                    {
+                                        <div class="mt-2">
+                                            <small class="text-muted">فایل فعلی: @Model.FileName</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">توضیحات</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="hidden" asp-for="IsVerified" class="form-check-input" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> ذخیره تغییرات
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary ms-2">
+                            <i class="fas fa-times"></i> انصراف
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Bank account currency validation
+        document.getElementById('BankAccountId').addEventListener('change', function () {
+            const bankAccountSelect = this;
+            const currencySelect = document.getElementById('CurrencyCode');
+
+            if (bankAccountSelect.value) {
+                // Show warning that currency will be validated on server
+                const warningDiv = document.getElementById('currency-warning');
+                if (warningDiv) {
+                    warningDiv.style.display = 'block';
+                }
+            } else {
+                const warningDiv = document.getElementById('currency-warning');
+                if (warningDiv) {
+                    warningDiv.style.display = 'none';
+                }
+            }
+        });
+
+        // File validation
+        document.querySelector('input[type="file"]').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
+                if (file.size > maxSize) {
+                    alert('حجم فایل نمی‌تواند بیشتر از ۱۰ مگابایت باشد.');
+                    e.target.value = '';
+                    return;
+                }
+
+                if (!allowedTypes.includes(file.type)) {
+                    alert('فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX');
+                    e.target.value = '';
+                    return;
+                }
+            }
+        });
+    </script>
+}

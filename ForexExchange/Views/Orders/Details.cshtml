@@ -9,11 +9,8 @@
         <h2>جزئیات معامله #@Model.Id</h2>
         <div>
             <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
-            <a asp-controller="Receipts" asp-action="Upload" asp-route-orderId="@Model.Id" class="btn btn-primary me-2">آپلود رسید برای این معامله</a>
-            @if (Model.Status == ForexExchange.Models.OrderStatus.Open)
-            {
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
-            }
+            <a asp-controller="Receipts" asp-action="Upload" asp-route-orderId="@Model.Id" class="btn btn-primary me-2">آپلود سند حسابداری برای این معامله</a>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
         </div>
     </div>
 
@@ -94,6 +91,8 @@
 
 
   
+    @* TODO: Replace with AccountingDocument display when implementing new architecture *@
+    @*
     @if (Model.Receipts != null && Model.Receipts.Any())
     {
         <div class="card mt-3">
@@ -147,6 +146,7 @@
             </div>
         </div>
     }
+    *@
 
     <!-- Available Orders for Matching (Display Only - No Action Buttons) -->
     @if (ViewBag.AvailableOrders != null && ((List<ForexExchange.Models.Order>)ViewBag.AvailableOrders).Any())
@@ -200,14 +200,6 @@
                                         <small class="text-muted">از @availableOrder.Amount.ToString("N2")</small>
                                     </td>
                                     <td>
-                                        @switch (availableOrder.Status)
-                                        {
-                                            case ForexExchange.Models.OrderStatus.Open:
-                                                <span class="badge bg-primary">باز</span>
-                                                break;
-                                        }
-                                    </td>
-                                    <td>
                                         <small>@availableOrder.CreatedAt.ToString("yyyy/MM/dd")</small>
                                         <br>
                                         <small class="text-muted">@availableOrder.CreatedAt.ToString("HH:mm")</small>
@@ -229,15 +221,11 @@
     <div class="card mt-3">
         <div class="card-body d-flex justify-content-between">
             <a asp-action="Index" class="btn btn-secondary">بازگشت</a>
-            @if (Model.Status != ForexExchange.Models.OrderStatus.Cancelled && Model.Status !=
-                        ForexExchange.Models.OrderStatus.Completed)
-            {
-                <form asp-action="Delete" asp-route-id="@Model.Id" method="post"
-                    onsubmit="return confirm('آیا از لغو این معامله اطمینان دارید؟')">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger">لغو معامله</button>
-                </form>
-            }
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post"
+                onsubmit="return confirm('آیا از لغو این معامله اطمینان دارید؟')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger">لغو معامله</button>
+            </form>
         </div>
     </div>
 </div>

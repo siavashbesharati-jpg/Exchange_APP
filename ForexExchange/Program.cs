@@ -59,19 +59,21 @@ builder.Services.AddSignalR();
 
 // Add Services
 builder.Services.AddScoped<IOcrService, OpenRouterOcrService>();
-builder.Services.AddScoped<ITransactionSettlementService, TransactionSettlementService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBankStatementService, BankStatementService>();
 builder.Services.AddScoped<ICurrencyPoolService, CurrencyPoolService>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
+// TODO: Re-enable after new architecture implementation
+// builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDataSeedService, DataSeedService>();
 builder.Services.AddScoped<IWebScrapingService, WebScrapingService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IRateCalculationService, RateCalculationService>();
+builder.Services.AddScoped<CustomerDebtCreditService>();
 builder.Services.AddScoped<AdminActivityService>();
 builder.Services.AddScoped<AdminNotificationService>();
-builder.Services.AddScoped<CustomerDebtCreditService>();
-builder.Services.AddScoped<IReceiptService, ReceiptService>();
+// New balance management services
+builder.Services.AddScoped<ICustomerBalanceService, CustomerBalanceService>();
+builder.Services.AddScoped<IBankAccountBalanceService, BankAccountBalanceService>();
 
 
 var app = builder.Build();

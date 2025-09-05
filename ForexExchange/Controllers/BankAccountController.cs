@@ -289,6 +289,8 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
+            // TODO: Check if account is being used in AccountingDocuments in new architecture
+            /*
             // Check if account is being used in transactions
             var hasTransactions = await _context.Transactions.AnyAsync(t => t.BuyerBankAccountId == id || t.SellerBankAccountId == id);
 
@@ -297,6 +299,7 @@ namespace ForexExchange.Controllers
                 TempData["Error"] = "این حساب بانکی در تراکنش‌ها استفاده شده و نمی‌توان آن را حذف کرد.";
                 return RedirectToAction("CustomerAccounts", new { customerId = bankAccount.CustomerId });
             }
+            */
 
             return View(bankAccount);
         }
@@ -316,6 +319,8 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
+            // TODO: Double-check if account is being used in AccountingDocuments in new architecture
+            /*
             // Double-check if account is being used
 
             var hasTransactions = await _context.Transactions.AnyAsync(t => t.BuyerBankAccountId == id || t.SellerBankAccountId == id);
@@ -325,6 +330,7 @@ namespace ForexExchange.Controllers
                 TempData["Error"] = "این حساب بانکی در تراکنش‌ها استفاده شده و نمی‌توان آن را حذف کرد.";
                 return RedirectToAction("CustomerAccounts", new { customerId = bankAccount.CustomerId });
             }
+            */
 
             _context.BankAccounts.Remove(bankAccount);
             await _context.SaveChangesAsync();

@@ -76,20 +76,20 @@
                 </div>
                 <div class="card-body">
                     @{
-                        // Try to show customer's initial balances if available via navigation property
-                        var initialBalances = Model.InitialBalances?.ToList() ?? new List<ForexExchange.Models.CustomerInitialBalance>();
+                        // Try to show customer's current balances if available via navigation property
+                        var customerBalances = Model.Balances?.ToList() ?? new List<ForexExchange.Models.CustomerBalance>();
                     }
-                    @if (initialBalances.Any())
+                    @if (customerBalances.Any())
                     {
                         <div class="mb-3">
                             <h6 class="mb-2">موجودی اولیه مشتری</h6>
                             <div class="row g-2">
-                                @foreach (var b in initialBalances)
+                                @foreach (var b in customerBalances)
                                 {
                                     <div class="col-6">
                                         <div class="border rounded p-2 small d-flex justify-content-between">
                                             <span class="text-muted">@b.CurrencyCode</span>
-                                            <strong dir="ltr">@b.Amount.ToString("N2")</strong>
+                                            <strong dir="ltr">@b.Balance.ToString("N2")</strong>
                                         </div>
                                     </div>
                                 }
@@ -108,7 +108,7 @@
                         <div class="col-6 mb-3">
                             <div class="card bg-success text-white">
                                 <div class="card-body">
-                                    <h4>@(Model.BuyTransactions.Count + Model.SellTransactions.Count)</h4>
+                                    <h4>@ViewBag.CustomerStats.TotalTransactions</h4>
                                     <p class="mb-0">کل تراکنش‌ها</p>
                                 </div>
                             </div>
@@ -116,15 +116,15 @@
                         <div class="col-6 mb-3">
                             <div class="card bg-info text-white">
                                 <div class="card-body">
-                                    <h4>@Model.Receipts.Count</h4>
-                                    <p class="mb-0">رسیدهای آپلود شده</p>
+                                    <h4>@ViewBag.CustomerStats.TotalAccountingDocuments</h4>
+                                    <p class="mb-0">اسناد حسابداری</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6 mb-3">
                             <div class="card bg-warning text-white">
                                 <div class="card-body">
-                                    <h4>@Model.Orders.Count(o => o.Status == ForexExchange.Models.OrderStatus.Open)</h4>
+                                    <h4>0</h4>
                                     <p class="mb-0">معامله‌های باز</p>
                                 </div>
                             </div>
@@ -142,7 +142,7 @@
     </div>
 
     <!-- Recent Activity -->
-    @if (Model.Orders.Any() || Model.BuyTransactions.Any() || Model.SellTransactions.Any())
+    @if (Model.Orders.Any())
     {
         <div class="row mt-4">
             <div class="col-12">
@@ -174,6 +174,8 @@
                             }
 
                             <!-- Recent Transactions -->
+                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
+                            @*
                             @{
                                 var recentTransactions = Model.BuyTransactions.Concat(Model.SellTransactions)
                                     .OrderByDescending(t => t.CreatedAt)
@@ -199,8 +201,11 @@
                                     <a asp-controller="Settlements" asp-action="Index" class="btn btn-sm btn-outline-success">مشاهده همه</a>
                                 </div>
                             }
+                            *@
 
                             <!-- Recent Receipts -->
+                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
+                            @*
                             @if (Model.Receipts.Any())
                             {
                                 <div class="col-md-4">
@@ -223,6 +228,7 @@
                                     <a asp-controller="Receipts" asp-action="Index" class="btn btn-sm btn-outline-info">مشاهده همه</a>
                                 </div>
                             }
+                            *@
                         </div>
                     </div>
                 </div>

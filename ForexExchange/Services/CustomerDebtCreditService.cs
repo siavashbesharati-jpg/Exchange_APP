@@ -19,8 +19,7 @@ namespace ForexExchange.Services
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Include(o => o.Transactions)
-                .Where(o => o.Transactions.Any(t => t.Status == TransactionStatus.Completed))
+                // .Include(o => o.Transactions)
                 .ToListAsync();
 
             // Group by customer
@@ -104,6 +103,8 @@ namespace ForexExchange.Services
                 decimal fromAmount, toAmount;
 
                 // For orders with completed transactions, use actual transaction amounts
+                // TODO: Replace with AccountingDocument-based tracking for new architecture
+                /*
                 var completedTransactions = order.Transactions
                     .Where(t => t.Status == TransactionStatus.Completed)
                     .ToList();
@@ -118,6 +119,10 @@ namespace ForexExchange.Services
                 {
                     continue; // Skip orders without completed transactions
                 }
+                */
+                // For now, use order amounts directly
+                fromAmount = order.Amount;
+                toAmount = order.TotalAmount;
 
                 // Update balances
                 // Customer owes the FromCurrency (debt)
@@ -142,9 +147,8 @@ namespace ForexExchange.Services
             var orders = await _context.Orders
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Include(o => o.Transactions)
-                .Where(o => o.CustomerId == customerId &&
-                           o.Transactions.Any(t => t.Status == TransactionStatus.Completed))
+                // .Include(o => o.Transactions)
+                .Where(o => o.CustomerId == customerId)
                 .ToListAsync();
 
             var currencyBalances = await SeedInitialBalancesAsync(customer.Id);
@@ -181,28 +185,28 @@ namespace ForexExchange.Services
         {
             var list = new List<CurrencyBalance>();
 
-            var initBalances = await _context.CustomerInitialBalances
+            // TODO: Replace with CustomerBalance queries
+            var balances = await _context.CustomerBalances
                 .Where(b => b.CustomerId == customerId)
                 .ToListAsync();
 
-            if (!initBalances.Any()) return list;
+            if (!balances.Any()) return list;
 
-            // Map currency codes to Persian names when available
-            var codeToName = await _context.Currencies
+            // Get currency names
+            var currencyNames = await _context.Currencies
                 .ToDictionaryAsync(c => c.Code, c => c.PersianName);
 
-            foreach (var b in initBalances)
+            foreach (var b in balances)
             {
-                var code = (b.CurrencyCode ?? string.Empty).Trim().ToUpperInvariant();
-                codeToName.TryGetValue(code, out var persianName);
-
+                currencyNames.TryGetValue(b.CurrencyCode, out var persianName);
+                
                 list.Add(new CurrencyBalance
                 {
-                    CurrencyCode = code,
-                    CurrencyName = string.IsNullOrWhiteSpace(persianName) ? code : persianName,
-                    Balance = b.Amount,
-                    DebtAmount = b.Amount < 0 ? Math.Abs(b.Amount) : 0,
-                    CreditAmount = b.Amount > 0 ? b.Amount : 0
+                    CurrencyCode = b.CurrencyCode,
+                    CurrencyName = persianName ?? b.CurrencyCode,
+                    Balance = b.Balance,
+                    DebtAmount = b.Balance < 0 ? Math.Abs(b.Balance) : 0,
+                    CreditAmount = b.Balance > 0 ? b.Balance : 0
                 });
             }
 

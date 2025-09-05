@@ -41,9 +41,9 @@
         <div class="col-md-3">
             <div class="card bg-info text-white">
                 <div class="card-body text-center">
-                    <i class="fas fa-receipt fa-2x mb-2"></i>
-                    <h5>@stats?.TotalReceipts</h5>
-                    <p class="mb-0">رسیدهای آپلود شده</p>
+                    <i class="fas fa-file-invoice fa-2x mb-2"></i>
+                    <h5>@stats?.TotalAccountingDocuments</h5>
+                    <p class="mb-0">اسناد حسابداری</p>
                 </div>
             </div>
         </div>
@@ -135,11 +135,11 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">نرخ تأیید رسیدها</label>
+                        <label class="form-label">نرخ تأیید اسناد حسابداری</label>
                         <div class="progress mb-1">
                             <div class="progress-bar bg-info" role="progressbar" style="width: @stats?.VerificationRate.ToString("F1")%" aria-valuenow="@stats?.VerificationRate" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
-                        <small class="text-muted">@stats?.VerificationRate.ToString("F1")% (@stats?.VerifiedReceipts از @stats?.TotalReceipts)</small>
+                        <small class="text-muted">@stats?.VerificationRate.ToString("F1")% (@stats?.VerifiedAccountingDocuments از @stats?.TotalAccountingDocuments)</small>
                     </div>
                     
                     <div class="row">
@@ -168,12 +168,12 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions" type="button" role="tab">
-                                تراکنش‌ها (@(Model.BuyTransactions.Count + Model.SellTransactions.Count))
+                                تراکنش‌ها (@ViewBag.CustomerStats.TotalTransactions)
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="receipts-tab" data-bs-toggle="tab" data-bs-target="#receipts" type="button" role="tab">
-                                رسیدها (@Model.Receipts.Count)
+                                اسناد حسابداری (@ViewBag.CustomerStats.TotalAccountingDocuments)
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -218,20 +218,6 @@
                                                     <td>@order.ToCurrency?.Code</td>
                                                     <td>@order.Amount.ToString("N0")</td>
                                                     <td>@order.Rate.ToString("N4")</td>
-                                                    <td>
-                                                        @if (order.Status == ForexExchange.Models.OrderStatus.Open)
-                                                        {
-                                                            <span class="badge bg-info">باز</span>
-                                                        }
-                                                        else if (order.Status == ForexExchange.Models.OrderStatus.Completed)
-                                                        {
-                                                            <span class="badge bg-success">تکمیل</span>
-                                                        }
-                                                        else if (order.Status == ForexExchange.Models.OrderStatus.Cancelled)
-                                                        {
-                                                            <span class="badge bg-danger">لغو شده</span>
-                                                        }
-                                                    </td>
                                                     <td>@order.CreatedAt.ToString("MM/dd")</td>
                                                     <td>
                                                         <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
@@ -261,6 +247,8 @@
 
                         <!-- Transactions Tab -->
                         <div class="tab-pane fade" id="transactions" role="tabpanel">
+                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
+                            @*
                             @{
                                 var allTransactions = Model.BuyTransactions.Concat(Model.SellTransactions)
                                     .OrderByDescending(t => t.CreatedAt)
@@ -325,10 +313,17 @@
                                     <p class="text-muted">هیچ تراکنشی انجام نشده است.</p>
                                 </div>
                             }
+                            *@
+                            <div class="text-center py-4">
+                                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Transaction data will be available after implementing the new AccountingDocument architecture.</p>
+                            </div>
                         </div>
 
                         <!-- Receipts Tab -->
                         <div class="tab-pane fade" id="receipts" role="tabpanel">
+                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
+                            @*
                             @if (Model.Receipts.Any())
                             {
                                 <div class="row">
@@ -373,6 +368,11 @@
                                     <p class="text-muted">هیچ رسیدی آپلود نشده است.</p>
                                 </div>
                             }
+                            *@
+                            <div class="text-center py-4">
+                                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Receipt data will be available after implementing the new AccountingDocument architecture.</p>
+                            </div>
                         </div>
 
                         <!-- Financial Status Tab -->
@@ -382,8 +382,8 @@
                             }
                             @if (customerDebtCredit != null)
                             {
-                                 var initBalances = Model.InitialBalances?.ToList() ?? new List<ForexExchange.Models.CustomerInitialBalance>(); 
-                                @if (initBalances.Any())
+                                 var customerBalances = Model.Balances?.ToList() ?? new List<ForexExchange.Models.CustomerBalance>(); 
+                                @if (customerBalances.Any())
                                 {
                                     <div class="row mb-3">
                                         <div class="col-12">
@@ -393,12 +393,12 @@
                                                 </div>
                                                 <div class="card-body">
                                                     <div class="row g-2">
-                                                        @foreach (var b in initBalances)
+                                                        @foreach (var b in customerBalances)
                                                         {
                                                             <div class="col-md-3 col-sm-4 col-6">
                                                                 <div class="border rounded p-2 d-flex justify-content-between small">
                                                                     <span class="text-muted">@b.CurrencyCode</span>
-                                                                    <strong dir="ltr">@b.Amount.ToString("N2")</strong>
+                                                                    <strong dir="ltr">@b.Balance.ToString("N2")</strong>
                                                                 </div>
                                                             </div>
                                                         }
@@ -571,13 +571,15 @@
                                             Date = order.CreatedAt,
                                             Type = "معامله",
                                             Description = $"معامله {order.Amount:N0} {order.FromCurrency?.PersianName} ({order.CurrencyPair})",
-                                            Status = order.Status.ToString(),
+                                            Status = "N/A",
                                             Icon = "fas fa-shopping-cart",
                                             Color = "primary"
                                         });
                                     }
                                     
                                     // Add receipts
+                                    @* TODO: Replace with AccountingDocument display when implementing new architecture *@
+                                    /*
                                     foreach (var receipt in Model.Receipts.Take(5))
                                     {
                                         activities.Add(new { 
@@ -589,6 +591,7 @@
                                             Color = receipt.IsVerified ? "success" : "warning"
                                         });
                                     }
+                                    */
                                     
                                     var sortedActivities = activities.OrderByDescending(a => ((DateTime)((dynamic)a).Date)).Take(10);
                                 }

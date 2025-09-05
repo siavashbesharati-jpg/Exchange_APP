@@ -13,7 +13,7 @@ namespace ForexExchange.Services
 
     public interface IOcrService
     {
-        Task<OcrResult> ProcessReceiptAsync(byte[] imageData);
+        Task<OcrResult> ProcessAccountingDocumentAsync(byte[] imageData);
         Task<OcrResult> ProcessBankStatementAsync(byte[] imageData);
     }
 }

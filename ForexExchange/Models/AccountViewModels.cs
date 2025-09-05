@@ -151,6 +151,6 @@ namespace ForexExchange.Models
         public int CurrencyPoolsCount { get; set; }
         public int TransactionsCount { get; set; }
         public int ExchangeRatesCount { get; set; }
-        public int ReceiptsCount { get; set; }
+        public int AccountingDocumentsCount { get; set; }
     }
 }

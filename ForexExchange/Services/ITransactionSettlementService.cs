@@ -2,6 +2,8 @@ using ForexExchange.Models;
 
 namespace ForexExchange.Services
 {
+    // TODO: Reimplement settlement with AccountingDocument in new architecture
+    /*
     public interface ITransactionSettlementService
     {
         /// <summary>
@@ -71,4 +73,5 @@ namespace ForexExchange.Services
         Completed,
         Failed
     }
+    */
 }

@@ -48,13 +48,20 @@ namespace ForexExchange.Services
                 var transactions = await ParseBankStatementAsync(ocrResult.RawText ?? "");
 
                 // Get customer's pending transactions for verification
+                // TODO: Replace with AccountingDocument queries when implementing new architecture
+                // var customerTransactions = new List<Models.Transaction>();
+                var customerTransactions = new List<object>(); // Placeholder until new architecture
+                /*
                 var customerTransactions = await _context.Transactions
                     .Where(t => (t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId) &&
-                               (t.Status == TransactionStatus.Pending || 
+                               (t.Status == TransactionStatus.Pending ||
                                 t.Status == TransactionStatus.PaymentUploaded ||
                                 t.Status == TransactionStatus.ReceiptConfirmed))
                     .ToListAsync();
+                */
 
+                // TODO: Re-implement transaction matching with new architecture
+                /*
                 // Try to match bank statement transactions with system transactions
                 var matchedTransactions = new List<TransactionMatch>();
                 foreach (var bankTx in transactions)
@@ -70,13 +77,16 @@ namespace ForexExchange.Services
                         });
                     }
                 }
+                */
+
+                var matchedTransactions = new List<object>(); // Temporary placeholder
 
                 return new BankStatementAnalysis
                 {
                     Success = true,
                     CustomerId = customerId,
                     ExtractedTransactions = transactions,
-                    MatchedTransactions = matchedTransactions,
+                    // MatchedTransactions = matchedTransactions, // TODO: Re-implement with new architecture
                     RawText = ocrResult.RawText,
                     ProcessedAt = DateTime.Now
                 };
@@ -153,15 +163,20 @@ namespace ForexExchange.Services
                 }
 
                 // Find matching transaction
+                // TODO: Replace with AccountingDocument/CustomerBalance queries
+                /*
                 var transaction = await _context.Transactions
-                    .Where(t => (t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId) &&
-                               Math.Abs(t.TotalInToman - amountValue) <= 1000) // Allow 1000 Toman tolerance
+                    .Where(t => (t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId))
                     .FirstOrDefaultAsync();
 
                 if (transaction == null)
                 {
                     return false;
                 }
+                */
+                
+                // Placeholder logic for new architecture
+                return false; // TODO: Implement with new models
 
                 // Additional verification can be added here
                 return true;
@@ -299,6 +314,8 @@ namespace ForexExchange.Services
                 .Trim();
         }
 
+        /*
+        // TODO: Re-implement with new architecture
         private Transaction? FindMatchingTransaction(BankStatementTransaction bankTx, List<Transaction> systemTransactions)
         {
             var cleanAmount = CleanAmount(bankTx.Amount);
@@ -352,6 +369,7 @@ namespace ForexExchange.Services
 
             return Math.Min(confidence, 1m); // Cap at 100%
         }
+        */
     }
 
     // Supporting model classes
@@ -361,7 +379,8 @@ namespace ForexExchange.Services
         public string? ErrorMessage { get; set; }
         public int CustomerId { get; set; }
         public List<BankStatementTransaction> ExtractedTransactions { get; set; } = new();
-        public List<TransactionMatch> MatchedTransactions { get; set; } = new();
+        // TODO: Re-implement with new architecture
+        // public List<TransactionMatch> MatchedTransactions { get; set; } = new();
         public string? RawText { get; set; }
         public DateTime ProcessedAt { get; set; }
     }
@@ -375,10 +394,13 @@ namespace ForexExchange.Services
         public string? ReferenceId { get; set; }
     }
 
+    /*
+    // TODO: Re-implement with new architecture
     public class TransactionMatch
     {
         public BankStatementTransaction BankTransaction { get; set; } = null!;
         public Transaction SystemTransaction { get; set; } = null!;
         public decimal MatchConfidence { get; set; }
     }
+    */
 }

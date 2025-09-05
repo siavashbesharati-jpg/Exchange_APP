@@ -16,8 +16,7 @@ namespace ForexExchange.Models
         
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set; }
-        public DbSet<Transaction> Transactions { get; set; }
-        public DbSet<Receipt> Receipts { get; set; }
+        public DbSet<AccountingDocument> AccountingDocuments { get; set; }
         public DbSet<ExchangeRate> ExchangeRates { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<SystemSettings> SystemSettings { get; set; }
@@ -25,7 +24,7 @@ namespace ForexExchange.Models
         public DbSet<Currency> Currencies { get; set; }
         public DbSet<AdminActivity> AdminActivities { get; set; }
         public DbSet<BankAccount> BankAccounts { get; set; }
-    public DbSet<CustomerInitialBalance> CustomerInitialBalances { get; set; }
+        public DbSet<CustomerBalance> CustomerBalances { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -50,81 +49,55 @@ namespace ForexExchange.Models
                       .OnDelete(DeleteBehavior.Restrict);
             });
             
-            // Transaction configurations
-            modelBuilder.Entity<Transaction>(entity =>
+            // AccountingDocument configurations
+            modelBuilder.Entity<AccountingDocument>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 
-                // New single order-based transaction relationship
-                entity.HasOne(e => e.Order)
-                      .WithMany(e => e.Transactions)
-                      .HasForeignKey(e => e.OrderId)
-                      .OnDelete(DeleteBehavior.SetNull);
-                
-                entity.HasOne(e => e.BuyOrder)
-                      .WithMany()  // No inverse navigation to avoid conflict
-                      .HasForeignKey(e => e.BuyOrderId)
-                      .OnDelete(DeleteBehavior.Restrict);
-                      
-                entity.HasOne(e => e.SellOrder)
-                      .WithMany()
-                      .HasForeignKey(e => e.SellOrderId)
-                      .OnDelete(DeleteBehavior.Restrict);
-                      
-                entity.HasOne(e => e.BuyerCustomer)
-                      .WithMany(e => e.BuyTransactions)
-                      .HasForeignKey(e => e.BuyerCustomerId)
-                      .OnDelete(DeleteBehavior.Restrict);
-                      
-                entity.HasOne(e => e.SellerCustomer)
-                      .WithMany(e => e.SellTransactions)
-                      .HasForeignKey(e => e.SellerCustomerId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-            // Map currency relationships
-            entity.HasOne(e => e.FromCurrency)
-                .WithMany(c => c.FromCurrencyTransactions)
-                .HasForeignKey(e => e.FromCurrencyId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(e => e.ToCurrency)
-                .WithMany(c => c.ToCurrencyTransactions)
-                .HasForeignKey(e => e.ToCurrencyId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // Useful indexes
-            entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId });
-            entity.HasIndex(e => e.Status);
-            entity.HasIndex(e => e.CreatedAt);
-            });
-            
-            // Receipt configurations
-            modelBuilder.Entity<Receipt>(entity =>
-            {
-                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.ReferenceNumber).HasMaxLength(50);
+                entity.Property(e => e.FileName).HasMaxLength(100);
+                entity.Property(e => e.ContentType).HasMaxLength(50);
+                entity.Property(e => e.VerifiedBy).HasMaxLength(100);
+                entity.Property(e => e.Notes).HasMaxLength(500);
                 
                 entity.HasOne(e => e.Customer)
-                      .WithMany(e => e.Receipts)
+                      .WithMany()
                       .HasForeignKey(e => e.CustomerId)
                       .OnDelete(DeleteBehavior.Restrict);
                       
-                entity.HasOne(e => e.Order)
-                      .WithMany(e => e.Receipts)
-                      .HasForeignKey(e => e.OrderId)
+                entity.HasOne(e => e.BankAccount)
+                      .WithMany()
+                      .HasForeignKey(e => e.BankAccountId)
                       .OnDelete(DeleteBehavior.SetNull);
                       
-                entity.HasOne(e => e.Transaction)
-                      .WithMany(e => e.Receipts)
-                      .HasForeignKey(e => e.TransactionId)
-                      .OnDelete(DeleteBehavior.SetNull);
-
-            // Optional system bank account link
-            entity.HasOne(e => e.SystemBankAccount)
-                .WithMany()
-                .HasForeignKey(e => e.SystemBankAccountId)
-                .OnDelete(DeleteBehavior.SetNull);
+                entity.HasIndex(e => e.DocumentDate);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.IsVerified);
+                entity.HasIndex(e => new { e.PayerType, e.Type });
             });
-            
+
+            // CustomerBalance configurations
+            modelBuilder.Entity<CustomerBalance>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.Balance).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Notes).HasMaxLength(500);
+                
+                entity.HasOne(e => e.Customer)
+                      .WithMany()
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                      
+                entity.HasIndex(e => new { e.CustomerId, e.CurrencyCode }).IsUnique();
+                entity.HasIndex(e => e.LastUpdated);
+            });
+
             // ExchangeRate configurations
             modelBuilder.Entity<ExchangeRate>(entity =>
             {
@@ -188,19 +161,6 @@ namespace ForexExchange.Models
                 entity.Ignore(e => e.LegacyRates);
             });
 
-            // CustomerInitialBalance configurations
-            modelBuilder.Entity<CustomerInitialBalance>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
-                entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
-                entity.HasOne(e => e.Customer)
-                      .WithMany(c => c.InitialBalances)
-                      .HasForeignKey(e => e.CustomerId)
-                      .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(e => new { e.CustomerId, e.CurrencyCode }).IsUnique();
-            });
-            
             // ExchangeRate configurations - Updated for cross-currency support
             modelBuilder.Entity<ExchangeRate>(entity =>
             {
@@ -270,7 +230,6 @@ namespace ForexExchange.Models
 
             // Useful indexes
             entity.HasIndex(e => new { e.FromCurrencyId, e.ToCurrencyId });
-                entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.CreatedAt);
             });
             
@@ -294,21 +253,6 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => e.AccountNumber);
                 entity.HasIndex(e => e.IsDefault).HasFilter("[IsDefault] = 1");
             });
-            
-          
-            
-            // Configure BankAccount-Transaction relationships
-            modelBuilder.Entity<Transaction>()
-                .HasOne(t => t.BuyerBankAccountNavigation)
-                .WithMany()
-                .HasForeignKey(t => t.BuyerBankAccountId)
-                .OnDelete(DeleteBehavior.SetNull);
-            
-            modelBuilder.Entity<Transaction>()
-                .HasOne(t => t.SellerBankAccountNavigation)
-                .WithMany()
-                .HasForeignKey(t => t.SellerBankAccountId)
-                .OnDelete(DeleteBehavior.SetNull);
             
             // ApplicationUser configurations
             modelBuilder.Entity<ApplicationUser>(entity =>

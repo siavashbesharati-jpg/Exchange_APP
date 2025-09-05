@@ -2,20 +2,23 @@ using ForexExchange.Models;
 
 namespace ForexExchange.Services
 {
-    public interface IReceiptService
+    // TODO: Reimplement with AccountingDocument in new architecture
+    /*
+    public interface IAccountingDocumentService
     {
         /// <summary>
-        /// Processes a receipt upload and creates corresponding transaction
+        /// Processes an accounting document upload and creates corresponding transaction
         /// </summary>
-        /// <param name="receipt">The receipt to process</param>
+        /// <param name="document">The accounting document to process</param>
         /// <returns>The created transaction if successful</returns>
-        Task<Transaction?> ProcessReceiptUploadAsync(Receipt receipt);
+        Task<Transaction?> ProcessAccountingDocumentUploadAsync(AccountingDocument document);
         
         /// <summary>
-        /// Validates that a receipt can be processed
+        /// Validates that an accounting document can be processed
         /// </summary>
-        /// <param name="receipt">The receipt to validate</param>
+        /// <param name="document">The accounting document to validate</param>
         /// <returns>True if valid, false otherwise</returns>
-        Task<bool> ValidateReceiptAsync(Receipt receipt);
+        Task<bool> ValidateAccountingDocumentAsync(AccountingDocument document);
     }
+    */
 }

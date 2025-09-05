@@ -100,7 +100,7 @@ namespace ForexExchange.Services
                 currency = order.FromCurrency?.Code,
                 rate = order.Rate,
                 totalAmount = order.TotalAmount,
-                status = order.Status.ToString()
+                status = "N/A"
             });
         }
 

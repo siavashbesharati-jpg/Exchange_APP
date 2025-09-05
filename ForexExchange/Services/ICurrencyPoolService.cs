@@ -94,6 +94,8 @@ namespace ForexExchange.Services
         /// <returns>Pool performance data</returns>
         Task<PoolPerformance> GetPoolPerformanceAsync(int currencyId, decimal currentRate);
 
+        // TODO: Reimplement with AccountingDocument in new architecture
+        /*
         /// <summary>
         /// Process transaction and update corresponding pools
         /// پردازش تراکنش و بروزرسانی صندوق های مربوطه
@@ -101,6 +103,7 @@ namespace ForexExchange.Services
         /// <param name="transaction">Transaction to process</param>
         /// <returns>Updated pools</returns>
         Task<List<CurrencyPool>> ProcessTransactionAsync(Transaction transaction);
+        */
 
         /// <summary>
         /// Update order counts for a currency pool
@@ -126,11 +129,17 @@ namespace ForexExchange.Services
         Task<CurrencyPool> UpdatePoolDirectAsync(CurrencyPool pool);
 
         /// <summary>
-        /// Direct pool update for admin operations
-        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
+        /// Process accounting document and update currency pool balances
+        /// پردازش سند حسابداری و بروزرسانی موجودی صندوق ارزی
         /// </summary>
-        /// <param name="pool">Pool to update</param>
-        /// <returns>Updated pool</returns>
+        /// <param name="document">Accounting document</param>
+        Task ProcessAccountingDocumentAsync(AccountingDocument document);
+
+        /// <summary>
+        /// Clean all pools (set to zero)
+        /// پاکسازی تمام صندوق ها (تنظیم روی صفر)
+        /// </summary>
+        /// <returns>Success status</returns>
         Task<bool> CleanPullAsync();
     }
 

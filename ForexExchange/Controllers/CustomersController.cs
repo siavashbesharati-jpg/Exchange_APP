@@ -46,24 +46,27 @@ namespace ForexExchange.Controllers
             }
 
             var customer = await _context.Customers
-                .Include(c => c.InitialBalances)
+                // TODO: Include customer balances when implementing new architecture
+                // .Include(c => c.Balances)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.FromCurrency)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.ToCurrency)
-                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.SellerCustomer)
-                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.FromCurrency)
-                .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.ToCurrency)
-                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.BuyerCustomer)
-                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.FromCurrency)
-                .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
-                    .ThenInclude(t => t.ToCurrency)
-                .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
+                // TODO: Re-implement with new architecture
+                // .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                //     .ThenInclude(t => t.SellerCustomer)
+                // .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                //     .ThenInclude(t => t.FromCurrency)
+                // .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
+                //     .ThenInclude(t => t.ToCurrency)
+                // TODO: Re-implement with new architecture
+                // .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                //     .ThenInclude(t => t.BuyerCustomer)
+                // .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                //     .ThenInclude(t => t.FromCurrency)
+                // .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
+                //     .ThenInclude(t => t.ToCurrency)
+                // .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (customer == null)
@@ -71,6 +74,22 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
+            // Calculate customer statistics
+            var stats = new CustomerProfileStats
+            {
+                TotalOrders = customer.Orders.Count,
+                CompletedOrders = 0, // Removed OrderStatus from Order model
+                PendingOrders = 0, // Removed OrderStatus from Order model
+                // TODO: Re-implement with new architecture
+                TotalTransactions = 0, // customer.BuyTransactions.Count + customer.SellTransactions.Count,
+                CompletedTransactions = 0, // customer.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + customer.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
+                TotalAccountingDocuments = 0, // customer.Receipts.Count,
+                VerifiedAccountingDocuments = 0, // customer.Receipts.Count(r => r.IsVerified),
+                TotalVolumeInToman = 0, // Removed TotalInToman from Order model
+                RegistrationDays = (DateTime.Now - customer.CreatedAt).Days
+            };
+
+            ViewBag.CustomerStats = stats;
             return View(customer);
         }
 
@@ -83,11 +102,13 @@ namespace ForexExchange.Controllers
             }
 
             var customer = await _context.Customers
-                .Include(c => c.InitialBalances)
+                .Include(c => c.Balances) // Using new CustomerBalance relationship
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.FromCurrency)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.ToCurrency)
+                // TODO: Include AccountingDocuments in new architecture
+                /*
                 .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
                     .ThenInclude(t => t.SellerCustomer)
                 .Include(c => c.BuyTransactions.OrderByDescending(t => t.CreatedAt))
@@ -101,6 +122,7 @@ namespace ForexExchange.Controllers
                 .Include(c => c.SellTransactions.OrderByDescending(t => t.CreatedAt))
                     .ThenInclude(t => t.ToCurrency)
                 .Include(c => c.Receipts.OrderByDescending(r => r.UploadedAt))
+                */
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (customer == null)
@@ -112,14 +134,14 @@ namespace ForexExchange.Controllers
             var stats = new CustomerProfileStats
             {
                 TotalOrders = customer.Orders.Count,
-                CompletedOrders = customer.Orders.Count(o => o.Status == OrderStatus.Completed),
-                PendingOrders = customer.Orders.Count(o => o.Status == OrderStatus.Open),
-                TotalTransactions = customer.BuyTransactions.Count + customer.SellTransactions.Count,
-                CompletedTransactions = customer.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) +
-                                     customer.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
-                TotalReceipts = customer.Receipts.Count,
-                VerifiedReceipts = customer.Receipts.Count(r => r.IsVerified),
-                TotalVolumeInToman = customer.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.TotalInToman),
+                CompletedOrders = 0, // Removed OrderStatus from Order model
+                PendingOrders = 0, // Removed OrderStatus from Order model
+                // TODO: Re-implement with new architecture
+                TotalTransactions = 0, // customer.BuyTransactions.Count + customer.SellTransactions.Count,
+                CompletedTransactions = 0, // customer.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + customer.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
+                TotalAccountingDocuments = 0, // customer.Receipts.Count,
+                VerifiedAccountingDocuments = 0, // customer.Receipts.Count(r => r.IsVerified),
+                TotalVolumeInToman = 0, // Removed TotalInToman from Order model
                 RegistrationDays = (DateTime.Now - customer.CreatedAt).Days
             };
 
@@ -268,12 +290,15 @@ namespace ForexExchange.Controllers
                         }
                         
                         _logger.LogInformation($"CREATE: Saving {code} = {amount}");
+                        // TODO: Replace with CustomerBalance when implementing balance management
+                        /*
                         _context.CustomerInitialBalances.Add(new CustomerInitialBalance
                         {
                             CustomerId = customer.Id,
                             CurrencyCode = code,
                             Amount = amount
                         });
+                        */
                     }
                     
                     if (initialBalances.Count > 0)
@@ -314,7 +339,7 @@ namespace ForexExchange.Controllers
             }
 
             var customer = await _context.Customers
-                .Include(c => c.InitialBalances)
+                .Include(c => c.Balances) // CustomerBalance uses CurrencyCode directly
                 .FirstOrDefaultAsync(c => c.Id == id);
             if (customer == null)
             {
@@ -331,7 +356,7 @@ namespace ForexExchange.Controllers
                 Address = customer.Address,
                 IsActive = customer.IsActive,
                 CreatedAt = customer.CreatedAt,
-                InitialBalances = customer.InitialBalances?.ToDictionary(b => b.CurrencyCode, b => b.Amount) ?? new Dictionary<string, decimal>()
+                InitialBalances = customer.Balances?.ToDictionary(b => b.CurrencyCode, b => b.Balance) ?? new Dictionary<string, decimal>()
             };
 
             // supply currency dropdown
@@ -394,7 +419,11 @@ namespace ForexExchange.Controllers
             {
                 try
                 {
+                    // TODO: Implement balance management with CustomerBalance in new architecture
+                    /*
                     var customer = await _context.Customers.Include(c => c.InitialBalances).FirstOrDefaultAsync(c => c.Id == id);
+                    */
+                    var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id);
                     if (customer == null)
                     {
                         return NotFound();
@@ -475,6 +504,8 @@ namespace ForexExchange.Controllers
                         }
                     }
 
+                    // TODO: Extract and update CustomerBalances with new architecture
+                    /*
                     // Extract and update initial balances with robust parsing
                     var providedBalances = ExtractInitialBalancesFromForm();
                     _logger.LogInformation($"EDIT: Processing {providedBalances.Count} initial balances");
@@ -523,6 +554,7 @@ namespace ForexExchange.Controllers
                             _context.CustomerInitialBalances.Update(existingBalance);
                         }
                     }
+                    */
 
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = "اطلاعات مشتری با موفقیت به‌روزرسانی شد.";

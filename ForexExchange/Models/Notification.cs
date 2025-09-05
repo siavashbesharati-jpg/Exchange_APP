@@ -38,8 +38,8 @@ namespace ForexExchange.Models
         OrderCreated,
         OrderMatched,
         TransactionStatusChanged,
-        ReceiptUploaded,
-        ReceiptVerified,
+        AccountingDocumentUploaded,
+        AccountingDocumentVerified,
         SystemAlert,
         PaymentReminder
     }

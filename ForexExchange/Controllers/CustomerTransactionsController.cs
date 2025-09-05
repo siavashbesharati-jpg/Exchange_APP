@@ -6,6 +6,19 @@ using ForexExchange.Models;
 
 namespace ForexExchange.Controllers
 {
+// TODO: Reimplement using AccountingDocuments instead of Transactions
+// This controller handles customer transaction views and confirmations
+// Needs complete rewrite for new architecture with CustomerBalance and AccountingDocument
+
+/*
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ForexExchange.Models;
+
+namespace ForexExchange.Controllers
+{
     [Authorize(Roles = "Customer")]
     public class CustomerTransactionsController : Controller
     {
@@ -50,11 +63,6 @@ namespace ForexExchange.Controllers
         // GET: CustomerTransactions/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
             var user = await _userManager.GetUserAsync(User);
             if (user?.CustomerId == null)
             {
@@ -68,7 +76,6 @@ namespace ForexExchange.Controllers
                 .Include(t => t.SellerCustomer)
                 .Include(t => t.FromCurrency)
                 .Include(t => t.ToCurrency)
-                .Include(t => t.Receipts)
                 .FirstOrDefaultAsync(t => t.Id == id && 
                     (t.BuyerCustomerId == user.CustomerId || t.SellerCustomerId == user.CustomerId));
 
@@ -116,7 +123,8 @@ namespace ForexExchange.Controllers
 
             try
             {
-                transaction.Status = TransactionStatus.ReceiptConfirmed;
+                // TODO: Update to use AccountingDocument status instead of TransactionStatus
+                // transaction.Status = TransactionStatus.ReceiptConfirmed;
                 transaction.CompletedAt = DateTime.Now;
                 
                 await _context.SaveChangesAsync();
@@ -178,7 +186,8 @@ namespace ForexExchange.Controllers
 
             try
             {
-                transaction.Status = TransactionStatus.Completed;
+                // TODO: Update to use AccountingDocument status instead of TransactionStatus
+                // transaction.Status = TransactionStatus.Completed;
                 transaction.CompletedAt = DateTime.Now;
                 
                 await _context.SaveChangesAsync();
@@ -208,4 +217,6 @@ namespace ForexExchange.Controllers
             return RedirectToAction(nameof(Details), new { id });
         }
     }
+}
+*/
 }

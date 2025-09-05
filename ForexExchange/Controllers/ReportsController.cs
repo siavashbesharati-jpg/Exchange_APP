@@ -38,6 +38,8 @@ namespace ForexExchange.Controllers
             var fromDateTime = fromDate.Value.Date;
             var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
 
+            // TODO: Implement exchange report with AccountingDocuments in new architecture
+            /*
             var query = _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
@@ -46,7 +48,10 @@ namespace ForexExchange.Controllers
                 .Include(t => t.FromCurrency)
                 .Include(t => t.ToCurrency)
                 .Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime);
+            */
 
+            // TODO: Implement filtering in new architecture
+            /*
             if (customerId.HasValue)
             {
                 query = query.Where(t => t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId);
@@ -60,23 +65,27 @@ namespace ForexExchange.Controllers
             var transactions = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
+            */
 
-            // Calculate financial metrics
+            // For now return empty results
+            var transactions = new List<dynamic>();
+
+            // TODO: Calculate financial metrics with AccountingDocuments in new architecture
             var report = new FinancialReport
             {
                 FromDate = fromDate.Value,
                 ToDate = toDate.Value,
-                TotalTransactions = transactions.Count,
-                CompletedTransactions = transactions.Count(t => t.Status == TransactionStatus.Completed),
-                PendingTransactions = transactions.Count(t => t.Status == TransactionStatus.Pending || 
-                                                           t.Status == TransactionStatus.PaymentUploaded || 
-                                                           t.Status == TransactionStatus.ReceiptConfirmed),
-                FailedTransactions = transactions.Count(t => t.Status == TransactionStatus.Failed),
-                TotalVolumeInToman = transactions.Where(t => t.Status == TransactionStatus.Completed).Sum(t => t.TotalInToman),
-                TotalCommissionEarned = transactions.Where(t => t.Status == TransactionStatus.Completed).Sum(t => t.TotalInToman * 0.005m), // 0.5% commission
-                Transactions = transactions
+                TotalTransactions = 0, // transactions.Count,
+                CompletedTransactions = 0, // transactions.Count(t => t.Status == TransactionStatus.Completed),
+                PendingTransactions = 0, // transactions.Count(t => t.Status == TransactionStatus.Pending || t.Status == TransactionStatus.PaymentUploaded || t.Status == TransactionStatus.ReceiptConfirmed),
+                FailedTransactions = 0, // transactions.Count(t => t.Status == TransactionStatus.Failed),
+                TotalVolumeInToman = 0, // transactions.Where(t => t.Status == TransactionStatus.Completed).Sum(t => t.TotalInToman),
+                TotalCommissionEarned = 0, // transactions.Where(t => t.Status == TransactionStatus.Completed).Sum(t => t.TotalInToman * 0.005m), // 0.5% commission
+                // Transactions = new List<Transaction>() // Empty for now - TODO: Re-implement with new architecture
             };
 
+            // TODO: Currency breakdown with AccountingDocuments in new architecture
+            /*
             // Currency breakdown - include all transactions, not just completed ones
             report.CurrencyBreakdown = transactions
                 .Where(t => t.FromCurrencyId.HasValue)
@@ -89,7 +98,7 @@ namespace ForexExchange.Controllers
                     TotalVolume = g.Sum(t => t.Amount),
                     TransactionCount = g.Count(),
                     TotalValueInToman = g.Sum(t => t.TotalInToman),
-                    AverageRate = g.Average(t => t.Rate ?? 0)
+                    AverageRate = (decimal)g.Average(t => t.Rate ?? 0)
                 })
                 .ToList();
 
@@ -104,6 +113,11 @@ namespace ForexExchange.Controllers
                 })
                 .OrderBy(d => d.Date)
                 .ToList();
+            */
+
+            // For now return empty breakdowns
+            report.CurrencyBreakdown = new List<CurrencyVolumeReport>();
+            report.DailyBreakdown = new List<DailyVolumeReport>();
 
             ViewBag.Customers = await _context.Customers
                 .Where(c => c.IsActive)
@@ -136,18 +150,19 @@ namespace ForexExchange.Controllers
 
             var customerActivity = await _context.Customers
                 .Include(c => c.Orders.Where(o => o.CreatedAt >= fromDateTime && o.CreatedAt <= toDateTime))
-                .Include(c => c.BuyTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
-                .Include(c => c.SellTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
+                // TODO: Re-implement with new architecture
+                // .Include(c => c.BuyTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
+                // .Include(c => c.SellTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
                 .Where(c => c.IsActive)
                 .Select(c => new CustomerActivityReport
                 {
                     Customer = c,
                     TotalOrders = c.Orders.Count,
-                    CompletedOrders = c.Orders.Count(o => o.Status == OrderStatus.Completed),
-                    TotalTransactions = c.BuyTransactions.Count + c.SellTransactions.Count,
-                    CompletedTransactions = c.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + 
-                                          c.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
-                    TotalVolumeInToman = c.Orders.Where(o => o.Status == OrderStatus.Completed).Sum(o => o.TotalInToman),
+                    CompletedOrders = 0, // Removed OrderStatus from Order model
+                    // TODO: Re-implement with new architecture
+                    TotalTransactions = 0, // c.BuyTransactions.Count + c.SellTransactions.Count,
+                    CompletedTransactions = 0, // c.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + c.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
+                    TotalVolumeInToman = 0, // Removed TotalInToman from Order model
                     LastActivityDate = c.Orders.Any() ? c.Orders.Max(o => o.CreatedAt) : c.CreatedAt
                 })
                 .ToListAsync();
@@ -168,7 +183,7 @@ namespace ForexExchange.Controllers
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Where(o => o.Status == OrderStatus.Open);
+                .AsQueryable();
 
             if (currencyId.HasValue)
             {
@@ -221,26 +236,35 @@ namespace ForexExchange.Controllers
             var fromDateTime = fromDate.Value.Date;
             var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
 
+            // TODO: Implement commission report with AccountingDocuments in new architecture
+            /*
             var completedTransactions = await _context.Transactions
                 .Where(t => t.Status == TransactionStatus.Completed && 
                            t.CompletedAt >= fromDateTime && t.CompletedAt <= toDateTime)
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
                 .ToListAsync();
+            */
+
+            // For now return empty results
+            var completedTransactions = new List<dynamic>();
 
             // Get dynamic rates from settings
             var commissionRate = await _settingsService.GetCommissionRateAsync();
             var exchangeFeeRate = await _settingsService.GetExchangeFeeRateAsync();
 
+            // TODO: Calculate commission report in new architecture
             var commissionReport = new CommissionReport
             {
                 FromDate = fromDate.Value,
                 ToDate = toDate.Value,
-                TotalTransactions = completedTransactions.Count,
-                TotalVolumeInToman = completedTransactions.Sum(t => t.TotalInToman),
-                TotalCommissionEarned = completedTransactions.Sum(t => t.TotalInToman * commissionRate),
-                TotalExchangeFeesEarned = completedTransactions.Sum(t => t.TotalInToman * exchangeFeeRate),
-                AverageTransactionValue = completedTransactions.Any() ? completedTransactions.Average(t => t.TotalInToman) : 0,
+                TotalTransactions = 0, // completedTransactions.Count,
+                TotalVolumeInToman = 0, // completedTransactions.Sum(t => t.TotalInToman),
+                TotalCommissionEarned = 0, // completedTransactions.Sum(t => t.TotalInToman * commissionRate),
+                TotalExchangeFeesEarned = 0, // completedTransactions.Sum(t => t.TotalInToman * exchangeFeeRate),
+                AverageTransactionValue = 0, // completedTransactions.Any() ? (decimal)completedTransactions.Average(t => t.TotalInToman) : 0,
+                DailyCommissions = new List<DailyCommissionReport>() // Empty for now
+                /*
                 DailyCommissions = completedTransactions
                     .Where(t => t.CompletedAt.HasValue)
                     .GroupBy(t => t.CompletedAt!.Value.Date)
@@ -254,6 +278,8 @@ namespace ForexExchange.Controllers
                     })
                     .OrderBy(d => d.Date)
                     .ToList()
+                */
+                    .ToList()
             };
 
             return View(commissionReport);
@@ -266,6 +292,8 @@ namespace ForexExchange.Controllers
             fromDate ??= DateTime.Now.AddDays(-30);
             toDate ??= DateTime.Now;
 
+            // TODO: Implement export with AccountingDocuments in new architecture
+            /*
             var query = _context.Transactions
                 .Include(t => t.BuyerCustomer)
                 .Include(t => t.SellerCustomer)
@@ -278,6 +306,14 @@ namespace ForexExchange.Controllers
                 query = query.Where(t => t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId);
             }
 
+            var transactions = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
+            */
+
+            // For now return empty CSV
+            var transactions = new List<dynamic>();
+
+            // TODO: Add currency filter in new architecture
+            /*
             if (currencyId.HasValue)
             {
                 query = query.Where(t => t.FromCurrencyId == currencyId || t.ToCurrencyId == currencyId);
@@ -286,13 +322,16 @@ namespace ForexExchange.Controllers
             var transactions = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
+            */
 
-            var csv = GenerateTransactionsCsv(transactions);
+            var csv = "No data available"; // GenerateTransactionsCsv(transactions);
             var fileName = $"financial_report_{fromDate?.ToString("yyyyMMdd") ?? "unknown"}_{toDate?.ToString("yyyyMMdd") ?? "unknown"}.csv";
 
             return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
         }
 
+        // TODO: Implement CSV generation with AccountingDocuments in new architecture
+        /*
         private string GenerateTransactionsCsv(List<Transaction> transactions)
         {
             var csv = new System.Text.StringBuilder();
@@ -302,8 +341,8 @@ namespace ForexExchange.Controllers
             {
                 csv.AppendLine($"{transaction.Id}," +
                               $"{transaction.CreatedAt:yyyy/MM/dd HH:mm}," +
-                              $"{transaction.BuyerCustomer.FullName}," +
-                              $"{transaction.SellerCustomer.FullName}," +
+                              $"{transaction.BuyerCustomer?.FullName}," +
+                              $"{transaction.SellerCustomer?.FullName}," +
                               $"{transaction.FromCurrency?.Code}-{transaction.ToCurrency?.Code}," +
                               $"{transaction.Amount}," +
                               $"{transaction.Rate}," +
@@ -321,12 +360,13 @@ namespace ForexExchange.Controllers
             {
                 TransactionStatus.Pending => "در انتظار",
                 TransactionStatus.PaymentUploaded => "رسید آپلود شده",
-                TransactionStatus.ReceiptConfirmed => "رسید تأیید شده",
+                TransactionStatus.ReceiptConfirmed => "سند حسابداری تأیید شده",
                 TransactionStatus.Completed => "تکمیل شده",
                 TransactionStatus.Failed => "ناموفق",
                 _ => status.ToString()
             };
         }
+        */
     }
 
     // Report model classes
@@ -340,7 +380,8 @@ namespace ForexExchange.Controllers
         public int FailedTransactions { get; set; }
         public decimal TotalVolumeInToman { get; set; }
         public decimal TotalCommissionEarned { get; set; }
-        public List<Transaction> Transactions { get; set; } = new();
+        // TODO: Re-implement with new architecture
+        // public List<Transaction> Transactions { get; set; } = new();
         public List<CurrencyVolumeReport> CurrencyBreakdown { get; set; } = new();
         public List<DailyVolumeReport> DailyBreakdown { get; set; } = new();
     }

@@ -19,9 +19,9 @@ namespace ForexExchange.Services
             _logger = logger;
         }
 
-        public async Task<OcrResult> ProcessReceiptAsync(byte[] imageData)
+        public async Task<OcrResult> ProcessAccountingDocumentAsync(byte[] imageData)
         {
-            return await ProcessImageAsync(imageData, "receipt");
+            return await ProcessImageAsync(imageData, "accounting_document");
         }
 
         public async Task<OcrResult> ProcessBankStatementAsync(byte[] imageData)
@@ -48,8 +48,8 @@ namespace ForexExchange.Services
                 var imageFormat = GetImageFormat(imageData);
 
                 // Create the prompt based on document type
-                var prompt = documentType == "receipt"
-                    ? CreateReceiptPrompt()
+                var prompt = documentType == "accounting_document"
+                    ? CreateAccountingDocumentPrompt()
                     : CreateBankStatementPrompt();
 
                 // Prepare the request
@@ -120,7 +120,7 @@ namespace ForexExchange.Services
             }
         }
 
-        private string CreateReceiptPrompt()
+        private string CreateAccountingDocumentPrompt()
         {
             return @"لطفاً این تصویر رسید بانکی را تجزیه و تحلیل کنید و اطلاعات زیر را رسید  کنید:
 
@@ -296,7 +296,7 @@ namespace ForexExchange.Services
         private OcrResult CreateMockOcrResult(string documentType)
         {
             // Create mock data when API key is not configured
-            if (documentType == "receipt")
+            if (documentType == "accounting_document")
             {
                 return new OcrResult
                 {

@@ -29,9 +29,10 @@ namespace ForexExchange.Controllers
                 CustomersCount = _context.Customers.Where(c => !c.IsSystem).Count(),
                 OrdersCount = _context.Orders.Count(),
                 CurrencyPoolsCount = _context.CurrencyPools.Count(),
-                TransactionsCount = _context.Transactions.Count(),
+                // TODO: Replace with AccountingDocument counts
+                TransactionsCount = 0, // _context.Transactions.Count(),
                 ExchangeRatesCount = _context.ExchangeRates.Count(),
-                ReceiptsCount = _context.Receipts.Count()
+                AccountingDocumentsCount = 0 // _context.Receipts.Count()
             };
             return View(model);
         }
@@ -233,11 +234,14 @@ namespace ForexExchange.Controllers
                     .ToList();
                 _context.Users.RemoveRange(usersToDelete);
 
+                // TODO: Remove AccountingDocuments and CustomerBalances in new architecture
+                /*
                 // 2. Remove Receipts (they reference Orders and Customers)
                 _context.Receipts.RemoveRange(_context.Receipts);
 
                 // 3. Remove Transactions (they reference Orders and Customers)
                 _context.Transactions.RemoveRange(_context.Transactions);
+                */
 
                 // 4. Remove Orders (they reference Customers)
                 _context.Orders.RemoveRange(_context.Orders);
@@ -263,12 +267,15 @@ namespace ForexExchange.Controllers
         {
             try
             {
+                // TODO: Remove accounting documents first, then orders in new architecture
+                /*
                 // Remove receipts first, then orders
                 _context.Receipts.RemoveRange(_context.Receipts);
+                */
                 _context.Orders.RemoveRange(_context.Orders);
 
                 await _context.SaveChangesAsync();
-                TempData["Success"] = "تمام سفارشات و رسیدهای مرتبط پاک شدند";
+                TempData["Success"] = "تمام سفارشات پاک شدند";
             }
             catch (Exception ex)
             {
