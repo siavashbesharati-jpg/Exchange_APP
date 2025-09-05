@@ -1,0 +1,209 @@
+@model IEnumerable<ForexExchange.Models.Receipt>
+
+@{
+    ViewData["Title"] = "مدیریت رسیدها";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">مدیریت رسیدها</h1>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">لیست رسیدهای آپلود شده</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>شماره</th>
+                                        <th>تصویر</th>
+                                        <th>مشتری</th>
+                                        <th>نوع رسید</th>
+                                        <th>مبلغ رسید  شده</th>
+                                        <th>شماره پیگیری</th>
+                                        <th>تاریخ آپلود</th>
+                                        <th>وضعیت</th>
+                                        <th>معامله</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td>@item.Id</td>
+                                            <td>
+                                                <a href="@Url.Action("Image", new { id = item.Id })" target="_blank" class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-image"></i>
+                                                </a>
+                                            </td>
+                                            <td>@item.Customer.FullName</td>
+                                            <td>
+                                                @if (item.Type == ForexExchange.Models.ReceiptType.RecivreRecipt)
+                                                {
+                                                    <span class="badge bg-primary">رسید دریافت وجه</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-info">گردش حساب</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(item.ParsedAmount))
+                                                {
+                                                    <span class="text-success fw-bold">@item.ParsedAmount</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">نامشخص</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(item.ParsedReferenceId))
+                                                {
+                                                    <code>@item.ParsedReferenceId</code>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">نامشخص</span>
+                                                }
+                                            </td>
+                                            <td>@item.UploadedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td>
+                                                @if (item.IsVerified)
+                                                {
+                                                    <span class="badge bg-success">تأیید شده</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">در انتظار تأیید</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (item.Order != null)
+                                                {
+                                                    <a asp-controller="Orders" asp-action="Details" asp-route-id="@item.OrderId" class="btn btn-sm btn-outline-primary">
+                                                        معامله #@item.OrderId
+                                                    </a>
+                                                }
+                                                @if (item.Order == null && item.Transaction == null)
+                                                {
+                                                    <span class="text-muted">مستقل</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">جزئیات</a>
+                                                    @if (!item.IsVerified)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#verifyModal" 
+                                                                data-receipt-id="@item.Id" data-amount="@item.ParsedAmount" data-reference="@item.ParsedReferenceId">
+                                                            تأیید
+                                                        </button>
+                                                    }
+                                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display: inline;">
+                                                            @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                                onclick="return confirm('آیا مطمئن هستید که می‌خواهید این رسید را حذف کنید؟')">
+                                                            حذف
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">هیچ رسیدی آپلود نشده است.</p>
+                            <a asp-action="Upload" class="btn btn-primary">آپلود اولین رسید</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Verify Modal -->
+<div class="modal fade" id="verifyModal" tabindex="-1" aria-labelledby="verifyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="Verify" method="post">
+                        @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="verifyModalLabel">تأیید رسید</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="receiptId" name="id">
+                    
+                    <div class="mb-3">
+                        <label for="verifiedAmount" class="form-label">مبلغ تأیید شده</label>
+                        <input type="text" class="form-control" id="verifiedAmount" name="verifiedAmount" 
+                               placeholder="مبلغ صحیح را وارد کنید">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="verifiedReference" class="form-label">شماره پیگیری تأیید شده</label>
+                        <input type="text" class="form-control" id="verifiedReference" name="verifiedReference" 
+                               placeholder="شماره پیگیری صحیح را وارد کنید">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="verifyNotes" class="form-label">توضیحات</label>
+                        <textarea class="form-control" id="verifyNotes" name="notes" rows="3" 
+                                  placeholder="توضیحات اضافی در مورد تأیید..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-success">تأیید رسید</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Fill verify modal with existing data
+        document.getElementById('verifyModal').addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var receiptId = button.getAttribute('data-receipt-id');
+            var amount = button.getAttribute('data-amount');
+            var reference = button.getAttribute('data-reference');
+            
+            document.getElementById('receiptId').value = receiptId;
+            document.getElementById('verifiedAmount').value = amount || '';
+            document.getElementById('verifiedReference').value = reference || '';
+        });
+    </script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

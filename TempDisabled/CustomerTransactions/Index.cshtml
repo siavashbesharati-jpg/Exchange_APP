@@ -1,0 +1,279 @@
+@model IEnumerable<ForexExchange.Models.Transaction>
+
+@{
+    ViewData["Title"] = "تراکنش‌های من";
+    var currentCustomerId = ViewBag.CurrentCustomerId as int?;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    تراکنش‌های من
+                </h1>
+                <div>
+                    <a asp-controller="Orders" asp-action="Index" class="btn btn-info">
+                        <i class="fas fa-shopping-cart me-1"></i>
+                        معاملات من
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        لیست تراکنش‌ها
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>شماره تراکنش</th>
+                                        <th>نقش شما</th>
+                                        <th>جفت ارز</th>
+                                        <th>مقدار</th>
+                                        <th>نرخ</th>
+                                        <th>مقدار دریافتی</th>
+                                        <th>وضعیت</th>
+                                        <th>تاریخ ایجاد</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transaction in Model)
+                                    {
+                                        var isBuyer = transaction.BuyerCustomerId == currentCustomerId;
+                                        var isSeller = transaction.SellerCustomerId == currentCustomerId;
+                                        var role = isBuyer ? "خریدار" : "فروشنده";
+                                        var roleClass = isBuyer ? "badge bg-success" : "badge bg-warning";
+                                        
+                                        <tr>
+                                            <td>
+                                                <strong>#@transaction.Id</strong>
+                                            </td>
+                                            <td>
+                                                <span class="@roleClass">@role</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@transaction.CurrencyPair</span>
+                                            </td>
+                                            <td class="fw-bold">@transaction.Amount.ToString("N2") @transaction.FromCurrency?.Code</td>
+                                            <td class="text-success fw-bold">@(transaction.Rate?.ToString("N0") ?? "0")</td>
+                                            <td class="text-primary fw-bold">@((transaction.Amount * (transaction.Rate ?? 0)).ToString("N2")) @transaction.ToCurrency?.Code</td>
+                                            <td>
+                                                @switch(transaction.Status)
+                                                {
+                                                    case ForexExchange.Models.TransactionStatus.Pending:
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-clock me-1"></i>در انتظار
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.TransactionStatus.PaymentUploaded:
+                                                        <span class="badge bg-info">
+                                                            <i class="fas fa-upload me-1"></i>رسید آپلود شده
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.TransactionStatus.ReceiptConfirmed:
+                                                        <span class="badge bg-primary">
+                                                            <i class="fas fa-check me-1"></i>رسید تأیید شده
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.TransactionStatus.Completed:
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-double me-1"></i>تکمیل شده
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.TransactionStatus.Failed:
+                                                        <span class="badge bg-danger">
+                                                            <i class="fas fa-times me-1"></i>ناموفق
+                                                        </span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td>@transaction.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td>
+                                                <a asp-action="Details" asp-route-id="@transaction.Id" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye me-1"></i>
+                                                    جزئیات
+                                                </a>
+                                                
+                                                @if (isBuyer && transaction.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-success ms-1" 
+                                                            data-bs-toggle="modal" data-bs-target="#confirmPaymentModal_@transaction.Id">
+                                                        <i class="fas fa-check me-1"></i>
+                                                        تأیید پرداخت
+                                                    </button>
+                                                }
+                                                
+                                                @if (isSeller && transaction.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-warning ms-1" 
+                                                            data-bs-toggle="modal" data-bs-target="#confirmTransferModal_@transaction.Id">
+                                                        <i class="fas fa-paper-plane me-1"></i>
+                                                        تأیید انتقال
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ تراکنشی یافت نشد</h5>
+                            <p class="text-muted">شما هنوز در هیچ تراکنشی شرکت نکرده‌اید.</p>
+                            <a asp-controller="Orders" asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>
+                                ایجاد معامله جدید
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modals -->
+@foreach (var transaction in Model)
+{
+    var isBuyer = transaction.BuyerCustomerId == currentCustomerId;
+    var isSeller = transaction.SellerCustomerId == currentCustomerId;
+    
+    @if (isBuyer && transaction.Status == ForexExchange.Models.TransactionStatus.PaymentUploaded)
+    {
+        <!-- Payment Confirmation Modal -->
+        <div class="modal fade" id="confirmPaymentModal_@transaction.Id" tabindex="-1" aria-labelledby="confirmPaymentLabel_@transaction.Id" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="confirmPaymentLabel_@transaction.Id">
+                            <i class="fas fa-check me-2"></i>
+                            تأیید پرداخت
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="بستن"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>توجه:</strong> با تأیید پرداخت، شما اعلام می‌کنید که مبلغ 
+                            
+                            را به حساب فروشنده واریز کرده‌اید.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">شماره تراکنش:</small><br>
+                                <strong>#@transaction.Id</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">مبلغ قابل پرداخت:</small><br>
+                                
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3 mb-0">آیا مطمئن هستید که پرداخت را انجام داده‌اید؟</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>
+                            انصراف
+                        </button>
+                        <form asp-action="ConfirmPayment" asp-route-id="@transaction.Id" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-1"></i>
+                                بله، پرداخت را تأیید می‌کنم
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    
+    @if (isSeller && transaction.Status == ForexExchange.Models.TransactionStatus.ReceiptConfirmed)
+    {
+        <!-- Transfer Confirmation Modal -->
+        <div class="modal fade" id="confirmTransferModal_@transaction.Id" tabindex="-1" aria-labelledby="confirmTransferLabel_@transaction.Id" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title" id="confirmTransferLabel_@transaction.Id">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            تأیید انتقال ارز
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>توجه:</strong> با تأیید انتقال، شما اعلام می‌کنید که مقدار 
+                            <strong class="text-primary">@transaction.Amount.ToString("N2") @transaction.FromCurrency?.PersianName <small class="text-muted">(@transaction.CurrencyPair)</small></strong>
+                            را به حساب خریدار منتقل کرده‌اید.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">شماره تراکنش:</small><br>
+                                <strong>#@transaction.Id</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">مقدار قابل انتقال:</small><br>
+                                <strong class="text-primary">@transaction.Amount.ToString("N2") @transaction.FromCurrency?.PersianName <small class="text-muted">(@transaction.CurrencyPair)</small></strong>
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3 mb-0">آیا مطمئن هستید که ارز را به خریدار منتقل کرده‌اید؟</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>
+                            انصراف
+                        </button>
+                        <form asp-action="ConfirmTransfer" asp-route-id="@transaction.Id" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-paper-plane me-1"></i>
+                                بله، انتقال را تأیید می‌کنم
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

@@ -1,0 +1,283 @@
+@model ForexExchange.Models.Receipt
+
+@{
+    ViewData["Title"] = "جزئیات رسید";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">جزئیات رسید #@Model.Id</h1>
+                <div>
+                    <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                    @if (!Model.IsVerified)
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#verifyModal">
+                            تأیید رسید
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success fs-6">تأیید شده</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Receipt Image -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">تصویر رسید</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="@Url.Action("Image", new { id = Model.Id })" 
+                         alt="Receipt Image" 
+                         class="img-fluid border rounded shadow-sm"
+                         style="max-height: 500px; cursor: pointer;" 
+                         onclick="openImageModal(this.src)">
+                    <div class="mt-3">
+                        <a href="@Url.Action("Image", new { id = Model.Id })" download="receipt-@(Model.Id).jpg" class="btn btn-outline-primary">
+                            <i class="fas fa-download"></i> دانلود تصویر
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Receipt Details -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">اطلاعات رسید</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>مشتری:</strong></div>
+                        <div class="col-sm-8">
+                            <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">
+                                @Model.Customer.FullName
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>نوع رسید:</strong></div>
+                        <div class="col-sm-8">
+                            @if (Model.Type == ForexExchange.Models.ReceiptType.RecivreRecipt)
+                            {
+                                <span class="badge bg-primary">رسید دریافت وجه</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">گردش حساب بانکی</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>تاریخ آپلود:</strong></div>
+                        <div class="col-sm-8">@Model.UploadedAt.ToString("yyyy/MM/dd HH:mm:ss")</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-sm-4"><strong>وضعیت:</strong></div>
+                        <div class="col-sm-8">
+                            @if (Model.IsVerified)
+                            {
+                                <span class="badge bg-success">تأیید شده</span>
+                                @if (Model.VerifiedAt.HasValue)
+                                {
+                                    <small class="text-muted d-block">تأیید شده در: @Model.VerifiedAt.Value.ToString("yyyy/MM/dd HH:mm")</small>
+                                }
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">در انتظار تأیید</span>
+                            }
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-sm-4"><strong>توضیحات:</strong></div>
+                            <div class="col-sm-8">@Model.Notes</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OCR Extracted Data -->
+    @if (!string.IsNullOrEmpty(Model.OcrText) || !string.IsNullOrEmpty(Model.ParsedAmount) || !string.IsNullOrEmpty(Model.ParsedReferenceId))
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">اطلاعات رسید  شده (OCR)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.ParsedAmount))
+                        {
+                            <div class="row mb-3">
+                                <div class="col-sm-3"><strong>مبلغ:</strong></div>
+                                <div class="col-sm-9">
+                                    <span class="fw-bold text-success">@Model.ParsedAmount</span>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.ParsedReferenceId))
+                        {
+                            <div class="row mb-3">
+                                <div class="col-sm-3"><strong>شماره پیگیری:</strong></div>
+                                <div class="col-sm-9">
+                                    <code>@Model.ParsedReferenceId</code>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.OcrText))
+                        {
+                            <div class="row mb-3">
+                                <div class="col-sm-3"><strong>متن کامل OCR:</strong></div>
+                                <div class="col-sm-9">
+                                    <div class="border rounded p-3 bg-light" style="white-space: pre-wrap; font-family: 'Courier New', monospace; max-height: 300px; overflow-y: auto;">@Model.OcrText</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Related Order/Transaction -->
+    @if (Model.Order != null || Model.Transaction != null)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">معامله  مرتبط</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Order != null)
+                        {
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-shopping-cart"></i> معامله مرتبط</h6>
+                                <p class="mb-1"><strong>شماره معامله:</strong> #@Model.Order.Id</p>
+                                <!-- Removed OrderType display, now just show currency pair or amount -->
+                                <p class="mb-1"><strong>مبلغ:</strong> @Model.Order.Amount.ToString("N0") @((Model?.Order?.FromCurrency?.PersianName ?? Model?.Order?.FromCurrency?.Code) ?? "")</p>
+                                <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model?.Order.Id" class="btn btn-sm btn-primary">مشاهده جزئیات معامله</a>
+                            </div>
+                        }
+
+                      
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">تصویر رسید</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Receipt Image" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Verify Modal -->
+@if (!Model.IsVerified)
+{
+    <div class="modal fade" id="verifyModal" tabindex="-1" aria-labelledby="verifyModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="Verify" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="verifyModalLabel">تأیید رسید</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id" value="@Model.Id">
+                        
+                        <div class="mb-3">
+                            <label for="verifiedAmount" class="form-label">مبلغ تأیید شده</label>
+                            <input type="text" class="form-control" id="verifiedAmount" name="verifiedAmount" 
+                                   value="@Model.ParsedAmount" placeholder="مبلغ صحیح را وارد کنید">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="verifiedReference" class="form-label">شماره پیگیری تأیید شده</label>
+                            <input type="text" class="form-control" id="verifiedReference" name="verifiedReference" 
+                                   value="@Model.ParsedReferenceId" placeholder="شماره پیگیری صحیح را وارد کنید">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="verifyNotes" class="form-label">توضیحات</label>
+                            <textarea class="form-control" id="verifyNotes" name="notes" rows="3" 
+                                      placeholder="توضیحات اضافی در مورد تأیید...">@Model.Notes</textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                        <button type="submit" class="btn btn-success">تأیید رسید</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function openImageModal(imageSrc) {
+            document.getElementById('modalImage').src = imageSrc;
+            var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+            imageModal.show();
+        }
+    </script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}
