@@ -39,10 +39,6 @@ namespace ForexExchange.Models
                 entity.Property(e => e.FullName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(20);
                 entity.HasIndex(e => e.PhoneNumber).IsUnique();
-                
-                // Ignore the ambiguous navigation properties to prevent EF confusion
-                entity.Ignore(e => e.PayerDocuments);
-                entity.Ignore(e => e.ReceiverDocuments);
             });
             
             // Order configurations
@@ -117,19 +113,6 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => new { e.IsActive, e.DisplayOrder });
                 // Ignore legacy navigation not mapped on ExchangeRate
                 entity.Ignore(e => e.LegacyRates);
-            });
-
-            // CustomerInitialBalance configurations
-            modelBuilder.Entity<CustomerInitialBalance>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
-                entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
-                entity.HasOne(e => e.Customer)
-                      .WithMany()
-                      .HasForeignKey(e => e.CustomerId)
-                      .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(e => new { e.CustomerId, e.CurrencyCode }).IsUnique();
             });
 
             // CustomerBalance configurations

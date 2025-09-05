@@ -37,7 +37,5 @@ namespace ForexExchange.Models
         
         // New navigation properties for the updated architecture
         public ICollection<CustomerBalance> Balances { get; set; } = new List<CustomerBalance>();
-        public ICollection<AccountingDocument> PayerDocuments { get; set; } = new List<AccountingDocument>();
-        public ICollection<AccountingDocument> ReceiverDocuments { get; set; } = new List<AccountingDocument>();
     }
 }

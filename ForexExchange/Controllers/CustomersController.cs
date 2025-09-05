@@ -107,8 +107,6 @@ namespace ForexExchange.Controllers
                     .ThenInclude(o => o.FromCurrency)
                 .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
                     .ThenInclude(o => o.ToCurrency)
-                .Include(c => c.PayerDocuments.OrderByDescending(d => d.CreatedAt))
-                .Include(c => c.ReceiverDocuments.OrderByDescending(d => d.CreatedAt))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (customer == null)
