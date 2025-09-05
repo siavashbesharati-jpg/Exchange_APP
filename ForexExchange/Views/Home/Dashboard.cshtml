@@ -34,8 +34,30 @@
             <!-- Customer Debt/Credit Widget -->
             <div class="row mb-4">
                 <div class="col-12">
-                    <div id="debt-credit-widget-container">
-                        @await Html.PartialAsync("_DebtCreditWidget", ViewBag.CustomerDebtCredits as List<ForexExchange.Models.CustomerDebtCredit>)
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-gradient-info text-white d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-cash-stack me-2"></i>
+                                <strong>آخرین مشتری - وضعیت بدهی و بستانکاری</strong>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <a href="@Url.Action("AllCustomerDebtCredits", "Home")" class="btn btn-sm btn-outline-light me-2">
+                                    <i class="bi bi-list"></i> مشاهده همه
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-light" onclick="refreshDebtCreditWidget()" title="بروزرسانی">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="debt-credit-widget-container">
+                                @{
+                                    var lastCustomer = ViewBag.CustomerDebtCredits as List<ForexExchange.Models.CustomerDebtCredit>;
+                                    var singleCustomer = lastCustomer?.Take(1).ToList() ?? new List<ForexExchange.Models.CustomerDebtCredit>();
+                                }
+                                @await Html.PartialAsync("_DebtCreditWidget", singleCustomer)
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

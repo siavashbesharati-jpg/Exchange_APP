@@ -90,6 +90,19 @@ public class HomeController : Controller
         return PartialView("_DebtCreditWidget", customerDebtCredits);
     }
 
+    public async Task<IActionResult> AllCustomerDebtCredits()
+    {
+        // Get all customer debt/credit summaries for the dedicated page
+        if (User.Identity?.IsAuthenticated == true &&
+            (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
+        {
+            var customerDebtCredits = await _debtCreditService.GetCustomerDebtCreditSummaryAsync();
+            return View(customerDebtCredits);
+        }
+        
+        return RedirectToAction("Dashboard");
+    }
+
     // Debug action to check currency display order
     public async Task<IActionResult> DebugCurrencyOrder()
     {
