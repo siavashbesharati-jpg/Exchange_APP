@@ -146,6 +146,49 @@ namespace ForexExchange.Controllers
             return View(accountingDocument);
         }
 
+        // GET: AccountingDocuments/CustomerStatement/5
+        public async Task<IActionResult> CustomerStatement(int? customerId, int? documentId = null)
+        {
+            if (customerId == null)
+            {
+                return NotFound();
+            }
+
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => c.Id == customerId);
+
+            if (customer == null)
+            {
+                return NotFound();
+            }
+
+            // Get all accounting documents for this customer
+            var documents = await _context.AccountingDocuments
+                .Include(a => a.BankAccount)
+                .Where(a => a.CustomerId == customerId)
+                .OrderByDescending(a => a.DocumentDate)
+                .ToListAsync();
+
+            // Get customer balance
+            var balances = await _customerBalanceService.GetCustomerBalancesAsync(customerId.Value);
+
+            var viewModel = new CustomerStatementViewModel
+            {
+                Customer = customer,
+                Documents = documents,
+                Balances = balances,
+                StatementDate = DateTime.Now
+            };
+
+            // Pass document ID for back navigation
+            if (documentId.HasValue)
+            {
+                ViewBag.DocumentId = documentId.Value;
+            }
+
+            return View(viewModel);
+        }
+
         // GET: AccountingDocuments/Upload
         public IActionResult Upload()
         {

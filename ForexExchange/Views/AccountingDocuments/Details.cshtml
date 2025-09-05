@@ -4,150 +4,381 @@
     ViewData["Title"] = $"جزئیات سند حسابداری #{Model.Id}";
 }
 
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1">جزئیات سند حسابداری</h2>
-            <div class="text-muted small">سند #@Model.Id</div>
+<style>
+    .document-paper {
+        background: #fff;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1), 0 6px 20px rgba(0,0,0,0.1);
+        border: 1px solid #ddd;
+        margin: 20px auto;
+        max-width: 800px;
+        min-height: 600px;
+        position: relative;
+    }
+    
+    .document-paper::before {
+        content: '';
+        position: absolute;
+        left: 40px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #ff9999;
+        z-index: 1;
+    }
+    
+    .document-header {
+        border-bottom: 3px double #333;
+        padding: 20px 60px;
+        text-align: center;
+        background: linear-gradient(to bottom, #f9f9f9, #fff);
+        position: relative;
+    }
+    
+    .company-info {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+    
+    .company-logo {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .company-name {
+        font-size: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .document-content {
+        padding: 40px 60px;
+        line-height: 1.0;
+        font-family: 'Tahoma', sans-serif;
+        position: relative;
+        background: repeating-linear-gradient(
+            transparent,
+            transparent 35px,
+            #e8f4fd 35px,
+            #e8f4fd 36px
+        );
+    }
+    
+    .document-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 10px;
+        text-decoration: underline;
+    }
+    
+    .document-number {
+        font-size: 16px;
+        color: #7f8c8d;
+        margin-bottom: 20px;
+    }
+    
+    .document-row {
+        display: flex;
+        margin-bottom: 0;
+        align-items: center;
+        height: 36px;
+        position: relative;
+    }
+    
+    .document-label {
+        font-weight: bold;
+        width: 150px;
+        color: #34495e;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+    
+    .document-value {
+        flex: 1;
+        padding-right: 20px;
+        display: flex;
+        align-items: center;
+        height: 100%;
+        font-size: 15px;
+        line-height: 1.2;
+    }
+    
+    .document-signature-area {
+        margin-top: 80px;
+        border-top: 2px solid #34495e;
+        padding-top: 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+    
+    .signature-box {
+        text-align: center;
+        width: 180px;
+    }
+    
+    .signature-line {
+        border-bottom: 1px solid #333;
+        margin-bottom: 8px;
+        height: 50px;
+    }
+    
+    .control-buttons {
+        max-width: 800px;
+        margin: 20px auto 0;
+        padding: 0 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+    
+    .status-stamp {
+        position: absolute;
+        top: 100px;
+        left: 60px;
+        transform: rotate(-15deg);
+        border: 3px solid;
+        padding: 10px 20px;
+        font-weight: bold;
+        font-size: 18px;
+        border-radius: 5px;
+        opacity: 0.8;
+        z-index: 2;
+    }
+    
+    .stamp-verified {
+        color: #27ae60;
+        border-color: #27ae60;
+        background: rgba(39, 174, 96, 0.1);
+    }
+    
+    .stamp-pending {
+        color: #f39c12;
+        border-color: #f39c12;
+        background: rgba(243, 156, 18, 0.1);
+    }
+    
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        
+        .document-paper, .document-paper * {
+            visibility: visible;
+        }
+        
+        .document-paper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        
+        .control-buttons,
+        .d-print-none,
+        .no-print {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        
+        .document-content {
+            padding: 30px 40px;
+        }
+        
+        .document-header {
+            padding: 15px 40px;
+        }
+    }
+</style>
+
+<div class="control-buttons d-print-none">
+    @if (!Model.IsVerified)
+    {
+        <form asp-action="Confirm" asp-route-id="@Model.Id" method="post" class="d-inline" 
+              onsubmit="return confirm('آیا از تأیید این سند اطمینان دارید؟ این عملیات ترازها را بروزرسانی خواهد کرد.')">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> تأیید سند
+            </button>
+        </form>
+    }
+    @if (Model.Customer != null)
+    {
+        <a asp-action="CustomerStatement" asp-route-customerId="@Model.CustomerId" asp-route-documentId="@Model.Id" class="btn btn-primary">
+            <i class="fas fa-file-invoice"></i> صورت حساب
+        </a>
+    }
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+        <i class="fas fa-edit"></i> ویرایش
+    </a>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> بازگشت به لیست
+    </a>
+    <button onclick="window.print()" class="btn btn-info">
+        <i class="fas fa-print"></i> چاپ
+    </button>
+</div>
+
+<div class="document-paper">
+    <!-- Status Stamp -->
+    @if (Model.IsVerified)
+    {
+        <div class="status-stamp stamp-verified">
+            تأیید شده
         </div>
-        <div>
-            @if (!Model.IsVerified)
-            {
-                <form asp-action="Confirm" asp-route-id="@Model.Id" method="post" class="d-inline" 
-                      onsubmit="return confirm('آیا از تأیید این سند اطمینان دارید؟ این عملیات ترازها را بروزرسانی خواهد کرد.')">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-success me-2">
-                        <i class="fas fa-check"></i> تأیید سند
-                    </button>
-                </form>
-            }
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning me-2">
-                <i class="fas fa-edit"></i> ویرایش
-            </a>
-            <a asp-action="Index" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> بازگشت به لیست
-            </a>
+    }
+    else
+    {
+        <div class="status-stamp stamp-pending">
+            در انتظار تأیید
         </div>
+    }
+    
+    <div class="document-header">
+        <div class="company-info">
+            <img src="~/favicon/android-chrome-192x192.png" alt="لوگو" class="company-logo" />
+            <div class="company-name">سامانه معاملات تابان</div>
+        </div>
+        <div class="document-title">سند حسابداری</div>
+        <div class="document-number">شماره سند: @Model.Id</div>
     </div>
+    
+    <div class="document-content">
+        <div class="document-row">
+            <div class="document-label">نوع سند:</div>
+            <div class="document-value">
+                @switch (Model.Type)
+                {
+                    case ForexExchange.Models.DocumentType.Cash:
+                        <strong>نقدی</strong>
+                        break;
+                    case ForexExchange.Models.DocumentType.BankStatement:
+                        <strong>رسید بانکی</strong>
+                        break;
+                    case ForexExchange.Models.DocumentType.Havala:
+                        <strong>حواله</strong>
+                        break;
+                }
+            </div>
+        </div>
 
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">اطلاعات سند حسابداری</h5>
+        <div class="document-row">
+            <div class="document-label">عنوان سند:</div>
+            <div class="document-value">@Model.Title</div>
+        </div>
+
+        <div class="document-row">
+            <div class="document-label">مبلغ:</div>
+            <div class="document-value">
+                <strong>@(Model.CurrencyCode == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2")) @Model.CurrencyCode</strong>
+            </div>
+        </div>
+
+        <div class="document-row">
+            <div class="document-label">تاریخ سند:</div>
+            <div class="document-value">@Model.DocumentDate.ToPersianDateTextify()</div>
+        </div>
+
+        <div class="document-row">
+            <div class="document-label">پرداخت‌کننده:</div>
+            <div class="document-value">
+                @if (Model.PayerType == ForexExchange.Models.PayerType.Customer && Model.Customer != null)
+                {
+                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
+                        @Model.Customer.FullName
+                    </a>
+                }
+                else
+                {
+                    <span>سیستم</span>
+                }
+            </div>
+        </div>
+
+        <div class="document-row">
+            <div class="document-label">دریافت‌کننده:</div>
+            <div class="document-value">
+                @if (Model.PayerType == ForexExchange.Models.PayerType.System && Model.Customer != null)
+                {
+                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
+                        @Model.Customer.FullName
+                    </a>
+                }
+                else if (Model.BankAccount != null)
+                {
+                    <span>@Model.BankAccount.BankName - @Model.BankAccount.AccountNumber</span>
+                }
+                else
+                {
+                    <span>سیستم</span>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ReferenceNumber))
+        {
+            <div class="document-row">
+                <div class="document-label">شماره مرجع:</div>
+                <div class="document-value">@Model.ReferenceNumber</div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="document-row">
+                <div class="document-label">توضیحات:</div>
+                <div class="document-value">@Model.Description</div>
+            </div>
+        }
+
+        <div class="document-row">
+            <div class="document-label">تاریخ ایجاد:</div>
+            <div class="document-value">@Model.CreatedAt.ToPersianDateTextify()</div>
+        </div>
+
+        @if (Model.IsVerified && Model.VerifiedAt.HasValue)
+        {
+            <div class="document-row">
+                <div class="document-label">تاریخ تأیید:</div>
+                <div class="document-value">@Model.VerifiedAt.Value.ToPersianDateTextify()</div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.FileName))
+        {
+            <div class="document-row">
+                <div class="document-label">فایل پیوست:</div>
+                <div class="document-value">
+                    <i class="fas fa-file me-2"></i>
+                    <span>@Model.FileName</span>
+                    <a href="#" class="btn btn-sm btn-outline-primary ms-3 no-print" onclick="downloadFile(@Model.Id)">
+                        <i class="fas fa-download"></i> دانلود
+                    </a>
                 </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-4">نوع سند:</dt>
-                        <dd class="col-sm-8">
-                            @switch (Model.Type)
-                            {
-                                case ForexExchange.Models.DocumentType.Cash:
-                                    <span class="badge bg-success">نقدی</span>
-                                    break;
-                                case ForexExchange.Models.DocumentType.BankStatement:
-                                    <span class="badge bg-primary">رسید بانکی</span>
-                                    break;
-                                case ForexExchange.Models.DocumentType.Havala:
-                                    <span class="badge bg-info">حواله</span>
-                                    break;
-                            }
-                        </dd>
-
-                        <dt class="col-sm-4">عنوان سند:</dt>
-                        <dd class="col-sm-8">@Model.Title</dd>
-
-                        <dt class="col-sm-4">مبلغ:</dt>
-                        <dd class="col-sm-8">
-                            <strong>@(Model.CurrencyCode == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2")) @Model.CurrencyCode</strong>
-                        </dd>
-
-                        <dt class="col-sm-4">تاریخ سند:</dt>
-                        <dd class="col-sm-8">@Model.DocumentDate.ToPersianDateTextify()</dd>
-
-                        <dt class="col-sm-4">پرداخت‌کننده:</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.PayerType == ForexExchange.Models.PayerType.Customer && Model.Customer != null)
-                            {
-                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">
-                                    @Model.Customer.FullName
-                                </a>
-                            }
-                            else
-                            {
-                                <span>سیستم</span>
-                            }
-                        </dd>
-
-                        <dt class="col-sm-4">دریافت‌کننده:</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.PayerType == ForexExchange.Models.PayerType.System && Model.Customer != null)
-                            {
-                                <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">
-                                    @Model.Customer.FullName
-                                </a>
-                            }
-                            else if (Model.BankAccount != null)
-                            {
-                                <span>@Model.BankAccount.BankName - @Model.BankAccount.AccountNumber</span>
-                            }
-                            else
-                            {
-                                <span>سیستم</span>
-                            }
-                        </dd>
-
-                        @if (!string.IsNullOrEmpty(Model.ReferenceNumber))
-                        {
-                            <dt class="col-sm-4">شماره مرجع:</dt>
-                            <dd class="col-sm-8">@Model.ReferenceNumber</dd>
-                        }
-
-                        @if (!string.IsNullOrEmpty(Model.Description))
-                        {
-                            <dt class="col-sm-4">توضیحات:</dt>
-                            <dd class="col-sm-8">@Model.Description</dd>
-                        }
-
-                        <dt class="col-sm-4">وضعیت تأیید:</dt>
-                        <dd class="col-sm-8">
-                            @if (Model.IsVerified)
-                            {
-                                <span class="badge bg-success">
-                                    <i class="fas fa-check"></i> تأیید شده
-                                </span>
-                                @if (Model.VerifiedAt.HasValue)
-                                {
-                                    <br><small class="text-muted">در تاریخ @Model.VerifiedAt.Value.ToPersianDateTextify()</small>
-                                }
-                            }
-                            else
-                            {
-                                <span class="badge bg-warning">
-                                    <i class="fas fa-clock"></i> در انتظار تأیید
-                                </span>
-                            }
-                        </dd>
-
-                        <dt class="col-sm-4">تاریخ ایجاد:</dt>
-                        <dd class="col-sm-8">@Model.CreatedAt.ToPersianDateTextify()</dd>
-                    </dl>
-
-                    @if (!string.IsNullOrEmpty(Model.FileName))
-                    {
-                        <hr>
-                        <div class="mb-3">
-                            <h6>فایل پیوست:</h6>
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-file me-2"></i>
-                                <span>@Model.FileName</span>
-                                <a href="#" class="btn btn-sm btn-outline-primary ms-3" onclick="downloadFile(@Model.Id)">
-                                    <i class="fas fa-download"></i> دانلود
-                                </a>
-                            </div>
-                        </div>
-                    }
-                </div>
+            </div>
+        }
+        
+        <div class="document-signature-area">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div>امضا تهیه کننده</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div>امضا بازبین</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div>امضا تأیید کننده</div>
             </div>
         </div>
     </div>
