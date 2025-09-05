@@ -14,29 +14,43 @@ namespace ForexExchange.Services
 
     public async Task<List<CustomerDebtCredit>> GetCustomerDebtCreditSummaryAsync()
         {
-            // Get all orders that have associated transactions (completed orders)
-            var ordersWithTransactions = await _context.Orders
+            // Get all customers who have either orders or balance records
+            var customersWithOrders = await _context.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                // .Include(o => o.Transactions)
+                .Select(o => o.Customer)
+                .Distinct()
                 .ToListAsync();
 
-            // Group by customer
-            var customerGroups = ordersWithTransactions.GroupBy(o => o.CustomerId);
+            var customersWithBalances = await _context.CustomerBalances
+                .Include(cb => cb.Customer)
+                .Select(cb => cb.Customer)
+                .Distinct()
+                .ToListAsync();
+
+            // Combine and deduplicate customers
+            var allCustomers = customersWithOrders
+                .Union(customersWithBalances)
+                .Where(c => c != null)
+                .GroupBy(c => c.Id)
+                .Select(g => g.First())
+                .ToList();
 
             var result = new List<CustomerDebtCredit>();
 
-            foreach (var customerGroup in customerGroups)
+            foreach (var customer in allCustomers)
             {
-                var customer = customerGroup.First().Customer;
-                var orders = customerGroup.ToList();
-
-                // Start with initial balances per currency (can be +/-)
+                // Get current balances from CustomerBalances table (already reflects all order effects)
                 var currencyBalances = await SeedInitialBalancesAsync(customer.Id);
 
-                // Apply order-based deltas
-                ApplyOrderDeltas(orders, currencyBalances);
+                // IMPORTANT: Don't apply order deltas when using CustomerBalance system
+                // The CustomerBalanceService already handles balance updates automatically
+                // Applying order deltas here would double-count the effects
+
+                var orders = await _context.Orders
+                    .Where(o => o.CustomerId == customer.Id)
+                    .ToListAsync();
 
                 // Calculate net balance (using IRR as primary currency if available, otherwise first currency)
                 var primaryCurrency = currencyBalances.FirstOrDefault(c => c.CurrencyCode == "IRR")?.CurrencyCode
@@ -153,11 +167,15 @@ namespace ForexExchange.Services
 
             var currencyBalances = await SeedInitialBalancesAsync(customer.Id);
 
-            // Apply order-based deltas if any
-            if (orders.Any())
-            {
-                ApplyOrderDeltas(orders, currencyBalances);
-            }
+            // IMPORTANT: Don't apply order deltas when using CustomerBalance system
+            // The CustomerBalanceService already handles balance updates automatically
+            // Applying order deltas here would double-count the effects
+            // 
+            // Apply order-based deltas if any (DISABLED for CustomerBalance integration)
+            // if (orders.Any())
+            // {
+            //     ApplyOrderDeltas(orders, currencyBalances);
+            // }
 
             // If no orders and no initial balances, return null (no financial data)
             if (!orders.Any() && !currencyBalances.Any())

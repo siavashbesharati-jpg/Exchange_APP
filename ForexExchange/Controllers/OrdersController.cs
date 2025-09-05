@@ -17,6 +17,7 @@ namespace ForexExchange.Controllers
         private readonly AdminActivityService _adminActivityService;
         private readonly AdminNotificationService _adminNotificationService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ICustomerBalanceService _customerBalanceService;
 
         public OrdersController(
             ForexDbContext context,
@@ -24,7 +25,8 @@ namespace ForexExchange.Controllers
             ICurrencyPoolService poolService,
             AdminActivityService adminActivityService,
             AdminNotificationService adminNotificationService,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ICustomerBalanceService customerBalanceService)
         {
             _context = context;
             _logger = logger;
@@ -32,6 +34,7 @@ namespace ForexExchange.Controllers
             _adminActivityService = adminActivityService;
             _adminNotificationService = adminNotificationService;
             _userManager = userManager;
+            _customerBalanceService = customerBalanceService;
         }
 
 
@@ -378,6 +381,7 @@ namespace ForexExchange.Controllers
                 // Calculate total and set order properties
                 order.Rate = finalExchangeRate;
                 var totalValue = order.Amount * order.Rate;
+                order.TotalAmount = totalValue;
 
                 order.CreatedAt = DateTime.Now;
                 order.FilledAmount = 0;
@@ -389,6 +393,11 @@ namespace ForexExchange.Controllers
                 await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
                 await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
                 await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
+
+                // Update customer balances for the order
+                _logger.LogInformation("About to call ProcessOrderCreationAsync for Order {OrderId}", order.Id);
+                await _customerBalanceService.ProcessOrderCreationAsync(order);
+                _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", order.Id);
 
                 // Log admin activity
                 var currentUser = await _userManager.GetUserAsync(User);
@@ -483,6 +492,18 @@ namespace ForexExchange.Controllers
                 {
                     try
                     {
+                        // Get the original order for balance reversal
+                        var originalOrder = await _context.Orders
+                            .Include(o => o.FromCurrency)
+                            .Include(o => o.ToCurrency)
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(o => o.Id == id);
+
+                        if (originalOrder == null)
+                        {
+                            return NotFound();
+                        }
+
                         // Recompute totals on server for integrity
                         var totalValue = order.Amount * order.Rate;
 
@@ -494,6 +515,9 @@ namespace ForexExchange.Controllers
                     await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
                     await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
                     await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
+
+                    // Update customer balances for the order edit (reverse old, apply new)
+                    await _customerBalanceService.ProcessOrderEditAsync(originalOrder, order);
 
                     // Log admin activity
                     var currentUser = await _userManager.GetUserAsync(User);

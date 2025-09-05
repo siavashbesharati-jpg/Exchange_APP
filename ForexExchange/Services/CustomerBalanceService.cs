@@ -96,19 +96,37 @@ namespace ForexExchange.Services
         {
             var balance = await GetCustomerBalanceAsync(customerId, currencyCode);
             
+            _logger.LogInformation("BEFORE UPDATE: Customer {CustomerId} {Currency} balance was {OldBalance}", 
+                customerId, currencyCode, balance.Balance);
+            
             balance.Balance += amount;
             balance.LastUpdated = DateTime.Now;
             balance.Notes = $"{reason} - {DateTime.Now:yyyy-MM-dd HH:mm}";
 
+            _logger.LogInformation("AFTER CALCULATION: Customer {CustomerId} {Currency} balance is now {NewBalance} (added {Amount})", 
+                customerId, currencyCode, balance.Balance, amount);
+
             _context.CustomerBalances.Update(balance);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated customer {CustomerId} balance in {Currency}: {Amount} ({Reason})", 
+            _logger.LogInformation("SAVED TO DB: Updated customer {CustomerId} balance in {Currency}: {Amount} ({Reason})", 
                 customerId, currencyCode, amount, reason);
         }
 
         public async Task ProcessOrderCreationAsync(Order order)
         {
+            _logger.LogInformation("Starting ProcessOrderCreationAsync for Order {OrderId}, Customer {CustomerId}", 
+                order.Id, order.CustomerId);
+            _logger.LogInformation("Order details: Amount={Amount}, Rate={Rate}, TotalAmount={TotalAmount}, FromCurrency={FromCurrency}, ToCurrency={ToCurrency}", 
+                order.Amount, order.Rate, order.TotalAmount, order.FromCurrency?.Code ?? "NULL", order.ToCurrency?.Code ?? "NULL");
+
+            if (order.FromCurrency == null || order.ToCurrency == null)
+            {
+                _logger.LogError("Order {OrderId} has null currencies: FromCurrency={FromCurrency}, ToCurrency={ToCurrency}", 
+                    order.Id, order.FromCurrency?.Code ?? "NULL", order.ToCurrency?.Code ?? "NULL");
+                return;
+            }
+
             // Customer pays FromCurrency amount (negative balance)
             await UpdateCustomerBalanceAsync(
                 order.CustomerId, 
@@ -125,7 +143,7 @@ namespace ForexExchange.Services
                 $"Order #{order.Id} - Receive {order.TotalAmount} {order.ToCurrency.Code}"
             );
 
-            _logger.LogInformation("Processed order creation {OrderId} for customer {CustomerId}", 
+            _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId} for customer {CustomerId}", 
                 order.Id, order.CustomerId);
         }
 
