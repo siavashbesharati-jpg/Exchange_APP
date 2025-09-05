@@ -39,6 +39,10 @@ namespace ForexExchange.Models
                 entity.Property(e => e.FullName).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(20);
                 entity.HasIndex(e => e.PhoneNumber).IsUnique();
+                
+                // Ignore the ambiguous navigation properties to prevent EF confusion
+                entity.Ignore(e => e.PayerDocuments);
+                entity.Ignore(e => e.ReceiverDocuments);
             });
             
             // Order configurations
@@ -247,6 +251,40 @@ namespace ForexExchange.Models
                       .HasForeignKey(e => e.BankAccountId)
                       .OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(e => new { e.BankAccountId, e.CurrencyCode }).IsUnique();
+            });
+
+            // AccountingDocument configurations
+            modelBuilder.Entity<AccountingDocument>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.ReferenceNumber).HasMaxLength(50);
+                entity.Property(e => e.FileName).HasMaxLength(100);
+                entity.Property(e => e.ContentType).HasMaxLength(50);
+                entity.Property(e => e.VerifiedBy).HasMaxLength(100);
+                entity.Property(e => e.Notes).HasMaxLength(500);
+                
+                // Configure the Customer relationship
+                entity.HasOne(e => e.Customer)
+                      .WithMany() // Don't specify which collection to avoid ambiguity
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                      
+                // Configure optional BankAccount relationship
+                entity.HasOne(e => e.BankAccount)
+                      .WithMany()
+                      .HasForeignKey(e => e.BankAccountId)
+                      .OnDelete(DeleteBehavior.SetNull);
+                      
+                // Indexes for performance
+                entity.HasIndex(e => e.CustomerId);
+                entity.HasIndex(e => e.DocumentDate);
+                entity.HasIndex(e => e.IsVerified);
+                entity.HasIndex(e => e.Type);
+                entity.HasIndex(e => e.ReferenceNumber);
             });
             
           
