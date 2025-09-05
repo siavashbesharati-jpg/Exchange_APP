@@ -30,7 +30,7 @@
                                 <!-- Currency Breakdown -->
                                 <div class="currency-breakdown">
                                     <div class="row g-2">
-                                        @foreach (var currencyBalance in customerDebtCredit.CurrencyBalances.Take(3))
+                                        @foreach (var currencyBalance in customerDebtCredit.CurrencyBalances.Where(c=>c.Balance != 0))
                                         {
                                             <div class="col-4" dir="ltr">
                                                 <div class="currency-item p-2 rounded @(currencyBalance.Balance >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
