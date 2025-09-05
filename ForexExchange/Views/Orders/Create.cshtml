@@ -64,7 +64,7 @@
 
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <label asp-for="FromCurrencyId" class="form-label"> خرید </label>
+                                <label asp-for="FromCurrencyId" class="form-label"> دریافت می کنیم </label>
                                 <select asp-for="FromCurrencyId" asp-items="ViewBag.FromCurrencies" class="form-select"
                                     id="fromCurrencySelect" required>
                                     <option value="">انتخاب کنید</option>
@@ -73,7 +73,7 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label asp-for="ToCurrencyId" class="form-label">  فروش </label>
+                                <label asp-for="ToCurrencyId" class="form-label">  پرداخت می کنیم   </label>
                                 <select asp-for="ToCurrencyId" asp-items="ViewBag.ToCurrencies" class="form-select"
                                     id="toCurrencySelect" required>
                                     <option value="">انتخاب کنید</option>
@@ -82,7 +82,7 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label asp-for="Amount" class="form-label">مبلغ (ارز مبدأ)</label>
+                                <label asp-for="Amount" class="form-label">مبلغ (ارز دریافتی)</label>
                                 <input asp-for="Amount" type="number" class="form-control" step="0.01" min="0"
                                     id="amountInput" required />
                                 <span asp-validation-for="Amount" class="text-danger"></span>
