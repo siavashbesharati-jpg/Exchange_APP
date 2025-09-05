@@ -1,0 +1,222 @@
+@model ForexExchange.Models.BankAccount
+
+@{
+    ViewData["Title"] = $"جزئیات حساب بانکی - {Model.BankName}";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-university text-primary me-2"></i>
+                        جزئیات حساب بانکی
+                    </h1>
+                    <p class="text-muted mt-1">@Model.BankName - @Model.AccountNumber</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        بازگشت
+                    </a>
+                    <a href="@Url.Action("Edit", new { id = Model.Id })" class="btn btn-warning">
+                        <i class="fas fa-edit me-1"></i>
+                        ویرایش
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Account Details -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        اطلاعات حساب بانکی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">نام بانک</label>
+                                <p class="form-control-plaintext">@Model.BankName</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">شماره حساب</label>
+                                <p class="form-control-plaintext">
+                                    <code>@Model.AccountNumber</code>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">ارز حساب</label>
+                                <p class="form-control-plaintext">
+                                    <span class="badge bg-info">@Model.CurrencyCode</span>
+                                    @if (Model.IsDefault)
+                                    {
+                                        <span class="badge bg-warning ms-1">حساب پیش‌فرض</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">موجودی حساب</label>
+                                <p class="form-control-plaintext" dir="ltr">
+                                    <strong>@Model.AccountBalance.ToString("N0") @Model.CurrencyCode</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.IBAN))
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">شماره شبا</label>
+                                    <p class="form-control-plaintext">
+                                        <code>@Model.IBAN</code>
+                                    </p>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.CardNumberLast4))
+                            {
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">شماره کارت</label>
+                                        <p class="form-control-plaintext">
+                                            ****-****-****-@Model.CardNumberLast4
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Branch))
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">شعبه</label>
+                                    <p class="form-control-plaintext">@Model.Branch</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">وضعیت حساب</label>
+                                <p class="form-control-plaintext">
+                                    @if (Model.IsActive)
+                                    {
+                                        <span class="badge bg-success">فعال</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">غیرفعال</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">تاریخ ایجاد</label>
+                                <p class="form-control-plaintext">@Model.CreatedAt.ToString("yyyy/MM/dd")</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.LastModified.HasValue)
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">آخرین تغییر</label>
+                                    <p class="form-control-plaintext">@Model.LastModified.Value.ToString("yyyy/MM/dd HH:mm")</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">یادداشت‌ها</label>
+                                    <p class="form-control-plaintext">@Model.Notes</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Customer Information -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        اطلاعات مشتری
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>@Model.Customer.FullName</strong>
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-phone me-1"></i>
+                        @Model.Customer.PhoneNumber
+                    </div>
+                    @if (Model.Customer.IsSystem)
+                    {
+                        <div>
+                            <span class="badge bg-primary">مشتری سیستم</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        عملیات سریع
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("CustomerAccounts", new { customerId = Model.CustomerId })"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-list me-1"></i>
+                            همه حساب‌های مشتری
+                        </a>
+                        <a href="@Url.Action("Create")" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-plus me-1"></i>
+                            حساب جدید
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

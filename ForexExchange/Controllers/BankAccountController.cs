@@ -191,6 +191,24 @@ namespace ForexExchange.Controllers
         }
 
         /// <summary>
+        /// View bank account details
+        /// نمایش جزئیات حساب بانکی
+        /// </summary>
+        public async Task<IActionResult> Details(int id)
+        {
+            var bankAccount = await _context.BankAccounts
+                .Include(b => b.Customer)
+                .FirstOrDefaultAsync(b => b.Id == id);
+
+            if (bankAccount == null)
+            {
+                return NotFound();
+            }
+
+            return View(bankAccount);
+        }
+
+        /// <summary>
         /// Edit bank account
         /// ویرایش حساب بانکی
         /// </summary>

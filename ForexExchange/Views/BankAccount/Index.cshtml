@@ -94,9 +94,9 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
-                                                    <a href="@Url.Action("CustomerAccounts", new { customerId = account.CustomerId })"
-                                                       class="btn btn-sm btn-outline-primary"
-                                                       title="مشاهده همه حساب‌های این مشتری">
+                                                    <a href="@Url.Action("Details", new { id = account.Id })"
+                                                       class="btn btn-sm btn-outline-info"
+                                                       title="جزئیات">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                     <a href="@Url.Action("Edit", new { id = account.Id })"
