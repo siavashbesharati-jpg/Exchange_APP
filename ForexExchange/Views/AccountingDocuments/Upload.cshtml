@@ -40,6 +40,23 @@
                     <form asp-action="Upload" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
 
+                        <!-- Validation Summary -->
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> خطاهای اعتبارسنجی:</h6>
+                                <ul class="mb-0">
+                                    @foreach (var modelState in ViewData.ModelState.Values)
+                                    {
+                                        @foreach (var error in modelState.Errors)
+                                        {
+                                            <li>@error.ErrorMessage</li>
+                                        }
+                                    }
+                                </ul>
+                            </div>
+                        }
+
                         <div class="row">
                             <!-- Document Type -->
                             <div class="col-md-6 mb-3">
@@ -159,9 +176,18 @@
 
                         <!-- File Upload -->
                         <div class="mb-3">
-                            <label class="form-label">فایل سند (اختیاری)</label>
-                            <input type="file" name="documentFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
-                            <div class="form-text">فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX</div>
+                            <label class="form-label">فایل سند <span class="text-danger">*</span></label>
+                            <input type="file" name="documentFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required />
+                            <div class="form-text">فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX (حداکثر 10 مگابایت)</div>
+                            @if (ViewData.ModelState.TryGetValue("documentFile", out var documentFileState) && documentFileState?.Errors.Count > 0)
+                            {
+                                <span class="text-danger">
+                                    @foreach (var error in documentFileState.Errors)
+                                    {
+                                        <div>@error.ErrorMessage</div>
+                                    }
+                                </span>
+                            }
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -169,7 +195,7 @@
                                 <i class="fas fa-times"></i> انصراف
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-upload"></i> آپلود سند
+                                <i class="fas fa-upload"></i> ثبت سند
                             </button>
                         </div>
                     </form>

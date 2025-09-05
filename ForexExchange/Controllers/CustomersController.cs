@@ -297,7 +297,7 @@ namespace ForexExchange.Controllers
                         _logger.LogInformation($"CREATE: Successfully saved {initialBalances.Count} initial balances");
                     }
                     TempData["SuccessMessage"] = "مشتری و حساب کاربری با موفقیت ایجاد شد.";
-                    return RedirectToAction(nameof(Details), new { id = customer.Id });
+                    return RedirectToAction(nameof(Profile), new { id = customer.Id });
                 }
                 else
                 {
@@ -364,23 +364,7 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, CustomerEditViewModel model)
         {
-            Console.WriteLine("\n=== EDIT CUSTOMER - SERVER SIDE ===");
-            Console.WriteLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-            Console.WriteLine($"Customer ID: {id}");
-            
-            // Log client debug info if available
-            var clientDebugInfo = Request.Form["ClientDebugInfo"].FirstOrDefault();
-            if (!string.IsNullOrEmpty(clientDebugInfo))
-            {
-                Console.WriteLine("🔍 CLIENT DEBUG INFO RECEIVED:");
-                Console.WriteLine(clientDebugInfo);
-                Console.WriteLine("--- END CLIENT DEBUG ---\n");
-            }
-            else
-            {
-                Console.WriteLine("⚠️ No ClientDebugInfo received from client");
-            }
-
+           
             if (id != model.Id)
             {
                 return NotFound();
@@ -549,7 +533,7 @@ namespace ForexExchange.Controllers
 
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = "اطلاعات مشتری با موفقیت به‌روزرسانی شد.";
-                    return RedirectToAction(nameof(Details), new { id = customer.Id });
+                    return RedirectToAction(nameof(Profile), new { id = customer.Id });
                 }
                 catch (DbUpdateConcurrencyException)
                 {

@@ -82,6 +82,14 @@
                             <div class="col-sm-7">@Model.Address</div>
                         </div>
                     }
+
+                    @if (User?.Identity?.IsAuthenticated == true && User?.IsInRole("Admin") == true)
+                    {
+                        <div class="row mb-2">
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
+                        </div>
+                    }
+
                 </div>
             </div>
         </div>
@@ -128,9 +136,12 @@
                                             {
                                                 <tr>
                                                     <td>#@order.Id</td>
-                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2")) @order.FromCurrency?.Code</td>
-                                                    <td>@((order.Amount * order.Rate).ToString(order.ToCurrency?.Code == "IRR" ? "N0" : "N2")) @order.ToCurrency?.Code</td>
-                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
+                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") :
+                                                                                                        order.Amount.ToString("N2")) @order.FromCurrency?.Code</td>
+                                                    <td>@((order.Amount * order.Rate).ToString(order.ToCurrency?.Code == "IRR" ?
+                                                                                                        "N0" : "N2")) @order.ToCurrency?.Code</td>
+                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") :
+                                                                                                        order.Rate.ToString("N2"))</td>
                                                     <td>@order.CreatedAt.ToString("MM/dd")</td>
                                                     <td>
                                                         <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id"
@@ -174,7 +185,8 @@
                                             <div class="card-header bg-light"></div>
                                             <div class="card-body">
                                                 <div class="row g-3">
-                                                    @foreach (var balance in debtCreditInfo.CurrencyBalances.Where(b => b.Balance != 0))
+                                                    @foreach (var balance in debtCreditInfo.CurrencyBalances.Where(b =>
+                                                                                                    b.Balance != 0))
                                                     {
                                                         <div class="col-md-6 col-lg-4">
                                                             <div
@@ -187,7 +199,7 @@
                                                                                                                                                 balance.Balance.ToString("N0") :
                                                                                                                                                 balance.Balance.ToString("N2"))</strong>
                                                                     </div>
-                                                                  
+
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -238,7 +250,8 @@
                                                                     }
                                                                 </td>
                                                                 <td>
-                                                                    <strong>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") : doc.Amount.ToString("N2"))</strong>
+                                                                    <strong>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0")
+                                                                                                                                    : doc.Amount.ToString("N2"))</strong>
                                                                     <small class="text-muted">@doc.CurrencyCode</small>
                                                                 </td>
                                                                 <td>
@@ -252,7 +265,9 @@
                                                                     }
                                                                 </td>
                                                                 <td>
-                                                                    <a asp-controller="AccountingDocuments" asp-action="Details" asp-route-id="@doc.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
+                                                                    <a asp-controller="AccountingDocuments" asp-action="Details"
+                                                                        asp-route-id="@doc.Id"
+                                                                        class="btn btn-sm btn-outline-info">جزئیات</a>
                                                                 </td>
                                                             </tr>
                                                         }

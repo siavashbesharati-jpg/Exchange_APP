@@ -160,6 +160,41 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Upload(AccountingDocument accountingDocument, IFormFile documentFile)
         {
+            // Validate that file is required
+            if (documentFile == null || documentFile.Length == 0)
+            {
+                ModelState.AddModelError("documentFile", "انتخاب فایل الزامی است.");
+                TempData["ErrorMessage"] = "لطفا یک فایل برای آپلود انتخاب کنید.";
+                ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+                ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
+                ViewData["BankAccounts"] = _context.BankAccounts.ToList();
+                return View(accountingDocument);
+            }
+
+            // Validate file size (max 10MB)
+            if (documentFile.Length > 10 * 1024 * 1024)
+            {
+                ModelState.AddModelError("documentFile", "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.");
+                TempData["ErrorMessage"] = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.";
+                ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+                ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
+                ViewData["BankAccounts"] = _context.BankAccounts.ToList();
+                return View(accountingDocument);
+            }
+
+            // Validate file type
+            var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
+            var fileExtension = Path.GetExtension(documentFile.FileName).ToLower();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                ModelState.AddModelError("documentFile", "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX");
+                TempData["ErrorMessage"] = "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX";
+                ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+                ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
+                ViewData["BankAccounts"] = _context.BankAccounts.ToList();
+                return View(accountingDocument);
+            }
+
             // Validate bank account currency match
             if (accountingDocument.BankAccountId.HasValue)
             {
@@ -174,39 +209,13 @@ namespace ForexExchange.Controllers
             {
                 accountingDocument.CreatedAt = DateTime.Now;
 
-                // Handle file upload
-                if (documentFile != null && documentFile.Length > 0)
+                // Handle file upload (we know file exists and is valid at this point)
+                using (var memoryStream = new MemoryStream())
                 {
-                    // Validate file size (max 10MB)
-                    if (documentFile.Length > 10 * 1024 * 1024)
-                    {
-                        TempData["ErrorMessage"] = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.";
-                        ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
-                        ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
-                        ViewData["BankAccounts"] = _context.BankAccounts.ToList();
-                        return View(accountingDocument);
-                    }
-
-                    // Validate file type
-                    var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
-                    var fileExtension = Path.GetExtension(documentFile.FileName).ToLower();
-                    if (!allowedExtensions.Contains(fileExtension))
-                    {
-                        TempData["ErrorMessage"] = "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX";
-                        ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
-                        ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
-                        ViewData["BankAccounts"] = _context.BankAccounts.ToList();
-                        return View(accountingDocument);
-                    }
-
-                    // Save file
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        await documentFile.CopyToAsync(memoryStream);
-                        accountingDocument.FileData = memoryStream.ToArray();
-                        accountingDocument.FileName = documentFile.FileName;
-                        accountingDocument.ContentType = documentFile.ContentType;
-                    }
+                    await documentFile.CopyToAsync(memoryStream);
+                    accountingDocument.FileData = memoryStream.ToArray();
+                    accountingDocument.FileName = documentFile.FileName;
+                    accountingDocument.ContentType = documentFile.ContentType;
                 }
 
                 _context.Add(accountingDocument);
@@ -215,7 +224,7 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
+            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View(accountingDocument);
