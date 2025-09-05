@@ -283,15 +283,14 @@ namespace ForexExchange.Controllers
                         }
                         
                         _logger.LogInformation($"CREATE: Saving {code} = {amount}");
-                        // TODO: Replace with CustomerBalance when implementing balance management
-                        /*
-                        _context.CustomerInitialBalances.Add(new CustomerInitialBalance
+                        _context.CustomerBalances.Add(new CustomerBalance
                         {
                             CustomerId = customer.Id,
                             CurrencyCode = code,
-                            Amount = amount
+                            Balance = amount,
+                            LastUpdated = DateTime.Now,
+                            Notes = "Initial balance set during customer creation"
                         });
-                        */
                     }
                     
                     if (initialBalances.Count > 0)
@@ -497,13 +496,11 @@ namespace ForexExchange.Controllers
                         }
                     }
 
-                    // TODO: Extract and update CustomerBalances with new architecture
-                    /*
-                    // Extract and update initial balances with robust parsing
+                    // Extract and update CustomerBalances
                     var providedBalances = ExtractInitialBalancesFromForm();
                     _logger.LogInformation($"EDIT: Processing {providedBalances.Count} initial balances");
                     
-                    var existingBalances = await _context.CustomerInitialBalances
+                    var existingBalances = await _context.CustomerBalances
                         .Where(b => b.CustomerId == customer.Id)
                         .ToListAsync();
 
@@ -513,7 +510,7 @@ namespace ForexExchange.Controllers
                         if (!providedBalances.ContainsKey(existingBalance.CurrencyCode))
                         {
                             _logger.LogInformation($"EDIT: Removing {existingBalance.CurrencyCode} balance");
-                            _context.CustomerInitialBalances.Remove(existingBalance);
+                            _context.CustomerBalances.Remove(existingBalance);
                         }
                     }
 
@@ -533,21 +530,24 @@ namespace ForexExchange.Controllers
                         if (existingBalance == null)
                         {
                             _logger.LogInformation($"EDIT: Adding new {code} = {amount}");
-                            _context.CustomerInitialBalances.Add(new CustomerInitialBalance
+                            _context.CustomerBalances.Add(new CustomerBalance
                             {
                                 CustomerId = customer.Id,
                                 CurrencyCode = code,
-                                Amount = amount
+                                Balance = amount,
+                                LastUpdated = DateTime.Now,
+                                Notes = "Initial balance updated during customer edit"
                             });
                         }
                         else
                         {
-                            _logger.LogInformation($"EDIT: Updating {code} from {existingBalance.Amount} to {amount}");
-                            existingBalance.Amount = amount;
-                            _context.CustomerInitialBalances.Update(existingBalance);
+                            _logger.LogInformation($"EDIT: Updating {code} from {existingBalance.Balance} to {amount}");
+                            existingBalance.Balance = amount;
+                            existingBalance.LastUpdated = DateTime.Now;
+                            existingBalance.Notes = "Balance updated during customer edit";
+                            _context.CustomerBalances.Update(existingBalance);
                         }
                     }
-                    */
 
                     await _context.SaveChangesAsync();
                     TempData["SuccessMessage"] = "اطلاعات مشتری با موفقیت به‌روزرسانی شد.";
