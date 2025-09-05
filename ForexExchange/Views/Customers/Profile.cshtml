@@ -116,9 +116,8 @@
                                         <thead>
                                             <tr>
                                                 <th>شماره</th>
-                                                <th>از ارز</th>
-                                                <th>به ارز</th>
-                                                <th>مبلغ</th>
+                                                <th>پرداخت کرده اید</th>
+                                                <th>دریافت کرده اید</th>
                                                 <th>نرخ</th>
                                                 <th>تاریخ</th>
                                                 <th>عملیات</th>
@@ -129,12 +128,9 @@
                                             {
                                                 <tr>
                                                     <td>#@order.Id</td>
-                                                    <td>@order.FromCurrency?.Code</td>
-                                                    <td>@order.ToCurrency?.Code</td>
-                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") :
-                                                                                                        order.Amount.ToString("N2"))</td>
-                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") :
-                                                                                                        order.Rate.ToString("N2"))</td>
+                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2")) @order.FromCurrency?.Code</td>
+                                                    <td>@((order.Amount * order.Rate).ToString(order.ToCurrency?.Code == "IRR" ? "N0" : "N2")) @order.ToCurrency?.Code</td>
+                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
                                                     <td>@order.CreatedAt.ToString("MM/dd")</td>
                                                     <td>
                                                         <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id"
@@ -178,7 +174,7 @@
                                             <div class="card-header bg-light"></div>
                                             <div class="card-body">
                                                 <div class="row g-3">
-                                                    @foreach (var balance in debtCreditInfo.CurrencyBalances)
+                                                    @foreach (var balance in debtCreditInfo.CurrencyBalances.Where(b => b.Balance != 0))
                                                     {
                                                         <div class="col-md-6 col-lg-4">
                                                             <div
@@ -211,7 +207,6 @@
                                             List<AccountingDocument>();
                                             var sortedRecentDocs = allDocs.Where(d => d.CreatedAt > DateTime.Now.AddDays(-30))
                                             .OrderByDescending(d => d.CreatedAt)
-                                            .Take(5)
                                             .ToList();
                                         }
                                         @if (sortedRecentDocs.Any())
@@ -221,9 +216,10 @@
                                                     <thead>
                                                         <tr>
                                                             <th>تاریخ</th>
-                                                            <th>نوع</th>
+                                                            <th>شرح</th>
                                                             <th>مبلغ</th>
                                                             <th>وضعیت</th>
+                                                            <th>عملیات</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -231,9 +227,20 @@
                                                         {
                                                             <tr>
                                                                 <td>@doc.CreatedAt.ToString("MM/dd")</td>
-                                                                <td>@doc.Type.GetDisplayName()</td>
-                                                                <td>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") :
-                                                                                                                            doc.Amount.ToString("N2"))</td>
+                                                                <td>
+                                                                    @if (doc.PayerType == ForexExchange.Models.PayerType.System)
+                                                                    {
+                                                                        <span class="text-success">شما دریافت کردید</span>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span class="text-danger">شما پرداخت کردید</span>
+                                                                    }
+                                                                </td>
+                                                                <td>
+                                                                    <strong>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") : doc.Amount.ToString("N2"))</strong>
+                                                                    <small class="text-muted">@doc.CurrencyCode</small>
+                                                                </td>
                                                                 <td>
                                                                     @if (doc.IsVerified)
                                                                     {
@@ -243,6 +250,9 @@
                                                                     {
                                                                         <span class="badge bg-warning">در انتظار</span>
                                                                     }
+                                                                </td>
+                                                                <td>
+                                                                    <a asp-controller="AccountingDocuments" asp-action="Details" asp-route-id="@doc.Id" class="btn btn-sm btn-outline-info">جزئیات</a>
                                                                 </td>
                                                             </tr>
                                                         }

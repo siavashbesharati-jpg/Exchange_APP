@@ -78,6 +78,8 @@
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]">نوع سند</a>
                                 </th>
+                                
+                                
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["CustomerSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
@@ -132,13 +134,14 @@
                                             <a asp-controller="Customers" asp-action="Details" asp-route-id="@item.CustomerId" class="text-decoration-none">
                                                 @item.Customer.FullName
                                             </a>
-                                            <br><small class="text-muted">@(item.PayerType == ForexExchange.Models.PayerType.Customer ? "پرداخت‌کننده" : "دریافت‌کننده")</small>
+                                            <br><small class="text-muted">@(item.PayerType == ForexExchange.Models.PayerType.Customer ? "پرداخت کرده است" : "دریافت کرده است")</small>
                                         }
                                         else
                                         {
                                             <span class="text-muted">مشتری نامشخص</span>
                                         }
                                     </td>
+                                 
                                     <td>
                                         <strong>@(item.CurrencyCode == "IRR" ? item.Amount.ToString("N0") : item.Amount.ToString("N2")) @item.CurrencyCode</strong>
                                     </td>
