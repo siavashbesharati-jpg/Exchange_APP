@@ -81,7 +81,7 @@ public class HomeController : Controller
     public async Task<IActionResult> PoolWidget()
     {
         var pools = await _poolService.GetAllPoolsAsync();
-        return PartialView("_PoolWidget", pools);
+        return PartialView("_PoolWidgetCompact", pools);
     }
 
     public async Task<IActionResult> DebtCreditWidget()

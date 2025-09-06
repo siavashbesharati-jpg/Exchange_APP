@@ -1,0 +1,266 @@
+@model List<ForexExchange.Models.CurrencyPool>
+@using ForexExchange.Services
+
+<link rel="stylesheet" href="~/css/pool-widget-smart.css" />
+
+<div class="smart-pool-widget">
+    <div class="widget-header">
+        <div class="header-content">
+            <div class="widget-title">
+                <i class="fas fa-treasure-chest me-2"></i>
+                <span>صندوق‌های ارزی هوشمند</span>
+                <div class="health-indicator">
+                    <span class="health-dot health-good"></span>
+                    <small>سالم</small>
+                </div>
+            </div>
+            <div class="widget-controls">
+                <div class="summary-stats">
+                    @if (Model != null && Model.Any())
+                    {
+                        var totalCurrencies = Model.Count();
+                        var healthyCurrencies = Model.Count(p => p.RiskLevel == ForexExchange.Models.PoolRiskLevel.Low);
+                        var warningCurrencies = Model.Count(p => p.RiskLevel == ForexExchange.Models.PoolRiskLevel.Medium);
+                        var criticalCurrencies = Model.Count(p => p.RiskLevel == ForexExchange.Models.PoolRiskLevel.High || p.RiskLevel == ForexExchange.Models.PoolRiskLevel.Critical);
+
+                        <div class="summary-item">
+                            <span class="summary-number text-primary">@totalCurrencies</span>
+                            <small>ارز فعال</small>
+                        </div>
+                        
+                        @if (healthyCurrencies > 0)
+                        {
+                            <div class="summary-item">
+                                <span class="summary-number text-success">@healthyCurrencies</span>
+                                <small>سالم</small>
+                            </div>
+                        }
+                        
+                        @if (warningCurrencies > 0)
+                        {
+                            <div class="summary-item">
+                                <span class="summary-number text-warning">@warningCurrencies</span>
+                                <small>نیاز به توجه</small>
+                            </div>
+                        }
+                        
+                        @if (criticalCurrencies > 0)
+                        {
+                            <div class="summary-item">
+                                <span class="summary-number text-danger">@criticalCurrencies</span>
+                                <small>بحرانی</small>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="refresh-controls">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshSmartPool()" title="بروزرسانی">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" id="auto-refresh-smart" onclick="toggleAutoRefreshSmart()" title="بروزرسانی خودکار">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="widget-body">
+        @if (Model != null && Model.Any())
+        {
+            <div class="currency-grid">
+                @foreach (var pool in Model.OrderBy(p => p.RiskLevel).ThenBy(p => p.Currency?.DisplayOrder))
+                {
+                    var riskInfo = pool.RiskLevel switch
+                    {
+                        ForexExchange.Models.PoolRiskLevel.Low => new { Class = "success", Icon = "fa-shield-check", Text = "سالم", Priority = 1 },
+                        ForexExchange.Models.PoolRiskLevel.Medium => new { Class = "warning", Icon = "fa-shield-exclamation", Text = "نیاز به توجه", Priority = 2 },
+                        ForexExchange.Models.PoolRiskLevel.High => new { Class = "danger", Icon = "fa-shield-x", Text = "پرخطر", Priority = 3 },
+                        ForexExchange.Models.PoolRiskLevel.Critical => new { Class = "dark", Icon = "fa-exclamation-triangle", Text = "بحرانی", Priority = 4 },
+                        _ => new { Class = "secondary", Icon = "fa-shield", Text = "نامشخص", Priority = 0 }
+                    };
+
+                    var balanceStatus = pool.Balance >= 0 ? "positive" : "negative";
+                    var balanceIcon = pool.Balance >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down";
+                    
+                    var flagEmoji = pool.Currency?.Code switch
+                    {
+                        "IRR" => "🇮🇷",
+                        "USD" => "🇺🇸", 
+                        "EUR" => "🇪🇺",
+                        "AED" => "🇦🇪",
+                        "OMR" => "🇴🇲",
+                        "TRY" => "🇹🇷",
+                        "CNY" => "🇨🇳",
+                        _ => "💱"
+                    };
+
+                    <div class="currency-card @riskInfo.Class-border" data-currency="@pool.Currency?.Code" data-priority="@riskInfo.Priority">
+                        <div class="card-header">
+                            <div class="currency-info">
+                                <span class="currency-flag">@flagEmoji</span>
+                                <div class="currency-details">
+                                    <h6 class="currency-name">@pool.Currency?.PersianName</h6>
+                                    <small class="currency-code">@pool.Currency?.Code</small>
+                                </div>
+                            </div>
+                            <div class="status-indicator">
+                                <i class="fas @riskInfo.Icon text-@riskInfo.Class"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="balance-section">
+                                <div class="balance-amount">
+                                    <i class="fas @balanceIcon text-@(balanceStatus == "positive" ? "success" : "danger")"></i>
+                                    <span class="amount">
+                                        @(pool.CurrencyCode == "IRR" ? pool.Balance.ToString("N0") : pool.Balance.ToString("N2"))
+                                    </span>
+                                    <small class="currency-symbol">@pool.Currency?.Symbol</small>
+                                </div>
+                                <div class="balance-label">موجودی فعلی</div>
+                            </div>
+
+                            <div class="stats-section">
+                                <div class="stat-row">
+                                    <div class="stat-item buy">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>@(pool.CurrencyCode == "IRR" ? pool.TotalBought.ToString("N0") : pool.TotalBought.ToString("N2"))</span>
+                                        <label>خرید</label>
+                                    </div>
+                                    <div class="stat-item sell">
+                                        <i class="fas fa-arrow-down"></i>
+                                        <span>@(pool.CurrencyCode == "IRR" ? pool.TotalSold.ToString("N0") : pool.TotalSold.ToString("N2"))</span>
+                                        <label>فروش</label>
+                                    </div>
+                                </div>
+
+                                @if (pool.ActiveBuyOrderCount > 0 || pool.ActiveSellOrderCount > 0)
+                                {
+                                    <div class="active-orders">
+                                        <div class="orders-label">
+                                            <i class="fas fa-clock text-primary"></i>
+                                            <small>معاملات فعال</small>
+                                        </div>
+                                        <div class="orders-count">
+                                            @if (pool.ActiveBuyOrderCount > 0)
+                                            {
+                                                <span class="order-badge buy">
+                                                    <i class="fas fa-arrow-up"></i>
+                                                    @pool.ActiveBuyOrderCount
+                                                </span>
+                                            }
+                                            @if (pool.ActiveSellOrderCount > 0)
+                                            {
+                                                <span class="order-badge sell">
+                                                    <i class="fas fa-arrow-down"></i>
+                                                    @pool.ActiveSellOrderCount
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="card-footer">
+                                <div class="last-update">
+                                    <i class="fas fa-clock text-muted"></i>
+                                    <small>@pool.LastUpdated.ToString("HH:mm")</small>
+                                </div>
+                                <div class="status-text">
+                                    <small class="text-@riskInfo.Class">@riskInfo.Text</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-coins fa-3x text-muted"></i>
+                </div>
+                <h5 class="empty-title">هیچ صندوق ارزی فعالی یافت نشد</h5>
+                <p class="empty-description">برای شروع، ابتدا ارزهای مورد نظر را فعال کنید</p>
+                <a href="@Url.Action("Index", "Currencies")" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    مدیریت ارزها
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+let smartAutoRefreshInterval = null;
+let isSmartAutoRefreshActive = false;
+
+function refreshSmartPool() {
+    const widget = $('.smart-pool-widget');
+    const refreshBtn = widget.find('button[onclick="refreshSmartPool()"]');
+
+    widget.addClass('refreshing');
+    refreshBtn.prop('disabled', true).html('<i class="fas fa-sync-alt fa-spin"></i>');
+
+    $.get('/Home/PoolWidget', function(data) {
+        $('#pool-widget-container').html(data);
+        showSmartNotification('صندوق‌های ارزی بروزرسانی شد', 'success');
+    }).fail(function() {
+        showSmartNotification('خطا در بروزرسانی صندوق‌ها', 'error');
+    }).always(function() {
+        widget.removeClass('refreshing');
+        refreshBtn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i>');
+    });
+}
+
+function toggleAutoRefreshSmart() {
+    const button = $('#auto-refresh-smart');
+    const icon = button.find('i');
+
+    if (isSmartAutoRefreshActive) {
+        clearInterval(smartAutoRefreshInterval);
+        isSmartAutoRefreshActive = false;
+        icon.removeClass('fa-stop').addClass('fa-play');
+        button.removeClass('btn-danger').addClass('btn-outline-success');
+        showSmartNotification('بروزرسانی خودکار متوقف شد', 'info');
+    } else {
+        smartAutoRefreshInterval = setInterval(refreshSmartPool, 30000);
+        isSmartAutoRefreshActive = true;
+        icon.removeClass('fa-play').addClass('fa-stop');
+        button.removeClass('btn-outline-success').addClass('btn-danger');
+        showSmartNotification('بروزرسانی خودکار فعال شد', 'success');
+    }
+}
+
+function showSmartNotification(message, type) {
+    const notification = $(`
+        <div class="smart-notification ${type}" style="position: fixed; top: 20px; left: 20px; z-index: 9999;">
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        </div>
+    `);
+
+    $('body').append(notification);
+    
+    setTimeout(() => {
+        notification.fadeOut(() => notification.remove());
+    }, 3000);
+}
+
+// Initialize dynamic updates
+$(document).ready(function() {
+    // Sort currency cards by priority (critical first)
+    const grid = $('.currency-grid');
+    const cards = grid.children('.currency-card').sort(function(a, b) {
+        return $(b).data('priority') - $(a).data('priority');
+    });
+    grid.empty().append(cards);
+    
+    // Add tooltips
+    $('[title]').tooltip();
+});
+</script>

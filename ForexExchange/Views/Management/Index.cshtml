@@ -1,0 +1,485 @@
+@{
+    ViewData["Title"] = "مدیریت سیستم";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white">
+                <div class="card-body text-center py-4">
+                    <h1 class="display-6 fw-bold mb-2">
+                        <i class="fas fa-cogs me-3"></i>
+                        مرکز مدیریت سیستم تابان
+                    </h1>
+                    <p class="lead mb-0">دسترسی کامل به تمامی ابزارهای مدیریتی و عملیاتی</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-compass me-2"></i>
+                        دسترسی سریع
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <a href="@Url.Action("Dashboard", "Home")" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-home me-1"></i> داشبورد اصلی
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="@Url.Action("Index", "Orders")" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-list me-1"></i> همه معاملات
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="@Url.Action("Index", "Customers")" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-users me-1"></i> همه مشتریان
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-chart-bar me-1"></i> گزارشات
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-cog me-1"></i> تنظیمات
+                            </a>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="@Url.Action("Help", "Home")" class="btn btn-outline-dark btn-sm w-100">
+                                <i class="fas fa-question-circle me-1"></i> راهنما
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Sections -->
+    
+    <!-- Customer & Order Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="border-bottom pb-2 mb-3">
+                <i class="fas fa-users-cog text-primary me-2"></i>
+                مدیریت مشتریان و معاملات
+            </h4>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Orders Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-clipboard-list fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">مدیریت معاملات</h5>
+                    <p class="card-text">مشاهده، ویرایش و پردازش تمامی معاملات مشتریان</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "Orders")" class="btn btn-primary">مشاهده معاملات</a>
+                        <a href="@Url.Action("Pending", "Orders")" class="btn btn-outline-primary btn-sm">معاملات در انتظار</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                    <div class="text-info mb-3">
+                        <i class="fas fa-users fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">مدیریت مشتریان</h5>
+                    <p class="card-text">مدیریت کامل اطلاعات و حساب‌های مشتریان</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "Customers")" class="btn btn-info">لیست مشتریان</a>
+                        <a href="@Url.Action("DebtCredits", "Customers")" class="btn btn-outline-info btn-sm">بدهی و بستانکاری</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Transactions -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-success">
+                <div class="card-body text-center">
+                    <div class="text-success mb-3">
+                        <i class="fas fa-exchange-alt fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">تراکنش‌های مشتریان</h5>
+                    <p class="card-text">بررسی تاریخچه کامل تراکنش‌های انجام شده</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "CustomerTransactions")" class="btn btn-success">تراکنش‌ها</a>
+                        <a href="@Url.Action("Recent", "CustomerTransactions")" class="btn btn-outline-success btn-sm">تراکنش‌های اخیر</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <hr class="my-4">
+            <h4 class="border-bottom pb-2 mb-3">
+                <i class="fas fa-dollar-sign text-success me-2"></i>
+                مدیریت مالی و بانکی
+            </h4>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Bank Account Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-university fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">حساب‌های بانکی</h5>
+                    <p class="card-text">مدیریت حساب‌های بانکی مشتریان و سیستم</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "BankAccount")" class="btn btn-primary">مدیریت حساب‌ها</a>
+                        <a href="@Url.Action("Balances", "BankAccount")" class="btn btn-outline-primary btn-sm">موجودی حساب‌ها</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Statements -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-warning">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-3">
+                        <i class="fas fa-file-invoice-dollar fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">صورت‌حساب‌های بانکی</h5>
+                    <p class="card-text">پردازش و بررسی صورت‌حساب‌های بانکی</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "BankStatements")" class="btn btn-warning">صورت‌حساب‌ها</a>
+                        <a href="@Url.Action("Upload", "BankStatements")" class="btn btn-outline-warning btn-sm">آپلود OCR</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settlements -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-secondary">
+                <div class="card-body text-center">
+                    <div class="text-secondary mb-3">
+                        <i class="fas fa-handshake fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">تسویه حساب</h5>
+                    <p class="card-text">مدیریت تسویه‌های مالی و تراکنش‌ها</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "Settlements")" class="btn btn-secondary">تسویه حساب</a>
+                        <a href="@Url.Action("Pending", "Settlements")" class="btn btn-outline-secondary btn-sm">تسویه‌های معلق</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounting Documents -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-dark">
+                <div class="card-body text-center">
+                    <div class="text-dark mb-3">
+                        <i class="fas fa-file-invoice fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">اسناد حسابداری</h5>
+                    <p class="card-text">بررسی و تایید اسناد حسابداری</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "AccountingDocuments")" class="btn btn-dark">مشاهده اسناد</a>
+                        <a href="@Url.Action("Pending", "AccountingDocuments")" class="btn btn-outline-dark btn-sm">اسناد در انتظار</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Receipts -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                    <div class="text-info mb-3">
+                        <i class="fas fa-receipt fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">رسیدها و قبوض</h5>
+                    <p class="card-text">مدیریت رسیدهای مالی و قبوض</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "Receipts")" class="btn btn-info">مشاهده رسیدها</a>
+                        <a href="@Url.Action("Generate", "Receipts")" class="btn btn-outline-info btn-sm">ایجاد رسید</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-danger">
+                <div class="card-body text-center">
+                    <div class="text-danger mb-3">
+                        <i class="fas fa-chart-bar fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">گزارشات مالی</h5>
+                    <p class="card-text">گزارشات جامع از عملکرد مالی و معاملات</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "Reports")" class="btn btn-danger">گزارشات</a>
+                        <a href="@Url.Action("Financial", "Reports")" class="btn btn-outline-danger btn-sm">گزارش مالی</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency & Exchange Management -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <hr class="my-4">
+            <h4 class="border-bottom pb-2 mb-3">
+                <i class="fas fa-exchange-alt text-info me-2"></i>
+                مدیریت ارز و نرخ‌ها
+            </h4>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Exchange Rates Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-coins fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">نرخ‌های ارز</h5>
+                    <p class="card-text">تنظیم و بروزرسانی نرخ‌های خرید و فروش</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-primary">مدیریت نرخ‌ها</a>
+                        <a href="@Url.Action("History", "ExchangeRates")" class="btn btn-outline-primary btn-sm">تاریخچه نرخ‌ها</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Currency Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-success">
+                <div class="card-body text-center">
+                    <div class="text-success mb-3">
+                        <i class="fas fa-money-bill-wave fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">مدیریت ارزها</h5>
+                    <p class="card-text">مدیریت انواع ارزها و تنظیمات مربوطه</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "Currencies")" class="btn btn-success">مدیریت ارزها</a>
+                        <a href="@Url.Action("Config", "Currencies")" class="btn btn-outline-success btn-sm">پیکربندی ارزها</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pool Management -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                    <div class="text-info mb-3">
+                        <i class="fas fa-swimming-pool fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">صندوق‌های ارزی</h5>
+                    <p class="card-text">مدیریت موجودی و آمار صندوق‌های ارزی</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("Index", "PoolManagement")" class="btn btn-info">مدیریت صندوق‌ها</a>
+                        <a href="@Url.Action("Performance", "PoolManagement")" class="btn btn-outline-info btn-sm">عملکرد صندوق‌ها</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Administration -->
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <hr class="my-4">
+                <h4 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-shield-alt text-warning me-2"></i>
+                    مدیریت سیستم (ادمین)
+                </h4>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Database Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 border-dark">
+                    <div class="card-body text-center">
+                        <div class="text-dark mb-3">
+                            <i class="fas fa-database fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">پایگاه داده</h5>
+                        <p class="card-text">پشتیبان‌گیری، بازیابی و پاکسازی پایگاه داده</p>
+                        <div class="d-grid gap-2">
+                            <a href="@Url.Action("Index", "Database")" class="btn btn-dark">مدیریت پایگاه داده</a>
+                            <a href="@Url.Action("Backup", "Database")" class="btn btn-outline-dark btn-sm">پشتیبان‌گیری</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Settings -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 border-danger">
+                    <div class="card-body text-center">
+                        <div class="text-danger mb-3">
+                            <i class="fas fa-cog fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">تنظیمات سیستم</h5>
+                        <p class="card-text">پیکربندی عمومی سیستم و کمیسیون‌ها</p>
+                        <div class="d-grid gap-2">
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-danger">تنظیمات</a>
+                            <a href="@Url.Action("Commissions", "Settings")" class="btn btn-outline-danger btn-sm">کمیسیون‌ها</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 border-warning">
+                    <div class="card-body text-center">
+                        <div class="text-warning mb-3">
+                            <i class="fas fa-user-shield fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت ادمین‌ها</h5>
+                        <p class="card-text">مدیریت کاربران ادمین و نقش‌های آنها</p>
+                        <div class="d-grid gap-2">
+                            <a href="@Url.Action("ManageAdmins", "AdminManagement")" class="btn btn-warning">مدیریت ادمین‌ها</a>
+                            <a href="@Url.Action("Activities", "AdminManagement")" class="btn btn-outline-warning btn-sm">فعالیت‌های ادمین</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Additional Tools -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <hr class="my-4">
+            <h4 class="border-bottom pb-2 mb-3">
+                <i class="fas fa-tools text-secondary me-2"></i>
+                ابزارهای جانبی
+            </h4>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- OCR Test Tool -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-info">
+                <div class="card-body text-center">
+                    <div class="text-info mb-3">
+                        <i class="fas fa-eye fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">تست OCR</h5>
+                    <p class="card-text">آزمایش سیستم تشخیص نوشته از تصویر</p>
+                    <a href="@Url.Action("Index", "TestOcr")" class="btn btn-info">تست OCR</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shareable Links -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-success">
+                <div class="card-body text-center">
+                    <div class="text-success mb-3">
+                        <i class="fas fa-share-alt fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">لینک‌های قابل اشتراک</h5>
+                    <p class="card-text">مدیریت لینک‌های اشتراک صورت‌حساب</p>
+                    <a href="@Url.Action("Index", "Share")" class="btn btn-success">مدیریت لینک‌ها</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-warning">
+                <div class="card-body text-center">
+                    <div class="text-warning mb-3">
+                        <i class="fas fa-heartbeat fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">وضعیت سیستم</h5>
+                    <p class="card-text">بررسی سلامت و عملکرد سیستم</p>
+                    <a href="@Url.Action("Health", "Home")" class="btn btn-warning">وضعیت سیستم</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <a href="@Url.Action("Dashboard", "Home")" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-arrow-right me-2"></i>
+                بازگشت به داشبورد اصلی
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+.border-primary { border-color: #007bff !important; }
+.border-success { border-color: #28a745 !important; }
+.border-info { border-color: #17a2b8 !important; }
+.border-warning { border-color: #ffc107 !important; }
+.border-danger { border-color: #dc3545 !important; }
+.border-secondary { border-color: #6c757d !important; }
+.border-dark { border-color: #343a40 !important; }
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.card-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.fas {
+    opacity: 0.8;
+}
+
+.btn {
+    font-weight: 500;
+}
+</style>

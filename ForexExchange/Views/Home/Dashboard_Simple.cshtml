@@ -2,11 +2,7 @@
     ViewData["Title"] = "داشبورد";
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/dashboard-simple.css" asp-append-version="true" />
-}
-
-<div class="container mt-4 dashboard-container">
+<div class="container mt-4">
     @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
     {
         <!-- Simple Header -->

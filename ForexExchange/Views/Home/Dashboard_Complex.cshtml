@@ -1,0 +1,711 @@
+@{
+    ViewData["Title"] = "داشبورد";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" />
+}
+
+<div class="container-fluid dashboard-container">
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+        {
+            <!-- Admin/Staff Streamlined Dashboard -->
+            
+            <!-- Revolutionary Intelligent Header -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="welcome-container">
+                        <div class="welcome-header d-flex align-items-center justify-content-between">
+                            <div class="welcome-content">
+                                <div class="logo-section d-flex align-items-center">
+                                    <img src="~/favicon/android-chrome-512x512.png" alt="تابان" class="logo-smart">
+                                    <div class="brand-info">
+                                        <h1 class="brand-title">سامانه تابان</h1>
+                                        <p class="brand-subtitle">مرکز تبادل ارز هوشمند</p>
+                                    </div>
+                                </div>
+                                <div class="user-greeting">
+                                    <div class="greeting-text">
+                                        <span class="greeting-time" id="dynamicGreeting">صبح بخیر</span>
+                                        <span class="user-role badge bg-primary">مدیر سیستم</span>
+                                    </div>
+                                    <p class="welcome-message">آماده انجام بهترین معاملات ارزی هستید؟</p>
+                                </div>
+                            </div>
+                            <div class="quick-stats">
+                                <div class="stat-item">
+                                    <i class="fas fa-clock text-primary"></i>
+                                    <span id="currentTime"></span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-calendar text-success"></i>
+                                    <span id="currentDate"></span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-chart-line text-warning"></i>
+                                    <span>نرخ USD: <strong>۵۲,۰۰۰</strong></span>
+                                </div>
+                                <div class="stat-item">
+                                    <i id="systemHealthIcon" class="fas fa-heartbeat text-success"></i>
+                                    <span id="systemHealth">سیستم سالم</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Currency Pool Widget - Improved and Compact -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div id="pool-widget-container">
+                        @await Html.PartialAsync("_PoolWidgetSmart", ViewBag.CurrencyPools as List<ForexExchange.Models.CurrencyPool>)
+                    </div>
+                </div>
+            </div>
+            <!-- Essential Smart Actions - Process-Guided Interface -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="smart-actions-container">
+                        <div class="actions-header mb-3">
+                            <h5 class="actions-title">
+                                <i class="fas fa-rocket text-primary"></i>
+                                عملیات اصلی سیستم
+                            </h5>
+                            <p class="actions-subtitle">سه عملیات اساسی برای شروع کار</p>
+                        </div>
+                        
+                        <div class="row g-4">
+                            <!-- Smart Order Creation Card -->
+                            <div class="col-lg-4">
+                                <div class="smart-action-card order-card">
+                                    <div class="card-gradient"></div>
+                                    <div class="card-content">
+                                        <div class="action-header">
+                                            <div class="action-icon success-icon">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </div>
+                                            <div class="action-badge">محبوب ترین</div>
+                                        </div>
+                                        
+                                        <div class="action-body">
+                                            <h6 class="action-title">ثبت معامله جدید</h6>
+                                            <p class="action-description">ایجاد معامله خرید و فروش ارز با قیمت‌گذاری هوشمند</p>
+                                            
+                                            <div class="process-steps">
+                                                <div class="step-item">
+                                                    <i class="fas fa-user-check"></i>
+                                                    <span>انتخاب مشتری</span>
+                                                </div>
+                                                <div class="step-item">
+                                                    <i class="fas fa-coins"></i>
+                                                    <span>تعیین ارز و مقدار</span>
+                                                </div>
+                                                <div class="step-item">
+                                                    <i class="fas fa-calculator"></i>
+                                                    <span>محاسبه و ثبت</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="action-footer">
+                                            <a href="@Url.Action("Create", "Orders")" class="smart-btn btn-success">
+                                                <i class="fas fa-plus"></i>
+                                                <span>شروع معامله</span>
+                                                <i class="fas fa-arrow-left"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="hover-effect"></div>
+                                </div>
+                            </div>
+
+                            <!-- Smart Customer Creation Card -->
+                            <div class="col-lg-4">
+                                <div class="smart-action-card customer-card">
+                                    <div class="card-gradient"></div>
+                                    <div class="card-content">
+                                        <div class="action-header">
+                                            <div class="action-icon info-icon">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                            <div class="action-badge">ضروری</div>
+                                        </div>
+                                        
+                                        <div class="action-body">
+                                            <h6 class="action-title">ثبت مشتری جدید</h6>
+                                            <p class="action-description">اضافه کردن مشتری جدید با مدیریت اطلاعات کامل</p>
+                                            
+                                            <div class="process-steps">
+                                                <div class="step-item">
+                                                    <i class="fas fa-id-card"></i>
+                                                    <span>اطلاعات شخصی</span>
+                                                </div>
+                                                <div class="step-item">
+                                                    <i class="fas fa-phone"></i>
+                                                    <span>اطلاعات تماس</span>
+                                                </div>
+                                                <div class="step-item">
+                                                    <i class="fas fa-shield-alt"></i>
+                                                    <span>تایید و ذخیره</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="action-footer">
+                                            <a href="@Url.Action("Create", "Customers")" class="smart-btn btn-info">
+                                                <i class="fas fa-user-plus"></i>
+                                                <span>ثبت مشتری</span>
+                                                <i class="fas fa-arrow-left"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="hover-effect"></div>
+                                </div>
+                            </div>
+
+                            <!-- Smart Document Creation Card -->
+                            <div class="col-lg-4">
+                                <div class="smart-action-card document-card">
+                                    <div class="card-gradient"></div>
+                                    <div class="card-content">
+                                        <div class="action-header">
+                                            <div class="action-icon warning-icon">
+                                                <i class="fas fa-file-invoice-dollar"></i>
+                                            </div>
+                                            <div class="action-badge">پیشرفته</div>
+                                        </div>
+                                        
+                                        <div class="action-body">
+                                            <h6 class="action-title">ایجاد سند حسابداری</h6>
+                                            <p class="action-description">ثبت اسناد مالی با سیستم حسابداری دوطرفه</p>
+                                            
+                                            <div class="process-steps">
+                                                <div class="step-item">
+                                                    <i class="fas fa-clipboard-list"></i>
+                                                    <span>انتخاب نوع سند</span>
+                                                </div>
+                                                <div class="step-item">
+                                                    <i class="fas fa-balance-scale"></i>
+                                                    <span>تنظیم حساب‌ها</span>
+                                                </div>
+                                                <div class="step-item">
+                                                    <i class="fas fa-save"></i>
+                                                    <span>ثبت نهایی</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="action-footer">
+                                            <a href="@Url.Action("Create", "AccountingDocuments")" class="smart-btn btn-warning">
+                                                <i class="fas fa-file-plus"></i>
+                                                <span>ایجاد سند</span>
+                                                <i class="fas fa-arrow-left"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="hover-effect"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Process Flow Indicator -->
+                        <div class="process-flow-indicator mt-4">
+                            <div class="flow-line">
+                                <div class="flow-step">
+                                    <div class="flow-number">1</div>
+                                    <span>ثبت مشتری</span>
+                                </div>
+                                <div class="flow-arrow">
+                                    <i class="fas fa-arrow-left"></i>
+                                </div>
+                                <div class="flow-step">
+                                    <div class="flow-number">2</div>
+                                    <span>ایجاد معامله</span>
+                                </div>
+                                <div class="flow-arrow">
+                                    <i class="fas fa-arrow-left"></i>
+                                </div>
+                                <div class="flow-step">
+                                    <div class="flow-number">3</div>
+                                    <span>ثبت سند</span>
+                                </div>
+                            </div>
+                            <p class="flow-description">
+                                <i class="fas fa-lightbulb text-warning"></i>
+                                جریان کاری پیشنهادی: ابتدا مشتری، سپس معامله، و در نهایت سند حسابداری
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Management Access -->
+            <div class="row mb-2">
+                <div class="col-12 text-center">
+                    <div class="management-access">
+                        <a href="@Url.Action("Index", "Management")" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-cogs me-2"></i>
+                            مرکز مدیریت کامل سیستم
+                        </a>
+                        <p class="text-muted small mt-2 mb-0">
+                            دسترسی به تمامی ابزارهای مدیریتی، گزارشات و تنظیمات پیشرفته
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (User.IsInRole("Customer"))
+        {
+            <!-- Customer Compact Dashboard -->
+            
+            <!-- Compact Header -->
+            <div class="row mb-3">
+                <div class="col-12 text-center">
+                    <div class="header-compact">
+                        <img src="~/favicon/android-chrome-512x512.png" alt="تابان" class="logo-small">
+                        <h2 class="fw-bold text-primary mb-1">سامانه معاملات تابان</h2>
+                        <p class="text-muted mb-0">پنل مشتری</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Quick Actions -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-gradient-info text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user me-2"></i>
+                                حساب کاربری من
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-3">
+                                <!-- My Transactions -->
+                                <div class="col-lg-6 col-md-6">
+                                    <div class="action-card text-center p-3 border rounded">
+                                        <div class="text-info mb-2">
+                                            <i class="fas fa-exchange-alt fa-2x"></i>
+                                        </div>
+                                        <h6 class="fw-bold mb-2">تراکنش‌های من</h6>
+                                        <p class="text-muted small mb-2">تاریخچه کامل معاملات انجام شده</p>
+                                        <a href="@Url.Action("Index", "CustomerTransactions")" class="btn btn-info btn-sm w-100">
+                                            <i class="fas fa-list me-1"></i> مشاهده تراکنش‌ها
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- My Profile -->
+                                <div class="col-lg-6 col-md-6">
+                                    <div class="action-card text-center p-3 border rounded">
+                                        <div class="text-secondary mb-2">
+                                            <i class="fas fa-user fa-2x"></i>
+                                        </div>
+                                        <h6 class="fw-bold mb-2">پروفایل من</h6>
+                                        <p class="text-muted small mb-2">مشاهده و ویرایش اطلاعات شخصی</p>
+                                        <a href="@Url.Action("Profile", "Account")" class="btn btn-secondary btn-sm w-100">
+                                            <i class="fas fa-user-edit me-1"></i> پروفایل
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exchange Rates -->
+            <div class="row mb-2">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-gradient-warning text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                نرخ‌های لحظه‌ای ارز
+                            </h5>
+                        </div>
+                        <div class="card-body p-3 text-center">
+                            <p class="text-muted mb-3">مشاهده آخرین نرخ‌های خرید و فروش ارز</p>
+                            <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-warning btn-lg">
+                                <i class="fas fa-coins me-2"></i> مشاهده نرخ‌ها
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <!-- Public Compact Dashboard -->
+        
+        <!-- Compact Header -->
+        <div class="row mb-3">
+            <div class="col-12 text-center">
+                <div class="header-compact">
+                    <img src="~/favicon/android-chrome-512x512.png" alt="تابان" class="logo-medium">
+                    <h2 class="fw-bold text-primary mb-2">سامانه معاملات تابان</h2>
+                    <p class="lead text-muted">برای دسترسی به امکانات کامل سیستم، وارد حساب کاربری خود شوید</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Public Services -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-gradient-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-globe me-2"></i>
+                            خدمات عمومی
+                        </h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-3">
+                            <!-- Exchange Rates -->
+                            <div class="col-lg-4 col-md-4">
+                                <div class="action-card text-center p-3 border rounded">
+                                    <div class="text-primary mb-2">
+                                        <i class="fas fa-chart-line fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-2">نرخ‌های ارز</h6>
+                                    <p class="text-muted small mb-2">مشاهده آخرین نرخ‌های خرید و فروش ارز</p>
+                                    <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-primary btn-sm w-100">
+                                        <i class="fas fa-chart-line me-1"></i> مشاهده نرخ‌ها
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Login -->
+                            <div class="col-lg-4 col-md-4">
+                                <div class="action-card text-center p-3 border rounded">
+                                    <div class="text-success mb-2">
+                                        <i class="fas fa-sign-in-alt fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-2">ورود به سیستم</h6>
+                                    <p class="text-muted small mb-2">ورود به حساب کاربری برای انجام معاملات</p>
+                                    <a href="@Url.Action("Login", "Account")" class="btn btn-success btn-sm w-100">
+                                        <i class="fas fa-sign-in-alt me-1"></i> ورود
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Register -->
+                            <div class="col-lg-4 col-md-4">
+                                <div class="action-card text-center p-3 border rounded">
+                                    <div class="text-info mb-2">
+                                        <i class="fas fa-user-plus fa-2x"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-2">ثبت نام</h6>
+                                    <p class="text-muted small mb-2">عضویت در سیستم برای شروع معاملات ارز</p>
+                                    <a href="@Url.Action("Register", "Account")" class="btn btn-info btn-sm w-100">
+                                        <i class="fas fa-user-plus me-1"></i> ثبت نام
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize Smart Dashboard Features
+            initializeSmartDashboard();
+        });
+
+        function initializeSmartDashboard() {
+            // Dynamic Time and Greeting
+            updateTimeAndGreeting();
+            setInterval(updateTimeAndGreeting, 60000); // Update every minute
+
+            // Smart Card Interactions
+            initializeSmartCards();
+
+            // Pool Widget Auto-refresh
+            initializePoolWidget();
+
+            // Smart Notifications
+            initializeSmartNotifications();
+        }
+
+        function updateTimeAndGreeting() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fa-IR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('fa-IR');
+            
+            $('#currentTime').text(timeString);
+            $('#currentDate').text(dateString);
+
+            // Dynamic greeting based on time
+            const hour = now.getHours();
+            let greeting;
+            if (hour < 12) {
+                greeting = 'صبح بخیر';
+            } else if (hour < 17) {
+                greeting = 'ظهر بخیر';
+            } else if (hour < 20) {
+                greeting = 'عصر بخیر';
+            } else {
+                greeting = 'شب بخیر';
+            }
+            
+            $('#dynamicGreeting').text(greeting);
+
+            // Update system health
+            updateSystemHealth();
+        }
+
+        function updateSystemHealth() {
+            // Simulate system health check (in real implementation, this would call an API)
+            const metrics = {
+                cpu: Math.random() * 100,
+                memory: Math.random() * 100,
+                database: Math.random() < 0.95, // 95% uptime
+                api: Math.random() < 0.98 // 98% uptime
+            };
+
+            let healthStatus = 'excellent';
+            let healthText = 'سیستم سالم';
+            let healthIcon = 'fas fa-heartbeat text-success';
+
+            if (metrics.cpu > 80 || metrics.memory > 90 || !metrics.database || !metrics.api) {
+                healthStatus = 'warning';
+                healthText = 'نیاز به بررسی';
+                healthIcon = 'fas fa-exclamation-triangle text-warning';
+            }
+
+            if (metrics.cpu > 95 || metrics.memory > 95 || (!metrics.database && !metrics.api)) {
+                healthStatus = 'critical';
+                healthText = 'مشکل سیستم';
+                healthIcon = 'fas fa-heart-broken text-danger';
+            }
+
+            $('#systemHealthIcon').attr('class', healthIcon);
+            $('#systemHealth').text(healthText);
+
+            // Add pulse animation for critical status
+            if (healthStatus === 'critical') {
+                $('#systemHealthIcon').addClass('fa-beat');
+            } else {
+                $('#systemHealthIcon').removeClass('fa-beat');
+            }
+        }
+
+        function initializeSmartCards() {
+            // Add progressive enhancement to action cards
+            $('.smart-action-card').each(function() {
+                const $card = $(this);
+                
+                // Add hover analytics
+                $card.on('mouseenter', function() {
+                    // Track which features users are most interested in
+                    const cardType = $card.find('.action-title').text();
+                    console.log('User viewing:', cardType);
+                });
+
+                // Add click tracking
+                $card.find('.smart-btn').on('click', function(e) {
+                    const actionType = $(this).find('span').text();
+                    
+                    // Show smart loading state
+                    const $btn = $(this);
+                    const originalText = $btn.html();
+                    $btn.html('<i class="fas fa-spinner fa-spin"></i> در حال بارگذاری...');
+                    
+                    // Reset after navigation starts
+                    setTimeout(() => {
+                        $btn.html(originalText);
+                    }, 1000);
+                });
+            });
+
+            // Add smart process flow interactions
+            $('.flow-step').on('click', function() {
+                const stepNumber = $(this).find('.flow-number').text();
+                highlightWorkflowStep(stepNumber);
+            });
+        }
+
+        function initializePoolWidget() {
+            // Auto-refresh pool data every 30 seconds
+            setInterval(function() {
+                refreshPoolWidget();
+            }, 30000);
+
+            // Add smart refresh button
+            $(document).on('click', '.pool-refresh-btn', function() {
+                refreshPoolWidget(true);
+            });
+        }
+
+        function refreshPoolWidget(manual = false) {
+            const $container = $('#pool-widget-container');
+            
+            if (manual) {
+                $container.addClass('refreshing');
+                showSmartNotification('در حال بروزرسانی اطلاعات ارزها...', 'info');
+            }
+
+            $.get('@Url.Action("GetPoolData", "Home")')
+                .done(function(data) {
+                    if (data.success) {
+                        // Update widget content
+                        $container.html(data.html);
+                        
+                        if (manual) {
+                            showSmartNotification('اطلاعات ارزها با موفقیت بروزرسانی شد', 'success');
+                        }
+                    }
+                })
+                .fail(function() {
+                    if (manual) {
+                        showSmartNotification('خطا در بروزرسانی اطلاعات', 'error');
+                    }
+                })
+                .always(function() {
+                    $container.removeClass('refreshing');
+                });
+        }
+
+        function initializeSmartNotifications() {
+            // Create notification container if it doesn't exist
+            if ($('#smart-notifications').length === 0) {
+                $('body').append('<div id="smart-notifications" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>');
+            }
+        }
+
+        function showSmartNotification(message, type = 'info', duration = 3000) {
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle',
+                warning: 'fas fa-exclamation-circle'
+            };
+
+            const $notification = $(`
+                <div class="smart-notification ${type}">
+                    <div class="notification-content">
+                        <i class="${icons[type]}"></i>
+                        <span>${message}</span>
+                    </div>
+                </div>
+            `);
+
+            $('#smart-notifications').append($notification);
+
+            // Auto remove after duration
+            setTimeout(() => {
+                $notification.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, duration);
+        }
+
+        function highlightWorkflowStep(stepNumber) {
+            // Reset all steps
+            $('.flow-step').removeClass('active');
+            
+            // Highlight selected step and predecessors
+            for (let i = 1; i <= stepNumber; i++) {
+                $(`.flow-step:nth-child(${i * 2 - 1})`).addClass('active');
+            }
+
+            // Show contextual help
+            const stepTexts = {
+                '1': 'ابتدا اطلاعات مشتری را در سیستم ثبت کنید',
+                '2': 'سپس با استفاده از نرخ‌های روز معامله را ایجاد کنید',
+                '3': 'در نهایت برای ثبت رسمی، سند حسابداری تنظیم کنید'
+            };
+
+            if (stepTexts[stepNumber]) {
+                showSmartNotification(stepTexts[stepNumber], 'info', 5000);
+            }
+        }
+
+        // Keyboard shortcuts for power users
+        $(document).on('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'o':
+                        e.preventDefault();
+                        window.location.href = '@Url.Action("Create", "Orders")';
+                        break;
+                    case 'u':
+                        e.preventDefault();
+                        window.location.href = '@Url.Action("Create", "Customers")';
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        window.location.href = '@Url.Action("Create", "AccountingDocuments")';
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        refreshPoolWidget(true);
+                        break;
+                }
+            }
+        });
+
+        // Show keyboard shortcuts help
+        $(document).on('keydown', function(e) {
+            if (e.key === 'F1') {
+                e.preventDefault();
+                showKeyboardHelp();
+            }
+        });
+
+        function showKeyboardHelp() {
+            const helpText = `
+                <div style="direction: rtl; text-align: right;">
+                    <h6>میانبرهای صفحه کلید:</h6>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><kbd>Ctrl+O</kbd> - ثبت معامله جدید</li>
+                        <li><kbd>Ctrl+U</kbd> - ثبت مشتری جدید</li>
+                        <li><kbd>Ctrl+D</kbd> - ایجاد سند حسابداری</li>
+                        <li><kbd>Ctrl+R</kbd> - بروزرسانی اطلاعات ارز</li>
+                        <li><kbd>F1</kbd> - نمایش این راهنما</li>
+                    </ul>
+                </div>
+            `;
+            
+            // Use SweetAlert2 if available, otherwise use alert
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'راهنمای میانبرها',
+                    html: helpText,
+                    icon: 'info',
+                    confirmButtonText: 'متوجه شدم'
+                });
+            } else {
+                alert('F1: راهنما، Ctrl+O: معامله، Ctrl+U: مشتری، Ctrl+D: سند، Ctrl+R: بروزرسانی');
+            }
+        }
+
+        // Add CSS for active flow steps
+        $('<style>')
+            .prop('type', 'text/css')
+            .html(`
+                .flow-step.active .flow-number {
+                    background: linear-gradient(135deg, #28a745, #20c997) !important;
+                    transform: scale(1.1);
+                    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+                }
+                .flow-step.active {
+                    color: #28a745;
+                    font-weight: 600;
+                }
+            `)
+            .appendTo('head');
+    </script>
+}
