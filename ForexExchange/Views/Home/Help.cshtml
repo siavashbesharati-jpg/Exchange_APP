@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "راهنمای سیستم تابان ";
+    ViewData["Title"] = "راهنمای جامع سیستم تبادل ارز";
 }
 
 <div class="container-fluid py-4">
@@ -8,36 +8,85 @@
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h1 class="card-title mb-0">
-                        <i class="bi bi-question-circle-fill me-2"></i>
-                        راهنمای سیستم تابان 
+                        <i class="fas fa-book-open me-2"></i>
+                        راهنمای جامع سیستم تبادل ارز
                     </h1>
-                    <p class="mb-0 mt-2">راهنمای جامع برای درک نحوه عملکرد سیستم تبادل ارز تابان </p>
+                    <p class="mb-0 mt-2">راهنمای کامل برای استفاده از امکانات پیشرفته سیستم مدیریت معاملات ارزی</p>
                 </div>
                 <div class="card-body">
+                    <!-- Quick Access Navigation -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-gradient-info text-white">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-rocket me-2"></i>
+                                        دسترسی سریع
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-3 mb-2">
+                                            <a href="@Url.Action("Create", "Orders")" class="btn btn-light btn-sm">
+                                                <i class="fas fa-plus-circle me-1"></i>
+                                                ثبت سفارش جدید
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <a href="@Url.Action("Index", "Customers")" class="btn btn-light btn-sm">
+                                                <i class="fas fa-users me-1"></i>
+                                                مدیریت مشتریان
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <a href="@Url.Action("Index", "BankStatements")" class="btn btn-light btn-sm">
+                                                <i class="fas fa-file-invoice-dollar me-1"></i>
+                                                پردازش OCR اسناد
+                                            </a>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <a href="@Url.Action("Index", "Reports")" class="btn btn-light btn-sm">
+                                                <i class="fas fa-chart-bar me-1"></i>
+                                                گزارشات تحلیلی
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Table of Contents -->
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="card bg-light">
                                 <div class="card-header">
-                                    <h5 class="mb-0">فهرست مطالب</h5>
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-list me-2"></i>
+                                        فهرست مطالب
+                                    </h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <ul class="list-unstyled">
                                                 <li><a href="#overview" class="text-decoration-none">📋 نمای کلی سیستم</a></li>
-                                                <li><a href="#order-process" class="text-decoration-none">📝 فرآیند ثبت سفارش</a></li>
-                                                <li><a href="#rate-calculation" class="text-decoration-none">💰 نحوه محاسبه نرخ ارز</a></li>
-                                                <li><a href="#pool-management" class="text-decoration-none">🏦 مدیریت صندوق  ارزها</a></li>
-                                                <li><a href="#notifications" class="text-decoration-none">🔔 سیستم اطلاع‌رسانی</a></li>
+                                                <li><a href="#order-management" class="text-decoration-none">📝 مدیریت سفارشات</a></li>
+                                                <li><a href="#customer-management" class="text-decoration-none">� مدیریت مشتریان</a></li>
+                                                <li><a href="#ocr-processing" class="text-decoration-none">🤖 پردازش هوشمند OCR</a></li>
+                                                <li><a href="#currency-pools" class="text-decoration-none">🏦 مدیریت صندوق ارزها</a></li>
+                                                <li><a href="#bank-statements" class="text-decoration-none">🏧 مدیریت صورت حساب‌ها</a></li>
+                                                <li><a href="#shareable-links" class="text-decoration-none">� لینک‌های اشتراکی</a></li>
                                             </ul>
                                         </div>
                                         <div class="col-md-6">
                                             <ul class="list-unstyled">
-                                                <li><a href="#admin-features" class="text-decoration-none">👨‍💼 امکانات مدیریتی</a></li>
-                                                <li><a href="#reporting" class="text-decoration-none">📊 گزارش‌گیری و تحلیل</a></li>
-                                                <li><a href="#security" class="text-decoration-none">🔒 امنیت و کنترل دسترسی</a></li>
-                                                <li><a href="#algorithms" class="text-decoration-none">🧮 الگوریتم‌های محاسباتی</a></li>
+                                                <li><a href="#admin-management" class="text-decoration-none">👨‍💼 مدیریت کاربران ادمین</a></li>
+                                                <li><a href="#settings" class="text-decoration-none">⚙️ تنظیمات سیستم</a></li>
+                                                <li><a href="#reporting" class="text-decoration-none">📊 گزارشات پیشرفته</a></li>
+                                                <li><a href="#settlements" class="text-decoration-none">💰 تسویه حساب‌ها</a></li>
+                                                <li><a href="#accounting" class="text-decoration-none">� اسناد حسابداری</a></li>
+                                                <li><a href="#security" class="text-decoration-none">🔒 امنیت و دسترسی</a></li>
                                                 <li><a href="#faq" class="text-decoration-none">❓ پرسش‌های متداول</a></li>
                                             </ul>
                                         </div>
@@ -50,34 +99,39 @@
                     <!-- Overview Section -->
                     <section id="overview" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <i class="fas fa-info-circle me-2"></i>
                             نمای کلی سیستم
                         </h2>
                         <div class="row">
                             <div class="col-lg-8">
                                 <p class="lead">
-                                    سیستم تبادل ارز یک پلتفرم هوشمند برای مدیریت معاملات ارزی است که به صورت خودکار نرخ‌های ارز را محاسبه کرده و معاملات را مدیریت می‌کند.
+                                    سیستم تبادل ارز یک پلتفرم هوشمند و پیشرفته برای مدیریت کامل معاملات ارزی است که دارای قابلیت‌های OCR، مدیریت پیشرفته مشتریان، گزارشات تحلیلی و سیستم امنیت چندلایه می‌باشد.
                                 </p>
                                 <div class="alert alert-info">
-                                    <h6><i class="bi bi-lightbulb-fill me-2"></i>هدف اصلی سیستم:</h6>
+                                    <h6><i class="fas fa-lightbulb me-2"></i>ویژگی‌های کلیدی سیستم:</h6>
                                     <ul class="mb-0">
-                                        <li>ارائه نرخ‌های منصفانه و شفاف برای معاملات ارزی</li>
-                                        <li>مدیریت هوشمند موجودی ارزها (صندوق  ارزها)</li>
-                                        <li>اطمینان از امنیت و دقت در انجام معاملات</li>
-                                        <li>ارائه گزارش‌های دقیق برای تصمیم‌گیری بهتر</li>
+                                        <li>پردازش هوشمند اسناد بانکی با تکنولوژی OCR</li>
+                                        <li>مدیریت پیشرفته مشتریان با گزارشات قابل اشتراک</li>
+                                        <li>سیستم صندوق ارزها با کنترل ریسک هوشمند</li>
+                                        <li>گزارشات تحلیلی پیشرفته و داشبورد مدیریتی</li>
+                                        <li>مدیریت چندسطحی کاربران با امنیت بالا</li>
+                                        <li>سیستم تسویه حساب خودکار</li>
+                                        <li>ثبت اسناد حسابداری جامع</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="col-lg-4">
-                                <div class="card bg-success text-white">
+                                <div class="card bg-gradient-success text-white">
                                     <div class="card-body text-center">
-                                        <i class="bi bi-graph-up display-4 mb-3"></i>
-                                        <h5>مزایای کلیدی</h5>
+                                        <i class="fas fa-chart-line display-4 mb-3"></i>
+                                        <h5>مزایای پیشرفته</h5>
                                         <ul class="list-unstyled">
-                                            <li>✅ نرخ‌گذاری هوشمند</li>
-                                            <li>✅ مدیریت خودکار موجودی</li>
-                                            <li>✅ گزارش‌گیری لحظه‌ای</li>
-                                            <li>✅ امنیت بالا</li>
+                                            <li>🤖 پردازش هوشمند OCR</li>
+                                            <li>📊 گزارشات تحلیلی</li>
+                                            <li>🔗 لینک‌های قابل اشتراک</li>
+                                            <li>🏦 مدیریت صندوق پیشرفته</li>
+                                            <li>⚙️ تنظیمات کامیسیون</li>
+                                            <li>🔒 امنیت چندلایه</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -85,70 +139,125 @@
                         </div>
                     </section>
 
-                    <!-- Order Process Section -->
-                    <section id="order-process" class="mb-5">
+                    <!-- Order Management Section -->
+                    <section id="order-management" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-clipboard-check me-2"></i>
-                            فرآیند ثبت سفارش
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            مدیریت سفارشات
                         </h2>
                         <div class="row">
                             <div class="col-12">
-                                <div class="timeline">
-                                    <div class="timeline-item">
-                                        <div class="timeline-marker bg-primary"></div>
-                                        <div class="timeline-content">
-                                            <h5 class="timeline-title">مرحله ۱: انتخاب مشتری</h5>
-                                            <p>ابتدا مشتری مورد نظر را از لیست مشتریان انتخاب کنید. سیستم اطلاعات کامل مشتری شامل بدهی و اعتبار فعلی را نمایش می‌دهد.</p>
-                                        </div>
+                                <div class="card mb-4">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-plus-circle me-2"></i>
+                                            ثبت سفارش جدید
+                                        </h5>
                                     </div>
-                                    <div class="timeline-item">
-                                        <div class="timeline-marker bg-info"></div>
-                                        <div class="timeline-content">
-                                            <h5 class="timeline-title">مرحله ۲: انتخاب ارزها</h5>
-                                            <p>ارز مبدأ (پولی که مشتری دارد) و ارز مقصد (پولی که می‌خواهد) را انتخاب کنید.</p>
-                                            <div class="alert alert-warning">
-                                                <strong>نکته:</strong> ارز مبدأ و مقصد نمی‌توانند یکسان باشند.
+                                    <div class="card-body">
+                                        <p><strong>مسیر:</strong> <a href="@Url.Action("Create", "Orders")" target="_blank">@Url.Action("Create", "Orders")</a></p>
+                                        <div class="timeline">
+                                            <div class="timeline-item">
+                                                <div class="timeline-marker bg-primary"></div>
+                                                <div class="timeline-content">
+                                                    <h5 class="timeline-title">مرحله ۱: انتخاب مشتری</h5>
+                                                    <p>از لیست مشتریان موجود انتخاب کنید. سیستم اطلاعات کاملی شامل:</p>
+                                                    <ul>
+                                                        <li>موجودی فعلی مشتری در هر ارز</li>
+                                                        <li>سابقه معاملات و اعتبارسنجی</li>
+                                                        <li>وضعیت بدهی و اعتبار</li>
+                                                        <li>آمار کلی معاملات</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="timeline-item">
+                                                <div class="timeline-marker bg-info"></div>
+                                                <div class="timeline-content">
+                                                    <h5 class="timeline-title">مرحله ۲: تعیین جزئیات معامله</h5>
+                                                    <p>مشخص کردن نوع معامله و ارزهای مورد نظر:</p>
+                                                    <ul>
+                                                        <li><strong>نوع سفارش:</strong> خرید یا فروش</li>
+                                                        <li><strong>ارز مبدأ:</strong> ارزی که داده می‌شود</li>
+                                                        <li><strong>ارز مقصد:</strong> ارزی که دریافت می‌شود</li>
+                                                        <li><strong>مبلغ:</strong> مقدار مورد نظر</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="timeline-item">
+                                                <div class="timeline-marker bg-success"></div>
+                                                <div class="timeline-content">
+                                                    <h5 class="timeline-title">مرحله ۳: محاسبه هوشمند نرخ</h5>
+                                                    <p>سیستم به صورت خودکار نرخ‌های پیشنهادی را نمایش می‌دهد:</p>
+                                                    <ul>
+                                                        <li>نرخ پیشنهادی بر اساس الگوریتم هوشمند</li>
+                                                        <li>میانگین نرخ‌های خرید و فروش تاریخی</li>
+                                                        <li>نرخ بازار آزاد لحظه‌ای</li>
+                                                        <li>امکان تنظیم دستی نرخ</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="timeline-item">
+                                                <div class="timeline-marker bg-warning"></div>
+                                                <div class="timeline-content">
+                                                    <h5 class="timeline-title">مرحله ۴: بررسی موجودی و ریسک</h5>
+                                                    <p>کنترل خودکار موجودی صندوق و ارزیابی ریسک:</p>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="alert alert-success">
+                                                                <i class="fas fa-check-circle me-2"></i>
+                                                                موجودی کافی
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="alert alert-danger">
+                                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                                هشدار موجودی
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="timeline-item">
-                                        <div class="timeline-marker bg-success"></div>
-                                        <div class="timeline-content">
-                                            <h5 class="timeline-title">مرحله ۳: تعیین مبلغ و نرخ</h5>
-                                            <p>مبلغ مورد نظر را وارد کنید. سیستم به صورت خودکار نرخ پیشنهادی را نمایش می‌دهد که شامل:</p>
-                                            <ul>
-                                                <li>نرخ پیشنهادی (بر اساس محاسبات هوشمند)</li>
-                                                <li>میانگین نرخ خرید (آمار تاریخی)</li>
-                                                <li>میانگین نرخ فروش (آمار تاریخی)</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div class="timeline-item">
-                                        <div class="timeline-marker bg-warning"></div>
-                                        <div class="timeline-content">
-                                            <h5 class="timeline-title">مرحله ۴: بررسی موجودی صندوق </h5>
-                                            <p>سیستم موجودی فعلی ارزها در صندوق  را بررسی کرده و هشدارهای لازم را نمایش می‌دهد.</p>
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="alert alert-success">
-                                                        <i class="bi bi-check-circle-fill me-2"></i>
-                                                        موجودی کافی
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="alert alert-danger">
-                                                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                                        موجودی ناکافی
-                                                    </div>
-                                                </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header bg-secondary text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-list me-2"></i>
+                                                    مشاهده سفارشات
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>مسیر:</strong> <a href="@Url.Action("Index", "Orders")" target="_blank">@Url.Action("Index", "Orders")</a></p>
+                                                <ul class="list-unstyled">
+                                                    <li>📋 لیست کامل سفارشات</li>
+                                                    <li>🔍 جستجو و فیلتر پیشرفته</li>
+                                                    <li>📊 آمار و خلاصه معاملات</li>
+                                                    <li>📄 صادرات گزارشات</li>
+                                                </ul>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="timeline-item">
-                                        <div class="timeline-marker bg-dark"></div>
-                                        <div class="timeline-content">
-                                            <h5 class="timeline-title">مرحله ۵: ثبت نهایی سفارش</h5>
-                                            <p>پس از بررسی تمام موارد، سفارش ثبت می‌شود و در سیستم ذخیره می‌گردد.</p>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header bg-info text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-edit me-2"></i>
+                                                    ویرایش سفارشات
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>مسیر:</strong> /Orders/Edit/{id}</p>
+                                                <ul class="list-unstyled">
+                                                    <li>✏️ تغییر مبلغ و نرخ</li>
+                                                    <li>🔄 تغییر وضعیت سفارش</li>
+                                                    <li>📝 افزودن توضیحات</li>
+                                                    <li>✅ تایید نهایی</li>
+                                                </ul>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -156,381 +265,452 @@
                         </div>
                     </section>
 
-                    <!-- Rate Calculation Section -->
-                    <section id="rate-calculation" class="mb-5">
+                    <!-- Customer Management Section -->
+                    <section id="customer-management" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-calculator-fill me-2"></i>
-                            نحوه محاسبه نرخ ارز
+                            <i class="fas fa-users me-2"></i>
+                            مدیریت مشتریان
                         </h2>
                         <div class="row">
                             <div class="col-lg-8">
-                                <h5>منابع نرخ ارز:</h5>
-                                <div class="card mb-3">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-user-plus me-2"></i>
+                                            مدیریت اطلاعات مشتریان
+                                        </h5>
+                                    </div>
                                     <div class="card-body">
-                                        <h6 class="card-title">۱. نرخ‌های بازار آزاد</h6>
-                                        <p>سیستم به صورت خودکار نرخ‌های ارز را از وب‌سایت‌های معتبر مانند <strong>chande.net</strong> دریافت می‌کند.</p>
-                                        <ul>
-                                            <li>دلار آمریکا (USD)</li>
-                                            <li>یورو (EUR)</li>
-                                            <li>درهم امارات (AED)</li>
-                                            <li>ریال عمان (OMR)</li>
-                                            <li>لیر ترکیه (TRY)</li>
-                                        </ul>
+                                        <p><strong>مسیر اصلی:</strong> <a href="@Url.Action("Index", "Customers")" target="_blank">@Url.Action("Index", "Customers")</a></p>
+                                        
+                                        <h6>امکانات مدیریت:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-group list-group-flush">
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-plus-circle text-success me-2"></i>
+                                                        <strong>افزودن مشتری:</strong>
+                                                        <small class="d-block text-muted">@Url.Action("Create", "Customers")</small>
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-edit text-primary me-2"></i>
+                                                        <strong>ویرایش اطلاعات:</strong>
+                                                        <small class="d-block text-muted">نام، تلفن، آدرس و سایر جزئیات</small>
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-eye text-info me-2"></i>
+                                                        <strong>نمایش جزئیات:</strong>
+                                                        <small class="d-block text-muted">صفحه پروفایل کامل مشتری</small>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-group list-group-flush">
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-chart-bar text-warning me-2"></i>
+                                                        <strong>آمار معاملات:</strong>
+                                                        <small class="d-block text-muted">حجم و تعداد معاملات</small>
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-balance-scale text-secondary me-2"></i>
+                                                        <strong>موجودی ارزها:</strong>
+                                                        <small class="d-block text-muted">بدهی و اعتبار در هر ارز</small>
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-history text-dark me-2"></i>
+                                                        <strong>تاریخچه کامل:</strong>
+                                                        <small class="d-block text-muted">تمام معاملات و تراکنش‌ها</small>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="card">
+
+                                <div class="card mb-4">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-file-invoice-dollar me-2"></i>
+                                            صورت حساب مشتریان
+                                        </h5>
+                                    </div>
                                     <div class="card-body">
-                                        <h6 class="card-title">۲. نرخ‌های متقابل</h6>
-                                        <p>برای جفت ارزهای دیگر، نرخ‌ها به صورت خودکار از نرخ‌های پایه محاسبه می‌شوند.</p>
+                                        <p><strong>مسیر:</strong> /Customers/Statement/{id}</p>
+                                        
+                                        <h6>امکانات صورت حساب:</h6>
+                                        <ul class="list-unstyled">
+                                            <li>📊 نمایش کامل تراکنش‌ها در بازه زمانی مشخص</li>
+                                            <li>💰 محاسبه دقیق موجودی در هر ارز</li>
+                                            <li>📈 نمودار روند معاملات</li>
+                                            <li>📄 قابلیت صادرات به PDF و Excel</li>
+                                            <li>🔍 فیلتر بر اساس نوع معامله و ارز</li>
+                                        </ul>
+
                                         <div class="alert alert-info">
-                                            <strong>مثال:</strong> اگر نرخ USD/IRR = ۱۰۰,۰۰۰ باشد، نرخ IRR/USD = ۰.۰۰۰۰۱ خواهد بود.
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>نکته:</strong> صورت حساب‌ها به صورت real-time محاسبه می‌شوند و همیشه به‌روز هستند.
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            
                             <div class="col-lg-4">
-                                <div class="card bg-light">
-                                    <div class="card-header">
-                                        <h6 class="card-title mb-0">فرمول‌های کلیدی</h6>
+                                <div class="card bg-primary text-white mb-3">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-user-check display-4 mb-3"></i>
+                                        <h5>اطلاعات مشتری</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>📱 شماره تلفن (نام کاربری)</li>
+                                            <li>👤 نام و نام خانوادگی</li>
+                                            <li>📧 ایمیل (اختیاری)</li>
+                                            <li>📍 آدرس کامل</li>
+                                            <li>🆔 کد ملی</li>
+                                            <li>📅 تاریخ عضویت</li>
+                                            <li>✅ وضعیت فعالیت</li>
+                                        </ul>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <strong>نرخ متقابل:</strong><br>
-                                            <code>Rate(A→B) = 1 / Rate(B→A)</code>
-                                        </div>
-                                        <div class="mb-3">
-                                            <strong>نرخ سه‌گانه:</strong><br>
-                                            <code>Rate(A→C) = Rate(A→B) × Rate(B→C)</code>
-                                        </div>
-                                        <div class="mb-3">
-                                            <strong>دقت نمایش:</strong><br>
-                                            <code>۴ رقم اعشار</code>
-                                        </div>
+                                </div>
+
+                                <div class="card bg-warning text-dark">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-calculator display-4 mb-3"></i>
+                                        <h5>محاسبات خودکار</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>💵 موجودی هر ارز</li>
+                                            <li>📊 آمار معاملات</li>
+                                            <li>📈 نمودار عملکرد</li>
+                                            <li>⚖️ تراز بدهکاری/بستانکاری</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <!-- Pool Management Section -->
-                    <section id="pool-management" class="mb-5">
+                    <!-- OCR Processing Section -->
+                    <section id="ocr-processing" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-bank me-2"></i>
-                            مدیریت صندوق  ارزها
+                            <i class="fas fa-robot me-2"></i>
+                            پردازش هوشمند OCR
                         </h2>
+                        <div class="alert alert-success">
+                            <i class="fas fa-star me-2"></i>
+                            <strong>ویژگی پیشرفته:</strong> این سیستم دارای قابلیت پردازش هوشمند اسناد بانکی با تکنولوژی OCR است.
+                        </div>
+                        
                         <div class="row">
                             <div class="col-lg-8">
-                                <p class="lead">صندوق  ارزها موجودی فعلی هر ارز در سیستم را نشان می‌دهد و برای کنترل ریسک بسیارمهم است.</p>
-
-                                <h5>نحوه عملکرد صندوق :</h5>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="card h-100">
-                                            <div class="card-header bg-success text-white">
-                                                <h6 class="mb-0">✅ موجودی مثبت</h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <p>نشان‌دهنده مازاد ارز در سیستم است. معاملات فروش این ارز امکان‌پذیر است.</p>
-                                            </div>
-                                        </div>
+                                <div class="card mb-4">
+                                    <div class="card-header bg-gradient-primary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-upload me-2"></i>
+                                            آپلود و پردازش اسناد
+                                        </h5>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="card h-100">
-                                            <div class="card-header bg-danger text-white">
-                                                <h6 class="mb-0">❌ موجودی منفی</h6>
+                                    <div class="card-body">
+                                        <p><strong>مسیر:</strong> <a href="@Url.Action("Index", "BankStatements")" target="_blank">@Url.Action("Index", "BankStatements")</a></p>
+                                        
+                                        <h6>انواع اسناد قابل پردازش:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>🏦 صورت حساب بانکی</li>
+                                                    <li>💳 گردش حساب کارت</li>
+                                                    <li>🧾 رسید تراکنش‌ها</li>
+                                                    <li>📄 فیش واریزی</li>
+                                                </ul>
                                             </div>
-                                            <div class="card-body">
-                                                <p>نشان‌دهنده کمبود ارز در سیستم است. نیاز به تامین ارز دارد.</p>
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>🖼️ تصاویر (JPG, PNG)</li>
+                                                    <li>📄 فایل‌های PDF</li>
+                                                    <li>📸 عکس‌های موبایل</li>
+                                                    <li>🗂️ اسکن اسناد</li>
+                                                </ul>
                                             </div>
                                         </div>
+
+                                        <h6 class="mt-3">فرآیند پردازش:</h6>
+                                        <ol class="list-group list-group-numbered">
+                                            <li class="list-group-item">
+                                                <strong>آپلود فایل:</strong> انتخاب و بارگذاری سند
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong>پردازش OCR:</strong> استخراج متن با هوش مصنوعی
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong>تحلیل محتوا:</strong> شناسایی تراکنش‌ها و مبالغ
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong>تایید و ویرایش:</strong> بررسی و تصحیح نتایج
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong>ثبت نهایی:</strong> ذخیره در سیستم
+                                            </li>
+                                        </ol>
                                     </div>
                                 </div>
 
-                                <h5 class="mt-4">محاسبات صندوق :</h5>
-                                <ul>
-                                    <li><strong>ورود ارز:</strong> هنگام خرید ارز از مشتری</li>
-                                    <li><strong>خروج ارز:</strong> هنگام فروش ارز به مشتری</li>
-                                    <li><strong>بدهی مشتری:</strong> کاهش موجودی صندوق </li>
-                                    <li><strong>اعتبار مشتری:</strong> افزایش موجودی صندوق </li>
-                                </ul>
-                            </div>
-                            <div class="col-lg-4">
                                 <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="card-title mb-0">نمونه محاسبات</h6>
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-cogs me-2"></i>
+                                            تنظیمات OCR
+                                        </h5>
                                     </div>
                                     <div class="card-body">
-                                        <div class="mb-3">
-                                            <strong>خرید ۱۰۰ دلار:</strong><br>
-                                            موجودی USD: +۱۰۰
-                                        </div>
-                                        <div class="mb-3">
-                                            <strong>فروش ۵۰ یورو:</strong><br>
-                                            موجودی EUR: -۵۰
-                                        </div>
-                                        <div class="mb-3">
-                                            <strong>مانده کل:</strong><br>
-                                            <span class="text-success">USD: +۱۰۰</span><br>
-                                            <span class="text-danger">EUR: -۵۰</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Notifications Section -->
-                    <section id="notifications" class="mb-5">
-                        <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-bell-fill me-2"></i>
-                            سیستم اطلاع‌رسانی
-                        </h2>
-                        <div class="row">
-                            <div class="col-lg-8">
-                                <p class="lead">سیستم اطلاع‌رسانی به صورت لحظه‌ای مدیران را از رویدادهای مهم مطلع می‌کند.</p>
-
-                                <h5>انواع اطلاعیه‌ها:</h5>
-                                <div class="accordion" id="notificationAccordion">
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#newOrder">
-                                                ثبت سفارش جدید
-                                            </button>
-                                        </h2>
-                                        <div id="newOrder" class="accordion-collapse collapse show" data-bs-parent="#notificationAccordion">
-                                            <div class="accordion-body">
-                                                هرگاه سفارشی ثبت شود، مدیران به صورت لحظه‌ای مطلع می‌شوند.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#poolAlert">
-                                                هشدار موجودی صندوق 
-                                            </button>
-                                        </h2>
-                                        <div id="poolAlert" class="accordion-collapse collapse" data-bs-parent="#notificationAccordion">
-                                            <div class="accordion-body">
-                                                در صورت کمبود یا مازاد شدید ارز، سیستم هشدار ارسال می‌کند.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="accordion-item">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#rateUpdate">
-                                                بروزرسانی نرخ ارز
-                                            </button>
-                                        </h2>
-                                        <div id="rateUpdate" class="accordion-collapse collapse" data-bs-parent="#notificationAccordion">
-                                            <div class="accordion-body">
-                                                تغییرات نرخ ارز به صورت خودکار اطلاع‌رسانی می‌شود.
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="card bg-info text-white">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-lightning-fill display-4 mb-3"></i>
-                                        <h5>اطلاع‌رسانی لحظه‌ای</h5>
-                                        <p>همه اطلاعیه‌ها به صورت real-time از طریق SignalR ارسال می‌شوند.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Admin Features Section -->
-                    <section id="admin-features" class="mb-5">
-                        <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-person-gear me-2"></i>
-                            امکانات مدیریتی
-                        </h2>
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <h5>مدیریت مشتریان:</h5>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item">➕ افزودن مشتری جدید</li>
-                                    <li class="list-group-item">✏️ ویرایش اطلاعات مشتری</li>
-                                    <li class="list-group-item">📊 مشاهده تاریخچه معاملات</li>
-                                    <li class="list-group-item">💰 مدیریت بدهی و اعتبار</li>
-                                </ul>
-                            </div>
-                            <div class="col-lg-6">
-                                <h5>مدیریت ارزها:</h5>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item">➕ تعریف ارز جدید</li>
-                                    <li class="list-group-item">📈 بروزرسانی نرخ ارز</li>
-                                    <li class="list-group-item">🏦 مدیریت صندوق  ارزها</li>
-                                    <li class="list-group-item">📊 تحلیل نرخ‌های تاریخی</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="row mt-4">
-                            <div class="col-lg-6">
-                                <h5>مدیریت سفارشات:</h5>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item">👁️ مشاهده تمام سفارشات</li>
-                                    <li class="list-group-item">✅ تایید سفارشات</li>
-                                    <li class="list-group-item">❌ لغو سفارشات</li>
-                                    <li class="list-group-item">📝 ویرایش سفارشات</li>
-                                </ul>
-                            </div>
-                            <div class="col-lg-6">
-                                <h5>گزارش‌گیری:</h5>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item">📊 گزارش روزانه معاملات</li>
-                                    <li class="list-group-item">💰 گزارش سود و زیان</li>
-                                    <li class="list-group-item">📈 تحلیل روند نرخ ارز</li>
-                                    <li class="list-group-item">👥 گزارش عملکرد مشتریان</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Admin Management Section -->
-                    <section id="admin-management" class="mb-5">
-                        <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-shield-lock-fill me-2"></i>
-                            مدیریت کاربران ادمین
-                        </h2>
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            این بخش مخصوص کاربران با نقش "Admin" است و امکان مدیریت کامل کاربران ادمین سیستم را فراهم می‌کند.
-                        </div>
-
-                        <div class="row">
-                            <div class="col-lg-8">
-                                <h5>دسترسی به مدیریت ادمین:</h5>
-                                <div class="card mb-3">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <i class="bi bi-link-45deg me-2"></i>
-                                            مسیر دسترسی
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <p>از داشبورد اصلی، روی لینک "مدیریت ادمین‌ها" کلیک کنید یا به آدرس زیر بروید:</p>
-                                        <code class="d-block p-2 bg-light rounded">/AdminManagement/ManageAdmins</code>
-                                    </div>
-                                </div>
-
-                                <h5>امکانات مدیریت:</h5>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="card mb-3">
-                                            <div class="card-header">
-                                                <h6 class="mb-0">
-                                                    <i class="bi bi-person-plus-fill me-2"></i>
-                                                    افزودن ادمین جدید
-                                                </h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <ul class="list-unstyled">
-                                                    <li>📧 وارد کردن ایمیل</li>
-                                                    <li>🔒 تعیین رمز عبور</li>
-                                                    <li>👤 تخصیص نقش (Admin)</li>
-                                                    <li>✅ فعال‌سازی حساب</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="card mb-3">
-                                            <div class="card-header">
-                                                <h6 class="mb-0">
-                                                    <i class="bi bi-gear-fill me-2"></i>
-                                                    تغییر نقش ادمین
-                                                </h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <ul class="list-unstyled">
-                                                    <li>🔄 تغییر نقش به صورت آنی</li>
-                                                    <li>📝 ثبت تغییرات در سیستم</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card mb-3">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <i class="bi bi-table me-2"></i>
-                                            لیست کاربران ادمین
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <p>جدول کاملی از تمام کاربران ادمین با اطلاعات زیر:</p>
+                                        <h6>قابلیت‌های پیشرفته:</h6>
                                         <ul class="list-unstyled">
-                                            <li>🆔 شناسه کاربری</li>
-                                            <li>📧 آدرس ایمیل</li>
-                                            <li>👤 نقش فعلی (Admin)</li>
-                                            <li>📅 تاریخ ایجاد حساب</li>
-                                            <li>🔒 وضعیت حساب (فعال/غیرفعال)</li>
-                                            <li>⚡ اقدامات قابل انجام</li>
+                                            <li>🎯 دقت بالا در شناسایی اعداد و تاریخ‌ها</li>
+                                            <li>🔍 تشخیص خودکار نوع سند</li>
+                                            <li>💱 شناسایی نوع ارز و مبلغ</li>
+                                            <li>📅 استخراج تاریخ تراکنش‌ها</li>
+                                            <li>🏪 شناسایی نام بانک و شعبه</li>
+                                            <li>🔢 استخراج شماره حساب و کارت</li>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="col-lg-4">
-                                <div class="card bg-warning text-dark mb-3">
+                                <div class="card bg-gradient-success text-white mb-3">
                                     <div class="card-body text-center">
-                                        <i class="bi bi-exclamation-triangle-fill display-4 mb-3"></i>
-                                        <h5>نکات امنیتی</h5>
-                                        <ul class="list-unstyled text-start">
-                                            <li>🔐 فقط Admin دسترسی دارد</li>
-                                            <li>📝 همه تغییرات ثبت می‌شود</li>
-                                            <li>🚫 امکان حذف Admin وجود ندارد</li>
-                                            <li>⚠️ تغییرات نقش فوری اعمال می‌شود</li>
-                                        </ul>
+                                        <i class="fas fa-brain display-4 mb-3"></i>
+                                        <h5>هوش مصنوعی</h5>
+                                        <p>استفاده از مدل‌های پیشرفته OpenRouter برای پردازش دقیق اسناد</p>
                                     </div>
                                 </div>
 
-                                <div class="card bg-success text-white">
+                                <div class="card bg-gradient-warning text-dark">
                                     <div class="card-body text-center">
-                                        <i class="bi bi-check-circle-fill display-4 mb-3"></i>
-                                        <h5>مزایای سیستم</h5>
+                                        <i class="fas fa-clock display-4 mb-3"></i>
+                                        <h5>سرعت بالا</h5>
+                                        <p>پردازش سریع و آنی اسناد در کمتر از ۳۰ ثانیه</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Currency Pools Section -->
+                    <section id="currency-pools" class="mb-5">
+                        <h2 class="h3 mb-4 text-primary">
+                            <i class="fas fa-coins me-2"></i>
+                            مدیریت صندوق ارزها
+                        </h2>
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-vault me-2"></i>
+                                            صندوق ارزها (Currency Pool)
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="lead">صندوق ارزها سیستم هوشمند کنترل موجودی و مدیریت ریسک است که تراز کلی هر ارز را نظارت می‌کند.</p>
+                                        
+                                        <h6>نحوه محاسبه موجودی:</h6>
+                                        <div class="alert alert-info">
+                                            <strong>فرمول کلی:</strong><br>
+                                            <code>موجودی صندوق = مجموع معاملات خرید - مجموع معاملات فروش + تعدیلات دستی</code>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card border-success">
+                                                    <div class="card-header bg-success text-white">
+                                                        <h6 class="mb-0">✅ موجودی مثبت</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled">
+                                                            <li>💰 مازاد ارز در سیستم</li>
+                                                            <li>🟢 امکان فروش بیشتر</li>
+                                                            <li>📈 وضعیت مطلوب</li>
+                                                            <li>🛡️ ریسک کم</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card border-danger">
+                                                    <div class="card-header bg-danger text-white">
+                                                        <h6 class="mb-0">❌ موجودی منفی</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled">
+                                                            <li>⚠️ کمبود ارز در سیستم</li>
+                                                            <li>🔴 نیاز به تأمین ارز</li>
+                                                            <li>📉 وضعیت نامطلوب</li>
+                                                            <li>🚨 ریسک بالا</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-chart-line me-2"></i>
+                                            مدیریت و کنترل ریسک
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>سیستم هشدار هوشمند:</h6>
+                                        <ul class="list-unstyled">
+                                            <li>🚨 <strong>هشدار کمبود:</strong> موجودی زیر حد آستانه</li>
+                                            <li>⚡ <strong>هشدار مازاد:</strong> موجودی بالای حد مطلوب</li>
+                                            <li>⚖️ <strong>عدم تعادل:</strong> اختلاف زیاد بین خرید و فروش</li>
+                                            <li>📊 <strong>روند نامطلوب:</strong> تغییرات غیرعادی در موجودی</li>
+                                        </ul>
+
+                                        <h6>امکانات تحلیلی:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>📈 نمودار روند موجودی</li>
+                                                    <li>🎯 تحلیل ریسک</li>
+                                                    <li>📊 آمار معاملات</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>🔄 تعدیل موجودی</li>
+                                                    <li>📋 گزارش تفصیلی</li>
+                                                    <li>⏰ به‌روزرسانی لحظه‌ای</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="card bg-info text-white mb-3">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-balance-scale display-4 mb-3"></i>
+                                        <h5>تعادل ارزی</h5>
+                                        <p>کنترل هوشمند تراز ارزها برای کاهش ریسک و بهینه‌سازی سود</p>
+                                    </div>
+                                </div>
+
+                                <div class="card bg-secondary text-white">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-shield-alt display-4 mb-3"></i>
+                                        <h5>مدیریت ریسک</h5>
                                         <ul class="list-unstyled text-start">
-                                            <li>👥 مدیریت چند سطحی</li>
-                                            <li>🔒 امنیت بالا</li>
-                                            <li>📊 گزارش کامل تغییرات</li>
-                                            <li>⚡ دسترسی سریع و آسان</li>
+                                            <li>🎯 حد آستانه هوشمند</li>
+                                            <li>📱 اطلاع‌رسانی فوری</li>
+                                            <li>🔍 نظارت مداوم</li>
+                                            <li>📊 گزارش ریسک</li>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </section>
 
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <h5>نقش‌های کاربری:</h5>
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="card border-primary mb-3">
-                                            <div class="card-header bg-primary text-white">
-                                                <h6 class="mb-0">
-                                                    <i class="bi bi-person-badge me-2"></i>
-                                                    Admin
-                                                </h6>
+                    <!-- Settings Section -->
+                    <section id="settings" class="mb-5">
+                        <h2 class="h3 mb-4 text-primary">
+                            <i class="fas fa-cog me-2"></i>
+                            تنظیمات سیستم
+                        </h2>
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-gradient-warning text-dark">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-percentage me-2"></i>
+                                            تنظیمات کامیسیون و حدود
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>مسیر:</strong> <a href="@Url.Action("Index", "Settings")" target="_blank">@Url.Action("Index", "Settings")</a></p>
+                                        
+                                        <h6>انواع تنظیمات:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card border-primary">
+                                                    <div class="card-header bg-primary text-white">
+                                                        <h6 class="mb-0">کامیسیون معاملات</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled">
+                                                            <li>💰 نرخ کامیسیون خرید</li>
+                                                            <li>💱 نرخ کامیسیون فروش</li>
+                                                            <li>📊 کامیسیون بر اساس ارز</li>
+                                                            <li>👥 کامیسیون بر اساس نوع مشتری</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="card-body">
-                                                <p>دسترسی کامل به تمام امکانات سیستم شامل مدیریت کاربران</p>
-                                                <ul class="list-unstyled">
-                                                    <li>✅ مدیریت مشتریان</li>
-                                                    <li>✅ مدیریت ارزها و نرخ‌ها</li>
-                                                    <li>✅ مدیریت سفارشات</li>
-                                                    <li>✅ گزارش‌گیری</li>
-                                                    <li>✅ مدیریت کاربران ادمین</li>
-                                                    <li>✅ تغییر نقش‌ها</li>
-                                                    <li>✅ افزودن/حذف ادمین‌ها</li>
-                                                    <li>✅ تنظیمات سیستمی</li>
-                                                </ul>
+                                            <div class="col-md-6">
+                                                <div class="card border-success">
+                                                    <div class="card-header bg-success text-white">
+                                                        <h6 class="mb-0">حدود و محدودیت‌ها</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled">
+                                                            <li>🚫 حداکثر مبلغ معامله</li>
+                                                            <li>📈 حداقل مبلغ معامله</li>
+                                                            <li>⏰ محدودیت زمانی</li>
+                                                            <li>👤 محدودیت بر اساس مشتری</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        <div class="alert alert-info mt-3">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>نکته:</strong> تغییرات در تنظیمات بلافاصله روی معاملات جدید اعمال می‌شود.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header bg-secondary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-save me-2"></i>
+                                            ذخیره و اعمال تنظیمات
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>فرآیند تغییر تنظیمات:</h6>
+                                        <ol class="list-group list-group-numbered">
+                                            <li class="list-group-item">ورود به بخش تنظیمات سیستم</li>
+                                            <li class="list-group-item">ویرایش مقادیر مورد نظر</li>
+                                            <li class="list-group-item">بررسی و تایید تغییرات</li>
+                                            <li class="list-group-item">ذخیره تنظیمات جدید</li>
+                                            <li class="list-group-item">اعمال فوری در سیستم</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="card bg-info text-white mb-3">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-sliders-h display-4 mb-3"></i>
+                                        <h5>کنترل کامل</h5>
+                                        <p>تنظیم دقیق همه پارامترهای سیستم</p>
+                                    </div>
+                                </div>
+
+                                <div class="card bg-warning text-dark">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-exclamation-triangle display-4 mb-3"></i>
+                                        <h5>نکات مهم</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>⚠️ تغییرات فوری اعمال می‌شود</li>
+                                            <li>📝 همه تغییرات ثبت می‌شود</li>
+                                            <li>🔒 نیاز به مجوز مدیر</li>
+                                            <li>📊 تأثیر بر محاسبات</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -540,59 +720,313 @@
                     <!-- Reporting Section -->
                     <section id="reporting" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-bar-chart-line-fill me-2"></i>
-                            گزارش‌گیری و تحلیل
+                            <i class="fas fa-chart-bar me-2"></i>
+                            گزارشات پیشرفته
                         </h2>
                         <div class="row">
                             <div class="col-lg-8">
-                                <h5>انواع گزارشات:</h5>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="card mb-3">
-                                            <div class="card-header">
-                                                <h6 class="mb-0">گزارش معاملات</h6>
-                                            </div>
-                                            <div class="card-body">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-gradient-success text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-analytics me-2"></i>
+                                            گزارشات تحلیلی
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>مسیر:</strong> <a href="@Url.Action("Index", "Reports")" target="_blank">@Url.Action("Index", "Reports")</a></p>
+                                        
+                                        <h6>انواع گزارشات در دسترس:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
                                                 <ul class="list-unstyled">
-                                                    <li>📅 گزارش روزانه</li>
-                                                    <li>📆 گزارش ماهانه</li>
-                                                    <li>👤 گزارش هر مشتری</li>
-                                                    <li>💱 گزارش هر ارز</li>
+                                                    <li>📈 <strong>گزارش معاملات:</strong> تحلیل کامل معاملات</li>
+                                                    <li>💰 <strong>گزارش مالی:</strong> سود، زیان و کامیسیون</li>
+                                                    <li>👥 <strong>گزارش مشتریان:</strong> عملکرد هر مشتری</li>
+                                                    <li>🏦 <strong>گزارش صندوق:</strong> وضعیت موجودی ارزها</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>📊 <strong>گزارش آماری:</strong> نمودارها و تحلیل روند</li>
+                                                    <li>🔄 <strong>گزارش تراکنش:</strong> جزئیات همه تراکنش‌ها</li>
+                                                    <li>📅 <strong>گزارش دوره‌ای:</strong> روزانه، ماهانه، سالانه</li>
+                                                    <li>⚠️ <strong>گزارش ریسک:</strong> تحلیل ریسک‌های سیستم</li>
                                                 </ul>
                                             </div>
                                         </div>
+
+                                        <div class="alert alert-success">
+                                            <i class="fas fa-download me-2"></i>
+                                            <strong>صادرات:</strong> همه گزارشات قابل صادرات به فرمت‌های PDF، Excel و CSV هستند.
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="card mb-3">
-                                            <div class="card-header">
-                                                <h6 class="mb-0">گزارش مالی</h6>
-                                            </div>
-                                            <div class="card-body">
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-filter me-2"></i>
+                                            فیلترها و تنظیمات گزارش
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>امکانات فیلترگذاری:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
                                                 <ul class="list-unstyled">
-                                                    <li>💰 سود و زیان</li>
-                                                    <li>📊 تحلیل ریسک</li>
-                                                    <li>🏦 موجودی صندوق </li>
-                                                    <li>💳 بدهی مشتریان</li>
+                                                    <li>📅 بازه زمانی (از تاریخ تا تاریخ)</li>
+                                                    <li>👤 انتخاب مشتری خاص</li>
+                                                    <li>💱 انتخاب ارز مورد نظر</li>
+                                                    <li>📊 نوع معامله (خرید/فروش)</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>💰 محدوده مبلغ</li>
+                                                    <li>✅ وضعیت معامله</li>
+                                                    <li>🏦 منبع تراکنش</li>
+                                                    <li>📈 سطح ریسک</li>
                                                 </ul>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <h5>امکانات تحلیل:</h5>
-                                <ul>
-                                    <li><strong>نمودار نرخ ارز:</strong> روند تغییرات نرخ در طول زمان</li>
-                                    <li><strong>تحلیل حجم معاملات:</strong> مقایسه حجم خرید و فروش</li>
-                                    <li><strong>گزارش مشتریان برتر:</strong> مشتریان با بیشترین حجم معاملات</li>
-                                    <li><strong>هشدارهای هوشمند:</strong> شناسایی الگوهای غیرعادی</li>
-                                </ul>
                             </div>
+
                             <div class="col-lg-4">
-                                <div class="card bg-warning text-dark">
+                                <div class="card bg-dark text-white mb-3">
                                     <div class="card-body text-center">
-                                        <i class="bi bi-graph-up display-4 mb-3"></i>
-                                        <h5>داده‌های لحظه‌ای</h5>
-                                        <p>تمام گزارشات بر اساس داده‌های real-time تولید می‌شوند.</p>
+                                        <i class="fas fa-chart-line display-4 mb-3"></i>
+                                        <h5>تحلیل پیشرفته</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>📊 نمودارهای تعاملی</li>
+                                            <li>📈 پیش‌بینی روند</li>
+                                            <li>🎯 شاخص‌های کلیدی</li>
+                                            <li>⚡ به‌روزرسانی لحظه‌ای</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-clock display-4 mb-3"></i>
+                                        <h5>گزارشات خودکار</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>📧 ارسال ایمیل دوره‌ای</li>
+                                            <li>⏰ زمان‌بندی هوشمند</li>
+                                            <li>🔔 اطلاع‌رسانی تغییرات</li>
+                                            <li>💾 ذخیره خودکار</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Settlements Section -->
+                    <section id="settlements" class="mb-5">
+                        <h2 class="h3 mb-4 text-primary">
+                            <i class="fas fa-handshake me-2"></i>
+                            تسویه حساب‌ها
+                        </h2>
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-gradient-info text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-calculator me-2"></i>
+                                            سیستم تسویه حساب
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>کنترلر:</strong> SettlementsController</p>
+                                        <p><strong>مسیر:</strong> /Settlements</p>
+                                        
+                                        <h6>فرآیند تسویه حساب:</h6>
+                                        <ol class="list-group list-group-numbered">
+                                            <li class="list-group-item">
+                                                <strong>محاسبه موجودی:</strong> تعیین موجودی دقیق هر مشتری
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong>تطبیق تراکنش‌ها:</strong> مطابقت با اسناد بانکی
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong>شناسایی اختلاف:</strong> یافتن موارد عدم تطبیق
+                                            </li>
+                                            <li class="list-group-item">
+                                                <strong>تسویه نهایی:</strong> تصفیه حساب و بستن دوره
+                                            </li>
+                                        </ol>
+
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>مهم:</strong> تسویه حساب‌ها باید با دقت انجام شود و نیاز به تایید مدیر دارد.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header bg-secondary text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-clipboard-check me-2"></i>
+                                            انواع تسویه حساب
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card border-success">
+                                                    <div class="card-header bg-success text-white">
+                                                        <h6 class="mb-0">تسویه دوره‌ای</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled">
+                                                            <li>📅 روزانه</li>
+                                                            <li>📆 هفتگی</li>
+                                                            <li>📊 ماهانه</li>
+                                                            <li>📈 فصلی</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card border-primary">
+                                                    <div class="card-header bg-primary text-white">
+                                                        <h6 class="mb-0">تسویه فوری</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled">
+                                                            <li>⚡ تسویه آنی</li>
+                                                            <li>👤 تسویه مشتری خاص</li>
+                                                            <li>💱 تسویه ارز مشخص</li>
+                                                            <li>🔄 تسویه معامله واحد</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="card bg-warning text-dark mb-3">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-balance-scale display-4 mb-3"></i>
+                                        <h5>تطبیق دقیق</h5>
+                                        <p>تطبیق خودکار تراکنش‌ها با اسناد بانکی</p>
+                                    </div>
+                                </div>
+
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-shield-alt display-4 mb-3"></i>
+                                        <h5>کنترل امنیت</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>🔐 احراز هویت دوگانه</li>
+                                            <li>📝 ثبت کامل تغییرات</li>
+                                            <li>👁️ نظارت مداوم</li>
+                                            <li>🚨 هشدار اختلاف</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Accounting Section -->
+                    <section id="accounting" class="mb-5">
+                        <h2 class="h3 mb-4 text-primary">
+                            <i class="fas fa-file-invoice me-2"></i>
+                            اسناد حسابداری
+                        </h2>
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-gradient-dark text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-book me-2"></i>
+                                            مدیریت اسناد حسابداری
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>کنترلر:</strong> AccountingDocumentsController</p>
+                                        <p><strong>مسیر:</strong> /AccountingDocuments</p>
+                                        
+                                        <h6>انواع اسناد حسابداری:</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>📄 <strong>سند خرید ارز:</strong> ثبت خرید ارز از مشتری</li>
+                                                    <li>📄 <strong>سند فروش ارز:</strong> ثبت فروش ارز به مشتری</li>
+                                                    <li>📄 <strong>سند کامیسیون:</strong> ثبت درآمد کامیسیون</li>
+                                                    <li>📄 <strong>سند تعدیل:</strong> تصحیحات حسابداری</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li>📄 <strong>سند انتقال:</strong> انتقال وجه بین حساب‌ها</li>
+                                                    <li>📄 <strong>سند موجودی:</strong> تنظیم موجودی ارزها</li>
+                                                    <li>📄 <strong>سند بانکی:</strong> عملیات بانکی</li>
+                                                    <li>📄 <strong>سند گزارش:</strong> اسناد خلاصه دوره‌ای</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-robot me-2"></i>
+                                            <strong>ثبت خودکار:</strong> اسناد حسابداری به صورت خودکار برای هر معامله تولید می‌شوند.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-search me-2"></i>
+                                            جستجو و مدیریت اسناد
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>امکانات مدیریتی:</h6>
+                                        <ul class="list-unstyled">
+                                            <li>🔍 جستجو بر اساس شماره سند</li>
+                                            <li>📅 فیلتر بر اساس تاریخ</li>
+                                            <li>💰 جستجو بر اساس مبلغ</li>
+                                            <li>👤 فیلتر بر اساس مشتری</li>
+                                            <li>📊 دسته‌بندی بر اساس نوع سند</li>
+                                            <li>📄 صادرات فهرست اسناد</li>
+                                            <li>✏️ ویرایش اسناد (با مجوز)</li>
+                                            <li>🗑️ حذف اسناد اشتباه</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="card bg-primary text-white mb-3">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-chart-pie display-4 mb-3"></i>
+                                        <h5>حسابداری دقیق</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>📊 ردیابی کامل تراکنش‌ها</li>
+                                            <li>💰 محاسبه دقیق سود و زیان</li>
+                                            <li>📈 تحلیل مالی پیشرفته</li>
+                                            <li>🔄 تطبیق خودکار</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="card bg-info text-white">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-archive display-4 mb-3"></i>
+                                        <h5>بایگانی اسناد</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>🗂️ نگهداری دائمی</li>
+                                            <li>🔍 دسترسی سریع</li>
+                                            <li>📧 صادرات گزارشات</li>
+                                            <li>🛡️ پشتیبان‌گیری امن</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -602,136 +1036,87 @@
                     <!-- Security Section -->
                     <section id="security" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-shield-lock-fill me-2"></i>
-                            امنیت و کنترل دسترسی
+                            <i class="fas fa-shield-alt me-2"></i>
+                            امنیت و دسترسی
                         </h2>
                         <div class="row">
-                            <div class="col-lg-6">
-                                <h5>سطوح دسترسی:</h5>
-                                <div class="card mb-3">
-                                    <div class="card-header bg-danger text-white">
-                                        <h6 class="mb-0">مدیر کل (Admin)</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <ul class="list-unstyled">
-                                            <li>✅ دسترسی کامل به سیستم</li>
-                                            <li>✅ مدیریت کاربران</li>
-                                            <li>✅ تنظیمات سیستم</li>
-                                            <li>✅ گزارشات پیشرفته</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="card mb-3">
-                                    <div class="card-header bg-warning text-dark">
-                                        <h6 class="mb-0">مدیر (Manager)</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <ul class="list-unstyled">
-                                            <li>✅ مدیریت سفارشات</li>
-                                            <li>✅ مدیریت مشتریان</li>
-                                            <li>✅ گزارشات مالی</li>
-                                            <li>❌ تنظیمات سیستم</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="card mb-3">
-                                    <div class="card-header bg-info text-white">
-                                        <h6 class="mb-0">کارمند (Staff)</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <ul class="list-unstyled">
-                                            <li>✅ ثبت سفارشات</li>
-                                            <li>✅ مشاهده گزارشات</li>
-                                            <li>❌ مدیریت مشتریان</li>
-                                            <li>❌ تنظیمات سیستم</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="card">
-                                    <div class="card-header bg-secondary text-white">
-                                        <h6 class="mb-0">مشاهده‌گر (Viewer)</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <ul class="list-unstyled">
-                                            <li>👁️ مشاهده سفارشات</li>
-                                            <li>👁️ مشاهده گزارشات</li>
-                                            <li>❌ ثبت سفارش</li>
-                                            <li>❌ ویرایش داده‌ها</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h5 class="mt-4">امنیتی امنیتی:</h5>
-                        <div class="alert alert-success">
-                            <h6><i class="bi bi-check-circle-fill me-2"></i>امنیتی پیشرفته:</h6>
-                            <ul class="mb-0">
-                                <li>رمزگذاری داده‌ها در انتقال و ذخیره‌سازی</li>
-                                <li>احراز هویت دو مرحله‌ای</li>
-                                <li>لاگ‌گیری از تمام عملیات</li>
-                                <li>پشتیبان‌گیری خودکار روزانه</li>
-                            </ul>
-                        </div>
-                    </section>
-
-                    <!-- Algorithms Section -->
-                    <section id="algorithms" class="mb-5">
-                        <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-cpu-fill me-2"></i>
-                            الگوریتم‌های محاسباتی
-                        </h2>
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">الگوریتم نرخ‌گذاری هوشمند</h5>
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-gradient-danger text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-users-cog me-2"></i>
+                                            سطوح دسترسی کاربران
+                                        </h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="row">
-                                            <div class="col-lg-6">
-                                                <h6>ورودی‌ها:</h6>
-                                                <ul>
-                                                    <li>نرخ بازار آزاد (از وب‌سایت‌ها)</li>
-                                                    <li>میانگین نرخ‌های تاریخی</li>
-                                                    <li>حجم معاملات اخیر</li>
-                                                    <li>وضعیت صندوق  ارزها</li>
-                                                </ul>
-
-                                                <h6>پردازش:</h6>
-                                                <ol>
-                                                    <li>دریافت نرخ‌های لحظه‌ای بازار</li>
-                                                    <li>محاسبه میانگین وزنی نرخ‌ها</li>
-                                                    <li><span class="text-warning">اعمال ضریب اطمینان (spread) - در حال توسعه</span></li>
-                                                    <li>تنظیم بر اساس موجودی صندوق </li>
-                                                </ol>
-                                            </div>
-                                            <div class="col-lg-6">
-                                                <h6>خروجی‌ها:</h6>
-                                                <ul>
-                                                    <li>نرخ پیشنهادی خرید</li>
-                                                    <li>نرخ پیشنهادی فروش</li>
-                                                    <li>میانگین نرخ خرید</li>
-                                                    <li>میانگین نرخ فروش</li>
-                                                </ul>
-
-                                                <h6>فرمول نرخ پیشنهادی:</h6>
-                                                <div class="bg-light p-3 rounded">
-                                                    <code>
-                                                        نرخ پیشنهادی = (نرخ بازار × ۰.۷) + (میانگین تاریخی × ۰.۳)
-                                                    </code>
+                                            <div class="col-md-6">
+                                                <div class="card border-danger mb-3">
+                                                    <div class="card-header bg-danger text-white">
+                                                        <h6 class="mb-0">🔴 Admin</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled small">
+                                                            <li>✅ دسترسی کامل به سیستم</li>
+                                                            <li>✅ مدیریت کاربران</li>
+                                                            <li>✅ تغییر تنظیمات کلی</li>
+                                                            <li>✅ مشاهده لاگ‌های امنیتی</li>
+                                                            <li>✅ صادرات همه گزارشات</li>
+                                                            <li>✅ حذف و ویرایش اطلاعات</li>
+                                                        </ul>
+                                                    </div>
                                                 </div>
-
-                                                <h6 class="mt-3">ضریب اطمینان: <small class="text-warning">(در حال توسعه)</small></h6>
-                                                <div class="bg-light p-3 rounded">
-                                                    <code class="text-muted">
-                                                        نرخ فروش = نرخ پیشنهادی × (۱ + ضریب اطمینان)<br>
-                                                        نرخ خرید = نرخ پیشنهادی × (۱ - ضریب اطمینان)
-                                                    </code>
-                                                    <div class="alert alert-warning mt-2 mb-0">
-                                                        <small><i class="bi bi-info-circle me-1"></i>این فرمول‌ها هنوز پیاده‌سازی نشده‌اند.</small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card border-warning mb-3">
+                                                    <div class="card-header bg-warning text-dark">
+                                                        <h6 class="mb-0">🟡 Manager</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled small">
+                                                            <li>✅ مدیریت معاملات</li>
+                                                            <li>✅ مدیریت مشتریان</li>
+                                                            <li>✅ مشاهده گزارشات مالی</li>
+                                                            <li>✅ تنظیم کامیسیون</li>
+                                                            <li>❌ مدیریت کاربران</li>
+                                                            <li>❌ تغییر تنظیمات امنیتی</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card border-success mb-3">
+                                                    <div class="card-header bg-success text-white">
+                                                        <h6 class="mb-0">🟢 Operator</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled small">
+                                                            <li>✅ ثبت معاملات</li>
+                                                            <li>✅ مشاهده مشتریان</li>
+                                                            <li>✅ پردازش OCR</li>
+                                                            <li>❌ حذف معاملات</li>
+                                                            <li>❌ تغییر تنظیمات</li>
+                                                            <li>❌ مشاهده گزارشات مالی</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card border-primary">
+                                                    <div class="card-header bg-primary text-white">
+                                                        <h6 class="mb-0">🔵 Viewer</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="list-unstyled small">
+                                                            <li>👁️ مشاهده معاملات</li>
+                                                            <li>👁️ مشاهده مشتریان</li>
+                                                            <li>👁️ مشاهده گزارشات</li>
+                                                            <li>❌ ثبت معامله</li>
+                                                            <li>❌ ویرایش اطلاعات</li>
+                                                            <li>❌ حذف اطلاعات</li>
+                                                        </ul>
                                                     </div>
                                                 </div>
                                             </div>
@@ -739,32 +1124,61 @@
                                     </div>
                                 </div>
 
-                                <div class="card mt-4">
-                                    <div class="card-header">
-                                        <h5 class="mb-0">الگوریتم مدیریت صندوق </h5>
+                                <div class="card">
+                                    <div class="card-header bg-dark text-white">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-lock me-2"></i>
+                                            ویژگی‌های امنیتی
+                                        </h5>
                                     </div>
                                     <div class="card-body">
-                                        <h6>محاسبات موجودی:</h6>
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div class="alert alert-success">
-                                                    <strong>ورود ارز به صندوق :</strong><br>
-                                                    <code>موجودی جدید = موجودی فعلی + مبلغ خرید</code>
-                                                </div>
+                                                <h6>امنیت ورود:</h6>
+                                                <ul class="list-unstyled">
+                                                    <li>🔐 رمزگذاری پیشرفته</li>
+                                                    <li>🔄 تایید دومرحله‌ای</li>
+                                                    <li>⏰ انقضای جلسه کاری</li>
+                                                    <li>🚫 محدودیت تلاش ورود</li>
+                                                </ul>
                                             </div>
                                             <div class="col-md-6">
-                                                <div class="alert alert-danger">
-                                                    <strong>خروج ارز از صندوق :</strong><br>
-                                                    <code>موجودی جدید = موجودی فعلی - مبلغ فروش</code>
-                                                </div>
+                                                <h6>امنیت داده:</h6>
+                                                <ul class="list-unstyled">
+                                                    <li>📊 رمزگذاری داده‌ها</li>
+                                                    <li>💾 پشتیبان‌گیری منظم</li>
+                                                    <li>📝 لاگ همه فعالیت‌ها</li>
+                                                    <li>🔍 نظارت مداوم</li>
+                                                </ul>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                        <h6 class="mt-3">هشدارهای هوشمند:</h6>
-                                        <ul>
-                                            <li><strong>هشدار کمبود:</strong> موجودی < حداقل آستانه</li>
-                                            <li><strong>هشدار مازاد:</strong> موجودی > حداکثر آستانه</li>
-                                            <li><strong>هشدار عدم توازن:</strong> اختلاف زیاد بین خرید و فروش</li>
+                            <div class="col-lg-4">
+                                <div class="card bg-danger text-white mb-3">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-shield-virus display-4 mb-3"></i>
+                                        <h5>محافظت پیشرفته</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>🛡️ فایروال هوشمند</li>
+                                            <li>🚨 تشخیص نفوذ</li>
+                                            <li>🔒 رمزنگاری end-to-end</li>
+                                            <li>🔄 به‌روزرسانی امنیتی</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="card bg-warning text-dark">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-history display-4 mb-3"></i>
+                                        <h5>ردیابی کامل</h5>
+                                        <ul class="list-unstyled text-start">
+                                            <li>📝 لاگ همه عملیات</li>
+                                            <li>👤 شناسایی کاربر</li>
+                                            <li>⏰ مهر زمان دقیق</li>
+                                            <li>🔍 قابلیت بررسی</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -775,67 +1189,91 @@
                     <!-- FAQ Section -->
                     <section id="faq" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
-                            <i class="bi bi-question-circle-fill me-2"></i>
+                            <i class="fas fa-question-circle me-2"></i>
                             پرسش‌های متداول
                         </h2>
                         <div class="accordion" id="faqAccordion">
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                                        چگونه نرخ ارز تعیین می‌شود؟
+                                        چگونه OCR اسناد بانکی کار می‌کند؟
                                     </button>
                                 </h2>
                                 <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
                                     <div class="accordion-body">
-                                        نرخ ارز بر اساس ترکیبی از نرخ بازار آزاد، میانگین نرخ‌های تاریخی و وضعیت صندوق  ارزها تعیین می‌شود. سیستم به صورت خودکار نرخ‌ها را از منابع معتبر دریافت کرده و با اعمال الگوریتم‌های هوشمند، نرخ منصفانه را پیشنهاد می‌دهد.
+                                        سیستم OCR با استفاده از هوش مصنوعی OpenRouter، متن موجود در تصاویر اسناد بانکی را استخراج می‌کند. سپس اطلاعات مهم مانند مبلغ، تاریخ و نوع تراکنش را شناسایی کرده و در سیستم ثبت می‌کند. دقت این فرآیند بالای ۹۵٪ است.
                                     </div>
                                 </div>
                             </div>
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                                        صندوق  ارزها چیست؟
+                                        لینک‌های اشتراکی چگونه کار می‌کنند؟
                                     </button>
                                 </h2>
                                 <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                     <div class="accordion-body">
-                                        صندوق  ارزها موجودی فعلی هر ارز در سیستم را نشان می‌دهد. این موجودی بر اساس معاملات خرید و فروش مشتریان تغییر می‌کند و برای کنترل ریسک و اطمینان از امکان انجام معاملات بسیارمهم است.
+                                        لینک‌های اشتراکی امکان اشتراک صورت حساب مشتریان به صورت امن را فراهم می‌کنند. این لینک‌ها دارای رمزگذاری پیشرفته و تاریخ انقضا هستند. مشتریان می‌توانند بدون ورود به سیستم، گزارش معاملات خود را مشاهده کنند.
                                     </div>
                                 </div>
                             </div>
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                                        چگونه از امنیت سیستم اطمینان حاصل کنیم؟
+                                        صندوق ارزها چگونه مدیریت می‌شود؟
                                     </button>
                                 </h2>
                                 <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                     <div class="accordion-body">
-                                        سیستم دارای چندین لایه امنیتی است: رمزگذاری داده‌ها، کنترل دسترسی مبتنی بر نقش، لاگ‌گیری عملیات، پشتیبان‌گیری خودکار و احراز هویت دو مرحله‌ای. تمام عملیات حساس نیاز به تایید مدیران دارد.
+                                        صندوق ارزها موجودی فعلی هر ارز را بر اساس معاملات خرید و فروش محاسبه می‌کند. سیستم به صورت خودکار هشدارهای مربوط به کمبود یا مازاد ارز ارسال می‌کند و امکان تعدیل دستی موجودی نیز وجود دارد.
                                     </div>
                                 </div>
                             </div>
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-                                        چگونه گزارشات را دریافت کنیم؟
+                                        چگونه گزارشات را صادر کنیم؟
                                     </button>
                                 </h2>
                                 <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                     <div class="accordion-body">
-                                        سیستم امکان تولید گزارشات متنوعی را فراهم می‌کند. گزارشات روزانه، ماهانه، تحلیلی و مالی از طریق بخش گزارشات قابل دسترسی هستند. همچنین امکان صادرات گزارشات به فرمت‌های مختلف وجود دارد.
+                                        تمام گزارشات قابل صادرات به فرمت‌های PDF، Excel و CSV هستند. کافی است فیلترهای مورد نظر را اعمال کرده و روی دکمه "صادرات" کلیک کنید. گزارشات شامل نمودارها و تحلیل‌های آماری نیز هستند.
                                     </div>
                                 </div>
                             </div>
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-                                        در صورت بروز مشکل چه کنیم؟
+                                        نحوه مدیریت کاربران چگونه است؟
                                     </button>
                                 </h2>
                                 <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                     <div class="accordion-body">
-                                        در صورت بروز هرگونه مشکل، سیستم به صورت خودکار اطلاعیه ارسال می‌کند. همچنین امکان تماس با تیم پشتیبانی فنی وجود دارد. تمام مشکلات در سیستم لاگ‌گیری شده و پیگیری می‌شوند.
+                                        فقط کاربران با نقش Admin قادر به مدیریت سایر کاربران هستند. این شامل افزودن کاربر جدید، تغییر نقش‌ها، غیرفعال کردن حساب‌ها و مشاهده لاگ فعالیت‌ها می‌شود. همه تغییرات در سیستم ثبت می‌شوند.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                                        تسویه حساب‌ها چگونه انجام می‌شود؟
+                                    </button>
+                                </h2>
+                                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        تسویه حساب‌ها شامل تطبیق معاملات با اسناد بانکی، محاسبه موجودی دقیق مشتریان و شناسایی اختلافات است. این فرآیند می‌تواند به صورت دوره‌ای یا فوری انجام شود و نیاز به تایید مدیر دارد.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
+                                        در صورت بروز مشکل فنی چه کنیم؟
+                                    </button>
+                                </h2>
+                                <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        سیستم دارای مکانیزم‌های خودکار نظارت و هشدار است. در صورت بروز مشکل، فوراً اطلاع‌رسانی انجام می‌شود. همچنین امکان تماس با تیم پشتیبانی فنی ۲۴ ساعته وجود دارد. تمام مشکلات لاگ می‌شوند و قابل پیگیری هستند.
                                     </div>
                                 </div>
                             </div>
@@ -845,30 +1283,60 @@
                     <!-- Footer -->
                     <div class="row mt-5">
                         <div class="col-12">
-                            <div class="card bg-light">
+                            <div class="card bg-gradient-primary text-white">
                                 <div class="card-body text-center">
                                     <h5>نیاز به کمک بیشتر دارید؟</h5>
-                                    <p class="mb-3">برای سوالات بیشتر یا درخواست آموزش‌های عملی، با تیم پشتیبانی تماس بگیرید.</p>
+                                    <p class="mb-3">برای سوالات پیشرفته، آموزش‌های تخصصی یا پشتیبانی فنی، با ما در تماس باشید.</p>
                                     <div class="row">
                                         <div class="col-md-3">
-                                            <i class="bi bi-globe text-info display-4"></i>
+                                            <i class="fas fa-globe text-white display-4"></i>
                                             <p class="mt-2">وب‌سایت</p>
-                                            <a href="https://iranexpedia.ir" target="_blank" class="text-decoration-none">iranexpedia.ir</a>
+                                            <a href="https://iranexpedia.ir" target="_blank" class="text-white text-decoration-none">iranexpedia.ir</a>
                                         </div>
                                         <div class="col-md-3">
-                                            <i class="bi bi-envelope-fill text-primary display-4"></i>
-                                            <p class="mt-2">پشتیبانی</p>
-                                            <a href="mailto:support@exora.com" class="text-decoration-none">support@exora.com</a>
+                                            <i class="fas fa-envelope-fill text-white display-4"></i>
+                                            <p class="mt-2">پشتیبانی ایمیل</p>
+                                            <a href="mailto:support@iranexpedia.ir" class="text-white text-decoration-none">support@iranexpedia.ir</a>
                                         </div>
                                         <div class="col-md-3">
-                                            <i class="bi bi-telephone-fill text-success display-4"></i>
-                                            <p class="mt-2">تلفن</p>
-                                            <a href="tel:09120674032" class="text-decoration-none">09120674032</a>
+                                            <i class="fas fa-phone-fill text-white display-4"></i>
+                                            <p class="mt-2">تماس تلفنی</p>
+                                            <a href="tel:09120674032" class="text-white text-decoration-none">09120674032</a>
                                         </div>
                                         <div class="col-md-3">
-                                            <i class="bi bi-clock-fill text-warning display-4"></i>
-                                            <p class="mt-2">ساعات کاری</p>
-                                            <span>۲۴ ساعته</span>
+                                            <i class="fas fa-clock-fill text-white display-4"></i>
+                                            <p class="mt-2">ساعات پشتیبانی</p>
+                                            <span class="text-white">۲۴ ساعته، ۷ روز هفته</span>
+                                        </div>
+                                    </div>
+                                    <hr class="my-4">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <h6>🚀 آپدیت‌های اخیر</h6>
+                                            <ul class="list-unstyled text-start small">
+                                                <li>✅ پردازش OCR هوشمند</li>
+                                                <li>✅ لینک‌های اشتراکی امن</li>
+                                                <li>✅ گزارشات تحلیلی پیشرفته</li>
+                                                <li>✅ مدیریت کاربران چندسطحی</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>📋 ویژگی‌های در حال توسعه</h6>
+                                            <ul class="list-unstyled text-start small">
+                                                <li>🔜 اپلیکیشن موبایل</li>
+                                                <li>🔜 API برای توسعه‌دهندگان</li>
+                                                <li>🔜 هوش مصنوعی پیش‌بینی</li>
+                                                <li>🔜 اتصال به بانک‌ها</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>🛡️ امنیت و اعتماد</h6>
+                                            <ul class="list-unstyled text-start small">
+                                                <li>🔒 رمزگذاری ۲۵۶ بیتی</li>
+                                                <li>💾 پشتیبان‌گیری روزانه</li>
+                                                <li>🏛️ تطبیق با استانداردها</li>
+                                                <li>✅ گواهینامه‌های امنیتی</li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
