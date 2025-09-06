@@ -131,7 +131,7 @@
                                     <td>
                                         @if (item.Customer != null)
                                         {
-                                            <a asp-controller="Customers" asp-action="Details" asp-route-id="@item.CustomerId" class="text-decoration-none">
+                                            <a asp-controller="Customers" asp-action="Profile" asp-route-id="@item.CustomerId" class="text-decoration-none">
                                                 @item.Customer.FullName
                                             </a>
                                             <br><small class="text-muted">@(item.PayerType == ForexExchange.Models.PayerType.Customer ? "پرداخت کرده است" : "دریافت کرده است")</small>

@@ -6,6 +6,10 @@
     var stats = ViewBag.CustomerStats as ForexExchange.Models.CustomerProfileStats;
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile-modern.css">
+}
+
 <div class="container-fluid" dir="rtl">
     <!-- Enhanced Header Section -->
     <div class="profile-header-section">
@@ -163,205 +167,265 @@
             </div>
         </div>
 
-        <!-- Orders & Balance Info -->
+        <!-- Orders & Balance Info - Enhanced with modern tabs -->
         <div class="col-lg-6 col-md-12">
-            <div class="card h-100">
-                <div class="card-header">
-                    <ul class="nav nav-tabs card-header-tabs" id="profileTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="orders-tab" data-bs-toggle="tab"
-                                data-bs-target="#orders" type="button" role="tab">
-                                معامله‌ها (@Model.Orders.Count)
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="debts-tab" data-bs-toggle="tab" data-bs-target="#debts"
-                                type="button" role="tab">
-                                بدهکاری و بستانکاری
-                            </button>
-                        </li>
-                    </ul>
+            <div class="card profile-card animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="modern-tabs-container">
+                    <div class="modern-tabs">
+                        <button class="tab-button active" data-tab="orders">
+                            <i class="fas fa-chart-line"></i>
+                            <span>معامله‌ها</span>
+                            <div class="tab-count">@Model.Orders.Count</div>
+                        </button>
+                        <button class="tab-button" data-tab="debts">
+                            <i class="fas fa-balance-scale"></i>
+                            <span>مالی</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="tab-content" id="profileTabsContent">
-                        <!-- Orders Tab -->
-                        <div class="tab-pane fade show active" id="orders" role="tabpanel">
-                            @if (Model.Orders.Any())
-                            {
+                
+                <div class="tab-content-modern">
+                    <!-- Enhanced Orders Tab -->
+                    <div class="tab-pane-modern active" id="orders-modern">
+                        @if (Model.Orders.Any())
+                        {
+                            <div class="orders-summary-cards">
+                                <div class="summary-card">
+                                    <div class="summary-icon">
+                                        <i class="fas fa-handshake"></i>
+                                    </div>
+                                    <div class="summary-info">
+                                        <span class="summary-number">@Model.Orders.Count</span>
+                                        <span class="summary-label">کل معاملات</span>
+                                    </div>
+                                </div>
+                                <div class="summary-card">
+                                    <div class="summary-icon">
+                                        <i class="fas fa-calendar-week"></i>
+                                    </div>
+                                    <div class="summary-info">
+                                        <span class="summary-number">@Model.Orders.Where(o => o.CreatedAt > DateTime.Now.AddDays(-30)).Count()</span>
+                                        <span class="summary-label">این ماه</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="orders-table-container">
                                 <div class="table-responsive">
-                                    <table class="table table-sm">
+                                    <table class="table table-modern">
                                         <thead>
                                             <tr>
                                                 <th>شماره</th>
-                                                <th>پرداخت کرده اید</th>
-                                                <th>دریافت کرده اید</th>
+                                                <th>پرداخت</th>
+                                                <th>دریافت</th>
                                                 <th>نرخ</th>
                                                 <th>تاریخ</th>
-                                                <th>عملیات</th>
+                                                <th></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach (var order in Model.Orders.Take(10))
                                             {
-                                                <tr>
-                                                    <td>#@order.Id</td>
-                                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") :
-                                                                                                        order.Amount.ToString("N2")) @order.FromCurrency?.Code</td>
-                                                    <td>@((order.Amount * order.Rate).ToString(order.ToCurrency?.Code == "IRR" ?
-                                                                                                        "N0" : "N2")) @order.ToCurrency?.Code</td>
-                                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") :
-                                                                                                        order.Rate.ToString("N2"))</td>
-                                                    <td>@order.CreatedAt.ToString("MM/dd")</td>
+                                                <tr class="order-row">
+                                                    <td>
+                                                        <span class="order-id">#@order.Id</span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="amount-display">
+                                                            <span class="amount">@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</span>
+                                                            <span class="currency">@order.FromCurrency?.Code</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="amount-display">
+                                                            <span class="amount">@((order.Amount * order.Rate).ToString(order.ToCurrency?.Code == "IRR" ? "N0" : "N2"))</span>
+                                                            <span class="currency">@order.ToCurrency?.Code</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="rate-display">@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="date-display">@order.CreatedAt.ToString("MM/dd")</span>
+                                                    </td>
                                                     <td>
                                                         <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id"
-                                                            class="btn btn-sm btn-outline-primary">جزئیات</a>
+                                                            class="btn btn-sm btn-outline-primary modern-btn">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
                                                     </td>
                                                 </tr>
                                             }
                                         </tbody>
                                     </table>
                                 </div>
-                                @if (Model.Orders.Count > 10)
-                                {
-                                    <div class="text-center">
-                                        <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id"
-                                            class="btn btn-outline-primary">
-                                            مشاهده همه معامله‌ها (@Model.Orders.Count)
-                                        </a>
-                                    </div>
-                                }
-                            }
-                            else
+                            </div>
+                            
+                            @if (Model.Orders.Count > 10)
                             {
-                                <div class="text-center py-4">
-                                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">هیچ معامله‌ای ثبت نشده است.</p>
+                                <div class="view-all-container">
+                                    <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id"
+                                        class="btn btn-outline-primary btn-view-all">
+                                        <i class="fas fa-list"></i>
+                                        مشاهده همه معاملات (@Model.Orders.Count)
+                                    </a>
                                 </div>
                             }
-                        </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state-modern">
+                                <div class="empty-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h3>هیچ معامله‌ای ثبت نشده</h3>
+                                <p>تاکنون هیچ معامله‌ای انجام نشده است</p>
+                            </div>
+                        }
+                    </div>
 
-                        <!-- Debts and Credits Tab -->
-                        <div class="tab-pane fade" id="debts" role="tabpanel">
-                            <h5>بدهکاری و بستانکاری</h5>
-                            @{
-                                var debtCreditInfo = ViewBag.CustomerDebtCredit as ForexExchange.Models.CustomerDebtCredit;
-                            }
-                            @if (debtCreditInfo != null && debtCreditInfo.CurrencyBalances.Any())
-                            {
-                                <div class="row mb-4">
-                                    <div class="col-12">
-                                        <div class="card border-0 shadow-sm">
-                                            <div class="card-header bg-light"></div>
-                                            <div class="card-body">
-                                                <div class="row g-3">
-                                                    @foreach (var balance in debtCreditInfo.CurrencyBalances.Where(b =>
-                                                                                                    b.Balance != 0))
+                    <!-- Enhanced Debts and Credits Tab -->
+                    <div class="tab-pane-modern" id="debts-modern">
+                        @{
+                            var debtCreditInfo = ViewBag.CustomerDebtCredit as ForexExchange.Models.CustomerDebtCredit;
+                        }
+                        @if (debtCreditInfo != null && debtCreditInfo.CurrencyBalances.Any())
+                        {
+                            <!-- Currency Balances with Modern Cards -->
+                            <div class="financial-overview">
+                                <h6 class="section-title">
+                                    <i class="fas fa-coins"></i>
+                                    موجودی ارزها
+                                </h6>
+                                <div class="currency-grid">
+                                    @foreach (var balance in debtCreditInfo.CurrencyBalances.Where(b => b.Balance != 0))
+                                    {
+                                        <div class="currency-balance-card @(balance.Balance >= 0 ? "positive" : "negative")">
+                                            <div class="currency-header">
+                                                <div class="currency-info">
+                                                    <span class="currency-name">@balance.CurrencyName</span>
+                                                    <span class="currency-code">@balance.CurrencyCode</span>
+                                                </div>
+                                                <div class="balance-indicator">
+                                                    @if (balance.Balance >= 0)
                                                     {
-                                                        <div class="col-md-6 col-lg-4">
-                                                            <div
-                                                                class="card h-100 @(balance.Balance >= 0 ? "border-success" : "border-danger")">
-                                                                <div class="card-body text-center">
-                                                                    <h6 class="card-title">@balance.CurrencyName
-                                                                        (@balance.CurrencyCode)</h6>
-                                                                    <div class="mb-2" dir="ltr">
-                                                                        <strong class="fs-5">@(balance.CurrencyCode == "IRR" ?
-                                                                                                                                                balance.Balance.ToString("N0") :
-                                                                                                                                                balance.Balance.ToString("N2"))</strong>
-                                                                    </div>
-
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                        <i class="fas fa-arrow-up text-success"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas fa-arrow-down text-danger"></i>
                                                     }
                                                 </div>
                                             </div>
+                                            <div class="balance-amount" dir="ltr">
+                                                <span class="amount-value">@(balance.CurrencyCode == "IRR" ? balance.Balance.ToString("N0") : balance.Balance.ToString("N2"))</span>
+                                            </div>
+                                            <div class="balance-status">
+                                                @if (balance.Balance >= 0)
+                                                {
+                                                    <span class="status-text positive">بستانکار</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-text negative">بدهکار</span>
+                                                }
+                                            </div>
                                         </div>
-                                    </div>
+                                    }
                                 </div>
+                            </div>
 
-                                <!-- Recent Accounting Documents -->
-                                <div class="row">
-                                    <div class="col-12">
-                                        <h6>آخرین اسناد حسابداری</h6>
-                                        @{
-                                            var allDocs = ViewBag.AllAccountingDocuments as List<AccountingDocument> ?? new
-                                            List<AccountingDocument>();
-                                            var sortedRecentDocs = allDocs.Where(d => d.CreatedAt > DateTime.Now.AddDays(-30))
-                                            .OrderByDescending(d => d.CreatedAt)
-                                            .ToList();
-                                        }
-                                        @if (sortedRecentDocs.Any())
+                            <!-- Recent Accounting Documents -->
+                            <div class="documents-section">
+                                <h6 class="section-title">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    آخرین اسناد مالی
+                                </h6>
+                                @{
+                                    var allDocs = ViewBag.AllAccountingDocuments as List<AccountingDocument> ?? new List<AccountingDocument>();
+                                    var sortedRecentDocs = allDocs.Where(d => d.CreatedAt > DateTime.Now.AddDays(-30))
+                                    .OrderByDescending(d => d.CreatedAt)
+                                    .Take(5)
+                                    .ToList();
+                                }
+                                @if (sortedRecentDocs.Any())
+                                {
+                                    <div class="documents-list">
+                                        @foreach (var doc in sortedRecentDocs)
                                         {
-                                            <div class="table-responsive">
-                                                <table class="table table-sm">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>تاریخ</th>
-                                                            <th>شرح</th>
-                                                            <th>مبلغ</th>
-                                                            <th>وضعیت</th>
-                                                            <th>عملیات</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach (var doc in sortedRecentDocs)
+                                            <div class="document-item">
+                                                <div class="document-icon">
+                                                    @if (doc.PayerType == ForexExchange.Models.PayerType.System)
+                                                    {
+                                                        <i class="fas fa-plus-circle text-success"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas fa-minus-circle text-danger"></i>
+                                                    }
+                                                </div>
+                                                <div class="document-content">
+                                                    <div class="document-header">
+                                                        <span class="document-type">
+                                                            @if (doc.PayerType == ForexExchange.Models.PayerType.System)
+                                                            {
+                                                                <span class="transaction-type income">دریافت</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="transaction-type expense">پرداخت</span>
+                                                            }
+                                                        </span>
+                                                        <span class="document-date">@doc.CreatedAt.ToString("MM/dd")</span>
+                                                    </div>
+                                                    <div class="document-amount" dir="ltr">
+                                                        <span class="amount">@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") : doc.Amount.ToString("N2"))</span>
+                                                        <span class="currency">@doc.CurrencyCode</span>
+                                                    </div>
+                                                    <div class="document-status">
+                                                        @if (doc.IsVerified)
                                                         {
-                                                            <tr>
-                                                                <td>@doc.CreatedAt.ToString("MM/dd")</td>
-                                                                <td>
-                                                                    @if (doc.PayerType == ForexExchange.Models.PayerType.System)
-                                                                    {
-                                                                        <span class="text-success">شما دریافت کردید</span>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <span class="text-danger">شما پرداخت کردید</span>
-                                                                    }
-                                                                </td>
-                                                                <td>
-                                                                    <strong>@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0")
-                                                                                                                                    : doc.Amount.ToString("N2"))</strong>
-                                                                    <small class="text-muted">@doc.CurrencyCode</small>
-                                                                </td>
-                                                                <td>
-                                                                    @if (doc.IsVerified)
-                                                                    {
-                                                                        <span class="badge bg-success">تأیید شده</span>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <span class="badge bg-warning">در انتظار</span>
-                                                                    }
-                                                                </td>
-                                                                <td>
-                                                                    <a asp-controller="AccountingDocuments" asp-action="Details"
-                                                                        asp-route-id="@doc.Id"
-                                                                        class="btn btn-sm btn-outline-info">جزئیات</a>
-                                                                </td>
-                                                            </tr>
+                                                            <span class="status-badge verified">
+                                                                <i class="fas fa-check"></i> تأیید شده
+                                                            </span>
                                                         }
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="text-center py-3">
-                                                <small class="text-muted">هیچ سند حسابداری در ۳۰ روز گذشته یافت نشد.</small>
+                                                        else
+                                                        {
+                                                            <span class="status-badge pending">
+                                                                <i class="fas fa-clock"></i> در انتظار
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div class="document-action">
+                                                    <a asp-controller="AccountingDocuments" asp-action="Details" asp-route-id="@doc.Id"
+                                                        class="btn btn-sm btn-outline-primary modern-btn">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
                                             </div>
                                         }
                                     </div>
+                                }
+                                else
+                                {
+                                    <div class="empty-state-small">
+                                        <i class="fas fa-file-invoice text-muted"></i>
+                                        <p>هیچ سند مالی در ۳۰ روز گذشته یافت نشد</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state-modern">
+                                <div class="empty-icon">
+                                    <i class="fas fa-balance-scale"></i>
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="text-center py-5">
-                                    <i class="fas fa-balance-scale fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted mt-3">اطلاعات بدهکاری و بستانکاری یافت نشد</h5>
-                                    <p class="text-muted">این مشتری هنوز هیچ تراکنش مالی ندارد</p>
-                                </div>
-                            }
-                        </div>
+                                <h3>اطلاعات مالی موجود نیست</h3>
+                                <p>این مشتری هنوز هیچ تراکنش مالی ندارد</p>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -370,131 +434,953 @@
 </div>
 
 @section Scripts {
-    <style>
-        .timeline {
-            position: relative;
-            padding: 20px 0;
-        }
-
-        .timeline-item {
-            position: relative;
-            padding-left: 60px;
-            margin-bottom: 30px;
-        }
-
-        .timeline-marker {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #f8f9fa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px solid #fff;
-            box-shadow: 0 0 0 3px #dee2e6;
-        }
-
-        .timeline-content {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #007bff;
-        }
-
-        .timeline-title {
-            margin-bottom: 5px;
-            color: #495057;
-        }
-
-        .timeline-text {
-            margin-bottom: 5px;
-            color: #6c757d;
-        }
-
-        /* Financial Tab Styles */
-        .balance-display h3 {
-            font-size: 2rem;
-            margin: 0;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-
-        .currency-card {
-            transition: all 0.3s ease;
-            border-radius: 12px;
-        }
-
-        .currency-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
-        }
-
-        .currency-header {
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 0.5rem;
-        }
-
-        .balance-info {
-            padding: 1rem 0;
-        }
-
-        .balance-amount {
-            font-size: 1.2rem;
-        }
-
-        .balance-breakdown {
-            margin-top: 0.5rem;
-        }
-
-        .summary-item {
-            padding: 1rem;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.8);
-            margin-bottom: 0.5rem;
-        }
-
-        .summary-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 0.25rem;
-        }
-
-        .summary-label {
-            font-size: 0.875rem;
-            color: #6c757d;
-        }
-
-        .empty-state {
-            padding: 3rem 1rem;
-        }
-
-        .empty-state i {
-            opacity: 0.5;
-        }
-
-        .status-indicator .badge {
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-        }
-
-        /* Responsive adjustments */
-        @@media (max-width: 768px) {
-            .balance-display h3 {
-                font-size: 1.5rem;
-            }
-
-            .summary-item {
-                padding: 0.75rem;
-            }
-
-            .summary-value {
-                font-size: 1.25rem;
-            }
-        }
-    </style>
-
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
+    <!-- Custom JavaScript for Enhanced Interactions -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Modern tab functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane-modern');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons and panes
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabPanes.forEach(pane => pane.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Show corresponding tab pane
+                    const targetTab = this.getAttribute('data-tab');
+                    const targetPane = document.getElementById(targetTab + '-modern');
+                    if (targetPane) {
+                        targetPane.classList.add('active');
+                    }
+                });
+            });
+
+            // Add loading animation to buttons
+            const actionButtons = document.querySelectorAll('.btn-action');
+            actionButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    if (!this.classList.contains('loading')) {
+                        this.classList.add('loading');
+                        const originalContent = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال بارگذاری...';
+                        
+                        // Simulate loading (remove this in production)
+                        setTimeout(() => {
+                            this.classList.remove('loading');
+                            this.innerHTML = originalContent;
+                        }, 1000);
+                    }
+                });
+            });
+
+            // Smooth scroll for action buttons
+            const detailButtons = document.querySelectorAll('.modern-btn');
+            detailButtons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.1)';
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+
+            // Add ripple effect to cards
+            const cards = document.querySelectorAll('.profile-card, .summary-card, .currency-balance-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    const ripple = document.createElement('div');
+                    ripple.classList.add('ripple');
+                    
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+        });
+    </script>
 }
+
+<style>
+/* Modern Profile Page Styles */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #64748b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #06b6d4;
+    --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --border-radius: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+}
+
+/* Enhanced Header Section */
+.profile-header-section {
+    margin-bottom: 2rem;
+}
+
+.profile-banner {
+    background: var(--background-gradient);
+    border-radius: var(--border-radius);
+    position: relative;
+    overflow: hidden;
+    padding: 3rem 2rem 2rem;
+    margin-bottom: 1rem;
+}
+
+.banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.profile-header-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.profile-avatar {
+    position: relative;
+}
+
+.avatar-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.company-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    background: white;
+    padding: 8px;
+}
+
+.customer-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.customer-avatar i {
+    font-size: 2rem;
+    color: white;
+}
+
+.profile-info {
+    color: white;
+    flex: 1;
+}
+
+.customer-name {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.customer-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+}
+
+.profile-badges {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.badge-success-custom,
+.badge-danger-custom,
+.badge-info-custom {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge-success-custom {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.badge-danger-custom {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.badge-info-custom {
+    background: rgba(6, 182, 212, 0.2);
+    color: #06b6d4;
+}
+
+/* Enhanced Cards */
+.profile-content {
+    margin-top: 2rem;
+}
+
+.profile-card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    background: white;
+    transition: var(--transition);
+    height: 100%;
+}
+
+.profile-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Card Headers */
+.card-header-modern {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.card-title-modern {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1e293b;
+}
+
+/* Card Body */
+.card-body-modern {
+    padding: 2rem;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: #f8fafc;
+    transition: var(--transition);
+}
+
+.info-item:hover {
+    background: #e2e8f0;
+    transform: translateX(5px);
+}
+
+.info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.info-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.info-content label {
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+    margin: 0;
+}
+
+.info-content span {
+    font-size: 1rem;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* Action Buttons */
+.action-buttons-container {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.action-buttons {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: var(--transition);
+    text-decoration: none;
+    border: 2px solid transparent;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.btn-action i {
+    font-size: 1.1rem;
+}
+
+/* Modern Tabs */
+.modern-tabs-container {
+    background: #f8fafc;
+    padding: 0.5rem;
+    border-radius: 16px 16px 0 0;
+}
+
+.modern-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+    position: relative;
+}
+
+.tab-button.active {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.tab-count {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 20px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+}
+
+.tab-button.active .tab-count {
+    background: var(--primary-color);
+}
+
+/* Tab Content */
+.tab-content-modern {
+    padding: 2rem;
+}
+
+.tab-pane-modern {
+    display: none;
+}
+
+.tab-pane-modern.active {
+    display: block;
+}
+
+/* Orders Summary Cards */
+.orders-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: var(--transition);
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.summary-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+}
+
+.summary-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+}
+
+/* Modern Table */
+.orders-table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.table-modern {
+    margin: 0;
+}
+
+.table-modern thead th {
+    background: #f8fafc;
+    border: none;
+    font-weight: 600;
+    color: var(--secondary-color);
+    padding: 1rem;
+    font-size: 0.875rem;
+}
+
+.order-row {
+    transition: var(--transition);
+}
+
+.order-row:hover {
+    background: #f8fafc;
+}
+
+.order-row td {
+    padding: 1rem;
+    border-top: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+.order-id {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.amount-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.amount-display .amount {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.amount-display .currency {
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+.rate-display {
+    font-weight: 600;
+    color: var(--info-color);
+}
+
+.date-display {
+    color: var(--secondary-color);
+    font-size: 0.875rem;
+}
+
+.modern-btn {
+    border-radius: 8px;
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Financial Section */
+.financial-overview {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1rem;
+}
+
+.section-title i {
+    color: var(--primary-color);
+}
+
+.currency-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.currency-balance-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px solid #e2e8f0;
+    transition: var(--transition);
+}
+
+.currency-balance-card.positive {
+    border-color: var(--success-color);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%);
+}
+
+.currency-balance-card.negative {
+    border-color: var(--danger-color);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(239, 68, 68, 0.1) 100%);
+}
+
+.currency-balance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.currency-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.currency-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.currency-name {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.currency-code {
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+}
+
+.balance-indicator {
+    font-size: 1.25rem;
+}
+
+.balance-amount {
+    margin-bottom: 0.5rem;
+}
+
+.amount-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.balance-status {
+    text-align: center;
+}
+
+.status-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+}
+
+.status-text.positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.status-text.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+/* Documents Section */
+.documents-section {
+    margin-top: 2rem;
+}
+
+.documents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.document-item {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: var(--transition);
+}
+
+.document-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.document-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.document-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.document-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.transaction-type {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.transaction-type.income {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.transaction-type.expense {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+}
+
+.document-date {
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+}
+
+.document-amount {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.document-amount .amount {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.document-amount .currency {
+    font-size: 0.875rem;
+    color: var(--secondary-color);
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-badge.verified {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+}
+
+.status-badge.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+}
+
+/* Empty States */
+.empty-state-modern {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.empty-state-modern .empty-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+    color: var(--secondary-color);
+}
+
+.empty-state-modern h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-modern p {
+    color: var(--secondary-color);
+    margin: 0;
+}
+
+.empty-state-small {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--secondary-color);
+}
+
+.empty-state-small i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+/* View All Button */
+.view-all-container {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.btn-view-all {
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: var(--transition);
+}
+
+.btn-view-all:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Animations */
+.animate-fade-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive Design */
+@@media (max-width: 768px) {
+    .profile-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+
+    .customer-name {
+        font-size: 2rem;
+    }
+
+    .profile-badges {
+        justify-content: center;
+    }
+
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .modern-tabs {
+        flex-direction: column;
+    }
+
+    .orders-summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .currency-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .document-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .document-header {
+        width: 100%;
+    }
+
+    .document-action {
+        align-self: flex-end;
+    }
+}
+
+@@media (max-width: 480px) {
+    .profile-banner {
+        padding: 2rem 1rem 1.5rem;
+    }
+
+    .card-body-modern {
+        padding: 1.5rem;
+    }
+
+    .tab-content-modern {
+        padding: 1.5rem;
+    }
+}
+
+/* Ripple effect */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    pointer-events: none;
+}
+
+@@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Loading button state */
+.btn-action.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+</style>

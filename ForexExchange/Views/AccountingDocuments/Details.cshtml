@@ -322,7 +322,7 @@
             <div class="document-value">
                 @if (Model.PayerType == ForexExchange.Models.PayerType.Customer && Model.Customer != null)
                 {
-                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
+                    <a asp-controller="Customers" asp-action="Profile" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
                         @Model.Customer.FullName
                     </a>
                 }
@@ -338,7 +338,7 @@
             <div class="document-value">
                 @if (Model.PayerType == ForexExchange.Models.PayerType.System && Model.Customer != null)
                 {
-                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
+                    <a asp-controller="Customers" asp-action="Profile" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
                         @Model.Customer.FullName
                     </a>
                 }

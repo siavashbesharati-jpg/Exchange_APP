@@ -893,7 +893,7 @@ namespace ForexExchange.Controllers
                 if (customer == null)
                 {
                     TempData["ErrorMessage"] = "مشتری یافت نشد.";
-                    return RedirectToAction("Details", new { id = customerId });
+                    return RedirectToAction("Profile", new { id = customerId });
                 }
 
                 var currentUser = User.Identity?.Name ?? "Admin";
