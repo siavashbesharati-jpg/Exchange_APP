@@ -1,0 +1,283 @@
+@model ForexExchange.Models.CustomerTransactionsStatementViewModel
+@using ForexExchange.Extensions
+
+@{
+    ViewData["Title"] = "صورت حساب معاملات - " + Model.Customer.FullName;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3 class="card-title mb-1">
+                                <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
+                            </h3>
+                            <p class="card-text mb-0 opacity-75">
+                                دسترسی عمومی - بدون نیاز به ورود
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-print-none">
+                                <button onclick="window.print()" class="btn btn-dark">
+                                    <i class="fas fa-print"></i> چاپ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user"></i> اطلاعات مشتری
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">نام و نام خانوادگی:</td>
+                                        <td>@Model.Customer.FullName</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">شماره تماس:</td>
+                                        <td>@Model.Customer.PhoneNumber</td>
+                                    </tr>
+                                    @if (!string.IsNullOrEmpty(Model.Customer.Email))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold">ایمیل:</td>
+                                            <td>@Model.Customer.Email</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">تاریخ عضویت:</td>
+                                        <td>@Model.Customer.CreatedAt.ToPersianDateTextify()</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">تاریخ تهیه گزارش:</td>
+                                        <td>@DateTime.Now.ToPersianDateTextify()</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">تعداد کل معاملات:</td>
+                                        <td class="fw-bold text-primary">@Model.Orders.Count() مورد</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-success">
+                        <i class="fas fa-shopping-cart"></i> کل سفارشات
+                    </h6>
+                    <h4 class="text-success">
+                        @Model.Orders.Count()
+                    </h4>
+                    <small class="text-muted">تعداد سفارشات</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-info">
+                        <i class="fas fa-chart-line"></i> حجم معاملات
+                    </h6>
+                    <h4 class="text-info">
+                        @Model.Orders.Sum(o => o.Amount).ToString("N0")
+                    </h4>
+                    <small class="text-muted">مجموع مقدار</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-primary">
+                        <i class="fas fa-coins"></i> ارزش کل
+                    </h6>
+                    <h4 class="text-primary">
+                        @Model.Orders.Sum(o => o.TotalAmount).ToString("N0")
+                    </h4>
+                    <small class="text-muted">مجموع ارزش</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-warning">
+                        <i class="fas fa-calendar"></i> بازه زمانی
+                    </h6>
+                    <h4 class="text-warning">
+                        @(Model.Orders.Any() ? (DateTime.Now - Model.Orders.Min(o => o.CreatedAt)).Days : 0)
+                    </h4>
+                    <small class="text-muted">روز فعالیت</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Transaction History -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list"></i> جزئیات معاملات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Orders.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>تاریخ و زمان</th>
+                                        <th>جفت ارز</th>
+                                        <th>مقدار</th>
+                                        <th>نرخ تبدیل</th>
+                                        <th>مبلغ کل</th>
+                                        <th>توضیحات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        var orders = Model.Orders.OrderByDescending(o => o.CreatedAt).ToList();
+                                        var counter = 1;
+                                    }
+                                    @foreach (var order in orders)
+                                    {
+                                        <tr>
+                                            <td class="text-muted">@counter</td>
+                                            <td>
+                                                <div>
+                                                    <small class="fw-bold">@order.CreatedAt.ToPersianDateTextify()</small>
+                                                    <br>
+                                                    <small class="text-muted">@order.CreatedAt.ToString("HH:mm:ss")</small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@order.CurrencyPair</span>
+                                            </td>
+                                            <td class="fw-bold">
+                                                <span class="text-primary">@order.Amount.ToString("N2")</span>
+                                            </td>
+                                            <td>
+                                                <span class="fw-bold">@order.Rate.ToString("N4")</span>
+                                            </td>
+                                            <td>
+                                                <span class="fw-bold">@order.TotalAmount.ToString("N0")</span>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(order.Notes))
+                                                {
+                                                    <small class="text-muted">@order.Notes</small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        counter++;
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ سفارشی ثبت نشده است</h5>
+                            <p class="text-muted">تاکنون هیچ سفارشی برای این مشتری انجام نشده است.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-shield-alt"></i>
+                        این گزارش توسط سیستم صرافی تهیه شده و دارای اعتبار قانونی می‌باشد.
+                    </p>
+                    <small class="text-muted">
+                        تاریخ تهیه: @DateTime.Now.ToPersianDateTextify() | 
+                        زمان تهیه: @DateTime.Now.ToString("HH:mm:ss") |
+                        تعداد کل سفارشات: @Model.Orders.Count() مورد
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .d-print-none {
+                display: none !important;
+            }
+            
+            .card {
+                border: 1px solid #dee2e6 !important;
+                box-shadow: none !important;
+            }
+            
+            .bg-warning {
+                background-color: #ffc107 !important;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .text-dark {
+                color: #212529 !important;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .table-sm {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

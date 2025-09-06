@@ -27,6 +27,7 @@ namespace ForexExchange.Models
         public DbSet<BankAccountBalance> BankAccountBalances { get; set; }
         public DbSet<CustomerBalance> CustomerBalances { get; set; }
         public DbSet<AccountingDocument> AccountingDocuments { get; set; }
+        public DbSet<ShareableLink> ShareableLinks { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -333,6 +334,22 @@ namespace ForexExchange.Models
                 new SystemSettings { Id = 9, SettingKey = SettingKeys.NotificationEnabled, SettingValue = "true", Description = "فعال‌سازی سیستم اعلان‌ها", DataType = "bool", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
                 new SystemSettings { Id = 10, SettingKey = SettingKeys.BackupEnabled, SettingValue = "true", Description = "فعال‌سازی پشتیبان‌گیری خودکار", DataType = "bool", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" }
             );
+            
+            // ShareableLink configurations
+            modelBuilder.Entity<ShareableLink>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Token).IsRequired().HasMaxLength(128);
+                entity.Property(e => e.CreatedBy).HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(200);
+                entity.HasOne(e => e.Customer)
+                      .WithMany()
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => e.Token).IsUnique();
+                entity.HasIndex(e => e.CustomerId);
+                entity.HasIndex(e => new { e.IsActive, e.ExpiresAt });
+            });
 
             // Seed currencies
             modelBuilder.Entity<Currency>().HasData(

@@ -15,17 +15,20 @@ namespace ForexExchange.Controllers
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<CustomersController> _logger;
     private readonly CustomerDebtCreditService _debtCreditService;
+    private readonly IShareableLinkService _shareableLinkService;
 
     public CustomersController(
         ForexDbContext context,
         UserManager<ApplicationUser> userManager,
         ILogger<CustomersController> logger,
-        CustomerDebtCreditService debtCreditService)
+        CustomerDebtCreditService debtCreditService,
+        IShareableLinkService shareableLinkService)
     {
         _context = context;
         _userManager = userManager;
         _logger = logger;
         _debtCreditService = debtCreditService;
+        _shareableLinkService = shareableLinkService;
     }        // GET: Customers
         public async Task<IActionResult> Index()
         {
@@ -877,6 +880,92 @@ namespace ForexExchange.Controllers
                 .ToListAsync();
 
             return Json(customers);
+        }
+
+        // POST: Customers/GenerateShareableLink
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateShareableLink(int customerId, ShareableLinkType linkType, int expirationDays = 7)
+        {
+            try
+            {
+                var customer = await _context.Customers.FindAsync(customerId);
+                if (customer == null)
+                {
+                    TempData["ErrorMessage"] = "مشتری یافت نشد.";
+                    return RedirectToAction("Details", new { id = customerId });
+                }
+
+                var currentUser = User.Identity?.Name ?? "Admin";
+                var description = linkType switch
+                {
+                    ShareableLinkType.ComprehensiveStatement => "لینک اشتراک صورت حساب جامع",
+                    ShareableLinkType.TransactionsStatement => "لینک اشتراک صورت حساب معاملات",
+                    _ => "لینک اشتراک"
+                };
+
+                var shareableLink = await _shareableLinkService.GenerateLinkAsync(
+                    customerId, 
+                    linkType, 
+                    expirationDays, 
+                    description, 
+                    currentUser);
+
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                var fullUrl = shareableLink.GetShareableUrl(baseUrl);
+
+                TempData["SuccessMessage"] = $"لینک اشتراک با موفقیت ایجاد شد. لینک تا {expirationDays} روز آینده معتبر است.";
+                TempData["ShareableUrl"] = fullUrl;
+                
+                return RedirectToAction("Details", new { id = customerId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating shareable link for customer {CustomerId}", customerId);
+                TempData["ErrorMessage"] = "خطا در ایجاد لینک اشتراک.";
+                return RedirectToAction("Details", new { id = customerId });
+            }
+        }
+
+        // GET: Customers/ShareableLinks/5
+        public async Task<IActionResult> ShareableLinks(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+            {
+                return NotFound();
+            }
+
+            var links = await _shareableLinkService.GetCustomerLinksAsync(id, activeOnly: false);
+            
+            ViewBag.Customer = customer;
+            return View(links);
+        }
+
+        // POST: Customers/DeactivateShareableLink
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeactivateShareableLink(int linkId, int customerId)
+        {
+            try
+            {
+                var success = await _shareableLinkService.DeactivateLinkAsync(linkId, User.Identity?.Name);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "لینک اشتراک با موفقیت غیرفعال شد.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "لینک یافت نشد.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating shareable link {LinkId}", linkId);
+                TempData["ErrorMessage"] = "خطا در غیرفعال کردن لینک.";
+            }
+
+            return RedirectToAction("ShareableLinks", new { id = customerId });
         }
 
         private bool CustomerExists(int id)

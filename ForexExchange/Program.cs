@@ -74,6 +74,7 @@ builder.Services.AddScoped<AdminNotificationService>();
 // New balance management services
 builder.Services.AddScoped<ICustomerBalanceService, CustomerBalanceService>();
 builder.Services.AddScoped<IBankAccountBalanceService, BankAccountBalanceService>();
+builder.Services.AddScoped<IShareableLinkService, ShareableLinkService>();
 
 
 var app = builder.Build();

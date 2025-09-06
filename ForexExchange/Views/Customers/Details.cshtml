@@ -10,9 +10,28 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="h3">جزئیات مشتری</h1>
                 <div>
-                    <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                    <div class="btn-group me-2" role="group">
+                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-share-alt"></i> ایجاد لینک اشتراک
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="generateShareableLink(@Model.Id, 0, 'صورت حساب جامع')">
+                                    <i class="fas fa-file-alt"></i> صورت حساب جامع
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="generateShareableLink(@Model.Id, 1, 'صورت حساب معاملات')">
+                                    <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <a asp-action="ShareableLinks" asp-route-id="@Model.Id" class="btn btn-info me-2">
+                        <i class="fas fa-link"></i> مدیریت لینک‌ها
+                    </a>
+                    <a asp-action="Index" class="btn btn-secondary me-2">بازگشت به لیست</a>
                     <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">پروفایل کامل</a>
-                  
                 </div>
             </div>
         </div>
@@ -237,7 +256,129 @@
     }
 </div>
 
+<!-- Shareable Link Generation Modal -->
+<div class="modal fade" id="shareableLinkModal" tabindex="-1" aria-labelledby="shareableLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareableLinkModalLabel">ایجاد لینک اشتراک</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="shareableLinkForm" method="post" asp-action="GenerateShareableLink">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="customerId" id="customerId" value="@Model.Id" />
+                    <input type="hidden" name="linkType" id="linkType" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">نوع صورت حساب:</label>
+                        <div id="linkTypeDisplay" class="form-control-plaintext fw-bold"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="expirationDays" class="form-label">مدت اعتبار (روز):</label>
+                        <select class="form-select" name="expirationDays" id="expirationDays">
+                            <option value="1">1 روز</option>
+                            <option value="3">3 روز</option>
+                            <option value="7" selected>7 روز (یک هفته)</option>
+                            <option value="14">14 روز (دو هفته)</option>
+                            <option value="30">30 روز (یک ماه)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        این لینک بدون نیاز به ورود به سیستم قابل دسترسی خواهد بود و تا تاریخ انقضا معتبر است.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-share-alt"></i> ایجاد لینک
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal for displaying generated link -->
+@if (TempData["ShareableUrl"] != null)
+{
+    <div class="modal fade show" id="successModal" tabindex="-1" style="display: block;" aria-modal="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle"></i> لینک با موفقیت ایجاد شد
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeSuccessModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">لینک اشتراک:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="generatedUrl" value="@TempData["ShareableUrl"]" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">
+                                <i class="fas fa-copy"></i> کپی
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        لطفاً این لینک را در مکان امنی ذخیره کنید. پس از بستن این پنجره، امکان مشاهده مجدد لینک وجود نخواهد داشت.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="closeSuccessModal()">تأیید</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @section Scripts {
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+        function generateShareableLink(customerId, linkType, linkTypeName) {
+            document.getElementById('customerId').value = customerId;
+            document.getElementById('linkType').value = linkType;
+            document.getElementById('linkTypeDisplay').textContent = linkTypeName;
+            
+            var modal = new bootstrap.Modal(document.getElementById('shareableLinkModal'));
+            modal.show();
+        }
+        
+        function copyToClipboard() {
+            var urlInput = document.getElementById('generatedUrl');
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                // Show success feedback
+                var button = event.target.closest('button');
+                var originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> کپی شد';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            } catch (err) {
+                alert('خطا در کپی کردن لینک');
+            }
+        }
+        
+        function closeSuccessModal() {
+            document.getElementById('successModal').style.display = 'none';
+            document.querySelector('.modal-backdrop').remove();
+        }
+    </script>
 }

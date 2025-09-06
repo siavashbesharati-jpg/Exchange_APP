@@ -1,0 +1,119 @@
+@{
+    ViewData["Title"] = "لینک منقضی شده";
+    Layout = "_Layout";
+}
+
+<style>
+    .error-container {
+        max-width: 600px;
+        margin: 100px auto;
+        text-align: center;
+        padding: 40px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .error-icon {
+        font-size: 80px;
+        color: #e74c3c;
+        margin-bottom: 20px;
+    }
+    
+    .error-title {
+        font-size: 24px;
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-weight: bold;
+    }
+    
+    .error-message {
+        font-size: 16px;
+        color: #7f8c8d;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    
+    .error-reasons {
+        text-align: right;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .error-reasons h5 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+    }
+    
+    .error-reasons ul {
+        color: #7f8c8d;
+        list-style-type: none;
+        padding: 0;
+    }
+    
+    .error-reasons li {
+        margin-bottom: 8px;
+        padding-right: 20px;
+        position: relative;
+    }
+    
+    .error-reasons li:before {
+        content: "•";
+        color: #e74c3c;
+        font-weight: bold;
+        position: absolute;
+        right: 0;
+    }
+    
+    .home-button {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 25px;
+        font-size: 16px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .home-button:hover {
+        background: linear-gradient(135deg, #2980b9, #3498db);
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    
+    <h1 class="error-title">لینک منقضی شده یا نامعتبر</h1>
+    
+    <p class="error-message">
+        متأسفانه لینک مورد نظر شما منقضی شده یا نامعتبر است و امکان دسترسی به صورت حساب وجود ندارد.
+    </p>
+    
+    <div class="error-reasons">
+        <h5>احتمالات عدم دسترسی:</h5>
+        <ul>
+            <li>لینک منقضی شده است</li>
+            <li>لینک توسط مدیر سیستم غیرفعال شده است</li>
+            <li>لینک اشتباه یا ناقص است</li>
+            <li>دسترسی محدود شده است</li>
+        </ul>
+    </div>
+    
+    <p class="error-message">
+        برای دریافت لینک جدید یا حل مشکل، لطفاً با پشتیبانی سامانه تماس بگیرید.
+    </p>
+    
+    <a href="/" class="home-button">
+        <i class="fas fa-home"></i>
+        بازگشت به صفحه اصلی
+    </a>
+</div>

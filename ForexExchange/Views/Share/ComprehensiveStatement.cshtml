@@ -1,0 +1,246 @@
+@model ForexExchange.Models.CustomerComprehensiveStatementViewModel
+@using ForexExchange.Extensions
+
+@{
+    ViewData["Title"] = "صورت حساب جامع - " + Model.Customer.FullName;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h3 class="card-title mb-1">
+                                <i class="fas fa-file-alt"></i> صورت حساب جامع
+                            </h3>
+                            <p class="card-text mb-0 opacity-75">
+                                دسترسی عمومی - بدون نیاز به ورود
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-print-none">
+                                <button onclick="window.print()" class="btn btn-light">
+                                    <i class="fas fa-print"></i> چاپ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user"></i> اطلاعات مشتری
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">نام و نام خانوادگی:</td>
+                                        <td>@Model.Customer.FullName</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">شماره تماس:</td>
+                                        <td>@Model.Customer.PhoneNumber</td>
+                                    </tr>
+                                    @if (!string.IsNullOrEmpty(Model.Customer.Email))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold">ایمیل:</td>
+                                            <td>@Model.Customer.Email</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">تاریخ عضویت:</td>
+                                        <td>@Model.Customer.CreatedAt.ToPersianDateTextify()</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">تاریخ تهیه گزارش:</td>
+                                        <td>@DateTime.Now.ToPersianDateTextify()</td>
+                                    </tr>
+                                    @if (!string.IsNullOrEmpty(Model.Customer.Address))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold">آدرس:</td>
+                                            <td>@Model.Customer.Address</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> خلاصه حساب
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var balance in Model.Balances)
+                        {
+                            <div class="col-md-4 mb-3">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">@balance.CurrencyCode</h6>
+                                        <h4 class="card-text @(balance.Balance >= 0 ? "text-success" : "text-danger")">
+                                            @balance.Balance.ToString("N2") @balance.CurrencyCode
+                                        </h4>
+                                        <small class="text-muted">موجودی فعلی</small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> تاریخچه سفارشات
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Orders.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>تاریخ</th>
+                                        <th>جفت ارز</th>
+                                        <th>مقدار</th>
+                                        <th>نرخ</th>
+                                        <th>مبلغ کل</th>
+                                        <th>توضیحات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in Model.Orders.OrderByDescending(o => o.CreatedAt).Take(50))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <small>@order.CreatedAt.ToPersianDateTextify()</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@order.CurrencyPair</span>
+                                            </td>
+                                            <td class="fw-bold">@order.Amount.ToString("N2")</td>
+                                            <td>@order.Rate.ToString("N0")</td>
+                                            <td class="fw-bold">@order.TotalAmount.ToString("N0")</td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(order.Notes))
+                                                {
+                                                    <small class="text-muted">@order.Notes</small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        @if (Model.Orders.Count() > 50)
+                        {
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                در این گزارش تنها ۵۰ سفارش اخیر نمایش داده شده است. برای مشاهده کامل تاریخچه با ما تماس بگیرید.
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ سفارشی ثبت نشده است</h5>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-shield-alt"></i>
+                        این گزارش توسط سیستم صرافی تهیه شده و دارای اعتبار قانونی می‌باشد.
+                    </p>
+                    <small class="text-muted">
+                        تاریخ تهیه: @DateTime.Now.ToPersianDateTextify() | 
+                        زمان تهیه: @DateTime.Now.ToString("HH:mm:ss")
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .d-print-none {
+                display: none !important;
+            }
+            
+            .card {
+                border: 1px solid #dee2e6 !important;
+                box-shadow: none !important;
+            }
+            
+            .bg-primary {
+                background-color: #0d6efd !important;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .text-white {
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+}

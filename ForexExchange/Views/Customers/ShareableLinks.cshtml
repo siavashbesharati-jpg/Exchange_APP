@@ -1,0 +1,361 @@
+@model List<ForexExchange.Models.ShareableLink>
+
+@{
+    ViewData["Title"] = $"مدیریت لینک‌های اشتراک - {ViewBag.Customer.FullName}";
+    var customer = ViewBag.Customer as ForexExchange.Models.Customer;
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">مدیریت لینک‌های اشتراک</h1>
+                <div>
+                    <a asp-action="Details" asp-route-id="@customer.Id" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> بازگشت به جزئیات مشتری
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="card-title mb-1">
+                                <i class="fas fa-user"></i> @customer.FullName
+                            </h5>
+                            <p class="card-text text-muted mb-0">
+                                <i class="fas fa-phone"></i> @customer.PhoneNumber
+                                @if (!string.IsNullOrEmpty(customer.Email))
+                                {
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-envelope"></i> @customer.Email
+                                }
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-plus"></i> ایجاد لینک جدید
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="generateShareableLink(@customer.Id, 0, 'صورت حساب جامع')">
+                                            <i class="fas fa-file-alt"></i> صورت حساب جامع
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="generateShareableLink(@customer.Id, 1, 'صورت حساب معاملات')">
+                                            <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shareable Links Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-link"></i> لینک‌های اشتراک
+                        <span class="badge bg-secondary ms-2">@Model.Count مورد</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>نوع لینک</th>
+                                        <th>تاریخ ایجاد</th>
+                                        <th>تاریخ انقضا</th>
+                                        <th>وضعیت</th>
+                                        <th>تعداد دسترسی</th>
+                                        <th>آخرین دسترسی</th>
+                                        <th>ایجاد شده توسط</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var link in Model.OrderByDescending(l => l.CreatedAt))
+                                    {
+                                        <tr class="@(link.IsValid ? "" : "table-secondary")">
+                                            <td>
+                                                @switch (link.LinkType)
+                                                {
+                                                    case ForexExchange.Models.ShareableLinkType.ComprehensiveStatement:
+                                                        <span class="badge bg-info">
+                                                            <i class="fas fa-file-alt"></i> صورت حساب جامع
+                                                        </span>
+                                                        break;
+                                                    case ForexExchange.Models.ShareableLinkType.TransactionsStatement:
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
+                                                        </span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@link.CreatedAt.ToPersianDateTextify()</small>
+                                            </td>
+                                            <td>
+                                                <small class="@(link.ExpiresAt == DateTime.MaxValue ? "text-info" : (link.ExpiresAt > DateTime.Now ? "text-success" : "text-danger"))">
+                                                    @(link.ExpiresAt == DateTime.MaxValue ? "بدون محدودیت" : link.ExpiresAt.ToPersianDateTextify())
+                                                </small>
+                                            </td>
+                                            <td>
+                                                @if (link.IsValid)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle"></i> فعال
+                                                    </span>
+                                                }
+                                                else if (!link.IsActive)
+                                                {
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times-circle"></i> غیرفعال
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock"></i> منقضی
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@link.AccessCount</span>
+                                            </td>
+                                            <td>
+                                                @if (link.LastAccessedAt.HasValue)
+                                                {
+                                                    <small class="text-muted">@link.LastAccessedAt.Value.ToPersianDateTextify()</small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="text-muted">-</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@(link.CreatedBy ?? "سیستم")</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    @if (link.IsValid)
+                                                    {
+                                                        <button type="button" class="btn btn-outline-primary" onclick="copyShareableLink('@link.Token', @((int)link.LinkType))">
+                                                            <i class="fas fa-copy"></i> کپی لینک
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-warning" onclick="previewLink('@link.Token', @((int)link.LinkType))">
+                                                            <i class="fas fa-eye"></i> پیش‌نمایش
+                                                        </button>
+                                                    }
+                                                    @if (link.IsActive)
+                                                    {
+                                                        <form asp-action="DeactivateShareableLink" method="post" class="d-inline" 
+                                                              onsubmit="return confirm('آیا از غیرفعال کردن این لینک اطمینان دارید؟')">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="linkId" value="@link.Id" />
+                                                            <input type="hidden" name="customerId" value="@customer.Id" />
+                                                            <button type="submit" class="btn btn-outline-danger">
+                                                                <i class="fas fa-ban"></i> غیرفعال
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-link fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">هیچ لینک اشتراکی ایجاد نشده است</h5>
+                            <p class="text-muted">برای ایجاد لینک اشتراک جدید از دکمه بالا استفاده کنید.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shareable Link Generation Modal -->
+<div class="modal fade" id="shareableLinkModal" tabindex="-1" aria-labelledby="shareableLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareableLinkModalLabel">ایجاد لینک اشتراک</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="shareableLinkForm" method="post" asp-action="GenerateShareableLink">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="customerId" id="customerId" value="@customer.Id" />
+                    <input type="hidden" name="linkType" id="linkType" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label">نوع صورت حساب:</label>
+                        <div id="linkTypeDisplay" class="form-control-plaintext fw-bold"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="expirationDays" class="form-label">مدت اعتبار:</label>
+                        <select class="form-select" name="expirationDays" id="expirationDays">
+                            <option value="1">1 روز</option>
+                            <option value="3">3 روز</option>
+                            <option value="7" selected>7 روز (یک هفته)</option>
+                            <option value="14">14 روز (دو هفته)</option>
+                            <option value="30">30 روز (یک ماه)</option>
+                            <option value="365">365 روز (یک سال)</option>
+                            <option value="0">بدون محدودیت زمانی</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        این لینک بدون نیاز به ورود به سیستم قابل دسترسی خواهد بود و تا تاریخ انقضا معتبر است.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-share-alt"></i> ایجاد لینک
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal for displaying generated link -->
+@if (TempData["ShareableUrl"] != null)
+{
+    <div class="modal fade show" id="successModal" tabindex="-1" style="display: block;" aria-modal="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle"></i> لینک با موفقیت ایجاد شد
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeSuccessModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">لینک اشتراک:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="generatedUrl" value="@TempData["ShareableUrl"]" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">
+                                <i class="fas fa-copy"></i> کپی
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        لطفاً این لینک را در مکان امنی ذخیره کنید. پس از بستن این پنجره، امکان مشاهده مجدد لینک وجود نخواهد داشت.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="closeSuccessModal()">تأیید</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+        function generateShareableLink(customerId, linkType, linkTypeName) {
+            document.getElementById('customerId').value = customerId;
+            document.getElementById('linkType').value = linkType;
+            document.getElementById('linkTypeDisplay').textContent = linkTypeName;
+            
+            var modal = new bootstrap.Modal(document.getElementById('shareableLinkModal'));
+            modal.show();
+        }
+        
+        function copyShareableLink(token, linkType) {
+            var baseUrl = window.location.origin;
+            var linkTypeUrl = linkType === 0 ? 'comprehensive' : 'transactions';
+            var fullUrl = baseUrl + '/Share/' + linkTypeUrl + '/' + token;
+            
+            navigator.clipboard.writeText(fullUrl).then(function() {
+                // Show success feedback
+                var button = event.target.closest('button');
+                var originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> کپی شد';
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-primary');
+                }, 2000);
+            }).catch(function(err) {
+                alert('خطا در کپی کردن لینک');
+            });
+        }
+        
+        function previewLink(token, linkType) {
+            var baseUrl = window.location.origin;
+            var linkTypeUrl = linkType === 0 ? 'comprehensive' : 'transactions';
+            var fullUrl = baseUrl + '/Share/' + linkTypeUrl + '/' + token;
+            
+            window.open(fullUrl, '_blank');
+        }
+        
+        function copyToClipboard() {
+            var urlInput = document.getElementById('generatedUrl');
+            urlInput.select();
+            urlInput.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+                var button = event.target.closest('button');
+                var originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> کپی شد';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            } catch (err) {
+                alert('خطا در کپی کردن لینک');
+            }
+        }
+        
+        function closeSuccessModal() {
+            document.getElementById('successModal').style.display = 'none';
+            document.querySelector('.modal-backdrop').remove();
+            // Refresh page to show the new link in the table
+            setTimeout(function() {
+                window.location.reload();
+            }, 500);
+        }
+    </script>
+}
