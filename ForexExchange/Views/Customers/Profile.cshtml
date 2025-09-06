@@ -7,113 +7,158 @@
 }
 
 <div class="container-fluid" dir="rtl">
-    <div class="col-12">
-        <div class="text-center mb-4">
-            <img src="~/favicon/android-chrome-512x512.png" alt="تابان"
-                style="width: 250px; height: 250px; margin: 32px;" class="mb-3" />
-            <h2 class="display-5 fw-bold text-primary">
-                سامانه معاملات تابان
-            </h2>
-            <h4 class="display-5 fw-bold text-primary">
-                </h1>
-                @Model.FullName
-                </h2>
+    <!-- Enhanced Header Section -->
+    <div class="profile-header-section">
+        <div class="profile-banner">
+            <div class="banner-overlay"></div>
+            <div class="profile-header-content">
+                <div class="profile-avatar">
+                    <div class="avatar-container">
+                        <img src="~/favicon/android-chrome-512x512.png" alt="تابان" class="company-logo" />
+                        <div class="customer-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <h1 class="customer-name">@Model.FullName</h1>
+                    <p class="customer-subtitle">مشتری سامانه معاملات تابان</p>
+                    <div class="profile-badges">
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge badge-success-custom">
+                                <i class="fas fa-check-circle"></i> فعال
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-danger-custom">
+                                <i class="fas fa-times-circle"></i> غیرفعال
+                            </span>
+                        }
+                        <span class="badge badge-info-custom">
+                            <i class="fas fa-calendar"></i> @stats?.RegistrationDays روز عضویت
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Two-column layout -->
-    <div class="row g-4">
-        <!-- Customer Information -->
+    <!-- Enhanced Two-column layout with animations -->
+    <div class="row g-4 profile-content">
+        <!-- Customer Information - Enhanced Card -->
         <div class="col-lg-6 col-md-12">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">اطلاعات شخصی</h5>
+            <div class="card profile-card animate-fade-in">
+                <div class="card-header-modern">
+                    <div class="header-icon">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <h5 class="card-title-modern">اطلاعات شخصی</h5>
                 </div>
-                <div class="card-body">
-                    <div class="text-center mb-3">
-                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center"
-                            style="width: 80px; height: 80px;">
-                            <i class="fas fa-user fa-2x text-muted"></i>
-                        </div>
-                    </div>
-
-                    <div class="row mb-2">
-                        <div class="col-sm-5"><strong>نام کامل:</strong></div>
-                        <div class="col-sm-7">@Model.FullName</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-5"><strong>تلفن:</strong></div>
-                        <div class="col-sm-7">@Model.PhoneNumber</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-5"><strong>ایمیل:</strong></div>
-                        <div class="col-sm-7">@Model.Email</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-5"><strong>کد ملی:</strong></div>
-                        <div class="col-sm-7">@Model.NationalId</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-5"><strong>تاریخ عضویت:</strong></div>
-                        <div class="col-sm-7">@Model.CreatedAt.ToString("yyyy/MM/dd")</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-5"><strong>مدت عضویت:</strong></div>
-                        <div class="col-sm-7">@stats?.RegistrationDays روز</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-sm-5"><strong>وضعیت:</strong></div>
-                        <div class="col-sm-7">
-                            @if (Model.IsActive)
-                            {
-                                <span class="badge bg-success">فعال</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">غیرفعال</span>
-                            }
-                        </div>
-                    </div>
-
-                    @if (!string.IsNullOrEmpty(Model.Address))
-                    {
-                        <div class="row mb-2">
-                            <div class="col-sm-5"><strong>آدرس:</strong></div>
-                            <div class="col-sm-7">@Model.Address</div>
-                        </div>
-                    }
-
-                    @if (User?.Identity?.IsAuthenticated == true && User?.IsInRole("Admin") == true)
-                    {
-                        <div class="row mb-2">
-                            <div class="col-12 d-flex gap-2 flex-wrap">
-                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
-                                <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-primary">
-                                    <i class="fas fa-file-invoice"></i> صورت حساب کامل
-                                </a>
-                                <a asp-action="TransactionsStatement" asp-route-id="@Model.Id" class="btn btn-success">
-                                    <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
-                                </a>
-                                <a asp-action="ShareableLinks" asp-route-id="@Model.Id" class="btn btn-info">
-                                    <i class="fas fa-link"></i> مدیریت لینک ها
-                                </a>
+                <div class="card-body-modern">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>نام کامل</label>
+                                <span>@Model.FullName</span>
                             </div>
                         </div>
-                    }
-                    else
-                    {
-                        <div class="row mb-2">
-                            <div class="col-12 d-flex gap-2 flex-wrap">
-                                <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-primary">
-                                    <i class="fas fa-file-invoice"></i> صورت حساب کامل
-                                </a>
-                                <a asp-action="TransactionsStatement" asp-route-id="@Model.Id" class="btn btn-success">
-                                    <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
-                                </a>
+                        
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>تلفن</label>
+                                <span dir="ltr">@Model.PhoneNumber</span>
                             </div>
                         </div>
-                    }
+                        
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>ایمیل</label>
+                                <span dir="ltr">@Model.Email</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-fingerprint"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>کد ملی</label>
+                                <span dir="ltr">@Model.NationalId</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-calendar-plus"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>تاریخ عضویت</label>
+                                <span>@Model.CreatedAt.ToString("yyyy/MM/dd")</span>
+                            </div>
+                        </div>
 
+                        @if (!string.IsNullOrEmpty(Model.Address))
+                        {
+                            <div class="info-item full-width">
+                                <div class="info-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <div class="info-content">
+                                    <label>آدرس</label>
+                                    <span>@Model.Address</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Action Buttons with enhanced styling -->
+                    <div class="action-buttons-container">
+                        @if (User?.Identity?.IsAuthenticated == true && User?.IsInRole("Admin") == true)
+                        {
+                            <div class="action-buttons admin-actions">
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-action btn-warning">
+                                    <i class="fas fa-edit"></i>
+                                    <span>ویرایش</span>
+                                </a>
+                                <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-action btn-primary">
+                                    <i class="fas fa-file-invoice"></i>
+                                    <span>صورت حساب کامل</span>
+                                </a>
+                                <a asp-action="TransactionsStatement" asp-route-id="@Model.Id" class="btn btn-action btn-success">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <span>صورت حساب معاملات</span>
+                                </a>
+                                <a asp-action="ShareableLinks" asp-route-id="@Model.Id" class="btn btn-action btn-info">
+                                    <i class="fas fa-link"></i>
+                                    <span>مدیریت لینک ها</span>
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="action-buttons customer-actions">
+                                <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-action btn-primary">
+                                    <i class="fas fa-file-invoice"></i>
+                                    <span>صورت حساب کامل</span>
+                                </a>
+                                <a asp-action="TransactionsStatement" asp-route-id="@Model.Id" class="btn btn-action btn-success">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <span>صورت حساب معاملات</span>
+                                </a>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>

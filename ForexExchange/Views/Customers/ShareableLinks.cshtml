@@ -300,22 +300,59 @@
             var linkTypeUrl = linkType === 0 ? 'comprehensive' : 'transactions';
             var fullUrl = baseUrl + '/Share/' + linkTypeUrl + '/' + token;
             
-            navigator.clipboard.writeText(fullUrl).then(function() {
-                // Show success feedback
-                var button = event.target.closest('button');
-                var originalText = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-check"></i> کپی شد';
-                button.classList.remove('btn-outline-primary');
-                button.classList.add('btn-success');
-                
-                setTimeout(function() {
-                    button.innerHTML = originalText;
-                    button.classList.remove('btn-success');
-                    button.classList.add('btn-outline-primary');
-                }, 2000);
-            }).catch(function(err) {
-                alert('خطا در کپی کردن لینک');
-            });
+            var button = event.target.closest('button');
+            var originalText = button.innerHTML;
+            
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(fullUrl).then(function() {
+                    showCopySuccess(button, originalText);
+                }).catch(function(err) {
+                    console.log('Clipboard API failed, trying fallback:', err);
+                    fallbackCopyToClipboard(fullUrl, button, originalText);
+                });
+            } else {
+                // Use fallback method
+                fallbackCopyToClipboard(fullUrl, button, originalText);
+            }
+        }
+        
+        function fallbackCopyToClipboard(text, button, originalText) {
+            // Create a temporary textarea element
+            var textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(button, originalText);
+                } else {
+                    alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید:\n' + text);
+                }
+            } catch (err) {
+                console.log('Fallback copy failed:', err);
+                alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید:\n' + text);
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+        
+        function showCopySuccess(button, originalText) {
+            button.innerHTML = '<i class="fas fa-check"></i> کپی شد';
+            button.classList.remove('btn-outline-primary');
+            button.classList.add('btn-success');
+            
+            setTimeout(function() {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-primary');
+            }, 2000);
         }
         
         function previewLink(token, linkType) {
@@ -328,25 +365,51 @@
         
         function copyToClipboard() {
             var urlInput = document.getElementById('generatedUrl');
+            var button = event.target.closest('button');
+            var originalText = button.innerHTML;
+            
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(urlInput.value).then(function() {
+                    showModalCopySuccess(button, originalText);
+                }).catch(function(err) {
+                    console.log('Clipboard API failed in modal, trying fallback:', err);
+                    fallbackModalCopy(urlInput, button, originalText);
+                });
+            } else {
+                // Use fallback method
+                fallbackModalCopy(urlInput, button, originalText);
+            }
+        }
+        
+        function fallbackModalCopy(urlInput, button, originalText) {
             urlInput.select();
             urlInput.setSelectionRange(0, 99999);
             
             try {
-                document.execCommand('copy');
-                var button = event.target.closest('button');
-                var originalText = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-check"></i> کپی شد';
-                button.classList.remove('btn-outline-secondary');
-                button.classList.add('btn-success');
-                
-                setTimeout(function() {
-                    button.innerHTML = originalText;
-                    button.classList.remove('btn-success');
-                    button.classList.add('btn-outline-secondary');
-                }, 2000);
+                var successful = document.execCommand('copy');
+                if (successful) {
+                    showModalCopySuccess(button, originalText);
+                } else {
+                    alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید.');
+                }
             } catch (err) {
-                alert('خطا در کپی کردن لینک');
+                console.log('Fallback copy failed in modal:', err);
+                alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید.');
             }
+        }
+        
+        function showModalCopySuccess(button, originalText) {
+            button.innerHTML = '<i class="fas fa-check"></i> کپی شد';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-success');
+            
+            setTimeout(function() {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
         }
         
         function closeSuccessModal() {
