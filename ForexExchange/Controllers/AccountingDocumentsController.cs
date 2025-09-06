@@ -461,6 +461,20 @@ namespace ForexExchange.Controllers
             return RedirectToAction("Details", new { id });
         }
 
+        // GET: AccountingDocuments/GetFile/5
+        public async Task<IActionResult> GetFile(int id)
+        {
+            var document = await _context.AccountingDocuments
+                .FirstOrDefaultAsync(d => d.Id == id);
+
+            if (document == null || document.FileData == null || string.IsNullOrEmpty(document.FileName))
+            {
+                return NotFound();
+            }
+
+            return File(document.FileData, document.ContentType ?? "application/octet-stream", document.FileName);
+        }
+
         private bool AccountingDocumentExists(int id)
         {
             return _context.AccountingDocuments.Any(e => e.Id == id);

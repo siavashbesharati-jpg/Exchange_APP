@@ -86,10 +86,13 @@
                     @if (User?.Identity?.IsAuthenticated == true && User?.IsInRole("Admin") == true)
                     {
                         <div class="row mb-2">
-                            <div class="col-12 d-flex gap-2">
+                            <div class="col-12 d-flex gap-2 flex-wrap">
                                 <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
                                 <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-primary">
                                     <i class="fas fa-file-invoice"></i> صورت حساب کامل
+                                </a>
+                                <a asp-action="TransactionsStatement" asp-route-id="@Model.Id" class="btn btn-success">
+                                    <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
                                 </a>
                             </div>
                         </div>
@@ -97,9 +100,12 @@
                     else
                     {
                         <div class="row mb-2">
-                            <div class="col-12">
+                            <div class="col-12 d-flex gap-2 flex-wrap">
                                 <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-primary">
                                     <i class="fas fa-file-invoice"></i> صورت حساب کامل
+                                </a>
+                                <a asp-action="TransactionsStatement" asp-route-id="@Model.Id" class="btn btn-success">
+                                    <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
                                 </a>
                             </div>
                         </div>

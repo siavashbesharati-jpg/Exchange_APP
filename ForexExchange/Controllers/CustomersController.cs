@@ -203,6 +203,85 @@ namespace ForexExchange.Controllers
             return View(viewModel);
         }
 
+        // GET: Customers/TransactionsStatement/5 - Customer transactions statement
+        public async Task<IActionResult> TransactionsStatement(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var customer = await _context.Customers
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.FromCurrency)
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.ToCurrency)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (customer == null)
+            {
+                return NotFound();
+            }
+
+            // Group orders by currency pairs for analysis
+            var currencyPairStats = customer.Orders
+                .GroupBy(o => new { FromCurrency = o.FromCurrency?.Code, ToCurrency = o.ToCurrency?.Code })
+                .Select(g => new
+                {
+                    FromCurrency = g.Key.FromCurrency,
+                    ToCurrency = g.Key.ToCurrency,
+                    TotalTransactions = g.Count(),
+                    TotalAmount = g.Sum(o => o.Amount),
+                    AverageRate = g.Average(o => o.Rate),
+                    MinRate = g.Min(o => o.Rate),
+                    MaxRate = g.Max(o => o.Rate),
+                    TotalValueInTargetCurrency = g.Sum(o => o.Amount * o.Rate)
+                })
+                .ToList();
+
+            // Calculate monthly statistics
+            var monthlyStats = customer.Orders
+                .GroupBy(o => new { Year = o.CreatedAt.Year, Month = o.CreatedAt.Month })
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    TransactionCount = g.Count(),
+                    TotalVolume = g.Sum(o => o.Amount * o.Rate) // Assuming this is total value
+                })
+                .OrderByDescending(s => s.Year)
+                .ThenByDescending(s => s.Month)
+                .Take(12)
+                .ToList();
+
+            var viewModel = new CustomerTransactionsStatementViewModel
+            {
+                Customer = customer,
+                Orders = customer.Orders.ToList(),
+                CurrencyPairStats = currencyPairStats.Select(s => new CurrencyPairStatistic
+                {
+                    FromCurrency = s.FromCurrency ?? "",
+                    ToCurrency = s.ToCurrency ?? "",
+                    TotalTransactions = s.TotalTransactions,
+                    TotalAmount = s.TotalAmount,
+                    AverageRate = s.AverageRate,
+                    MinRate = s.MinRate,
+                    MaxRate = s.MaxRate,
+                    TotalValueInTargetCurrency = s.TotalValueInTargetCurrency
+                }).ToList(),
+                MonthlyStats = monthlyStats.Select(s => new MonthlyStatistic
+                {
+                    Year = s.Year,
+                    Month = s.Month,
+                    TransactionCount = s.TransactionCount,
+                    TotalVolume = s.TotalVolume
+                }).ToList(),
+                StatementDate = DateTime.Now
+            };
+
+            return View(viewModel);
+        }
+
         // GET: Customers/Create
         public IActionResult Create()
         {

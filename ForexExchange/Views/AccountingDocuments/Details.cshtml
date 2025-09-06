@@ -108,6 +108,15 @@
         line-height: 1.2;
     }
     
+    .section-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 40px 0 20px 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #3498db;
+    }
+    
     .document-signature-area {
         margin-top: 80px;
         border-top: 2px solid #34495e;
@@ -163,6 +172,31 @@
         background: rgba(243, 156, 18, 0.1);
     }
     
+    .attachment-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        border: 1px solid #dee2e6;
+    }
+    
+    .attachment-image {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
+    }
+    
+    .attachment-image:hover {
+        transform: scale(1.02);
+    }
+    
+    .file-icon {
+        color: #7f8c8d;
+        margin-bottom: 10px;
+    }
+    
     @@media print {
         body * {
             visibility: hidden;
@@ -211,12 +245,7 @@
             </button>
         </form>
     }
-    @if (Model.Customer != null)
-    {
-        <a asp-action="CustomerStatement" asp-route-customerId="@Model.CustomerId" asp-route-documentId="@Model.Id" class="btn btn-primary">
-            <i class="fas fa-file-invoice"></i> صورت حساب
-        </a>
-    }
+   
     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
         <i class="fas fa-edit"></i> ویرایش
     </a>
@@ -355,15 +384,46 @@
 
         @if (!string.IsNullOrEmpty(Model.FileName))
         {
-            <div class="document-row">
-                <div class="document-label">فایل پیوست:</div>
+            <div class="section-title" style="margin-top: 40px;">فایل پیوست</div>
+            
+            <div class="document-row" style="height: auto; margin-bottom: 20px;">
+                <div class="document-label">نام فایل:</div>
                 <div class="document-value">
                     <i class="fas fa-file me-2"></i>
                     <span>@Model.FileName</span>
-                    <a href="#" class="btn btn-sm btn-outline-primary ms-3 no-print" onclick="downloadFile(@Model.Id)">
+                    <a href="@Url.Action("GetFile", "AccountingDocuments", new { id = Model.Id })" class="btn btn-sm btn-outline-primary ms-3 no-print" download="@Model.FileName">
                         <i class="fas fa-download"></i> دانلود
                     </a>
                 </div>
+            </div>
+            
+            <div class="attachment-section">
+                @{
+                    var fileExtension = System.IO.Path.GetExtension(Model.FileName)?.ToLower();
+                    var isImage = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" }.Contains(fileExtension);
+                }
+                
+                @if (isImage)
+                {
+                    <img src="@Url.Action("GetFile", "AccountingDocuments", new { id = Model.Id })" 
+                         alt="@Model.FileName" 
+                         class="attachment-image"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                    <div style="display: none; color: #7f8c8d; padding: 20px; text-align: center;">
+                        <i class="fas fa-image fa-2x file-icon"></i>
+                        <p>تصویر قابل نمایش نیست</p>
+                        <small>@Model.FileName</small>
+                    </div>
+                }
+                else
+                {
+                    <div style="color: #7f8c8d; padding: 20px; text-align: center;">
+                        <i class="fas fa-file-alt fa-3x file-icon"></i>
+                        <h6>فایل غیر تصویری</h6>
+                        <p>@Model.FileName</p>
+                        <small>برای مشاهده فایل از دکمه دانلود استفاده کنید</small>
+                    </div>
+                }
             </div>
         }
         
@@ -385,10 +445,5 @@
 </div>
 
 @section Scripts {
-    <script>
-        function downloadFile(documentId) {
-            // TODO: Implement file download functionality
-            alert('قابلیت دانلود فایل هنوز پیاده‌سازی نشده است.');
-        }
-    </script>
+    <!-- File download is now handled directly by the anchor tag -->
 }
