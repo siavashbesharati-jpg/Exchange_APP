@@ -108,9 +108,11 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Database is up to date. No pending migrations found");
         }
 
-        // Seed initial data
-        var dataSeedService = services.GetRequiredService<IDataSeedService>();
-        await dataSeedService.SeedDataAsync();
+      
+
+        // // Seed initial data
+        // var dataSeedService = services.GetRequiredService<IDataSeedService>();
+        // await dataSeedService.SeedDataAsync();
         
         logger.LogInformation("Application startup completed successfully");
     }

@@ -27,14 +27,32 @@ namespace ForexExchange.Controllers
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            var bankAccounts = await _context.BankAccounts
-                .Include(b => b.Customer)
-                .Where(b => b.Customer.IsSystem) // Only system customers have bank accounts
-                .OrderBy(b => b.Customer.FullName)
-                .ThenBy(b => b.BankName)
-                .ToListAsync();
+            try
+            {
+                var bankAccounts = await _context.BankAccounts
+                    .OrderBy(b => b.BankName)
+                    .ToListAsync();
 
-            return View(bankAccounts);
+                return View(bankAccounts);
+            }
+            catch (FormatException ex)
+            {
+                // Handle DateTime parsing errors - likely due to empty string DateTime fields in database
+                TempData["ErrorMessage"] = "خطا در بارگذاری اطلاعات حساب‌های بانکی. لطفاً با مدیر سیستم تماس بگیرید.";
+                
+                // Log the error for debugging
+                Console.WriteLine($"DateTime parsing error in BankAccount Index: {ex.Message}");
+                
+                // Return empty list to avoid crash
+                return View(new List<BankAccount>());
+            }
+            catch (Exception ex)
+            {
+                // Handle other potential errors
+                TempData["ErrorMessage"] = "خطا در بارگذاری اطلاعات. لطفاً دوباره تلاش کنید.";
+                Console.WriteLine($"Error in BankAccount Index: {ex.Message}");
+                return View(new List<BankAccount>());
+            }
         }
 
         /// <summary>
