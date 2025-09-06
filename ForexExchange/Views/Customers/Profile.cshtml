@@ -86,7 +86,22 @@
                     @if (User?.Identity?.IsAuthenticated == true && User?.IsInRole("Admin") == true)
                     {
                         <div class="row mb-2">
-                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
+                            <div class="col-12 d-flex gap-2">
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">ویرایش</a>
+                                <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-primary">
+                                    <i class="fas fa-file-invoice"></i> صورت حساب کامل
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <a asp-action="ComprehensiveStatement" asp-route-id="@Model.Id" class="btn btn-primary">
+                                    <i class="fas fa-file-invoice"></i> صورت حساب کامل
+                                </a>
+                            </div>
                         </div>
                     }
 

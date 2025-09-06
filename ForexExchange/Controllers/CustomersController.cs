@@ -144,6 +144,65 @@ namespace ForexExchange.Controllers
             return View(customer);
         }
 
+        // GET: Customers/ComprehensiveStatement/5 - Complete customer statement
+        public async Task<IActionResult> ComprehensiveStatement(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var customer = await _context.Customers
+                .Include(c => c.Balances)
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.FromCurrency)
+                .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt))
+                    .ThenInclude(o => o.ToCurrency)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (customer == null)
+            {
+                return NotFound();
+            }
+
+            // Get all accounting documents for this customer
+            var documents = await _context.AccountingDocuments
+                .Include(a => a.BankAccount)
+                .Where(a => a.CustomerId == id)
+                .OrderByDescending(a => a.DocumentDate)
+                .ToListAsync();
+
+            // Get customer balance using the service
+            var balances = await _context.CustomerBalances
+                .Where(cb => cb.CustomerId == id)
+                .ToListAsync();
+
+            // Get customer debt/credit information
+            var customerDebtCredit = await _debtCreditService.GetCustomerDebtCreditAsync(customer.Id);
+
+            // Calculate customer statistics
+            var stats = new CustomerProfileStats
+            {
+                TotalOrders = customer.Orders.Count,
+                TotalAccountingDocuments = documents.Count,
+                VerifiedAccountingDocuments = documents.Count(d => d.IsVerified),
+                RegistrationDays = (DateTime.Now - customer.CreatedAt).Days
+            };
+
+            var viewModel = new CustomerComprehensiveStatementViewModel
+            {
+                Customer = customer,
+                Documents = documents,
+                Balances = balances,
+                Orders = customer.Orders.ToList(),
+                CustomerDebtCredit = customerDebtCredit,
+                Stats = stats,
+                StatementDate = DateTime.Now
+            };
+
+            return View(viewModel);
+        }
+
         // GET: Customers/Create
         public IActionResult Create()
         {
