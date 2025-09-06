@@ -2,282 +2,428 @@
 @using ForexExchange.Extensions
 
 @{
-    ViewData["Title"] = "صورت حساب معاملات - " + Model.Customer.FullName;
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "گزارش تراکنش‌های مشتری";
+    Layout = null;
 }
 
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card bg-warning text-dark">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h3 class="card-title mb-1">
-                                <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
-                            </h3>
-                            <p class="card-text mb-0 opacity-75">
-                                دسترسی عمومی - بدون نیاز به ورود
-                            </p>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <div class="d-print-none">
-                                <button onclick="window.print()" class="btn btn-dark">
-                                    <i class="fas fa-print"></i> چاپ
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>گزارش تراکنش‌های مشتری - @Model.Customer.FullName</title>
+    
+    <!-- Open Graph / WhatsApp Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="گزارش تراکنش‌های مشتری - @Model.Customer.FullName" />
+    <meta property="og:description" content="گزارش تراکنش‌های مشتری از سامانه معاملات تابان - شامل تمام معاملات خرید و فروش ارز" />
+    <meta property="og:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}/favicon/android-chrome-512x512.png")" />
+    <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
+    <meta property="og:site_name" content="سامانه معاملات تابان" />
+    <meta property="og:locale" content="fa_IR" />
+    
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="گزارش تراکنش‌های مشتری - @Model.Customer.FullName" />
+    <meta name="twitter:description" content="گزارش تراکنش‌های مشتری از سامانه معاملات تابان" />
+    <meta name="twitter:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}/favicon/android-chrome-512x512.png")" />
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
 
-    <!-- Customer Information -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-user"></i> اطلاعات مشتری
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tbody>
-                                    <tr>
-                                        <td class="fw-bold">نام و نام خانوادگی:</td>
-                                        <td>@Model.Customer.FullName</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">شماره تماس:</td>
-                                        <td>@Model.Customer.PhoneNumber</td>
-                                    </tr>
-                                    @if (!string.IsNullOrEmpty(Model.Customer.Email))
-                                    {
-                                        <tr>
-                                            <td class="fw-bold">ایمیل:</td>
-                                            <td>@Model.Customer.Email</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tbody>
-                                    <tr>
-                                        <td class="fw-bold">تاریخ عضویت:</td>
-                                        <td>@Model.Customer.CreatedAt.ToPersianDateTextify()</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">تاریخ تهیه گزارش:</td>
-                                        <td>@DateTime.Now.ToPersianDateTextify()</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">تعداد کل معاملات:</td>
-                                        <td class="fw-bold text-primary">@Model.Orders.Count() مورد</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Transaction Statistics -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card border-success h-100">
-                <div class="card-body text-center">
-                    <h6 class="card-title text-success">
-                        <i class="fas fa-shopping-cart"></i> کل سفارشات
-                    </h6>
-                    <h4 class="text-success">
-                        @Model.Orders.Count()
-                    </h4>
-                    <small class="text-muted">تعداد سفارشات</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-info h-100">
-                <div class="card-body text-center">
-                    <h6 class="card-title text-info">
-                        <i class="fas fa-chart-line"></i> حجم معاملات
-                    </h6>
-                    <h4 class="text-info">
-                        @Model.Orders.Sum(o => o.Amount).ToString("N0")
-                    </h4>
-                    <small class="text-muted">مجموع مقدار</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-primary h-100">
-                <div class="card-body text-center">
-                    <h6 class="card-title text-primary">
-                        <i class="fas fa-coins"></i> ارزش کل
-                    </h6>
-                    <h4 class="text-primary">
-                        @Model.Orders.Sum(o => o.TotalAmount).ToString("N0")
-                    </h4>
-                    <small class="text-muted">مجموع ارزش</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-warning h-100">
-                <div class="card-body text-center">
-                    <h6 class="card-title text-warning">
-                        <i class="fas fa-calendar"></i> بازه زمانی
-                    </h6>
-                    <h4 class="text-warning">
-                        @(Model.Orders.Any() ? (DateTime.Now - Model.Orders.Min(o => o.CreatedAt)).Days : 0)
-                    </h4>
-                    <small class="text-muted">روز فعالیت</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Detailed Transaction History -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-list"></i> جزئیات معاملات
-                    </h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.Orders.Any())
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover table-sm">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>تاریخ و زمان</th>
-                                        <th>جفت ارز</th>
-                                        <th>مقدار</th>
-                                        <th>نرخ تبدیل</th>
-                                        <th>مبلغ کل</th>
-                                        <th>توضیحات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @{
-                                        var orders = Model.Orders.OrderByDescending(o => o.CreatedAt).ToList();
-                                        var counter = 1;
-                                    }
-                                    @foreach (var order in orders)
-                                    {
-                                        <tr>
-                                            <td class="text-muted">@counter</td>
-                                            <td>
-                                                <div>
-                                                    <small class="fw-bold">@order.CreatedAt.ToPersianDateTextify()</small>
-                                                    <br>
-                                                    <small class="text-muted">@order.CreatedAt.ToString("HH:mm:ss")</small>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-info">@order.CurrencyPair</span>
-                                            </td>
-                                            <td class="fw-bold">
-                                                <span class="text-primary">@order.Amount.ToString("N2")</span>
-                                            </td>
-                                            <td>
-                                                <span class="fw-bold">@order.Rate.ToString("N4")</span>
-                                            </td>
-                                            <td>
-                                                <span class="fw-bold">@order.TotalAmount.ToString("N0")</span>
-                                            </td>
-                                            <td>
-                                                @if (!string.IsNullOrEmpty(order.Notes))
-                                                {
-                                                    <small class="text-muted">@order.Notes</small>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">-</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                        counter++;
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center py-5">
-                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">هیچ سفارشی ثبت نشده است</h5>
-                            <p class="text-muted">تاکنون هیچ سفارشی برای این مشتری انجام نشده است.</p>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card bg-light">
-                <div class="card-body text-center">
-                    <p class="mb-0 text-muted">
-                        <i class="fas fa-shield-alt"></i>
-                        این گزارش توسط سیستم صرافی تهیه شده و دارای اعتبار قانونی می‌باشد.
-                    </p>
-                    <small class="text-muted">
-                        تاریخ تهیه: @DateTime.Now.ToPersianDateTextify() | 
-                        زمان تهیه: @DateTime.Now.ToString("HH:mm:ss") |
-                        تعداد کل سفارشات: @Model.Orders.Count() مورد
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Styles {
-    <style>
-        @@media print {
-            .d-print-none {
-                display: none !important;
-            }
-            
-            .card {
-                border: 1px solid #dee2e6 !important;
-                box-shadow: none !important;
-            }
-            
-            .bg-warning {
-                background-color: #ffc107 !important;
-                -webkit-print-color-adjust: exact;
-            }
-            
-            .text-dark {
-                color: #212529 !important;
-                -webkit-print-color-adjust: exact;
-            }
-            
-            .table-sm {
-                font-size: 0.8rem;
-            }
+<style>
+    .document-paper {
+        background: #fff;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1), 0 6px 20px rgba(0,0,0,0.1);
+        border: 1px solid #ddd;
+        margin: 20px auto;
+        max-width: 1200px;
+        min-height: 600px;
+        position: relative;
+    }
+    
+    .document-paper::before {
+        content: '';
+        position: absolute;
+        left: 40px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #ff9999;
+        z-index: 1;
+    }
+    
+    .document-header {
+        border-bottom: 3px double #333;
+        padding: 20px 60px;
+        text-align: center;
+        background: linear-gradient(to bottom, #f9f9f9, #fff);
+        position: relative;
+    }
+    
+    .company-info {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        gap: 15px;
+    }
+    
+    .company-logo {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .company-name {
+        font-size: 20px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .document-content {
+        padding: 40px 60px;
+        line-height: 1.0;
+        font-family: 'Tahoma', sans-serif;
+        position: relative;
+        background: repeating-linear-gradient(
+            transparent,
+            transparent 35px,
+            #e8f4fd 35px,
+            #e8f4fd 36px
+        );
+    }
+    
+    .document-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 10px;
+        text-decoration: underline;
+    }
+    
+    .customer-info {
+        font-size: 16px;
+        color: #7f8c8d;
+        margin-bottom: 30px;
+    }
+    
+    .document-row {
+        display: flex;
+        margin-bottom: 0;
+        align-items: center;
+        height: 36px;
+        position: relative;
+    }
+    
+    .document-label {
+        font-weight: bold;
+        width: 150px;
+        color: #34495e;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+    
+    .document-value {
+        flex: 1;
+        color: #2c3e50;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+    
+    .overview-section {
+        margin: 30px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .overview-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #2c3e50;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 5px;
+    }
+    
+    .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .overview-item {
+        text-align: center;
+        padding: 15px;
+        background: white;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .overview-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #3498db;
+        margin-bottom: 5px;
+    }
+    
+    .overview-label {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .currency-pairs-section {
+        margin: 30px 0;
+    }
+    
+    .pairs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .pair-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .pair-name {
+        font-size: 16px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    
+    .pair-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .pair-stat {
+        padding: 8px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .pair-count {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .pair-amount {
+        font-size: 12px;
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .transactions-section {
+        margin-top: 30px;
+    }
+    
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .table th {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        text-align: center;
+        padding: 12px 8px;
+        font-weight: bold;
+    }
+    
+    .table td {
+        text-align: center;
+        padding: 10px 8px;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 14px;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .print-button {
+        text-align: center;
+        margin: 30px 0;
+    }
+    
+    .print-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    .print-btn:hover {
+        background: #2980b9;
+    }
+    
+    @@media print {
+        body {
+            margin: 0;
+            padding: 0;
+            background: white;
         }
-    </style>
-}
+        
+        .document-paper {
+            box-shadow: none;
+            border: none;
+            margin: 0;
+            max-width: none;
+        }
+        
+        .print-button {
+            display: none;
+        }
+    }
+</style>
+</head>
 
-@section Scripts {
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-}
+<body>
+    <div class="document-paper">
+        <div class="document-header">
+            <div class="company-info">
+                <img src="~/favicon/android-chrome-192x192.png" alt="لوگو" class="company-logo" />
+                <div>
+                    <div class="company-name">سامانه معاملات تابان</div>
+                    <div style="font-size: 14px; color: #7f8c8d;">گزارش تراکنش‌های مشتری</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="document-content">
+            <div class="document-title">صورت حساب معاملات</div>
+            <div class="customer-info">@Model.Customer.FullName - تاریخ صدور: @Model.StatementDate.ToPersianDateTextify()</div>
+
+            <div class="document-row">
+                <div class="document-label">نام مشتری:</div>
+                <div class="document-value">@Model.Customer.FullName</div>
+            </div>
+            
+            <div class="document-row">
+                <div class="document-label">کد ملی:</div>
+                <div class="document-value">@Model.Customer.NationalId</div>
+            </div>
+            
+            <div class="document-row">
+                <div class="document-label">شماره تماس:</div>
+                <div class="document-value">@Model.Customer.PhoneNumber</div>
+            </div>
+            
+            <div class="document-row">
+                <div class="document-label">تاریخ صورت حساب:</div>
+                <div class="document-value">@Model.StatementDate.ToPersianDateTextify()</div>
+            </div>
+
+            <!-- Overview Section -->
+            <div class="overview-section">
+                <div class="overview-title">خلاصه آماری</div>
+                <div class="overview-grid">
+                    <div class="overview-item">
+                        <div class="overview-number">@Model.Orders.Count</div>
+                        <div class="overview-label">تعداد کل معاملات</div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-number">@Model.CurrencyPairStats.Count</div>
+                        <div class="overview-label">تعداد جفت ارزها</div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-number">@Model.MonthlyStats.Count</div>
+                        <div class="overview-label">ماه‌های فعالیت</div>
+                    </div>
+                    <div class="overview-item">
+                        <div class="overview-number">@string.Format("{0:N0}", Model.Orders.Sum(o => o.TotalAmount))</div>
+                        <div class="overview-label">کل حجم معاملات</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Currency Pairs Section -->
+            @if (Model.CurrencyPairStats.Any())
+            {
+                <div class="currency-pairs-section">
+                    <div class="overview-title">تحلیل جفت ارزها</div>
+                    <div class="pairs-grid">
+                        @foreach (var pair in Model.CurrencyPairStats)
+                        {
+                            <div class="pair-card">
+                                <div class="pair-name">@pair.FromCurrency/@pair.ToCurrency</div>
+                                <div class="pair-stats">
+                                    <div class="pair-stat">
+                                        <div class="pair-count">@pair.TotalTransactions معامله</div>
+                                    </div>
+                                    <div class="pair-stat">
+                                        <div class="pair-amount">@string.Format("{0:N2}", pair.TotalAmount)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Transactions Table -->
+            @if (Model.Orders.Any())
+            {
+                <div class="transactions-section">
+                    <div class="overview-title">لیست معاملات</div>
+                    <div class="table-container">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>تاریخ</th>
+                                    <th>جفت ارز</th>
+                                    <th>از ارز</th>
+                                    <th>مقدار</th>
+                                    <th>به ارز</th>
+                                    <th>مقدار کل</th>
+                                    <th>نرخ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in Model.Orders.OrderByDescending(o => o.CreatedAt))
+                                {
+                                    <tr>
+                                        <td>@order.CreatedAt.ToPersianDateTextify()</td>
+                                        <td>@order.CurrencyPair</td>
+                                        <td>@order.FromCurrency.Code</td>
+                                        <td>@string.Format("{0:N2}", order.Amount)</td>
+                                        <td>@order.ToCurrency.Code</td>
+                                        <td>@string.Format("{0:N2}", order.TotalAmount)</td>
+                                        <td>@string.Format("{0:N4}", order.Rate)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            <div class="print-button">
+                <button class="print-btn" onclick="window.print()">
+                    <i class="fas fa-print"></i> چاپ گزارش
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

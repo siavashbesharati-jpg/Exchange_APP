@@ -917,13 +917,13 @@ namespace ForexExchange.Controllers
                 TempData["SuccessMessage"] = $"لینک اشتراک با موفقیت ایجاد شد. لینک تا {expirationDays} روز آینده معتبر است.";
                 TempData["ShareableUrl"] = fullUrl;
                 
-                return RedirectToAction("Details", new { id = customerId });
+                return RedirectToAction("Profile", new { id = customerId });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating shareable link for customer {CustomerId}", customerId);
                 TempData["ErrorMessage"] = "خطا در ایجاد لینک اشتراک.";
-                return RedirectToAction("Details", new { id = customerId });
+                return RedirectToAction("Profile", new { id = customerId });
             }
         }
 
