@@ -6,52 +6,57 @@
 }
 
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">مدیریت لینک‌های اشتراک</h1>
-                <div>
-                    <a asp-action="Profile" asp-route-id="@customer.Id" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> بازگشت به جزئیات مشتری
-                    </a>
-                </div>
-            </div>
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+            <a href="@Url.Action("Profile", "Customers", new { id = customer.Id })" class="btn btn-outline-secondary me-3">
+                <i class="fas fa-arrow-right me-2"></i>
+                بازگشت به پروفایل
+            </a>
+            <h2 class="mb-0">
+                <i class="fas fa-link text-primary me-2"></i>
+                مدیریت لینک‌های اشتراک - @customer.FullName
+            </h2>
         </div>
     </div>
 
     <!-- Customer Info Card -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card bg-light">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user text-primary me-2"></i>
+                        اطلاعات مشتری
+                    </h5>
+                </div>
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h5 class="card-title mb-1">
-                                <i class="fas fa-user"></i> @customer.FullName
-                            </h5>
-                            <p class="card-text text-muted mb-0">
-                                <i class="fas fa-phone"></i> @customer.PhoneNumber
+                            <h6 class="mb-1">@customer.FullName</h6>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-phone me-1"></i> @customer.PhoneNumber
                                 @if (!string.IsNullOrEmpty(customer.Email))
                                 {
                                     <span class="mx-2">|</span>
-                                    <i class="fas fa-envelope"></i> @customer.Email
+                                    <i class="fas fa-envelope me-1"></i> @customer.Email
                                 }
                             </p>
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-plus"></i> ایجاد لینک جدید
+                                    <i class="fas fa-plus me-2"></i> ایجاد لینک جدید
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li>
                                         <a class="dropdown-item" href="#" onclick="generateShareableLink(@customer.Id, 0, 'صورت حساب جامع')">
-                                            <i class="fas fa-file-alt"></i> صورت حساب جامع
+                                            <i class="fas fa-file-alt me-2"></i> صورت حساب جامع
                                         </a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item" href="#" onclick="generateShareableLink(@customer.Id, 1, 'صورت حساب معاملات')">
-                                            <i class="fas fa-exchange-alt"></i> صورت حساب معاملات
+                                            <i class="fas fa-exchange-alt me-2"></i> صورت حساب معاملات
                                         </a>
                                     </li>
                                 </ul>
@@ -66,10 +71,10 @@
     <!-- Shareable Links Table -->
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
                     <h5 class="card-title mb-0">
-                        <i class="fas fa-link"></i> لینک‌های اشتراک
+                        <i class="fas fa-link text-primary me-2"></i> لینک‌های اشتراک
                         <span class="badge bg-secondary ms-2">@Model.Count مورد</span>
                     </h5>
                 </div>
@@ -409,7 +414,6 @@
                 button.classList.remove('btn-success');
                 button.classList.add('btn-outline-secondary');
             }, 2000);
-        }
         }
         
         function closeSuccessModal() {
