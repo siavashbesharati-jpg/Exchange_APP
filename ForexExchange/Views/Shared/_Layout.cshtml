@@ -204,11 +204,75 @@
         <span id="connectionText">در حال اتصال...</span>
     </div>
 
-    <div class="container">
+    <div class="container" style="padding-bottom: 100px;">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+        {
+            <!-- Admin Action Footer -->
+            <div class="fixed-bottom bg-white border-top shadow-lg p-3">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-center flex-wrap gap-2">
+                                <!-- Create AccountDocument -->
+                                <a href="@Url.Action("Create", "AccountingDocuments")" class="btn btn-success flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-file-invoice me-2"></i>
+                                    <span class="d-none d-sm-inline">ایجاد سند حسابداری</span>
+                                    <span class="d-sm-none">سند</span>
+                                </a>
+                                
+                                <!-- Create Order -->
+                                <a href="@Url.Action("Create", "Orders")" class="btn btn-primary flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-plus-circle me-2"></i>
+                                    <span class="d-none d-sm-inline">ثبت معامله جدید</span>
+                                    <span class="d-sm-none">معامله</span>
+                                </a>
+                                
+                                <!-- Create Customer -->
+                                <a href="@Url.Action("Create", "Customers")" class="btn btn-info flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    <span class="d-none d-sm-inline">ثبت مشتری جدید</span>
+                                    <span class="d-sm-none">مشتری</span>
+                                </a>
+                                
+                                <!-- Advanced Manage -->
+                                <a href="@Url.Action("Management", "Home")" class="btn btn-dark flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    <span class="d-none d-sm-inline">مدیریت پیشرفته</span>
+                                    <span class="d-sm-none">مدیریت</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (User.IsInRole("Customer"))
+        {
+            <!-- Customer Profile Footer -->
+            <div class="fixed-bottom bg-white border-top shadow-lg p-3">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-center">
+                                <!-- Profile Link -->
+                                <a href="@Url.Action("Profile", "Account")" class="btn btn-primary">
+                                    <i class="fas fa-user me-2"></i>
+                                    پروفایل من
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
 
     <footer class="border-top footer text-muted">
         <div class="container">
