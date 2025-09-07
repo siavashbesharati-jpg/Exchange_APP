@@ -1,261 +1,89 @@
 @model List<ForexExchange.Models.CurrencyPool>
-@using ForexExchange.Services
 
-<link rel="stylesheet" href="~/css/pool-widget-compact.css" />
-
-<div class="card mb-3 shadow-sm">
-    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center py-2">
-        <div>
-            <i class="bi bi-bank2 me-2"></i>
-            <strong>صندوق ارزی</strong>
-        </div>
-        <div class="d-flex align-items-center">
-            <small id="pool-last-update" class="me-3">
-                <i class="bi bi-clock-history me-1"></i>
-                @DateTime.Now.ToString("HH:mm:ss")
-            </small>
-            <div class="btn-group btn-group-sm">
-                <button type="button" class="btn btn-sm btn-outline-light" onclick="refreshPoolWidget()" title="بروزرسانی دستی">
-                    <i class="bi bi-arrow-clockwise"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-light" id="auto-refresh-toggle" onclick="toggleAutoRefresh()" title="بروزرسانی خودکار">
-                    <i class="bi bi-play-circle"></i>
-                </button>
-            </div>
+<div class="card">
+    <div class="card-header bg-primary text-white py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-coins me-2"></i>صندوق ارزی</h6>
+            <button class="btn btn-sm btn-outline-light" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
         </div>
     </div>
-    <div class="card-body py-2">
+    <div class="card-body p-0">
         @if (Model != null && Model.Any())
         {
-            <div class="row g-2 pool-container" style="max-height: 250px; overflow-y: auto;">
-                @foreach (var pool in Model)
-                {
-                    var riskColorClass = pool.RiskLevel switch
+            <div style="max-height: 180px; overflow-y: auto;">
+                <table class="table table-sm mb-0">
+                    @foreach (var pool in Model)
                     {
-                        ForexExchange.Models.PoolRiskLevel.Low => "success",
-                        ForexExchange.Models.PoolRiskLevel.Medium => "warning",
-                        ForexExchange.Models.PoolRiskLevel.High => "danger",
-                        ForexExchange.Models.PoolRiskLevel.Critical => "dark",
-                        _ => "secondary"
-                    };
-
-                    var balanceColorClass = pool.Balance >= 0 ? "success" : "danger";
-                    var balanceIcon = pool.Balance >= 0 ? "bi-graph-up-arrow" : "bi-graph-down-arrow";
-
-                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-2">
-                        <div class="card h-100 border-0 shadow-sm pool-card-compact" data-currency="@pool.Currency?.Code">
-                            <!-- Currency Header - Compact -->
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center py-1 px-2">
-                                <div class="d-flex align-items-center">
-                                    <span class="currency-flag me-1" style="font-size: 1.2em;">
-                                        @{
-                                            var flagEmoji = pool.Currency?.Code switch
-                                            {
-                                                "IRR" => "🇮🇷",
-                                                "USD" => "🇺🇸",
-                                                "EUR" => "🇪🇺",
-                                                "AED" => "🇦🇪",
-                                                "OMR" => "🇴🇲",
-                                                "TRY" => "🇹🇷",
-                                                "CNY" => "🇨🇳",
-                                                _ => "💱"
-                                            };
-                                        }
-                                        @flagEmoji
-                                    </span>
-                                    <div>
-                                        <h6 class="mb-0 fw-bold small">@pool.Currency?.PersianName</h6>
-                                        <small class="text-muted tiny">@pool.Currency?.Code</small>
-                                    </div>
-                                </div>
-                                <span class="badge bg-@riskColorClass risk-badge tiny">
-                                    @switch (pool.RiskLevel)
-                                    {
-                                        case ForexExchange.Models.PoolRiskLevel.Low: <text><i class="bi bi-shield-check"></i></text> break;
-                                        case ForexExchange.Models.PoolRiskLevel.Medium: <text><i class="bi bi-shield-exclamation"></i></text> break;
-                                        case ForexExchange.Models.PoolRiskLevel.High: <text><i class="bi bi-shield-x"></i></text> break;
-                                        case ForexExchange.Models.PoolRiskLevel.Critical: <text><i class="bi bi-exclamation-triangle"></i></text> break;
-                                        default: <text><i class="bi bi-shield"></i></text> break;
+                        var balanceClass = pool.Balance >= 0 ? "text-success" : "text-danger";
+                        var balanceIcon = pool.Balance >= 0 ? "fas fa-arrow-up" : "fas fa-arrow-down";
+                        
+                        <tr>
+                            <td class="align-middle" style="width: 50px;">
+                                <span style="font-size: 1.2rem;">
+                                    @{
+                                        var flag = pool.Currency?.Code switch
+                                        {
+                                            "IRR" => "🇮🇷",
+                                            "USD" => "🇺🇸", 
+                                            "EUR" => "🇪🇺",
+                                            "AED" => "🇦🇪",
+                                            "OMR" => "🇴🇲",
+                                            "TRY" => "🇹🇷",
+                                            "CNY" => "🇨🇳",
+                                            _ => "💱"
+                                        };
                                     }
+                                    @flag
                                 </span>
-                            </div>
-
-                            <!-- Pool Content - Compact -->
-                            <div class="card-body p-2">
-                                <!-- Balance Display - Compact -->
-                                <div class="balance-amount text-center mb-2">
-                                    <div class="d-flex justify-content-center align-items-center">
-                                        <i class="bi @balanceIcon text-@balanceColorClass me-1"></i>
-                                        <h6 class="mb-0 text-@balanceColorClass fw-bold">
-                                            @(pool.CurrencyCode == "IRR" ? pool.Balance.ToString("N0") : pool.Balance.ToString("N2"))
-                                        </h6>
-                                    </div>
-                                    <small class="text-muted tiny">موجودی (@pool.Currency?.Symbol)</small>
+                            </td>
+                            <td class="align-middle">
+                                <div>
+                                    <strong style="font-size: 0.9rem;">@pool.Currency?.Code</strong>
+                                    <br>
+                                    <small class="text-muted">@pool.Currency?.PersianName</small>
                                 </div>
-
-                                <!-- Quick Stats - Compact -->
-                                <div class="row g-1 mb-2">
-                                    <div class="col-6">
-                                        <div class="stat-card bg-success bg-opacity-10 p-1 rounded text-center">
-                                            <div class="text-success fw-bold tiny">@(pool.CurrencyCode == "IRR" ? pool.TotalBought.ToString("N0") : pool.TotalBought.ToString("N2"))</div>
-                                            <div class="text-muted" style="font-size: 0.6rem;">خرید</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="stat-card bg-danger bg-opacity-10 p-1 rounded text-center">
-                                            <div class="text-danger fw-bold tiny">@(pool.CurrencyCode == "IRR" ? pool.TotalSold.ToString("N0") : pool.TotalSold.ToString("N2"))</div>
-                                            <div class="text-muted" style="font-size: 0.6rem;">فروش</div>
-                                        </div>
-                                    </div>
+                            </td>
+                            <td class="align-middle text-end">
+                                <div class="@balanceClass">
+                                    <i class="@balanceIcon" style="font-size: 0.8rem;"></i>
+                                    @{
+                                        var balance = pool.CurrencyCode == "IRR" 
+                                            ? pool.Balance.ToString("N0") 
+                                            : pool.Balance.ToString("N2");
+                                    }
+                                    <strong style="font-size: 0.85rem;">@balance</strong>
                                 </div>
-
-                                <!-- Active Order Counts - Compact -->
                                 @if (pool.ActiveBuyOrderCount > 0 || pool.ActiveSellOrderCount > 0)
                                 {
-                                    <div class="order-counts mb-1">
-                                        <div class="row g-1">
-                                            @if (pool.ActiveBuyOrderCount > 0)
-                                            {
-                                                <div class="col-6">
-                                                    <div class="order-card bg-success bg-opacity-10 p-1 rounded text-center">
-                                                        <div class="order-value text-success fw-bold" style="font-size: 0.7rem;">
-                                                            @pool.ActiveBuyOrderCount
-                                                        </div>
-                                                        <div class="order-label text-muted" style="font-size: 0.5rem;">
-                                                            <i class="bi bi-arrow-up"></i>خرید
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            }
-                                            @if (pool.ActiveSellOrderCount > 0)
-                                            {
-                                                <div class="col-6">
-                                                    <div class="order-card bg-danger bg-opacity-10 p-1 rounded text-center">
-                                                        <div class="order-value text-danger fw-bold" style="font-size: 0.7rem;">
-                                                            @pool.ActiveSellOrderCount
-                                                        </div>
-                                                        <div class="order-label text-muted" style="font-size: 0.5rem;">
-                                                            <i class="bi bi-arrow-down"></i>فروش
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
+                                    <div style="font-size: 0.7rem;">
+                                        @if (pool.ActiveBuyOrderCount > 0)
+                                        {
+                                            <span class="badge bg-success" style="font-size: 0.6rem;">
+                                                <i class="fas fa-plus"></i> @pool.ActiveBuyOrderCount
+                                            </span>
+                                        }
+                                        @if (pool.ActiveSellOrderCount > 0)
+                                        {
+                                            <span class="badge bg-danger" style="font-size: 0.6rem;">
+                                                <i class="fas fa-minus"></i> @pool.ActiveSellOrderCount
+                                            </span>
+                                        }
                                     </div>
                                 }
-
-                                <!-- Last Updated - Compact -->
-                                <div class="text-center">
-                                    <small class="text-muted" style="font-size: 0.6rem;">
-                                        <i class="bi bi-clock me-1"></i>@pool.LastUpdated.ToString("HH:mm")
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
+                            </td>
+                        </tr>
+                    }
+                </table>
             </div>
         }
         else
         {
-            <div class="text-center text-muted py-3">
-                <i class="bi bi-exclamation-circle fs-1"></i>
-                <p class="mt-2">هیچ صندوق ارزی فعالی یافت نشد</p>
-                <small>برای فعال‌سازی صندوق ارزی، به بخش مدیریت ارزها مراجعه کنید</small>
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-coins fa-2x mb-2 d-block"></i>
+                <p class="mb-0">هیچ ارزی در صندوق موجود نیست</p>
             </div>
         }
     </div>
 </div>
-
-<script>
-let autoRefreshInterval = null;
-let isAutoRefreshActive = false;
-
-function refreshPoolWidget() {
-    const container = $('#pool-widget-container');
-    const refreshBtn = container.find('button[onclick="refreshPoolWidget()"]');
-
-    // Add loading state
-    container.addClass('refreshing');
-    refreshBtn.prop('disabled', true).html('<i class="bi bi-arrow-clockwise spinning"></i>');
-
-    $.get('/Home/PoolWidget', function(data) {
-        container.html(data);
-        $('#pool-last-update').html('<i class="bi bi-clock-history me-1"></i>' + new Date().toLocaleTimeString('fa-IR'));
-
-        // Show success feedback
-        showNotification('صندوق ارزی بروزرسانی شد', 'success');
-    }).fail(function(xhr, status, error) {
-        console.error('خطا در بروزرسانی ویجت صندوق:', error);
-        showNotification('خطا در بروزرسانی صندوق ارزی', 'error');
-    }).always(function() {
-        // Remove loading state
-        container.removeClass('refreshing');
-        refreshBtn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i>');
-    });
-}
-
-function toggleAutoRefresh() {
-    const button = $('#auto-refresh-toggle');
-    const icon = button.find('i');
-
-    if (isAutoRefreshActive) {
-        clearInterval(autoRefreshInterval);
-        isAutoRefreshActive = false;
-        icon.removeClass('bi-stop-circle').addClass('bi-play-circle');
-        button.removeClass('btn-success').addClass('btn-outline-light');
-        button.attr('title', 'بروزرسانی خودکار');
-        showNotification('بروزرسانی خودکار متوقف شد', 'info');
-    } else {
-        autoRefreshInterval = setInterval(refreshPoolWidget, 30000); // Refresh every 30 seconds
-        isAutoRefreshActive = true;
-        icon.removeClass('bi-play-circle').addClass('bi-stop-circle');
-        button.removeClass('btn-outline-light').addClass('btn-success');
-        button.attr('title', 'توقف بروزرسانی خودکار');
-        showNotification('بروزرسانی خودکار فعال شد', 'success');
-    }
-}
-
-function showPoolDetails(currencyCode) {
-    // Create a modal or redirect to detailed view
-    // For now, we'll show a simple alert with pool information
-    const poolCard = $(`.pool-card-compact[data-currency="${currencyCode}"]`);
-    const currencyName = poolCard.find('h6').text();
-    const balance = poolCard.find('.balance-amount h6').text();
-    const riskBadge = poolCard.find('.risk-badge').text();
-
-    // You can replace this with a proper modal implementation
-    alert(`جزئیات صندوق ${currencyName} (${currencyCode}):\n\n` +
-          `موجودی: ${balance}\n` +
-          `سطح ریسک: ${riskBadge}\n\n` +
-          `برای مشاهده جزئیات بیشتر به صفحه مدیریت مراجعه کنید.`);
-
-    // Alternative: Redirect to management page
-    // window.location.href = `/Management/Index`;
-}
-
-function showNotification(message, type = 'info') {
-    // Create a simple notification system
-    const notification = $(`
-        <div class="alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed"
-             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-            <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `);
-
-    $('body').append(notification);
-
-    setTimeout(() => {
-        notification.alert('close');
-    }, 5000);
-}
-
-// Initialize tooltips
-$(document).ready(function() {
-    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-        $('[title]').tooltip();
-    }
-});
-</script>
