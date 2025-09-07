@@ -80,8 +80,8 @@
                 
             </div>
             <div class="row mt-2">
-                        <div class="col-md-6"><strong> پرداخت می کند :</strong> @(Model.FromCurrency?.Code == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2")) @Model.FromCurrency?.Code
-                        <div class="col-md-6"><strong> دریافت می کند  :</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.TotalAmount.ToString("N0") : Model.TotalAmount.ToString("N2")) @Model.ToCurrency?.Code</div>
+                        <div class="col-md-6"><strong> دریافت می کنیم  :</strong> @(Model.FromCurrency?.Code == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2")) @Model.FromCurrency?.Code
+                        <div class="col-md-6"><strong> پرداخت می کنیم    :</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.TotalAmount.ToString("N0") : Model.TotalAmount.ToString("N2")) @Model.ToCurrency?.Code</div>
                 </div>
             </div>
         </div>
