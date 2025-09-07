@@ -4,12 +4,15 @@
     ViewData["Title"] = "جزئیات مشتری";
 }
 
-<div class="container-fluid">
-    <div class="row">
+<div class="container">
+    <div class="row justify-content-center">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">جزئیات مشتری</h1>
+                <h2>جزئیات مشتری</h2>
                 <div>
+                    <a asp-action="Index" class="btn btn-secondary me-2">
+                        <i class="fas fa-arrow-right"></i> بازگشت به لیست
+                    </a>
                     <div class="btn-group me-2" role="group">
                         <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-share-alt"></i> ایجاد لینک اشتراک
@@ -30,8 +33,9 @@
                     <a asp-action="ShareableLinks" asp-route-id="@Model.Id" class="btn btn-info me-2">
                         <i class="fas fa-link"></i> مدیریت لینک‌ها
                     </a>
-                    <a asp-action="Index" class="btn btn-secondary me-2">بازگشت به لیست</a>
-                    <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">پروفایل کامل</a>
+                    <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">
+                        <i class="fas fa-user"></i> پروفایل کامل
+                    </a>
                 </div>
             </div>
         </div>
@@ -39,59 +43,91 @@
 
     <div class="row">
         <div class="col-md-6">
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">اطلاعات شخصی</h5>
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user"></i> اطلاعات شخصی
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>نام کامل:</strong></div>
-                        <div class="col-sm-8">@Model.FullName</div>
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width: 35%;">نام کامل:</td>
+                                    <td>@Model.FullName</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">شماره تلفن:</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(Model.PhoneNumber))
+                                        {
+                                            <a href="tel:@Model.PhoneNumber" class="text-decoration-none">
+                                                <i class="fas fa-phone text-success"></i> @Model.PhoneNumber
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">ثبت نشده</span>
+                                        }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">تاریخ عضویت:</td>
+                                    <td>
+                                        <i class="fas fa-calendar text-info"></i>
+                                        @Model.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">وضعیت:</td>
+                                    <td>
+                                        @if (Model.IsActive)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> فعال
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times"></i> غیرفعال
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                                @if (!string.IsNullOrEmpty(Model.Address))
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-muted">آدرس:</td>
+                                        <td>
+                                            <i class="fas fa-map-marker-alt text-primary"></i>
+                                            @Model.Address
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>شماره تلفن:</strong></div>
-                        <div class="col-sm-8">@Model.PhoneNumber</div>
+                    
+                    <div class="d-flex justify-content-center mt-3">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning me-2">
+                            <i class="fas fa-edit"></i> ویرایش اطلاعات
+                        </a>
+                        <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">
+                            <i class="fas fa-user-circle"></i> پروفایل کامل
+                        </a>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>ایمیل:</strong></div>
-                        <div class="col-sm-8">@Model.Email</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>کد ملی:</strong></div>
-                        <div class="col-sm-8">@Model.NationalId</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>تاریخ عضویت:</strong></div>
-                        <div class="col-sm-8">@Model.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-sm-4"><strong>وضعیت:</strong></div>
-                        <div class="col-sm-8">
-                            @if (Model.IsActive)
-                            {
-                                <span class="badge bg-success">فعال</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">غیرفعال</span>
-                            }
-                        </div>
-                    </div>
-                    @if (!string.IsNullOrEmpty(Model.Address))
-                    {
-                        <div class="row mb-3">
-                            <div class="col-sm-4"><strong>آدرس:</strong></div>
-                            <div class="col-sm-8">@Model.Address</div>
-                        </div>
-                    }
                 </div>
             </div>
         </div>
 
         <div class="col-md-6">
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">خلاصه فعالیت</h5>
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar"></i> خلاصه فعالیت
+                    </h5>
                 </div>
                 <div class="card-body">
                     @{
@@ -100,60 +136,65 @@
                     }
                     @if (customerBalances.Any())
                     {
-                        <div class="mb-3">
-                            <h6 class="mb-2">موجودی اولیه مشتری</h6>
+                        <div class="mb-4">
+                            <h6 class="mb-3">
+                                <i class="fas fa-wallet text-success"></i> موجودی اولیه مشتری
+                            </h6>
                             <div class="row g-2">
                                 @foreach (var b in customerBalances)
                                 {
                                     <div class="col-6">
-                                        <div class="border rounded p-2 small d-flex justify-content-between">
-                                            <span class="text-muted">@b.CurrencyCode</span>
-                                            <strong dir="ltr">@(b.CurrencyCode == "IRR" ? b.Balance.ToString("N0") : b.Balance.ToString("N2"))</strong>
+                                        <div class="card bg-light border-0">
+                                            <div class="card-body p-2 text-center">
+                                                <div class="small text-muted mb-1">@b.CurrencyCode</div>
+                                                <div class="fw-bold" dir="ltr">
+                                                    @(b.CurrencyCode == "IRR" ? b.Balance.ToString("N0") : b.Balance.ToString("N2"))
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 }
                             </div>
                         </div>
                     }
-                    <div class="row text-center">
-                        <div class="col-6 mb-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body">
-                                    <h4>@Model.Orders.Count</h4>
-                                    <p class="mb-0">کل معامله‌ها</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h4>@ViewBag.CustomerStats.TotalTransactions</h4>
-                                    <p class="mb-0">کل تراکنش‌ها</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="card bg-info text-white">
-                                <div class="card-body">
-                                    <h4>@ViewBag.CustomerStats.TotalAccountingDocuments</h4>
-                                    <p class="mb-0">اسناد حسابداری</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body">
-                                    <h4>0</h4>
-                                    <p class="mb-0">معامله‌های باز</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     
-                    <div class="text-center mt-3">
-                        <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">
-                            <i class="fas fa-user-circle"></i> مشاهده پروفایل کامل
-                        </a>
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="card bg-primary text-white border-0">
+                                <div class="card-body p-3">
+                                    <i class="fas fa-exchange-alt fa-2x mb-2"></i>
+                                    <h4 class="mb-1">@Model.Orders.Count</h4>
+                                    <small>کل معامله‌ها</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-success text-white border-0">
+                                <div class="card-body p-3">
+                                    <i class="fas fa-list fa-2x mb-2"></i>
+                                    <h4 class="mb-1">@ViewBag.CustomerStats.TotalTransactions</h4>
+                                    <small>کل تراکنش‌ها</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-info text-white border-0">
+                                <div class="card-body p-3">
+                                    <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                    <h4 class="mb-1">@ViewBag.CustomerStats.TotalAccountingDocuments</h4>
+                                    <small>اسناد حسابداری</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-warning text-white border-0">
+                                <div class="card-body p-3">
+                                    <i class="fas fa-clock fa-2x mb-2"></i>
+                                    <h4 class="mb-1">0</h4>
+                                    <small>معامله‌های باز</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -165,36 +206,72 @@
     {
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card">
+                <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">آخرین فعالیت‌ها</h5>
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history"></i> آخرین فعالیت‌ها
+                        </h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <!-- Recent Orders -->
                             @if (Model.Orders.Any())
                             {
-                                <div class="col-md-4">
-                                    <h6>آخرین معامله‌ها</h6>
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-exchange-alt text-primary"></i> آخرین معامله‌ها
+                                    </h6>
                                     @foreach (var order in Model.Orders.OrderByDescending(o => o.CreatedAt).Take(3))
                                     {
-                                        <div class="border rounded p-2 mb-2">
-                                            <small>
-                                                <strong>#@order.Id</strong> - 
-                                                <!-- Removed OrderType display, now just show currency pair or amount -->
-                                                @(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2")) @order.FromCurrency?.PersianName <small class="text-muted">(@order.CurrencyPair)</small>
-                                                <br>
-                                                <span class="text-muted">@order.CreatedAt.ToString("MM/dd HH:mm")</span>
-                                            </small>
+                                        <div class="card mb-2 border-start border-primary border-3">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <div class="fw-bold text-primary">#@order.Id</div>
+                                                        <div class="small">
+                                                            @(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2")) @order.FromCurrency?.PersianName
+                                                            <span class="text-muted">(@order.CurrencyPair)</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <div class="small text-muted">
+                                                            <i class="fas fa-clock"></i>
+                                                            @order.CreatedAt.ToString("MM/dd HH:mm")
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     }
-                                    <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id" class="btn btn-sm btn-outline-primary">مشاهده همه</a>
+                                    <div class="text-center">
+                                        <a asp-controller="Orders" asp-action="Index" asp-route-customerId="@Model.Id" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-list"></i> مشاهده همه معامله‌ها
+                                        </a>
+                                    </div>
                                 </div>
                             }
 
+                            <div class="col-md-6">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-info-circle text-info"></i> اطلاعات تکمیلی
+                                </h6>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-chart-line"></i>
+                                    برای مشاهده گزارش کامل و تحلیل دقیق فعالیت‌های این مشتری، از بخش پروفایل کامل استفاده کنید.
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a asp-action="Profile" asp-route-id="@Model.Id" class="btn btn-primary">
+                                        <i class="fas fa-user-circle"></i> مشاهده پروفایل کامل
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-warning">
+                                        <i class="fas fa-edit"></i> ویرایش اطلاعات مشتری
+                                    </a>
+                                </div>
+                            </div>
+
+                            @* Commented out sections for future implementation *@
+                            @* 
                             <!-- Recent Transactions -->
-                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
-                            @*
                             @{
                                 var recentTransactions = Model.BuyTransactions.Concat(Model.SellTransactions)
                                     .OrderByDescending(t => t.CreatedAt)
@@ -222,9 +299,8 @@
                             }
                             *@
 
+                            @* 
                             <!-- Recent Receipts -->
-                            @* TODO: Replace with AccountingDocument display when implementing new architecture *@
-                            @*
                             @if (Model.Receipts.Any())
                             {
                                 <div class="col-md-4">
@@ -261,7 +337,9 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="shareableLinkModalLabel">ایجاد لینک اشتراک</h5>
+                <h5 class="modal-title" id="shareableLinkModalLabel">
+                    <i class="fas fa-share-alt"></i> ایجاد لینک اشتراک
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="shareableLinkForm" method="post" asp-action="GenerateShareableLink">
@@ -271,12 +349,12 @@
                     <input type="hidden" name="linkType" id="linkType" />
                     
                     <div class="mb-3">
-                        <label class="form-label">نوع صورت حساب:</label>
-                        <div id="linkTypeDisplay" class="form-control-plaintext fw-bold"></div>
+                        <label class="form-label fw-bold">نوع صورت حساب:</label>
+                        <div id="linkTypeDisplay" class="alert alert-info"></div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="expirationDays" class="form-label">مدت اعتبار (روز):</label>
+                        <label for="expirationDays" class="form-label fw-bold">مدت اعتبار (روز):</label>
                         <select class="form-select" name="expirationDays" id="expirationDays">
                             <option value="1">1 روز</option>
                             <option value="3">3 روز</option>
@@ -292,7 +370,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> انصراف
+                    </button>
                     <button type="submit" class="btn btn-success">
                         <i class="fas fa-share-alt"></i> ایجاد لینک
                     </button>
