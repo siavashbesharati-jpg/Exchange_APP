@@ -22,7 +22,7 @@
                                             if (msg == "The CustomerId field is required.") msg = "انتخاب مشتری الزامی است.";
                                             if (msg == "The FromCurrencyId field is required.") msg = "انتخاب ارز مبدأ الزامی است.";
                                             if (msg == "The ToCurrencyId field is required.") msg = "انتخاب ارز مقصد الزامی است.";
-                                            if (msg == "The Amount field is required.") msg = "مبلغ معامله الزامی است.";
+                                            if (msg == "The Amount field is required.") msg = "مقدار  معامله الزامی است.";
                                             <li>@msg</li>
                                         }
                                     }
@@ -73,7 +73,7 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label asp-for="Amount" class="form-label">مبلغ (ارز مبدأ)</label>
+                                <label asp-for="Amount" class="form-label">مقدار  (ارز مبدأ)</label>
                                 <input asp-for="Amount" type="number" class="form-control" step="0.01" min="0" id="amountInput" required />
                                 <span asp-validation-for="Amount" class="text-danger"></span>
                             </div>
