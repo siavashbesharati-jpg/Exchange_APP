@@ -95,7 +95,7 @@ class CurrencyAmountFormatter {
             font-size: 13px;
             max-width: 300px;
             word-wrap: break-word;
-            z-index: 1050;
+            z-index: 1060;
             display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             font-family: 'Vazirmatn', sans-serif;
@@ -119,7 +119,16 @@ class CurrencyAmountFormatter {
         `;
         tooltip.appendChild(arrow);
 
-        document.body.appendChild(tooltip);
+        // Smart tooltip placement: append to modal if input is inside one
+        const modalParent = input.closest('.modal, .popup, .dropdown-menu');
+        if (modalParent) {
+            modalParent.appendChild(tooltip);
+            // Use higher z-index for modal tooltips
+            tooltip.style.zIndex = '1070';
+        } else {
+            document.body.appendChild(tooltip);
+        }
+        
         this.tooltips.set(input, tooltip);
 
         // Position tooltip relative to input
@@ -133,11 +142,22 @@ class CurrencyAmountFormatter {
      */
     positionTooltip(input, tooltip) {
         const rect = input.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        const modalParent = input.closest('.modal, .popup, .dropdown-menu');
         
-        tooltip.style.left = (rect.left + scrollLeft + (rect.width / 2) - 150) + 'px';
-        tooltip.style.top = (rect.top + scrollTop - tooltip.offsetHeight - 10) + 'px';
+        if (modalParent) {
+            // Position relative to modal container
+            const modalRect = modalParent.getBoundingClientRect();
+            tooltip.style.position = 'absolute';
+            tooltip.style.left = (rect.left - modalRect.left + (rect.width / 2) - 150) + 'px';
+            tooltip.style.top = (rect.top - modalRect.top - tooltip.offsetHeight - 10) + 'px';
+        } else {
+            // Position relative to viewport (original behavior)
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+            
+            tooltip.style.left = (rect.left + scrollLeft + (rect.width / 2) - 150) + 'px';
+            tooltip.style.top = (rect.top + scrollTop - tooltip.offsetHeight - 10) + 'px';
+        }
     }
 
     /**
@@ -163,10 +183,9 @@ class CurrencyAmountFormatter {
             }
         });
 
-        // Focus event to show tooltip immediately
+        // Focus event (removed automatic tooltip show)
         input.addEventListener('focus', () => {
-            this.formatInput(input); // Format immediately on focus
-            this.showTooltip(input);
+            this.formatInput(input); // Format immediately on focus only
         });
 
         // Blur event to hide tooltip
@@ -174,19 +193,20 @@ class CurrencyAmountFormatter {
             this.hideTooltip(input);
         });
 
-        // Mouse enter for immediate tooltip on hover
-        input.addEventListener('mouseenter', () => {
+        // Click event to show/toggle tooltip
+        input.addEventListener('click', () => {
             if (input.value) {
                 this.formatInput(input); // Ensure latest formatting
-                this.showTooltip(input);
+                const tooltip = this.tooltips.get(input);
+                if (tooltip && tooltip.style.display === 'block') {
+                    this.hideTooltip(input);
+                } else {
+                    this.showTooltip(input);
+                }
             }
         });
 
-        input.addEventListener('mouseleave', () => {
-            if (document.activeElement !== input) {
-                this.hideTooltip(input);
-            }
-        });
+        // Removed mouse enter/leave events for hover behavior
 
         // Window resize to reposition tooltips
         window.addEventListener('resize', () => {
@@ -247,10 +267,7 @@ class CurrencyAmountFormatter {
         // Check if value actually changed to avoid unnecessary processing
         const previousCleanValue = input.getAttribute('data-clean-value');
         if (previousCleanValue === cleanValue) {
-            // Value hasn't changed, just show tooltip if hidden
-            if (input === document.activeElement) {
-                this.showTooltip(input);
-            }
+            // Value hasn't changed, no need to update
             return;
         }
 
@@ -276,10 +293,7 @@ class CurrencyAmountFormatter {
             input.setAttribute('data-formatted-value', formattedNumber);
         }
 
-        // Show tooltip immediately if input is focused
-        if (input === document.activeElement) {
-            this.showTooltip(input);
-        }
+        // Tooltip will only show when user clicks the input (no automatic showing)
     }
 
     /**
