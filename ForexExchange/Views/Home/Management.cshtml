@@ -1,0 +1,257 @@
+@{
+    ViewData["Title"] = "مدیریت سیستم";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="display-6 fw-bold text-primary">
+                    <i class="fas fa-cogs me-2"></i>
+                    مدیریت سیستم
+                </h1>
+                <a href="@Url.Action("Dashboard", "Home")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    بازگشت به داشبورد
+                </a>
+            </div>
+            <hr class="my-3">
+        </div>
+    </div>
+
+    @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
+    {
+        <!-- Management Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-clipboard-list text-primary me-2"></i>
+                    مدیریت معاملات و مشتریان
+                </h4>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <!-- Orders Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-clipboard-list fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت معاملات</h5>
+                        <p class="card-text">مشاهده و مدیریت تمامی معاملات مشتریان</p>
+                        <a href="@Url.Action("Index", "Orders")" class="btn btn-primary">مشاهده معاملات</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-info mb-3">
+                            <i class="fas fa-users fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت مشتریان</h5>
+                        <p class="card-text">مشاهده اطلاعات و مدیریت مشتریان</p>
+                        <a href="@Url.Action("Index", "Customers")" class="btn btn-info">مدیریت مشتریان</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Account Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-university fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت حساب‌های بانکی</h5>
+                        <p class="card-text">مدیریت حساب‌های بانکی مشتریان و سیستم</p>
+                        <a href="@Url.Action("Index", "BankAccount")" class="btn btn-primary">مدیریت حساب‌ها</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-dollar-sign text-success me-2"></i>
+                    امور مالی
+                </h4>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Settlements -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-warning mb-3">
+                            <i class="fas fa-handshake fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">تسویه حساب</h5>
+                        <p class="card-text">مدیریت تسویه‌های مالی و تراکنش‌ها</p>
+                        <a href="@Url.Action("Index", "Settlements")" class="btn btn-warning">تسویه حساب</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Receipts -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-secondary mb-3">
+                            <i class="fas fa-file-invoice fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت اسناد حسابداری</h5>
+                        <p class="card-text">بررسی و تایید اسناد حسابداری</p>
+                        <a href="@Url.Action("Index", "AccountingDocuments")" class="btn btn-secondary">مشاهده اسناد</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-dark mb-3">
+                            <i class="fas fa-chart-bar fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">گزارشات مالی</h5>
+                        <p class="card-text">گزارشات جامع از عملکرد مالی</p>
+                        <a href="@Url.Action("Index", "Reports")" class="btn btn-dark">مشاهده گزارشات</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exchange Rates Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-exchange-alt text-info me-2"></i>
+                    نرخ‌های ارز و مدیریت ارزها
+                </h4>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Exchange Rates Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-coins fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت نرخ‌ها</h5>
+                        <p class="card-text">تنظیم و بروزرسانی نرخ‌های خرید و فروش</p>
+                        <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-primary">مدیریت نرخ‌ها</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Currency Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-success mb-3">
+                            <i class="fas fa-money-bill-wave fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت ارزها</h5>
+                        <p class="card-text">مدیریت انواع ارزها و تنظیمات مربوطه</p>
+                        <a href="@Url.Action("Index", "Currencies")" class="btn btn-success">مدیریت ارزها</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pool Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-info mb-3">
+                            <i class="fas fa-swimming-pool fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت صندوق های ارزی</h5>
+                        <p class="card-text">مدیریت موجودی و آمار صندوق های ارزی</p>
+                        <a href="@Url.Action("Index", "PoolManagement")" class="btn btn-info">مدیریت صندوق ها</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <!-- Admin Only Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h4 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-shield-alt text-danger me-2"></i>
+                        مدیریت پیشرفته (فقط ادمین)
+                    </h4>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <!-- Database Management (Admin Only) -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="text-dark mb-3">
+                                <i class="fas fa-database fa-3x"></i>
+                            </div>
+                            <h5 class="card-title">مدیریت پایگاه داده</h5>
+                            <p class="card-text">پشتیبان‌گیری، بازیابی و پاکسازی پایگاه داده</p>
+                            <a href="@Url.Action("Index", "Database")" class="btn btn-dark">مدیریت پایگاه داده</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Settings (Admin Only) -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="text-danger mb-3">
+                                <i class="fas fa-cog fa-3x"></i>
+                            </div>
+                            <h5 class="card-title">تنظیمات سیستم</h5>
+                            <p class="card-text">پیکربندی عمومی سیستم و کمیسیون‌ها</p>
+                            <a href="@Url.Action("Index", "Settings")" class="btn btn-danger">تنظیمات</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Management (SuperAdmin Only) -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="text-warning mb-3">
+                                <i class="fas fa-user-shield fa-3x"></i>
+                            </div>
+                            <h5 class="card-title">مدیریت ادمین‌ها</h5>
+                            <p class="card-text">مدیریت کاربران ادمین و نقش‌های آنها</p>
+                            <a href="@Url.Action("ManageAdmins", "AdminManagement")" class="btn btn-warning">مدیریت ادمین‌ها</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <!-- Access Denied -->
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning text-center">
+                    <h4>دسترسی محدود</h4>
+                    <p>برای دسترسی به این بخش، باید با حساب مدیریتی وارد شوید.</p>
+                    <a href="@Url.Action("Login", "Account")" class="btn btn-primary">ورود به سیستم</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

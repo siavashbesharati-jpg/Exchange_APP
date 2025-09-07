@@ -2,7 +2,7 @@
     ViewData["Title"] = "داشبورد";
 }
 
-<div class="container-fluid">
+<div class="container-fluid" style="padding-bottom: 100px;">
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12 text-center">
@@ -31,261 +31,69 @@
                 </div>
             </div>
             
-            <!-- Customer Debt/Credit Widget -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-gradient-info text-white d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="bi bi-cash-stack me-2"></i>
-                                <strong> وضعیت بدهی و بستانکاری</strong>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <a href="@Url.Action("AllCustomerDebtCredits", "Home")" class="btn btn-sm btn-outline-light me-2">
-                                    <i class="bi bi-list"></i> مشاهده همه
-                                </a>
-                                <button type="button" class="btn btn-sm btn-outline-light" onclick="refreshDebtCreditWidget()" title="بروزرسانی">
-                                    <i class="bi bi-arrow-clockwise"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div id="debt-credit-widget-container">
-                                @{
-                                    var lastCustomer = ViewBag.CustomerDebtCredits as List<ForexExchange.Models.CustomerDebtCredit>;
-                                    var singleCustomer = lastCustomer?.Take(1).ToList() ?? new List<ForexExchange.Models.CustomerDebtCredit>();
-                                }
-                                @await Html.PartialAsync("_DebtCreditWidget", singleCustomer)
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Management Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-cogs text-primary me-2"></i>
-                        مدیریت سیستم
-                    </h4>
-                </div>
-            </div>
-            
-            <div class="row mb-4">
-                <!-- Orders Management -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-primary mb-3">
-                                <i class="fas fa-clipboard-list fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">مدیریت معاملات</h5>
-                            <p class="card-text">مشاهده و مدیریت تمامی معاملات مشتریان</p>
-                            <a href="@Url.Action("Index", "Orders")" class="btn btn-primary">مشاهده معاملات</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Create New Order -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-success mb-3">
-                                <i class="fas fa-plus-circle fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">ثبت معامله جدید</h5>
-                            <p class="card-text">ایجاد معامله خرید یا فروش ارز</p>
-                            <a href="@Url.Action("Create", "Orders")" class="btn btn-success">ثبت معامله</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Customer Management -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-info mb-3">
-                                <i class="fas fa-users fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">مدیریت مشتریان</h5>
-                            <p class="card-text">مشاهده اطلاعات و مدیریت مشتریان</p>
-                            <a href="@Url.Action("Index", "Customers")" class="btn btn-info">مدیریت مشتریان</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Financial Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <hr class="my-4">Receipts
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-dollar-sign text-success me-2"></i>
-                        امور مالی
-                    </h4>
-                </div>
-            </div>
-
-            <div class="row mb-4">
-                <!-- Bank Account Management -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-primary mb-3">
-                                <i class="fas fa-university fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">مدیریت حساب‌های بانکی</h5>
-                            <p class="card-text">مدیریت حساب‌های بانکی مشتریان و سیستم</p>
-                            <a href="@Url.Action("Index", "BankAccount")" class="btn btn-primary">مدیریت حساب‌ها</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Settlements -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-warning mb-3">
-                                <i class="fas fa-handshake fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">تسویه حساب</h5>
-                            <p class="card-text">مدیریت تسویه‌های مالی و تراکنش‌ها</p>
-                            <a href="@Url.Action("Index", "Settlements")" class="btn btn-warning">تسویه حساب</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Receipts -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-secondary mb-3">
-                                <i class="fas fa-file-invoice fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">مدیریت اسناد حسابداری</h5>
-                            <p class="card-text">بررسی و تایید اسناد حسابداری</p>
-                            <a href="@Url.Action("Index", "AccountingDocuments")" class="btn btn-secondary">مشاهده اسناد</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reports -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-dark mb-3">
-                                <i class="fas fa-chart-bar fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">گزارشات مالی</h5>
-                            <p class="card-text">گزارشات جامع از عملکرد مالی</p>
-                            <a href="@Url.Action("Index", "Reports")" class="btn btn-dark">مشاهده گزارشات</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Exchange Rates Section -->
             <div class="row mb-4">
                 <div class="col-12">
-                    <hr class="my-4">
                     <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-exchange-alt text-info me-2"></i>
-                        نرخ‌های ارز
+                        <i class="fas fa-chart-line text-success me-2"></i>
+                        نرخ‌های لحظه‌ای ارز
                     </h4>
                 </div>
             </div>
 
             <div class="row mb-4">
-                <!-- Exchange Rates Management -->
-                <div class="col-lg-6 col-md-6 mb-4">
+                <!-- Exchange Rates -->
+                <div class="col-lg-12 col-md-12 mb-4">
                     <div class="card h-100">
                         <div class="card-body text-center">
-                            <div class="text-primary mb-3">
+                            <div class="text-warning mb-3">
                                 <i class="fas fa-coins fa-3x"></i>
                             </div>
-                            <h5 class="card-title">مدیریت نرخ‌ها</h5>
-                            <p class="card-text">تنظیم و بروزرسانی نرخ‌های خرید و فروش</p>
-                            <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-primary">مدیریت نرخ‌ها</a>
+                            <h5 class="card-title">نرخ‌های لحظه‌ای ارز</h5>
+                            <p class="card-text">مشاهده آخرین نرخ‌های خرید و فروش ارز</p>
+                            <a href="@Url.Action("Index", "ExchangeRates")" class="btn btn-warning">مشاهده نرخ‌ها</a>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Currency Management -->
-                <div class="col-lg-6 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-success mb-3">
-                                <i class="fas fa-money-bill-wave fa-3x"></i>
+            <!-- Action Footer -->
+            <div class="fixed-bottom bg-white border-top shadow-lg p-3">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-center flex-wrap gap-2">
+                                <!-- Create AccountDocument -->
+                                <a href="@Url.Action("Create", "AccountingDocuments")" class="btn btn-success flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-file-invoice me-2"></i>
+                                    <span class="d-none d-sm-inline">ایجاد سند حسابداری</span>
+                                    <span class="d-sm-none">سند</span>
+                                </a>
+                                
+                                <!-- Create Order -->
+                                <a href="@Url.Action("Create", "Orders")" class="btn btn-primary flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-plus-circle me-2"></i>
+                                    <span class="d-none d-sm-inline">ثبت معامله جدید</span>
+                                    <span class="d-sm-none">معامله</span>
+                                </a>
+                                
+                                <!-- Create Customer -->
+                                <a href="@Url.Action("Create", "Customers")" class="btn btn-info flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-user-plus me-2"></i>
+                                    <span class="d-none d-sm-inline">ثبت مشتری جدید</span>
+                                    <span class="d-sm-none">مشتری</span>
+                                </a>
+                                
+                                <!-- Advanced Manage -->
+                                <a href="@Url.Action("Management", "Home")" class="btn btn-dark flex-fill flex-sm-grow-0">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    <span class="d-none d-sm-inline">مدیریت پیشرفته</span>
+                                    <span class="d-sm-none">مدیریت</span>
+                                </a>
                             </div>
-                            <h5 class="card-title">مدیریت ارزها</h5>
-                            <p class="card-text">مدیریت انواع ارزها و تنظیمات مربوطه</p>
-                            <a href="@Url.Action("Index", "Currencies")" class="btn btn-success">مدیریت ارزها</a>
                         </div>
                     </div>
                 </div>
-
-                <!-- Pool Management -->
-                <div class="col-lg-6 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-info mb-3">
-                                <i class="fas fa-swimming-pool fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">مدیریت صندوق های ارزی</h5>
-                            <p class="card-text">مدیریت موجودی و آمار صندوق های ارزی</p>
-                            <a href="@Url.Action("Index", "PoolManagement")" class="btn btn-info">مدیریت صندوق ها</a>
-                        </div>
-                    </div>
-                </div>
-
-                @if (User.IsInRole("Admin"))
-                {
-                    <!-- Database Management (Admin Only) -->
-                    <div class="col-lg-6 col-md-6 mb-4">
-                        <div class="card h-100">
-                            <div class="card-body text-center">
-                                <div class="text-dark mb-3">
-                                    <i class="fas fa-database fa-3x"></i>
-                                </div>
-                                <h5 class="card-title">مدیریت پایگاه داده</h5>
-                                <p class="card-text">پشتیبان‌گیری، بازیابی و پاکسازی پایگاه داده</p>
-                                <a href="@Url.Action("Index", "Database")" class="btn btn-dark">مدیریت پایگاه داده</a>
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                @if (User.IsInRole("Admin"))
-                {
-                    <!-- System Settings (Admin Only) -->
-                    <div class="col-lg-6 col-md-6 mb-4">
-                        <div class="card h-100">
-                            <div class="card-body text-center">
-                                <div class="text-danger mb-3">
-                                    <i class="fas fa-cog fa-3x"></i>
-                                </div>
-                                <h5 class="card-title">تنظیمات سیستم</h5>
-                                <p class="card-text">پیکربندی عمومی سیستم و کمیسیون‌ها</p>
-                                <a href="@Url.Action("Index", "Settings")" class="btn btn-danger">تنظیمات</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Admin Management (SuperAdmin Only) -->
-                    <div class="col-lg-6 col-md-6 mb-4">
-                        <div class="card h-100">
-                            <div class="card-body text-center">
-                                <div class="text-warning mb-3">
-                                    <i class="fas fa-user-shield fa-3x"></i>
-                                </div>
-                                <h5 class="card-title">مدیریت ادمین‌ها</h5>
-                                <p class="card-text">مدیریت کاربران ادمین و نقش‌های آنها</p>
-                                <a href="@Url.Action("ManageAdmins", "AdminManagement")" class="btn btn-warning">مدیریت ادمین‌ها</a>
-                            </div>
-                        </div>
-                    </div>
-                }
             </div>
         }
         else if (User.IsInRole("Customer"))

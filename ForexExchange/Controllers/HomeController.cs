@@ -78,6 +78,12 @@ public class HomeController : Controller
         return View();
     }
 
+    [Authorize(Roles = "Admin,Manager,Staff")]
+    public IActionResult Management()
+    {
+        return View();
+    }
+
     public async Task<IActionResult> PoolWidget()
     {
         var pools = await _poolService.GetAllPoolsAsync();
