@@ -113,12 +113,12 @@
                                                     <input asp-for="Rate" type="number" class="form-control" step="any" min="0"
                                                         id="rateInput" placeholder="نرخ ارز را وارد کنید" />
                                                     <button class="btn btn-outline-secondary" type="button" id="loadSuggestedRateBtn"
-                                                        title="بارگذاری نرخ پیشنهادی">
-                                                        <i class="bi bi-arrow-clockwise"></i>
+                                                        title="بارگذاری نرخ پیشنهادی" disabled>
+                                                        <i class="fas fa-sync-alt"></i>
                                                     </button>
                                                     <button class="btn btn-outline-primary" type="button" id="openCalculatorBtn"
-                                                        title="باز کردن ماشین حساب">
-                                                        <i class="bi bi-calculator"></i>
+                                                        title="باز کردن ماشین حساب" disabled>
+                                                        <i class="fas fa-calculator"></i>
                                                     </button>
                                                 </div>
                                                 <div class="form-text">
@@ -439,10 +439,23 @@
             }
         }
 
+        // Function to update button states based on currency selection
+        function updateButtonStates() {
+            const fromCurrency = document.getElementById('fromCurrencySelect').value;
+            const toCurrency = document.getElementById('toCurrencySelect').value;
+            const hasValidCurrencies = fromCurrency && toCurrency && fromCurrency !== toCurrency;
+            
+            // Enable/disable buttons based on currency selection
+            document.getElementById('loadSuggestedRateBtn').disabled = !hasValidCurrencies;
+            document.getElementById('openCalculatorBtn').disabled = !hasValidCurrencies;
+        }
+
         // Add event listeners
         document.getElementById('fromCurrencySelect').addEventListener('change', function () {
             var fromCurrency = document.getElementById('fromCurrencySelect').value;
             var toCurrency = document.getElementById('toCurrencySelect').value;
+            updateButtonStates(); // Update button states
+            
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
                 loadExchangeRate(fromCurrency, toCurrency);
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
@@ -452,9 +465,12 @@
                 document.getElementById('currencyPoolInfo').style.display = 'none';
             }
         });
+        
         document.getElementById('toCurrencySelect').addEventListener('change', function () {
             var fromCurrency = document.getElementById('fromCurrencySelect').value;
             var toCurrency = document.getElementById('toCurrencySelect').value;
+            updateButtonStates(); // Update button states
+            
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
                 loadExchangeRate(fromCurrency, toCurrency);
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
@@ -529,10 +545,22 @@
             
             // Initialize calculator modal
             calculatorModal = new bootstrap.Modal(document.getElementById('calculatorModal'));
+            
+            // Initialize button states
+            updateButtonStates();
         });
 
         // Calculator event listeners
         document.getElementById('openCalculatorBtn').addEventListener('click', function() {
+            // Double-check currencies are selected (button should be disabled if not)
+            const fromCurrency = document.getElementById('fromCurrencySelect').value;
+            const toCurrency = document.getElementById('toCurrencySelect').value;
+            
+            if (!fromCurrency || !toCurrency || fromCurrency === toCurrency) {
+                alert('لطفا ابتدا ارزهای مبدا و مقصد را انتخاب کنید');
+                return;
+            }
+            
             initializeCalculator();
             calculatorModal.show();
         });
