@@ -659,7 +659,7 @@ namespace ForexExchange.Controllers
                                 CurrencyCode = code,
                                 Balance = amount,
                                 LastUpdated = DateTime.Now,
-                                Notes = "Initial balance updated during customer edit"
+                                Notes = "بروزرسانی موجودی در زمان ویرایش مشتری"
                             });
                         }
                         else
