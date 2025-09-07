@@ -295,18 +295,25 @@ class CurrencyAmountFormatter {
 
         let content = '';
         
-        // Add formatted number with icon
-        if (formattedNumber !== input.value) {
-            content += `<div style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
-                <i class="fas fa-hashtag" style="margin-left: 6px; color: #81C784;"></i>
+        // Add close button at the top
+        content += `<div style="position: absolute; top: 6px; left: 4px; cursor: pointer; color: #ffffff; opacity: 0.7; font-size: 12px; line-height: 1; padding: 4px 4px 6px 4px; border-radius: 2px; z-index: 10;" 
+                    onmouseover="this.style.opacity='1'; this.style.backgroundColor='rgba(255,255,255,0.2)'" 
+                    onmouseout="this.style.opacity='0.7'; this.style.backgroundColor='transparent'"
+                    onclick="this.closest('.currency-tooltip').style.display='none'">
+            <i class="fas fa-times"></i>
+        </div>`;
+        
+        // Add formatted number (with top padding to avoid close button)
+        // Show for any valid number including zero and small numbers
+        if (formattedNumber) {
+            content += `<div style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 20px 20px 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
                 <span style="font-size: 14px;">${formattedNumber}</span>
             </div>`;
         }
 
-        // Add Persian words with icon
+        // Add Persian words (with right padding to avoid close button)
         if (persianWords) {
-            content += `<div style="color: #FFE082; font-size: 12px; line-height: 1.5; padding: 4px 0;">
-                <i class="fas fa-font" style="margin-left: 6px; color: #FFF176;"></i>
+            content += `<div style="color: #FFE082; font-size: 12px; line-height: 1.5; padding: 4px 20px 4px 0;">
                 <span>${persianWords}</span>
             </div>`;
         }
