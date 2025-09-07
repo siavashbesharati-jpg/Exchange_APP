@@ -76,7 +76,21 @@
                 <div class="col-md-6"><strong>جفت ارز:</strong> @Model.FromCurrency?.Code / @Model.ToCurrency?.Code
                 </div>
               
-                <div class="col-md-6"><strong>نرخ تبادل:</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.Rate.ToString("N0") : Model.Rate.ToString("N2"))</div>
+                <div class="col-md-6"><strong>نرخ تبادل:</strong> 
+                    @if (Model.FromCurrency?.Code == "IRR")
+                    {
+                        @* Show reversed rate when FromCurrency is IRR *@
+                        @((1 / Model.Rate).ToString("N0"))
+                    }
+                    else if (Model.ToCurrency?.Code == "IRR")
+                    {
+                        @Model.Rate.ToString("N0")
+                    }
+                    else
+                    {
+                        @Model.Rate.ToString("N2")
+                    }
+                </div>
                 
             </div>
             <div class="row mt-2">

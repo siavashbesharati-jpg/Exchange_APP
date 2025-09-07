@@ -117,7 +117,21 @@
                                         <span class="text-monospace">@item.FromCurrency?.Code / @item.ToCurrency?.Code</span>
                                     </td>
                                     <td>@(item.FromCurrency?.Code == "IRR" ? item.Amount.ToString("N0") : item.Amount.ToString("N2")) @item.FromCurrency?.Code</td>
-                                    <td>@(item.ToCurrency?.Code == "IRR" ? item.Rate.ToString("N0") : item.Rate.ToString("N2"))</td>
+                                    <td>
+                                        @if (item.FromCurrency?.Code == "IRR")
+                                        {
+                                            @* Show reversed rate when FromCurrency is IRR *@
+                                            @((1 / item.Rate).ToString("N0"))
+                                        }
+                                        else if (item.ToCurrency?.Code == "IRR")
+                                        {
+                                            @item.Rate.ToString("N0")
+                                        }
+                                        else
+                                        {
+                                            @item.Rate.ToString("N2")
+                                        }
+                                    </td>
                                     <td>@item.CreatedAt.ToPersianDateTextify()</td>
                                     <td>
                                         <div class="btn-group" role="group">
