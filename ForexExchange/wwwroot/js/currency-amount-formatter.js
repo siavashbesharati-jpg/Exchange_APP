@@ -420,7 +420,7 @@ class CurrencyAmountFormatter {
         // Add formatted number (with top padding to avoid close button)
         // Show for any valid number including zero and small numbers
         if (formattedNumber) {
-            content += `<div style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 20px 20px 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+            content += `<div class="formatted-number" style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 20px 20px 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
                 <span style="font-size: 14px;">${formattedNumber}</span>
             </div>`;
         }
