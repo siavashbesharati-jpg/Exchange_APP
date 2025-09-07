@@ -91,7 +91,6 @@
                                         <th>وضعیت</th>
                                         <th>تعداد دسترسی</th>
                                         <th>آخرین دسترسی</th>
-                                        <th>ایجاد شده توسط</th>
                                         <th>عملیات</th>
                                     </tr>
                                 </thead>
@@ -155,9 +154,7 @@
                                                     <small class="text-muted">-</small>
                                                 }
                                             </td>
-                                            <td>
-                                                <small class="text-muted">@(link.CreatedBy ?? "سیستم")</small>
-                                            </td>
+                                          
                                             <td>
                                                 <div class="btn-group btn-group-sm" role="group">
                                                     @if (link.IsValid)
@@ -273,9 +270,9 @@
                             </button>
                         </div>
                     </div>
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        لطفاً این لینک را در مکان امنی ذخیره کنید. پس از بستن این پنجره، امکان مشاهده مجدد لینک وجود نخواهد داشت.
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        لینک با موفقیت ایجاد شد و در جدول زیر قابل مشاهده است.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -419,10 +416,8 @@
         function closeSuccessModal() {
             document.getElementById('successModal').style.display = 'none';
             document.querySelector('.modal-backdrop').remove();
-            // Refresh page to show the new link in the table
-            setTimeout(function() {
-                window.location.reload();
-            }, 500);
+            // Refresh the current page to show the new link in the table
+            window.location.reload();
         }
     </script>
 }
