@@ -1,0 +1,166 @@
+/* Currency Amount Formatter Styles */
+
+.currency-tooltip {
+    font-family: 'Vazirmatn', sans-serif !important;
+    direction: rtl !important;
+    text-align: right !important;
+    background: linear-gradient(135deg, #333 0%, #444 100%) !important;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.currency-tooltip i {
+    margin-left: 6px;
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* Input focus states for better UX */
+input[data-currency-formatter="true"]:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Visual feedback for formatted inputs */
+input[data-currency-formatter="true"]:not(:placeholder-shown) {
+    background-image: linear-gradient(90deg, transparent 0%, rgba(76, 175, 80, 0.1) 50%, transparent 100%);
+    position: relative;
+}
+
+/* Add instant visual feedback for typing */
+input[data-currency-formatter="true"]:focus:not(:placeholder-shown) {
+    background-image: 
+        linear-gradient(90deg, transparent 0%, rgba(76, 175, 80, 0.15) 50%, transparent 100%),
+        linear-gradient(90deg, rgba(13, 110, 253, 0.1) 0%, transparent 20%, transparent 80%, rgba(13, 110, 253, 0.1) 100%);
+    background-size: 100% 100%, 200% 100%;
+    animation: inputGlow 2s ease-in-out infinite;
+}
+
+@keyframes inputGlow {
+    0%, 100% { 
+        background-position: 0% 0%, -200% 0%; 
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    50% { 
+        background-position: 0% 0%, 200% 0%; 
+        box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+    }
+}
+
+/* Instant feedback icon */
+input[data-currency-formatter="true"][data-formatted-value]:not(:placeholder-shown)::after {
+    content: "�";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.7;
+    pointer-events: none;
+    animation: iconPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% { opacity: 0.7; transform: translateY(-50%) scale(1); }
+    50% { opacity: 1; transform: translateY(-50%) scale(1.1); }
+}
+
+/* Loading state for inputs */
+input[data-currency-formatter="true"].processing {
+    background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Tooltip animation */
+.currency-tooltip {
+    animation: tooltipFadeIn 0.15s ease-out; /* Faster animation */
+    will-change: opacity, transform; /* Optimize for animations */
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px) scale(0.95); /* Reduced movement and scale */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Faster transitions for all elements */
+.currency-tooltip * {
+    transition: all 0.1s ease;
+}
+
+/* Responsive tooltip */
+@media (max-width: 768px) {
+    .currency-tooltip {
+        max-width: 250px !important;
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+    }
+    
+    input[data-currency-formatter="true"] {
+        font-size: 16px; /* Prevent zoom on mobile */
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .currency-tooltip {
+        background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%) !important;
+        color: #ffffff !important;
+        border-color: rgba(255,255,255,0.2);
+    }
+    
+    input[data-currency-formatter="true"]:focus {
+        background-color: rgba(13, 110, 253, 0.15);
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .currency-tooltip {
+        background: #000000 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff;
+    }
+    
+    input[data-currency-formatter="true"]:focus {
+        border: 2px solid #0066cc;
+    }
+}
+
+/* RTL specific adjustments */
+[dir="rtl"] .currency-tooltip {
+    text-align: right;
+}
+
+[dir="rtl"] .currency-tooltip i {
+    margin-left: 6px;
+    margin-right: 0;
+}
+
+/* Accessibility improvements */
+input[data-currency-formatter="true"]:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    .currency-tooltip,
+    input[data-currency-formatter="true"] {
+        animation: none !important;
+        transition: none !important;
+    }
+}
