@@ -1,7 +1,7 @@
 @model List<ForexExchange.Models.CurrencyPool>
 @using ForexExchange.Services
 
-<div class="card mb-4 shadow-sm">
+<div class="card  shadow-sm">
     <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
         <div>
             <i class="bi bi-bank2 me-2"></i>
@@ -46,10 +46,10 @@
                         : 0m;
                     var balancePercent = (int)Math.Round(balancePercentDec, MidpointRounding.AwayFromZero);
 
-                    <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
+                    <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
                         <div class="card h-100 border-0 shadow-sm pool-card" data-currency="@pool.Currency?.Code">
                             <!-- Currency Header -->
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <div class="card-header bg-light d-flex justify-content-center align-items-center">
                                 <div class="d-flex align-items-center">
                                     <span class="currency-flag me-2" style="font-size: 1.5em;">
                                         @{
@@ -67,12 +67,11 @@
                                         }
                                         @flagEmoji
                                     </span>
-                                    <div>
+                                    <div class="text-center">
                                         <h6 class="mb-0 fw-bold">@pool.Currency?.PersianName</h6>
-                                        <small class="text-muted">@pool.Currency?.Code</small>
                                     </div>
                                 </div>
-                                <span class="badge bg-@riskColorClass risk-badge">
+                                <span class="badge bg-@riskColorClass risk-badge position-absolute" style="top: 8px; right: 8px;">
                                     @switch (pool.RiskLevel)
                                     {
                                         case ForexExchange.Models.PoolRiskLevel.Low: <text><i class="bi bi-shield-check"></i> کم</text> break;
@@ -240,126 +239,4 @@
 }
 </style>
 
-<script>
-let autoRefreshInterval = null;
-let isAutoRefreshActive = false;
 
-function refreshPoolWidget() {
-    const container = $('#pool-widget-container');
-    const refreshBtn = container.find('button[onclick="refreshPoolWidget()"]');
-
-    // Add loading state
-    container.addClass('refreshing');
-    refreshBtn.prop('disabled', true).html('<i class="bi bi-arrow-clockwise spinning"></i>');
-
-    $.get('/Home/PoolWidget', function(data) {
-        container.html(data);
-        $('#pool-last-update').html('<i class="bi bi-clock-history me-1"></i>' + new Date().toLocaleTimeString('fa-IR'));
-
-        // Show success feedback
-        showNotification('صندوق  ارزی بروزرسانی شد', 'success');
-    }).fail(function(xhr, status, error) {
-        console.error('خطا در بروزرسانی ویجت صندوق :', error);
-        showNotification('خطا در بروزرسانی صندوق  ارزی', 'error');
-    }).always(function() {
-        // Remove loading state
-        container.removeClass('refreshing');
-        refreshBtn.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i>');
-    });
-}
-
-function toggleAutoRefresh() {
-    const button = $('#auto-refresh-toggle');
-    const icon = button.find('i');
-
-    if (isAutoRefreshActive) {
-        clearInterval(autoRefreshInterval);
-        isAutoRefreshActive = false;
-        icon.removeClass('bi-stop-circle').addClass('bi-play-circle');
-        button.removeClass('btn-success').addClass('btn-outline-light');
-        button.attr('title', 'بروزرسانی خودکار');
-        showNotification('بروزرسانی خودکار متوقف شد', 'info');
-    } else {
-        autoRefreshInterval = setInterval(refreshPoolWidget, 30000); // Refresh every 30 seconds
-        isAutoRefreshActive = true;
-        icon.removeClass('bi-play-circle').addClass('bi-stop-circle');
-        button.removeClass('btn-outline-light').addClass('btn-success');
-        button.attr('title', 'توقف بروزرسسانی خودکار');
-        showNotification('بروزرسانی خودکار فعال شد', 'success');
-    }
-}
-
-function showPoolDetails(currencyCode) {
-    // Create a modal or redirect to detailed view
-    // For now, we'll show a simple alert with pool information
-    const poolCard = $(`.pool-card[data-currency="${currencyCode}"]`);
-    const currencyName = poolCard.find('h6').text();
-    const balance = poolCard.find('.balance-amount h4').text();
-    const riskBadge = poolCard.find('.risk-badge').text();
-
-    // You can replace this with a proper modal implementation
-    alert(`جزئیات صندوق  ${currencyName} (${currencyCode}):\n\n` +
-          `موجودی: ${balance}\n` +
-          `سطح ریسک: ${riskBadge}\n\n` +
-          `برای مشاهده جزئیات بیشتر به صفحه نرخ‌های ارز مراجعه کنید.`);
-
-    // Alternative: Redirect to exchange rates page with filter
-    // window.location.href = `/ExchangeRates/Index?currency=${currencyCode}`;
-}
-
-function showNotification(message, type = 'info') {
-    // Create a simple notification system
-    const notification = $(`
-        <div class="alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show position-fixed"
-             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-            <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `);
-
-    $('body').append(notification);
-
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        notification.alert('close');
-    }, 5000);
-}
-
-// Add spinning animation for refresh icon
-const style = document.createElement('style');
-style.textContent = `
-    .spinning {
-        animation: spin 1s linear infinite;
-    }
-    @@keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-`;
-document.head.appendChild(style);
-
-// Initialize tooltips
-$(document).ready(function() {
-    // Initialize Bootstrap tooltips if available
-    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-        $('[title]').tooltip();
-    }
-
-    // Add hover effects for better interactivity
-    $('.pool-card').hover(
-        function() {
-            $(this).addClass('shadow-lg');
-        },
-        function() {
-            $(this).removeClass('shadow-lg');
-        }
-    );
-
-    // Add click tracking for analytics (optional)
-    $('.quick-actions .btn').click(function() {
-        const action = $(this).attr('title') || $(this).text();
-        console.log(`Pool action clicked: ${action}`);
-    });
-});
-</script>

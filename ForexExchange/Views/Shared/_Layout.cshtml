@@ -215,35 +215,42 @@
         @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
         {
             <!-- Admin Action Footer -->
-            <div class="fixed-bottom bg-white border-top shadow-lg p-3">
+            <div class="fixed-bottom bg-light border-top shadow-lg p-3" style="border-top: 3px solid #00000014   !important;">
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-12">
                             <div class="d-flex justify-content-center flex-wrap gap-2">
-                                <!-- Create AccountDocument -->
-                                <a href="@Url.Action("Create", "AccountingDocuments")" class="btn btn-success flex-fill flex-sm-grow-0">
-                                    <i class="fas fa-file-invoice me-2"></i>
-                                    <span class="d-none d-sm-inline">ایجاد سند حسابداری</span>
-                                    <span class="d-sm-none">سند</span>
+                                <!-- Back to Dashboard -->
+                                <a href="@Url.Action("Dashboard", "Home")" class="btn btn-secondary btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" style="background-color: #6c757d; border-color: #6c757d; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(108, 117, 125, 0.5); transform: scale(1.05);" : "")">
+                                    <i class="fas fa-tachometer-alt me-1"></i>
+                                    <span class="d-none d-sm-inline"> داشبورد</span>
+                                    <span class="d-sm-none">داشبورد</span>
+                                </a>
+                                
+                                <!-- Add AccountDocument -->
+                                <a href="@Url.Action("Upload", "AccountingDocuments")" class="btn btn-success btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Upload" && ViewContext.RouteData.Values["controller"]?.ToString() == "AccountingDocuments" ? "active" : "")" style="background-color: #28a745; border-color: #28a745; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Upload" && ViewContext.RouteData.Values["controller"]?.ToString() == "AccountingDocuments" ? "box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); transform: scale(1.05);" : "")">
+                                    <i class="fas fa-file-invoice me-1"></i>
+                                    <span class="d-none d-sm-inline">ثبت سند</span>
+                                    <span class="d-sm-none">ثبت</span>
                                 </a>
                                 
                                 <!-- Create Order -->
-                                <a href="@Url.Action("Create", "Orders")" class="btn btn-primary flex-fill flex-sm-grow-0">
-                                    <i class="fas fa-plus-circle me-2"></i>
+                                <a href="@Url.Action("Create", "Orders")" class="btn btn-primary btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "active" : "")" style="background-color: #007bff; border-color: #007bff; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); transform: scale(1.05);" : "")">
+                                    <i class="fas fa-plus-circle me-1"></i>
                                     <span class="d-none d-sm-inline">ثبت معامله جدید</span>
                                     <span class="d-sm-none">معامله</span>
                                 </a>
                                 
                                 <!-- Create Customer -->
-                                <a href="@Url.Action("Create", "Customers")" class="btn btn-info flex-fill flex-sm-grow-0">
-                                    <i class="fas fa-user-plus me-2"></i>
+                                <a href="@Url.Action("Create", "Customers")" class="btn btn-info btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "active" : "")" style="background-color: #17a2b8; border-color: #17a2b8; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "box-shadow: 0 0 10px rgba(23, 162, 184, 0.5); transform: scale(1.05);" : "")">
+                                    <i class="fas fa-user-plus me-1"></i>
                                     <span class="d-none d-sm-inline">ثبت مشتری جدید</span>
                                     <span class="d-sm-none">مشتری</span>
                                 </a>
                                 
                                 <!-- Advanced Manage -->
-                                <a href="@Url.Action("Management", "Home")" class="btn btn-dark flex-fill flex-sm-grow-0">
-                                    <i class="fas fa-cogs me-2"></i>
+                                <a href="@Url.Action("Management", "Home")" class="btn btn-warning btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" style="background-color: #ffc107; border-color: #ffc107; color: #212529; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); transform: scale(1.05);" : "")">
+                                    <i class="fas fa-cogs me-1"></i>
                                     <span class="d-none d-sm-inline">مدیریت پیشرفته</span>
                                     <span class="d-sm-none">مدیریت</span>
                                 </a>
