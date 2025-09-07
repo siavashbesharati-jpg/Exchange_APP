@@ -968,6 +968,32 @@ namespace ForexExchange.Controllers
             return RedirectToAction("ShareableLinks", new { id = customerId });
         }
 
+        // AJAX: Get customer balance data
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerBalance(int id)
+        {
+            try
+            {
+                var balances = await _context.CustomerBalances
+                    .Where(cb => cb.CustomerId == id)
+                    .Select(cb => new
+                    {
+                        currencyCode = cb.CurrencyCode,
+                        balance = cb.Balance,
+                        lastUpdated = cb.LastUpdated,
+                        notes = cb.Notes
+                    })
+                    .ToListAsync();
+
+                return Json(balances);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching customer balance for customer {CustomerId}", id);
+                return Json(new { error = "خطا در بارگذاری اطلاعات موجودی" });
+            }
+        }
+
         private bool CustomerExists(int id)
         {
             return _context.Customers.Any(e => e.Id == id);

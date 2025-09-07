@@ -34,19 +34,6 @@
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label asp-for="Email" class="form-label">ایمیل (اختیاری)</label>
-                                <input asp-for="Email" type="text" class="form-control" placeholder="example@email.com" />
-                                <span asp-validation-for="Email" class="text-danger"></span>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label asp-for="NationalId" class="form-label">کد ملی</label>
-                                <input asp-for="NationalId" type="text" class="form-control" placeholder="کد ملی 10 رقمی" maxlength="10" />
-                                <span asp-validation-for="NationalId" class="text-danger"></span>
-                            </div>
-                        </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -129,18 +116,6 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script>
-        // National ID validation
-        var nationalIdInput = document.querySelector('input[name="NationalId"]');
-        if (nationalIdInput) {
-            nationalIdInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-                if (value.length > 10) {
-                    value = value.substring(0, 10);
-                }
-                e.target.value = value;
-            });
-        }
-
         // Show confirmation before saving
         document.querySelector('form').addEventListener('submit', function(e) {
             if (!confirm('آیا از ذخیره تغییرات اطمینان دارید؟')) {
@@ -149,42 +124,21 @@
         });
         
         // Password confirmation validation
-        document.querySelector('input[name="ConfirmNewPassword"]').addEventListener('input', function(e) {
-            var password = document.querySelector('input[name="NewPassword"]').value;
-            var confirmPassword = e.target.value;
-            
-            if (password !== confirmPassword) {
-                e.target.setCustomValidity('رمز عبور و تکرار آن باید یکسان باشند');
-            } else {
-                e.target.setCustomValidity('');
-            }
-        });
-
-        // Email validation - make it optional with custom regex
-        document.querySelector('input[name="Email"]').addEventListener('input', function(e) {
-            var email = e.target.value.trim();
-            
-            // If email is empty, it's valid (optional)
-            if (email === '') {
-                e.target.setCustomValidity('');
-                return;
-            }
-            
-            // If email has value, validate with regex
-            var emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
-            if (!emailRegex.test(email)) {
-                e.target.setCustomValidity('فرمت ایمیل صحیح نیست');
-            } else {
-                e.target.setCustomValidity('');
-            }
-        });
-
-        // Remove all validation attributes from email field to make it truly optional
-        var emailField = document.querySelector('input[name="Email"]');
-        emailField.removeAttribute('required');
-        emailField.removeAttribute('data-val-required');
-        emailField.removeAttribute('data-val-email');
-        emailField.removeAttribute('data-val-email-msg');
+        var newPasswordInput = document.querySelector('input[name="NewPassword"]');
+        var confirmNewPasswordInput = document.querySelector('input[name="ConfirmNewPassword"]');
+        
+        if (newPasswordInput && confirmNewPasswordInput) {
+            confirmNewPasswordInput.addEventListener('input', function(e) {
+                var password = newPasswordInput.value;
+                var confirmPassword = e.target.value;
+                
+                if (password !== confirmPassword) {
+                    e.target.setCustomValidity('رمز عبور و تکرار آن باید یکسان باشند');
+                } else {
+                    e.target.setCustomValidity('');
+                }
+            });
+        }
 
         // Initial balances - dynamic rows and prefill
         (function() {

@@ -25,9 +25,6 @@
                             <tr>
                                 <th>نام و نام خانوادگی</th>
                                 <th>شماره تلفن</th>
-                                <th>ایمیل</th>
-                                <th>کد ملی</th>
-                                <th>تاریخ عضویت</th>
                                 <th>تعداد معاملات</th>
                                 <th>عملیات</th>
                             </tr>
@@ -47,40 +44,17 @@
                                         </a>
                                     </td>
                                     <td>
-                                        @if (!string.IsNullOrEmpty(customer.Email))
-                                        {
-                                            <a href="mailto:@customer.Email" class="text-decoration-none">
-                                                @customer.Email
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">-</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (!string.IsNullOrEmpty(customer.NationalId))
-                                        {
-                                            @customer.NationalId
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">-</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">
-                                            @customer.CreatedAt.ToString("yyyy/MM/dd")
-                                        </small>
-                                    </td>
-                                    <td>
                                         <span class="badge bg-info">
                                             @customer.Orders.Count()
                                         </span>
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                           
+                                            <button type="button" class="btn btn-sm btn-outline-success" 
+                                                    onclick="showCustomerBalance(@customer.Id, '@customer.FullName')"
+                                                    title="مشاهده موجودی">
+                                                <i class="fas fa-wallet"></i>
+                                            </button>
                                             <a asp-action="Profile" asp-route-id="@customer.Id" 
                                                class="btn btn-sm btn-outline-info" 
                                                title="پروفایل مشتری">
@@ -145,6 +119,59 @@
     }
 </div>
 
+<!-- Customer Balance Modal -->
+<div class="modal fade" id="customerBalanceModal" tabindex="-1" aria-labelledby="customerBalanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-success text-white">
+                <h5 class="modal-title" id="customerBalanceModalLabel">
+                    <i class="fas fa-wallet me-2"></i>موجودی مشتری
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="balanceLoadingSpinner" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">در حال بارگذاری...</span>
+                    </div>
+                    <p class="mt-2 text-muted">در حال بارگذاری موجودی...</p>
+                </div>
+                <div id="balanceContent" style="display: none;">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <div>
+                                    <strong>نام مشتری:</strong> <span id="customerNameDisplay"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-coins me-2"></i>موجودی به تفکیک ارز
+                            </h6>
+                            <div id="balanceList">
+                                <!-- Balance items will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="balanceError" style="display: none;">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطا در بارگذاری اطلاعات موجودی
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script>
@@ -169,6 +196,150 @@
                     }
                 }
             }
+        }
+
+        // Show customer balance modal
+        function showCustomerBalance(customerId, customerName) {
+            // Set customer name in modal
+            document.getElementById('customerNameDisplay').textContent = customerName;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('customerBalanceModal'));
+            modal.show();
+            
+            // Show loading state
+            document.getElementById('balanceLoadingSpinner').style.display = 'block';
+            document.getElementById('balanceContent').style.display = 'none';
+            document.getElementById('balanceError').style.display = 'none';
+            
+            // Fetch balance data
+            fetch(`/Customers/GetCustomerBalance/${customerId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayCustomerBalance(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching balance:', error);
+                    showBalanceError();
+                });
+        }
+
+        // Display customer balance data
+        function displayCustomerBalance(balances) {
+            const balanceList = document.getElementById('balanceList');
+            
+            // Hide loading spinner
+            document.getElementById('balanceLoadingSpinner').style.display = 'none';
+            
+            if (!balances || balances.length === 0) {
+                balanceList.innerHTML = `
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-info-circle me-2"></i>
+                        هیچ موجودی برای این مشتری ثبت نشده است
+                    </div>
+                `;
+            } else {
+                let html = '<div class="row">';
+                
+                balances.forEach(balance => {
+                    const balanceClass = balance.balance > 0 ? 'success' : 
+                                       balance.balance < 0 ? 'danger' : 'secondary';
+                    const balanceIcon = balance.balance > 0 ? 'fa-arrow-up' : 
+                                      balance.balance < 0 ? 'fa-arrow-down' : 'fa-minus';
+                    const balanceStatus = balance.balance > 0 ? 'اعتبار' : 
+                                        balance.balance < 0 ? 'بدهی' : 'تسویه';
+                    
+                    html += `
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-${balanceClass}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="card-title mb-1">
+                                                <i class="fas fa-coins me-2 text-${balanceClass}"></i>
+                                                ${balance.currencyCode}
+                                            </h6>
+                                            <p class="card-text mb-1">
+                                                <strong class="h5 text-${balanceClass}">
+                                                    ${Math.abs(balance.balance).toLocaleString('fa-IR')}
+                                                </strong>
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="fas ${balanceIcon} me-1"></i>
+                                                ${balanceStatus}
+                                            </small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-${balanceClass} fs-6">
+                                                ${balance.currencyCode}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    ${balance.notes ? `
+                                        <hr class="my-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-sticky-note me-1"></i>
+                                            ${balance.notes}
+                                        </small>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                
+                // Add summary
+                const totalBalances = balances.length;
+                const creditBalances = balances.filter(b => b.balance > 0).length;
+                const debtBalances = balances.filter(b => b.balance < 0).length;
+                
+                html += `
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-chart-pie me-2"></i>خلاصه موجودی
+                                    </h6>
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <div class="fw-bold text-primary">${totalBalances}</div>
+                                            <small class="text-muted">کل ارزها</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="fw-bold text-success">${creditBalances}</div>
+                                            <small class="text-muted">اعتبار</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="fw-bold text-danger">${debtBalances}</div>
+                                            <small class="text-muted">بدهی</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                balanceList.innerHTML = html;
+            }
+            
+            // Show content
+            document.getElementById('balanceContent').style.display = 'block';
+        }
+
+        // Show balance error
+        function showBalanceError() {
+            document.getElementById('balanceLoadingSpinner').style.display = 'none';
+            document.getElementById('balanceContent').style.display = 'none';
+            document.getElementById('balanceError').style.display = 'block';
         }
     </script>
 }
