@@ -290,7 +290,7 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                await _currencyPoolService.CleanPullAsync();
+                await _currencyPoolService.CleanPoolAsync();
                 TempData["Success"] = "تمام صندوق های ارز پاک شدند";
             }
             catch (Exception ex)

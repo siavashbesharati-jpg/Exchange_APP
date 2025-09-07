@@ -136,11 +136,11 @@ namespace ForexExchange.Services
         Task ProcessAccountingDocumentAsync(AccountingDocument document);
 
         /// <summary>
-        /// Clean all pools (set to zero)
+        /// Clean all pools (reset to zero)
         /// پاکسازی تمام صندوق ها (تنظیم روی صفر)
         /// </summary>
         /// <returns>Success status</returns>
-        Task<bool> CleanPullAsync();
+        Task<bool> CleanPoolAsync();
     }
 
     /// <summary>

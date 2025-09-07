@@ -372,38 +372,45 @@ namespace ForexExchange.Services
                 throw;
             }
         }
-        
-          /// <summary>
-        /// Direct pool update for admin operations
-        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
+
+        /// <summary>
+        /// Clean all pools - reset to zero for admin operations
+        /// پاکسازی تمام صندوق ها - بازنشانی به صفر برای عملیات ادمین
         /// </summary>
-        public async Task<bool> CleanPullAsync()
+        public async Task<bool> CleanPoolAsync()
         {
             try
             {
-                // Update risk level
+                // Get all pools and reset them to zero
                 var pools = await _context.CurrencyPools.ToListAsync();
+
+                _logger.LogInformation($"Starting to clean {pools.Count} currency pools");
 
                 foreach (var pool in pools)
                 {
+                    _logger.LogInformation($"Cleaning pool for {pool.CurrencyCode}: Balance={pool.Balance}, TotalBought={pool.TotalBought}, TotalSold={pool.TotalSold}");
+                    
                     pool.ActiveBuyOrderCount = 0;
                     pool.ActiveSellOrderCount = 0;
+                    pool.TotalBought = 0;
+                    pool.TotalSold = 0;
                     pool.RiskLevel = PoolRiskLevel.Low;
                     pool.Balance = 0;
                     pool.LastUpdated = DateTime.Now;
-                     _context.CurrencyPools.Update(pool);
-                   
+                    
+                    _context.CurrencyPools.Update(pool);
+                    
+                    _logger.LogInformation($"Pool {pool.CurrencyCode} cleaned: All values set to 0");
                 }
+
+                var result = await _context.SaveChangesAsync();
+                _logger.LogInformation($"Successfully cleaned {pools.Count} pools, {result} records updated");
                 
-               
-                await _context.SaveChangesAsync();
-                
-                _logger.LogInformation($"Pool set to zero ");
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error in clean pools");
+                _logger.LogError(ex, "Error in cleaning pools");
                 throw;
             }
         }
