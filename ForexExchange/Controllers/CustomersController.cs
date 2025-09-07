@@ -428,7 +428,7 @@ namespace ForexExchange.Controllers
                             CurrencyCode = code,
                             Balance = amount,
                             LastUpdated = DateTime.Now,
-                            Notes = "Initial balance set during customer creation"
+                            Notes = "موجودی اولیه در زمان ثبت مشتری"
                         });
                     }
                     

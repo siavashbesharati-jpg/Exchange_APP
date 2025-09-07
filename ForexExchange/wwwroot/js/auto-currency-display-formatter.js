@@ -74,11 +74,8 @@ class AutoCurrencyDisplayFormatter {
         allElements.forEach(element => {
             if (this.processedElements.has(element)) return;
             
-            // Skip input elements (they're handled by the input formatter)
-            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') return;
-            
-            // Skip script and style elements
-            if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') return;
+            // Use the centralized skip logic
+            if (this.shouldSkipElement(element)) return;
             
             // Only process leaf elements (elements with text content but no element children)
             const hasOnlyTextNodes = Array.from(element.childNodes).every(child => 
@@ -99,6 +96,9 @@ class AutoCurrencyDisplayFormatter {
     processElement(element) {
         const textContent = element.textContent?.trim();
         if (!textContent || this.processedElements.has(element)) return;
+
+        // Skip elements that should not be formatted
+        if (this.shouldSkipElement(element)) return;
 
         // Pattern to match numbers that might be currency values
         // Matches: 1234567, 1234567.89, 1,234,567.89, but not phone numbers, dates, etc.
@@ -149,6 +149,43 @@ class AutoCurrencyDisplayFormatter {
         }
 
         this.processedElements.add(element);
+    }
+
+    /**
+     * Check if an element should be skipped from formatting
+     * @param {HTMLElement} element - Element to check
+     * @returns {boolean} True if element should be skipped
+     */
+    shouldSkipElement(element) {
+        // Skip input elements (they're handled by the input formatter)
+        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') return true;
+        
+        // Skip script and style elements
+        if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') return true;
+        
+        // Skip phone number links
+        if (element.tagName === 'A' && element.href && element.href.startsWith('tel:')) return true;
+        
+        // Skip elements inside phone number links
+        let parent = element.parentElement;
+        while (parent) {
+            if (parent.tagName === 'A' && parent.href && parent.href.startsWith('tel:')) return true;
+            parent = parent.parentElement;
+        }
+        
+        // Skip elements with phone-related classes or attributes
+        const phoneIndicators = ['phone', 'tel', 'mobile', 'contact'];
+        const classList = Array.from(element.classList || []);
+        const id = element.id || '';
+        
+        for (const indicator of phoneIndicators) {
+            if (classList.some(cls => cls.toLowerCase().includes(indicator)) ||
+                id.toLowerCase().includes(indicator)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
