@@ -98,6 +98,7 @@ class CurrencyAmountFormatter {
             z-index: 1060;
             display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            pointer-events: none;
             font-family: 'Vazirmatn', sans-serif;
             direction: rtl;
             text-align: right;
@@ -106,6 +107,7 @@ class CurrencyAmountFormatter {
 
         // Add arrow
         const arrow = document.createElement('div');
+        arrow.className = 'tooltip-arrow';
         arrow.style.cssText = `
             position: absolute;
             top: 100%;
@@ -143,20 +145,97 @@ class CurrencyAmountFormatter {
     positionTooltip(input, tooltip) {
         const rect = input.getBoundingClientRect();
         const modalParent = input.closest('.modal, .popup, .dropdown-menu');
+        const tooltipHeight = tooltip.offsetHeight; // Now we get actual height
+        const tooltipWidth = tooltip.offsetWidth; // Now we get actual width
+        
+        let left, top;
         
         if (modalParent) {
             // Position relative to modal container
             const modalRect = modalParent.getBoundingClientRect();
+            const relativeLeft = rect.left - modalRect.left;
+            const relativeTop = rect.top - modalRect.top;
+            
+            // Calculate optimal position within modal
+            left = Math.max(10, Math.min(relativeLeft + (rect.width / 2) - (tooltipWidth / 2), modalRect.width - tooltipWidth - 10));
+            
+            // Try to position above input, but if not enough space, position below
+            if (relativeTop > tooltipHeight + 15) {
+                // Position above
+                top = relativeTop - tooltipHeight - 10;
+                tooltip.setAttribute('data-placement', 'top');
+            } else {
+                // Position below
+                top = relativeTop + rect.height + 10;
+                tooltip.setAttribute('data-placement', 'bottom');
+            }
+            
             tooltip.style.position = 'absolute';
-            tooltip.style.left = (rect.left - modalRect.left + (rect.width / 2) - 150) + 'px';
-            tooltip.style.top = (rect.top - modalRect.top - tooltip.offsetHeight - 10) + 'px';
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
         } else {
             // Position relative to viewport (original behavior)
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+            const viewportHeight = window.innerHeight;
             
-            tooltip.style.left = (rect.left + scrollLeft + (rect.width / 2) - 150) + 'px';
-            tooltip.style.top = (rect.top + scrollTop - tooltip.offsetHeight - 10) + 'px';
+            // Calculate optimal horizontal position
+            left = Math.max(10, Math.min(rect.left + scrollLeft + (rect.width / 2) - (tooltipWidth / 2), window.innerWidth - tooltipWidth - 10));
+            
+            // Try to position above input, but if not enough space, position below
+            if (rect.top > tooltipHeight + 15) {
+                // Position above
+                top = rect.top + scrollTop - tooltipHeight - 10;
+                tooltip.setAttribute('data-placement', 'top');
+            } else {
+                // Position below
+                top = rect.top + scrollTop + rect.height + 10;
+                tooltip.setAttribute('data-placement', 'bottom');
+            }
+            
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+        
+        // Update arrow position based on placement
+        this.updateArrowPosition(tooltip, tooltip.getAttribute('data-placement'));
+    }
+
+    /**
+     * Update arrow position based on tooltip placement
+     * @param {HTMLElement} tooltip - Tooltip element
+     * @param {string} placement - 'top' or 'bottom'
+     */
+    updateArrowPosition(tooltip, placement) {
+        const arrow = tooltip.querySelector('.tooltip-arrow');
+        if (!arrow) return;
+        
+        if (placement === 'bottom') {
+            // Arrow pointing up (tooltip below input)
+            arrow.style.cssText = `
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 0;
+                height: 0;
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-bottom: 6px solid #333;
+            `;
+        } else {
+            // Arrow pointing down (tooltip above input) - default
+            arrow.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 0;
+                height: 0;
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 6px solid #333;
+            `;
         }
     }
 
@@ -170,8 +249,16 @@ class CurrencyAmountFormatter {
             // For rapid typing, use immediate formatting for better UX
             if (e.inputType === 'insertText' || e.inputType === 'deleteContentBackward') {
                 this.formatInput(input); // Immediate formatting for typing
+                // Update tooltip if visible and focused
+                if (document.activeElement === input && input.value) {
+                    this.showTooltip(input);
+                }
             } else {
                 this.debounceFormat(input, 50); // Reduced delay for other input types
+                // Update tooltip for other input types too
+                if (document.activeElement === input && input.value) {
+                    setTimeout(() => this.showTooltip(input), 60);
+                }
             }
         });
 
@@ -183,9 +270,10 @@ class CurrencyAmountFormatter {
             }
         });
 
-        // Focus event (removed automatic tooltip show)
+        // Focus event to show tooltip
         input.addEventListener('focus', () => {
-            this.formatInput(input); // Format immediately on focus only
+            this.formatInput(input); // Format immediately on focus
+            this.showTooltip(input);
         });
 
         // Blur event to hide tooltip
@@ -206,7 +294,19 @@ class CurrencyAmountFormatter {
             }
         });
 
-        // Removed mouse enter/leave events for hover behavior
+        // Mouse enter for hover behavior
+        input.addEventListener('mouseenter', () => {
+            if (input.value) {
+                this.formatInput(input); // Ensure latest formatting
+                this.showTooltip(input);
+            }
+        });
+
+        input.addEventListener('mouseleave', () => {
+            if (document.activeElement !== input) {
+                this.hideTooltip(input);
+            }
+        });
 
         // Window resize to reposition tooltips
         window.addEventListener('resize', () => {
@@ -310,7 +410,7 @@ class CurrencyAmountFormatter {
         let content = '';
         
         // Add close button at the top
-        content += `<div style="position: absolute; top: 6px; left: 4px; cursor: pointer; color: #ffffff; opacity: 0.7; font-size: 12px; line-height: 1; padding: 4px 4px 6px 4px; border-radius: 2px; z-index: 10;" 
+        content += `<div style="position: absolute; top: 6px; left: 4px; cursor: pointer; color: #ffffff; opacity: 0.7; font-size: 12px; line-height: 1; padding: 4px 4px 6px 4px; border-radius: 2px; z-index: 10; pointer-events: auto;" 
                     onmouseover="this.style.opacity='1'; this.style.backgroundColor='rgba(255,255,255,0.2)'" 
                     onmouseout="this.style.opacity='0.7'; this.style.backgroundColor='transparent'"
                     onclick="this.closest('.currency-tooltip').style.display='none'">
@@ -363,19 +463,24 @@ class CurrencyAmountFormatter {
         const tooltip = this.tooltips.get(input);
         if (!tooltip || !input.value) return;
 
-        this.positionTooltip(input, tooltip);
+        // Show tooltip first to get accurate dimensions
         tooltip.style.display = 'block';
-        
-        // Faster fade-in animation
         tooltip.style.opacity = '0';
-        tooltip.style.transform = 'translateY(5px)'; // Reduced movement
-        tooltip.style.transition = 'opacity 0.15s ease, transform 0.15s ease'; // Faster transition
         
-        // Use requestAnimationFrame for smoother animation
-        requestAnimationFrame(() => {
-            tooltip.style.opacity = '1';
-            tooltip.style.transform = 'translateY(0)';
-        });
+        // Position after tooltip is rendered
+        setTimeout(() => {
+            this.positionTooltip(input, tooltip);
+            
+            // Faster fade-in animation
+            tooltip.style.transform = 'translateY(5px)'; // Reduced movement
+            tooltip.style.transition = 'opacity 0.15s ease, transform 0.15s ease'; // Faster transition
+            
+            // Use requestAnimationFrame for smoother animation
+            requestAnimationFrame(() => {
+                tooltip.style.opacity = '1';
+                tooltip.style.transform = 'translateY(0)';
+            });
+        }, 10);
     }
 
     /**
