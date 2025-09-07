@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <title>Currency Formatting Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-case { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .before { color: #red; }
+        .after { color: #green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Currency Formatting Test - Decimal Point Removal</h1>
+    
+    <h2>Test Cases:</h2>
+    
+    <div class="test-case">
+        <strong>Whole Number:</strong><br>
+        Before: <span class="before">1234.00</span><br>
+        After: <span class="after">1,234</span> ✅ (decimal removed)
+    </div>
+    
+    <div class="test-case">
+        <strong>Number with Decimals:</strong><br>
+        Before: <span class="before">1234.56</span><br>
+        After: <span class="after">1,234.56</span> ✅ (decimals kept)
+    </div>
+    
+    <div class="test-case">
+        <strong>IRR Currency:</strong><br>
+        Before: <span class="before">5000000.00</span><br>
+        After: <span class="after">5,000,000</span> ✅ (no decimals for IRR)
+    </div>
+    
+    <div class="test-case">
+        <strong>Large Whole Number:</strong><br>
+        Before: <span class="before">999999.00</span><br>
+        After: <span class="after">999,999</span> ✅ (decimal removed)
+    </div>
+    
+    <div class="test-case">
+        <strong>Small Decimal:</strong><br>
+        Before: <span class="before">100.50</span><br>
+        After: <span class="after">100.5</span> ✅ (trailing zero removed)
+    </div>
+
+    <h2>Live Test:</h2>
+    <p>Type a number: <input type="number" id="testInput" step="0.01" placeholder="Enter amount..." /></p>
+    <p>Formatted Result: <span id="result"></span></p>
+
+    <script src="./js/persian-number-converter.js"></script>
+    <script>
+        const converter = new PersianNumberConverter();
+        const input = document.getElementById('testInput');
+        const result = document.getElementById('result');
+        
+        input.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                const formatted = converter.addThousandSeparators(value);
+                result.textContent = formatted;
+                result.style.color = '#28a745';
+                result.style.fontWeight = 'bold';
+            } else {
+                result.textContent = '';
+            }
+        });
+    </script>
+</body>
+</html>

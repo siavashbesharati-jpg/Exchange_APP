@@ -190,10 +190,13 @@ class PersianNumberConverter {
         const number = parseFloat(num);
         if (isNaN(number)) return num.toString();
 
+        // Check if the number is a whole number (no significant decimal part)
+        const isWholeNumber = number % 1 === 0;
+        
         // Use Intl.NumberFormat for proper formatting
         return new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 0,
-            maximumFractionDigits: 8
+            maximumFractionDigits: isWholeNumber ? 0 : 8
         }).format(number);
     }
 

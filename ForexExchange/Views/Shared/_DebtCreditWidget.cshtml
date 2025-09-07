@@ -1,4 +1,5 @@
 @model List<ForexExchange.Models.CustomerDebtCredit>
+@using ForexExchange.Extensions
 
 
     <div class="card-body">
@@ -36,7 +37,7 @@
                                                 <div class="currency-item p-2 rounded @(currencyBalance.Balance >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
                                                     <div class="currency-code fw-bold small">@currencyBalance.CurrencyCode</div>
                                                     <div class="currency-amount @(currencyBalance.Balance >= 0 ? "text-success" : "text-danger") tiny">
-                                                        @(currencyBalance.CurrencyCode == "IRR" ? currencyBalance.Balance.ToString("N0") : currencyBalance.Balance.ToString("N2"))
+                                                        @currencyBalance.Balance.FormatCurrency(currencyBalance.CurrencyCode)
                                                     </div>
                                                 </div>
                                             </div>
@@ -102,7 +103,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="summary-item">
-                                        <div class="summary-value text-warning">@Model.Sum(c => Math.Abs(c.NetBalance)).ToString("N0")</div>
+                                        <div class="summary-value text-warning">@Model.Sum(c => Math.Abs(c.NetBalance)).FormatCurrency()</div>
                                         <div class="summary-label">جمع کل</div>
                                     </div>
                                 </div>

@@ -1,5 +1,6 @@
 @model List<ForexExchange.Models.CurrencyPool>
 @using ForexExchange.Services
+@using ForexExchange.Extensions
 
 <div class="card  shadow-sm">
     <div class="card-header bg-gradient-primary text-black d-flex justify-content-center align-items-center">
@@ -81,7 +82,7 @@
                                     <div class="balance-amount">
                                         <h4 class="text-@balanceColorClass mb-1 fw-bold">
                                             <i class="bi @balanceIcon me-1"></i>
-                                            @pool.Balance
+                                            @pool.Balance.FormatCurrency(pool.CurrencyCode)
                                         </h4>
                                         <small class="text-muted">موجودی فعلی (@pool.Currency?.Symbol)</small>
                                     </div>
@@ -93,13 +94,13 @@
                                 <div class="row g-2 mb-3">
                                     <div class="col-6">
                                         <div class="stat-card bg-success bg-opacity-10 p-2 rounded">
-                                            <div class="text-success fw-bold small">@(pool.CurrencyCode == "IRR" ? pool.TotalBought.ToString("N0") : pool.TotalBought.ToString("N2"))</div>
+                                            <div class="text-success fw-bold small">@pool.TotalBought.FormatCurrency(pool.CurrencyCode)</div>
                                             <div class="text-muted tiny">خرید کل</div>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="stat-card bg-danger bg-opacity-10 p-2 rounded">
-                                            <div class="text-danger fw-bold small">@(pool.CurrencyCode == "IRR" ? pool.TotalSold.ToString("N0") : pool.TotalSold.ToString("N2"))</div>
+                                            <div class="text-danger fw-bold small">@pool.TotalSold.FormatCurrency(pool.CurrencyCode)</div>
                                             <div class="text-muted tiny">فروش کل</div>
                                         </div>
                                     </div>

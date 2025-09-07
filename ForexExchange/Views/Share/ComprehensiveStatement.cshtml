@@ -489,7 +489,7 @@
                             <div class="currency-name">@balance.CurrencyName</div>
                             <div class="currency-code">@balance.CurrencyCode</div>
                             <div class="balance-amount @(balance.Balance > 0 ? "positive" : balance.Balance < 0 ? "negative" : "zero")">
-                                @(balance.CurrencyCode == "IRR" ? balance.Balance.ToString("N0") : balance.Balance.ToString("N2"))
+                                @balance.Balance.FormatCurrency(balance.CurrencyCode)
                             </div>
                             <div class="balance-status @(balance.Balance > 0 ? "positive" : balance.Balance < 0 ? "negative" : "zero")">
                                 @if (balance.Balance > 0)
@@ -517,7 +517,7 @@
                         <div class="balance-card">
                             <div class="currency-code">@balance.CurrencyCode</div>
                             <div class="balance-amount @(balance.Balance > 0 ? "positive" : balance.Balance < 0 ? "negative" : "zero")">
-                                @(balance.CurrencyCode == "IRR" ? balance.Balance.ToString("N0") : balance.Balance.ToString("N2"))
+                                @balance.Balance.FormatCurrency(balance.CurrencyCode)
                             </div>
                             <div class="balance-status @(balance.Balance > 0 ? "positive" : balance.Balance < 0 ? "negative" : "zero")">
                                 @balance.BalanceStatus
@@ -565,8 +565,8 @@
                                     <td>#@order.Id</td>
                                     <td>@order.FromCurrency?.Code</td>
                                     <td>@order.ToCurrency?.Code</td>
-                                    <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</td>
-                                    <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
+                                    <td>@order.Amount.FormatCurrency(order.FromCurrency?.Code)</td>
+                                    <td>@order.Rate.FormatCurrency(order.ToCurrency?.Code)</td>
                                     <td>@order.CreatedAt.ToString("MM/dd")</td>
                                 </tr>
                             }
@@ -625,7 +625,7 @@
                                         }
                                     </td>
                                     <td class="@(doc.PayerType == ForexExchange.Models.PayerType.Customer ? "amount-debit" : "amount-credit")">
-                                        @(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") : doc.Amount.ToString("N2"))
+                                        @doc.Amount.FormatCurrency(doc.CurrencyCode)
                                     </td>
                                     <td>@doc.CurrencyCode</td>
                                     <td>
