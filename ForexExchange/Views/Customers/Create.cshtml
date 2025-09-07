@@ -164,6 +164,18 @@
                 buildOptions(codeInput, code);
                 amountInput.value = amount;
 
+                // Apply currency formatting to the new amount input
+                setTimeout(() => {
+                    if (window.currencyFormatter && typeof window.currencyFormatter.setupInputFormatting === 'function') {
+                        window.currencyFormatter.setupInputFormatting(amountInput);
+                    } else {
+                        // Fallback: trigger a re-scan of all inputs
+                        if (window.currencyFormatter && typeof window.currencyFormatter.setupFormatting === 'function') {
+                            window.currencyFormatter.setupFormatting();
+                        }
+                    }
+                }, 100);
+
                 codeInput.addEventListener('change', function() {
                     if (isDuplicateCode(this)) {
                         alert('این ارز قبلاً اضافه شده است.');
