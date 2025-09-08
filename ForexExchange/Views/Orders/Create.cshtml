@@ -304,7 +304,15 @@
 
             // Pre-fill calculator with main form values
             if (currentAmount) {
-                document.getElementById('calcFromAmount').value = currentAmount; // Amount goes to "From" currency
+                let formattedAmount;
+                if (fromCode.toUpperCase() === 'IRR') {
+                    // IRR: remove decimals
+                    formattedAmount = Math.round(currentAmount);
+                } else {
+                    // Non-IRR: format to 2 decimal places
+                    formattedAmount = parseFloat(currentAmount.toFixed(2));
+                }
+                document.getElementById('calcFromAmount').value = formattedAmount; // Amount goes to "From" currency
             }
 
             if (currentRate && currentRate > 0) {
@@ -356,6 +364,7 @@
                     // rate = 1 foreign currency = X IRR
                     // fromAmount (foreign) = toAmount (IRR) / rate
                     fromAmount = toAmount / rate;
+                    fromAmount = parseFloat(fromAmount.toFixed(2)); // Format to 2 decimal places
                 }
                 
                 // Update from amount input
@@ -387,6 +396,7 @@
                     // rate = 1 foreign currency = X IRR
                     // toAmount (foreign) = fromAmount (IRR) / rate
                     toAmount = fromAmount / rate;
+                    toAmount = parseFloat(toAmount.toFixed(2)); // Format to 2 decimal places
                 } else {
                     // FROM is foreign currency, TO is IRR
                     // rate = 1 foreign currency = X IRR
@@ -452,7 +462,16 @@
 
         // Show calculation result display
         function showCalculationResult(toAmount, fromAmount, rate) {
-            const formula = `${toAmount.toLocaleString()} ${calcToCurrencyCode} × ${rate.toLocaleString()} = ${fromAmount.toLocaleString()} ${calcFromCurrencyCode}`;
+            // Format amounts based on currency type
+            const formattedToAmount = calcToCurrencyCode.toUpperCase() === 'IRR' ? 
+                Math.round(toAmount).toLocaleString() : 
+                parseFloat(toAmount.toFixed(2)).toLocaleString();
+                
+            const formattedFromAmount = calcFromCurrencyCode.toUpperCase() === 'IRR' ? 
+                Math.round(fromAmount).toLocaleString() : 
+                parseFloat(fromAmount.toFixed(2)).toLocaleString();
+                
+            const formula = `${formattedToAmount} ${calcToCurrencyCode} × ${rate.toLocaleString()} = ${formattedFromAmount} ${calcFromCurrencyCode}`;
             
             // Always display rate as "1 Non-IRR = X IRR"
             const nonIrrCode = calcFromCurrencyCode.toUpperCase() === 'IRR' ? calcToCurrencyCode : calcFromCurrencyCode;
@@ -773,11 +792,39 @@
         });
 
         document.getElementById('calcToAmount').addEventListener('input', function() {
+            // Format the input value based on currency type
+            let value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                if (calcToCurrencyCode && calcToCurrencyCode.toUpperCase() === 'IRR') {
+                    // IRR: remove decimals
+                    value = Math.round(value);
+                    this.value = value;
+                } else {
+                    // Non-IRR: format to 2 decimal places
+                    value = parseFloat(value.toFixed(2));
+                    this.value = value;
+                }
+            }
+            
             // When TO amount changes, calculate FROM amount based on rate
             calculateFromToAmount();
         });
 
         document.getElementById('calcFromAmount').addEventListener('input', function() {
+            // Format the input value based on currency type
+            let value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                if (calcFromCurrencyCode && calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    // IRR: remove decimals
+                    value = Math.round(value);
+                    this.value = value;
+                } else {
+                    // Non-IRR: format to 2 decimal places
+                    value = parseFloat(value.toFixed(2));
+                    this.value = value;
+                }
+            }
+            
             // When FROM amount changes, calculate TO amount based on rate
             calculateToFromAmount();
         });
