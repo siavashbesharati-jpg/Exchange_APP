@@ -383,7 +383,6 @@ namespace ForexExchange.Controllers
                 var totalValue = order.Amount * order.Rate;
                 order.TotalAmount = totalValue;
 
-                order.CreatedAt = DateTime.Now;
                 order.FilledAmount = 0;
 
                 _context.Add(order);

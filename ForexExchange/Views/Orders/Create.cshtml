@@ -145,6 +145,15 @@
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="CreatedAt" class="form-label">تاریخ و زمان معامله</label>
+                                <input asp-for="CreatedAt" type="datetime-local" class="form-control" id="createdAtInput" />
+                                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                                <div class="form-text">تاریخ و زمان ثبت معامله (پیش‌فرض: زمان فعلی)</div>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             <label asp-for="Notes" class="form-label">توضیحات (اختیاری)</label>
                             <textarea asp-for="Notes" class="form-control" rows="3"
@@ -728,6 +737,15 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Set default date and time to current date/time
+            const now = new Date();
+            const formattedDateTime = now.getFullYear() + '-' + 
+                String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(now.getDate()).padStart(2, '0') + 'T' + 
+                String(now.getHours()).padStart(2, '0') + ':' + 
+                String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('createdAtInput').value = formattedDateTime;
+            
             // No need to set step since we use step="any"
             // The updateRateInputStep function is kept for potential future use
             

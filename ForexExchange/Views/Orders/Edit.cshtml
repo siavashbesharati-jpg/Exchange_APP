@@ -33,7 +33,6 @@
                         <div class="alert alert-info mt-2" id="currencyPairMsgBox" style="display: none;"></div>
 
                         <input asp-for="Id" type="hidden" />
-                        <input asp-for="CreatedAt" type="hidden" />
 
                         <div class="row mb-3">
                             <div class="row mb-3">
@@ -121,6 +120,15 @@
                                     <h6>محاسبه خودکار:</h6>
                                     <p id="calculationText" dir="ltr"></p>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="CreatedAt" class="form-label">تاریخ و زمان معامله</label>
+                                <input asp-for="CreatedAt" type="datetime-local" class="form-control" id="createdAtInput" />
+                                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                                <div class="form-text">تاریخ و زمان ثبت معامله</div>
                             </div>
                         </div>
 
