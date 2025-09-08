@@ -166,8 +166,13 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">فایل جدید (اختیاری)</label>
-                                    <input type="file" name="documentFile" class="form-control"
-                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                                    <div class="input-group">
+                                        <input type="file" name="documentFile" id="documentFile" class="form-control"
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                                        <button type="button" id="ocrButton" class="btn btn-outline-info" style="display: none;" onclick="processOcr()">
+                                            <i class="fas fa-eye"></i> OCR
+                                        </button>
+                                    </div>
                                     <div class="form-text">
                                         فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX (حداکثر ۱۰ مگابایت)
                                     </div>
@@ -177,6 +182,22 @@
                                             <small class="text-muted">فایل فعلی: @Model.FileName</small>
                                         </div>
                                     }
+                                    
+                                    <!-- OCR Results -->
+                                    <div id="ocrResults" class="mt-3" style="display: none;">
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-robot"></i> نتایج OCR:</h6>
+                                            <div id="ocrContent"></div>
+                                            <div class="mt-2">
+                                                <button type="button" class="btn btn-sm btn-success" onclick="applyOcrResults()">
+                                                    <i class="fas fa-check"></i> اعمال نتایج
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-secondary" onclick="hideOcrResults()">
+                                                    <i class="fas fa-times"></i> بستن
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -231,6 +252,8 @@
         // File validation
         document.querySelector('input[type="file"]').addEventListener('change', function (e) {
             const file = e.target.files[0];
+            const ocrButton = document.getElementById('ocrButton');
+            
             if (file) {
                 const maxSize = 10 * 1024 * 1024; // 10MB
                 const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -238,15 +261,147 @@
                 if (file.size > maxSize) {
                     alert('حجم فایل نمی‌تواند بیشتر از ۱۰ مگابایت باشد.');
                     e.target.value = '';
+                    ocrButton.style.display = 'none';
                     return;
                 }
 
                 if (!allowedTypes.includes(file.type)) {
                     alert('فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX');
                     e.target.value = '';
+                    ocrButton.style.display = 'none';
                     return;
                 }
+
+                // Show OCR button only for images
+                const imageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                if (imageTypes.includes(file.type)) {
+                    ocrButton.style.display = 'block';
+                } else {
+                    ocrButton.style.display = 'none';
+                }
+            } else {
+                ocrButton.style.display = 'none';
             }
+        });
+
+        // OCR Processing Functions
+        let ocrData = {};
+
+        function processOcr() {
+            const fileInput = document.getElementById('documentFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('لطفاً ابتدا تصویر را انتخاب کنید.');
+                return;
+            }
+
+            // Show loading
+            const ocrButton = document.getElementById('ocrButton');
+            const originalText = ocrButton.innerHTML;
+            ocrButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال پردازش...';
+            ocrButton.disabled = true;
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('imageFile', file);
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+            // Send to server
+            fetch('@Url.Action("ProcessOcr", "AccountingDocuments")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                ocrButton.innerHTML = originalText;
+                ocrButton.disabled = false;
+
+                if (data.success) {
+                    ocrData = data.data;
+                    showOcrResults(data.data);
+                } else {
+                    alert('خطا در OCR: ' + (data.message || 'خطای ناشناخته'));
+                }
+            })
+            .catch(error => {
+                ocrButton.innerHTML = originalText;
+                ocrButton.disabled = false;
+                alert('خطا در ارتباط با سرور: ' + error.message);
+            });
+        }
+
+        function showOcrResults(data) {
+            const resultsDiv = document.getElementById('ocrResults');
+            const contentDiv = document.getElementById('ocrContent');
+            
+            let content = '<div class="row">';
+            
+            if (data.amount) {
+                content += `<div class="col-md-6 mb-2"><strong>مبلغ:</strong> ${data.amount}</div>`;
+            }
+            if (data.referenceId) {
+                content += `<div class="col-md-6 mb-2"><strong>شماره مرجع:</strong> ${data.referenceId}</div>`;
+            }
+            if (data.date) {
+                content += `<div class="col-md-6 mb-2"><strong>تاریخ:</strong> ${data.date}</div>`;
+            }
+            if (data.accountNumber) {
+                content += `<div class="col-md-6 mb-2"><strong>شماره حساب:</strong> ${data.accountNumber}</div>`;
+            }
+            
+            content += '</div>';
+            
+            if (data.rawText) {
+                content += `<div class="mt-2"><strong>متن کامل:</strong><br><small class="text-muted">${data.rawText.replace(/\n/g, '<br>')}</small></div>`;
+            }
+            
+            contentDiv.innerHTML = content;
+            resultsDiv.style.display = 'block';
+        }
+
+        function applyOcrResults() {
+            if (ocrData.amount) {
+                const amountField = document.querySelector('[name="Amount"]');
+                if (amountField && !amountField.value) {
+                    // Extract numeric value from amount
+                    const numericAmount = ocrData.amount.replace(/[^\d.]/g, '');
+                    if (numericAmount) {
+                        amountField.value = numericAmount;
+                    }
+                }
+            }
+            
+            if (ocrData.referenceId) {
+                const refField = document.querySelector('[name="ReferenceNumber"]');
+                if (refField && !refField.value) {
+                    refField.value = ocrData.referenceId;
+                }
+            }
+            
+            if (ocrData.date) {
+                const dateField = document.querySelector('[name="DocumentDate"]');
+                if (dateField && !dateField.value) {
+                    // Try to convert date to ISO format
+                    try {
+                        const dateObj = new Date(ocrData.date);
+                        if (!isNaN(dateObj.getTime())) {
+                            const localDateTime = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
+                            dateField.value = localDateTime.toISOString().slice(0, 16);
+                        }
+                    } catch (e) {
+                        console.log('Could not parse date:', ocrData.date);
+                    }
+                }
+            }
+            
+            hideOcrResults();
+            alert('نتایج OCR اعمال شد!');
+        }
+
+        function hideOcrResults() {
+            document.getElementById('ocrResults').style.display = 'none';
+        }
         });
     </script>
 }

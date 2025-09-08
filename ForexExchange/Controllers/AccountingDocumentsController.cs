@@ -17,15 +17,18 @@ namespace ForexExchange.Controllers
         private readonly ForexDbContext _context;
         private readonly ICustomerBalanceService _customerBalanceService;
         private readonly IBankAccountBalanceService _bankAccountBalanceService;
+        private readonly IOcrService _ocrService;
 
         public AccountingDocumentsController(
             ForexDbContext context,
             ICustomerBalanceService customerBalanceService,
-            IBankAccountBalanceService bankAccountBalanceService)
+            IBankAccountBalanceService bankAccountBalanceService,
+            IOcrService ocrService)
         {
             _context = context;
             _customerBalanceService = customerBalanceService;
             _bankAccountBalanceService = bankAccountBalanceService;
+            _ocrService = ocrService;
         }
 
         // GET: AccountingDocuments
@@ -532,6 +535,77 @@ namespace ForexExchange.Controllers
             }
 
             return File(document.FileData, document.ContentType ?? "application/octet-stream", document.FileName);
+        }
+
+        // POST: AccountingDocuments/ProcessOcr
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProcessOcr(IFormFile imageFile)
+        {
+            try
+            {
+                if (imageFile == null || imageFile.Length == 0)
+                {
+                    return Json(new { success = false, message = "فایل انتخاب نشده است." });
+                }
+
+                // Validate file type (only images)
+                var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/bmp", "image/gif" };
+                if (!allowedTypes.Contains(imageFile.ContentType.ToLower()))
+                {
+                    return Json(new { success = false, message = "فقط فایل‌های تصویری پشتیبانی می‌شوند." });
+                }
+
+                // Validate file size (max 10MB)
+                if (imageFile.Length > 10 * 1024 * 1024)
+                {
+                    return Json(new { success = false, message = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد." });
+                }
+
+                // Convert to byte array
+                byte[] imageData;
+                using (var memoryStream = new MemoryStream())
+                {
+                    await imageFile.CopyToAsync(memoryStream);
+                    imageData = memoryStream.ToArray();
+                }
+
+                // Process with OCR
+                var ocrResult = await _ocrService.ProcessAccountingDocumentAsync(imageData);
+
+                if (ocrResult.Success)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = "OCR با موفقیت انجام شد.",
+                        data = new
+                        {
+                            rawText = ocrResult.RawText,
+                            amount = ocrResult.Amount,
+                            referenceId = ocrResult.ReferenceId,
+                            date = ocrResult.Date,
+                            accountNumber = ocrResult.AccountNumber
+                        }
+                    });
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = ocrResult.ErrorMessage ?? "خطا در پردازش OCR"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "خطای داخلی سرور: " + ex.Message
+                });
+            }
         }
 
         private bool AccountingDocumentExists(int id)
