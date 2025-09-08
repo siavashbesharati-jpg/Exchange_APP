@@ -4,27 +4,32 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - سامانه معاملات  تابان </title>
-    
+    <title>@ViewData["Title"] - سامانه معاملات تابان </title>
+
     <!-- Open Graph Tags for WhatsApp and Social Media -->
     <meta property="og:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? "سامانه معاملات تابان")" />
-    <meta property="og:description" content="@(ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
+    <meta property="og:description"
+        content="@(ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
     <meta property="og:image" content="@(ViewData["OGImage"] ?? Url.Content("~/images/og-image.jpg"))" />
     <meta property="og:image:alt" content="@(ViewData["OGImageAlt"] ?? "لوگو سامانه معاملات تابان")" />
-    <meta property="og:url" content="@(ViewData["OGUrl"] ?? (Context.Request.Scheme + "://" + Context.Request.Host + Context.Request.Path))" />
+    <meta property="og:url"
+        content="@(ViewData["OGUrl"] ?? (Context.Request.Scheme + "://" + Context.Request.Host + Context.Request.Path))" />
     <meta property="og:type" content="@(ViewData["OGType"] ?? "website")" />
     <meta property="og:site_name" content="سامانه معاملات تابان" />
     <meta property="og:locale" content="fa_IR" />
-    
+
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="@(ViewData["TwitterTitle"] ?? ViewData["Title"] ?? "سامانه معاملات تابان")" />
-    <meta name="twitter:description" content="@(ViewData["TwitterDescription"] ?? ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
-    <meta name="twitter:image" content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? Url.Content("~/images/og-image.jpg"))" />
-    
+    <meta name="twitter:description"
+        content="@(ViewData["TwitterDescription"] ?? ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
+    <meta name="twitter:image"
+        content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? Url.Content("~/images/og-image.jpg"))" />
+
     <!-- WhatsApp Specific -->
     <meta property="whatsapp:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? "سامانه معاملات تابان")" />
-    <meta property="whatsapp:description" content="@(ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
+    <meta property="whatsapp:description"
+        content="@(ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
     <meta property="whatsapp:image" content="@(ViewData["OGImage"] ?? Url.Content("~/images/og-image.jpg"))" />
 
     <!-- Bootstrap 5 RTL -->
@@ -143,62 +148,7 @@
 </head>
 
 <body>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light" style="direction: rtl; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-bold" asp-area="" asp-controller="ExchangeRates" asp-action="Index">
-                    <img src="~/favicon/android-chrome-512x512.png" alt="تابان" height="32" class="me-2" style="border-radius: 4px;">
-                    تابان
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse justify-content-end" id="mainNavbar">
-                    <ul class="navbar-nav flex-row gap-2" style="direction: rtl;">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="ExchangeRates" asp-action="Index">
-                                <i class="fas fa-home"></i> خانه
-                            </a>
-                        </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Dashboard">
-                            <i class="fas fa-dashboard"></i> داشبورد
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Help">
-                            <i class="fas fa-question-circle"></i> راهنما
-                        </a>
-                    </li>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
-                               @(User.Claims.FirstOrDefault(c => c.Type == "FullName")?.Value ?? User.Identity.Name)
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="Profile">پروفایل کاربری</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="dropdown-item">خروج</button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    }
-                    else
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">ورود</a>
-                        </li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </header>
-
+ 
     <!-- Connection Status Indicator -->
     <div id="connectionStatus" class="connection-status">
         <i class="fas fa-circle"></i>
@@ -222,35 +172,45 @@
                         <div class="col-12">
                             <div class="d-flex justify-content-center flex-wrap gap-2">
                                 <!-- Back to Dashboard -->
-                                <a href="@Url.Action("Dashboard", "Home")" class="btn btn-secondary btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" style="background-color: #6c757d; border-color: #6c757d; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(108, 117, 125, 0.5); transform: scale(1.05);" : "")">
+                                <a href="@Url.Action("Dashboard", "Home")"
+                                    class="btn btn-secondary btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                                    style="background-color: #6c757d; border-color: #6c757d; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(108, 117, 125, 0.5); transform: scale(1.05);" : "")">
                                     <i class="fas fa-tachometer-alt me-1"></i>
-                                    <span class="d-none d-sm-inline">  داشبورد</span>
+                                    <span class="d-none d-sm-inline"> داشبورد</span>
                                     <span class="d-sm-none">داشبورد</span>
                                 </a>
-                                
+
                                 <!-- Add AccountDocument -->
-                                <a href="@Url.Action("Upload", "AccountingDocuments")" class="btn btn-success btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Upload" && ViewContext.RouteData.Values["controller"]?.ToString() == "AccountingDocuments" ? "active" : "")" style="background-color: #28a745; border-color: #28a745; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Upload" && ViewContext.RouteData.Values["controller"]?.ToString() == "AccountingDocuments" ? "box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); transform: scale(1.05);" : "")">
+                                <a href="@Url.Action("Upload", "AccountingDocuments")"
+                                    class="btn btn-success btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Upload" && ViewContext.RouteData.Values["controller"]?.ToString() == "AccountingDocuments" ? "active" : "")"
+                                    style="background-color: #28a745; border-color: #28a745; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Upload" && ViewContext.RouteData.Values["controller"]?.ToString() == "AccountingDocuments" ? "box-shadow: 0 0 10px rgba(40, 167, 69, 0.5); transform: scale(1.05);" : "")">
                                     <i class="fas fa-file-invoice me-1"></i>
                                     <span class="d-none d-sm-inline">ثبت سند</span>
                                     <span class="d-sm-none">ثبت</span>
                                 </a>
-                                
+
                                 <!-- Create Order -->
-                                <a href="@Url.Action("Create", "Orders")" class="btn btn-primary btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "active" : "")" style="background-color: #007bff; border-color: #007bff; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); transform: scale(1.05);" : "")">
+                                <a href="@Url.Action("Create", "Orders")"
+                                    class="btn btn-primary btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "active" : "")"
+                                    style="background-color: #007bff; border-color: #007bff; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); transform: scale(1.05);" : "")">
                                     <i class="fas fa-plus-circle me-1"></i>
                                     <span class="d-none d-sm-inline">ثبت معامله جدید</span>
                                     <span class="d-sm-none">معامله</span>
                                 </a>
-                                
+
                                 <!-- Create Customer -->
-                                <a href="@Url.Action("Create", "Customers")" class="btn btn-info btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "active" : "")" style="background-color: #17a2b8; border-color: #17a2b8; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "box-shadow: 0 0 10px rgba(23, 162, 184, 0.5); transform: scale(1.05);" : "")">
+                                <a href="@Url.Action("Create", "Customers")"
+                                    class="btn btn-info btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "active" : "")"
+                                    style="background-color: #17a2b8; border-color: #17a2b8; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "box-shadow: 0 0 10px rgba(23, 162, 184, 0.5); transform: scale(1.05);" : "")">
                                     <i class="fas fa-user-plus me-1"></i>
                                     <span class="d-none d-sm-inline">ثبت مشتری جدید</span>
                                     <span class="d-sm-none">مشتری</span>
                                 </a>
-                                
+
                                 <!-- Advanced Manage -->
-                                <a href="@Url.Action("Management", "Home")" class="btn btn-warning btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" style="background-color: #ffc107; border-color: #ffc107; color: #212529; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); transform: scale(1.05);" : "")">
+                                <a href="@Url.Action("Management", "Home")"
+                                    class="btn btn-warning btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                                    style="background-color: #ffc107; border-color: #ffc107; color: #212529; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); transform: scale(1.05);" : "")">
                                     <i class="fas fa-cogs me-1"></i>
                                     <span class="d-none d-sm-inline">مدیریت پیشرفته</span>
                                     <span class="d-sm-none">مدیریت</span>
@@ -281,10 +241,28 @@
             </div>
         }
     }
+    else
+    {
+        <!-- Login action in  Footer -->
+        <div class="fixed-bottom bg-white border-top shadow-lg p-3">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-center">
+                            <a class="btn btn-primary" asp-area="" asp-controller="Account" asp-action="Login">
+                                <i class="fas fa-user me-2"></i>
+                                ورود به سیستم
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; ۱۴۰۳ - سامانه معاملات  تابان  - <a asp-area="" asp-controller="Home" asp-action="Privacy">حریم خصوصی</a>
+            &copy; @DateTime.Now.Year - گروه تابان </a>
         </div>
     </footer>
 
@@ -304,7 +282,7 @@
 
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/admin-notifications.js" asp-append-version="true"></script>
-    
+
     <!-- Currency Amount Formatter -->
     <script src="~/js/persian-number-converter.js" asp-append-version="true"></script>
     <script src="~/js/currency-amount-formatter.js" asp-append-version="true"></script>
