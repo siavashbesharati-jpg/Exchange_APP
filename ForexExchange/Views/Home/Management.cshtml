@@ -169,6 +169,54 @@
             </div>
         </div>
 
+        <!-- User Profile Section (For All Management Users) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-user text-secondary me-2"></i>
+                    حساب کاربری
+                </h4>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Edit Profile -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-user-edit fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">ویرایش پروفایل</h5>
+                        <p class="card-text">ویرایش اطلاعات شخصی و تنظیمات حساب</p>
+                        <a href="@Url.Action("Profile", "Account")" class="btn btn-primary">
+                            <i class="fas fa-user-edit me-2"></i>
+                            ویرایش پروفایل
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Logout -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-danger mb-3">
+                            <i class="fas fa-power-off fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">خروج از سیستم</h5>
+                        <p class="card-text">خروج امن از حساب کاربری</p>
+                        <form asp-controller="Account" asp-action="Logout" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-power-off me-2"></i>
+                                خروج از سیستم
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @if (User.IsInRole("Admin"))
         {
             <!-- Admin Only Section -->
@@ -220,23 +268,6 @@
                             <h5 class="card-title">مدیریت ادمین‌ها</h5>
                             <p class="card-text">مدیریت کاربران ادمین و نقش‌های آنها</p>
                             <a href="@Url.Action("ManageAdmins", "AdminManagement")" class="btn btn-warning">مدیریت ادمین‌ها</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Logout -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-danger mb-3">
-                                <i class="fas fa-power-off fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">خروج از سیستم</h5>
-                            <p class="card-text">خروج امن از حساب کاربری</p>
-                            <a href="@Url.Action("Logout", "Account")" class="btn btn-danger">
-                                <i class="fas fa-power-off me-2"></i>
-                                خروج از سیستم
-                            </a>
                         </div>
                     </div>
                 </div>
