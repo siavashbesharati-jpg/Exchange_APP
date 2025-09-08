@@ -116,34 +116,37 @@ namespace ForexExchange.Services
 
         public async Task ProcessAccountingDocumentAsync(AccountingDocument document)
         {
-            if (document.BankAccountId.HasValue)
+            // Handle Payer side of the transaction
+            if (document.PayerType == PayerType.System && document.PayerBankAccountId.HasValue)
             {
-                // Bank account is involved in the transaction
-                decimal amount;
-                string reason;
-
-                if (document.PayerType == PayerType.System)
-                {
-                    // System is payer - money leaves bank account (negative balance)
-                    amount = -document.Amount;
-                    reason = $"System payment from bank - Document #{document.Id} - {document.Title}";
-                }
-                else // PayerType.Customer
-                {
-                    // Customer is payer - money comes to bank account (positive balance)
-                    amount = document.Amount;
-                    reason = $"Customer payment to bank - Document #{document.Id} - {document.Title}";
-                }
-
+                // System is paying from bank account - decrease bank account balance
                 await UpdateBankAccountBalanceAsync(
-                    document.BankAccountId.Value,
+                    document.PayerBankAccountId.Value,
                     document.CurrencyCode,
-                    amount,
-                    reason
+                    -document.Amount,
+                    $"System payment from bank - Document #{document.Id} - {document.Title}"
                 );
             }
 
-            _logger.LogInformation("Processed accounting document {DocumentId} for bank account", document.Id);
+            // Handle Receiver side of the transaction
+            if (document.ReceiverType == ReceiverType.System && document.ReceiverBankAccountId.HasValue)
+            {
+                // System is receiving to bank account - increase bank account balance
+                await UpdateBankAccountBalanceAsync(
+                    document.ReceiverBankAccountId.Value,
+                    document.CurrencyCode,
+                    document.Amount,
+                    $"System receipt to bank - Document #{document.Id} - {document.Title}"
+                );
+            }
+
+            _logger.LogInformation("Processed bilateral accounting document {DocumentId} for bank accounts: " +
+                "Payer Bank: {PayerBankId}, Receiver Bank: {ReceiverBankId}, Amount: {Amount} {Currency}",
+                document.Id,
+                document.PayerBankAccountId,
+                document.ReceiverBankAccountId,
+                document.Amount,
+                document.CurrencyCode);
         }
 
         public async Task SetInitialBalanceAsync(int bankAccountId, string currencyCode, decimal amount, string notes)

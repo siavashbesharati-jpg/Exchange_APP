@@ -251,20 +251,33 @@ namespace ForexExchange.Models
                 entity.Property(e => e.VerifiedBy).HasMaxLength(100);
                 entity.Property(e => e.Notes).HasMaxLength(500);
                 
-                // Configure the Customer relationship
-                entity.HasOne(e => e.Customer)
-                      .WithMany() // Don't specify which collection to avoid ambiguity
-                      .HasForeignKey(e => e.CustomerId)
+                // Configure Payer relationships
+                entity.HasOne(e => e.PayerCustomer)
+                      .WithMany()
+                      .HasForeignKey(e => e.PayerCustomerId)
                       .OnDelete(DeleteBehavior.Restrict);
                       
-                // Configure optional BankAccount relationship
-                entity.HasOne(e => e.BankAccount)
+                entity.HasOne(e => e.PayerBankAccount)
                       .WithMany()
-                      .HasForeignKey(e => e.BankAccountId)
-                      .OnDelete(DeleteBehavior.SetNull);
+                      .HasForeignKey(e => e.PayerBankAccountId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                
+                // Configure Receiver relationships
+                entity.HasOne(e => e.ReceiverCustomer)
+                      .WithMany()
+                      .HasForeignKey(e => e.ReceiverCustomerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                      
+                entity.HasOne(e => e.ReceiverBankAccount)
+                      .WithMany()
+                      .HasForeignKey(e => e.ReceiverBankAccountId)
+                      .OnDelete(DeleteBehavior.Restrict);
                       
                 // Indexes for performance
-                entity.HasIndex(e => e.CustomerId);
+                entity.HasIndex(e => e.PayerCustomerId);
+                entity.HasIndex(e => e.ReceiverCustomerId);
+                entity.HasIndex(e => e.PayerBankAccountId);
+                entity.HasIndex(e => e.ReceiverBankAccountId);
                 entity.HasIndex(e => e.DocumentDate);
                 entity.HasIndex(e => e.IsVerified);
                 entity.HasIndex(e => e.Type);

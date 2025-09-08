@@ -54,8 +54,10 @@ namespace ForexExchange.Controllers
             ViewData["StatusFilter"] = statusFilter;
 
             var documents = from d in _context.AccountingDocuments
-                           .Include(d => d.Customer)
-                           .Include(d => d.BankAccount)
+                           .Include(d => d.PayerCustomer)
+                           .Include(d => d.ReceiverCustomer)
+                           .Include(d => d.PayerBankAccount)
+                           .Include(d => d.ReceiverBankAccount)
                            select d;
 
             // Apply filters
@@ -134,8 +136,10 @@ namespace ForexExchange.Controllers
             }
 
             var accountingDocument = await _context.AccountingDocuments
-                .Include(a => a.Customer)
-                .Include(a => a.BankAccount)
+                .Include(a => a.PayerCustomer)
+                .Include(a => a.ReceiverCustomer)
+                .Include(a => a.PayerBankAccount)
+                .Include(a => a.ReceiverBankAccount)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (accountingDocument == null)
@@ -164,8 +168,11 @@ namespace ForexExchange.Controllers
 
             // Get all accounting documents for this customer
             var documents = await _context.AccountingDocuments
-                .Include(a => a.BankAccount)
-                .Where(a => a.CustomerId == customerId)
+                .Include(a => a.PayerCustomer)
+                .Include(a => a.ReceiverCustomer)
+                .Include(a => a.PayerBankAccount)
+                .Include(a => a.ReceiverBankAccount)
+                .Where(a => a.PayerCustomerId == customerId || a.ReceiverCustomerId == customerId)
                 .OrderByDescending(a => a.DocumentDate)
                 .ToListAsync();
 
@@ -238,12 +245,23 @@ namespace ForexExchange.Controllers
             }
 
             // Validate bank account currency match
-            if (accountingDocument.BankAccountId.HasValue)
+            // Check payer bank account
+            if (accountingDocument.PayerBankAccountId.HasValue)
             {
-                var bankAccount = await _context.BankAccounts.FindAsync(accountingDocument.BankAccountId.Value);
-                if (bankAccount != null && bankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                var payerBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.PayerBankAccountId.Value);
+                if (payerBankAccount != null && payerBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
                 {
-                    ModelState.AddModelError("BankAccountId", $"ارز حساب بانکی انتخاب شده ({bankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                    ModelState.AddModelError("PayerBankAccountId", $"ارز حساب بانکی پرداخت کننده ({payerBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                }
+            }
+
+            // Check receiver bank account
+            if (accountingDocument.ReceiverBankAccountId.HasValue)
+            {
+                var receiverBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.ReceiverBankAccountId.Value);
+                if (receiverBankAccount != null && receiverBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                {
+                    ModelState.AddModelError("ReceiverBankAccountId", $"ارز حساب بانکی دریافت کننده ({receiverBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
                 }
             }
 
@@ -312,12 +330,23 @@ namespace ForexExchange.Controllers
             }
 
             // Validate bank account currency match
-            if (accountingDocument.BankAccountId.HasValue)
+            // Check payer bank account
+            if (accountingDocument.PayerBankAccountId.HasValue)
             {
-                var bankAccount = await _context.BankAccounts.FindAsync(accountingDocument.BankAccountId.Value);
-                if (bankAccount != null && bankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                var payerBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.PayerBankAccountId.Value);
+                if (payerBankAccount != null && payerBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
                 {
-                    ModelState.AddModelError("BankAccountId", $"ارز حساب بانکی انتخاب شده ({bankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                    ModelState.AddModelError("PayerBankAccountId", $"ارز حساب بانکی پرداخت کننده ({payerBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                }
+            }
+
+            // Check receiver bank account
+            if (accountingDocument.ReceiverBankAccountId.HasValue)
+            {
+                var receiverBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.ReceiverBankAccountId.Value);
+                if (receiverBankAccount != null && receiverBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                {
+                    ModelState.AddModelError("ReceiverBankAccountId", $"ارز حساب بانکی دریافت کننده ({receiverBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
                 }
             }
 
@@ -429,7 +458,10 @@ namespace ForexExchange.Controllers
             try
             {
                 var accountingDocument = await _context.AccountingDocuments
-                    .Include(a => a.BankAccount)
+                    .Include(a => a.PayerCustomer)
+                    .Include(a => a.ReceiverCustomer)
+                    .Include(a => a.PayerBankAccount)
+                    .Include(a => a.ReceiverBankAccount)
                     .FirstOrDefaultAsync(a => a.Id == id);
                     
                 if (accountingDocument == null)
@@ -439,11 +471,22 @@ namespace ForexExchange.Controllers
                 }
 
                 // Validate bank account currency match
-                if (accountingDocument.BankAccountId.HasValue && accountingDocument.BankAccount != null)
+                // Check payer bank account
+                if (accountingDocument.PayerBankAccountId.HasValue && accountingDocument.PayerBankAccount != null)
                 {
-                    if (accountingDocument.BankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                    if (accountingDocument.PayerBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
                     {
-                        TempData["ErrorMessage"] = $"ارز حساب بانکی انتخاب شده ({accountingDocument.BankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
+                        TempData["ErrorMessage"] = $"ارز حساب بانکی پرداخت کننده ({accountingDocument.PayerBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
+                        return RedirectToAction("Details", new { id });
+                    }
+                }
+
+                // Check receiver bank account
+                if (accountingDocument.ReceiverBankAccountId.HasValue && accountingDocument.ReceiverBankAccount != null)
+                {
+                    if (accountingDocument.ReceiverBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                    {
+                        TempData["ErrorMessage"] = $"ارز حساب بانکی دریافت کننده ({accountingDocument.ReceiverBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
                         return RedirectToAction("Details", new { id });
                     }
                 }

@@ -66,10 +66,13 @@ namespace ForexExchange.Controllers
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
             
-            // Get accounting documents
+            // Get accounting documents (where customer is payer or receiver)
             var documents = await _context.AccountingDocuments
-                .Include(a => a.BankAccount)
-                .Where(a => a.CustomerId == customer.Id)
+                .Include(a => a.PayerCustomer)
+                .Include(a => a.ReceiverCustomer)
+                .Include(a => a.PayerBankAccount)
+                .Include(a => a.ReceiverBankAccount)
+                .Where(a => a.PayerCustomerId == customer.Id || a.ReceiverCustomerId == customer.Id)
                 .OrderByDescending(a => a.DocumentDate)
                 .ToListAsync();
 
@@ -172,9 +175,9 @@ namespace ForexExchange.Controllers
             var totalVolume = await _context.Orders
                 .Where(o => o.CustomerId == customerId)
                 .SumAsync(o => o.TotalAmount);
-            var totalDocuments = await _context.AccountingDocuments.CountAsync(a => a.CustomerId == customerId);
+            var totalDocuments = await _context.AccountingDocuments.CountAsync(a => a.PayerCustomerId == customerId || a.ReceiverCustomerId == customerId);
             var verifiedDocuments = await _context.AccountingDocuments
-                .CountAsync(a => a.CustomerId == customerId && a.IsVerified);
+                .CountAsync(a => (a.PayerCustomerId == customerId || a.ReceiverCustomerId == customerId) && a.IsVerified);
 
             return new CustomerProfileStats
             {

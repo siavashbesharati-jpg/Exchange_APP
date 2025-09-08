@@ -173,28 +173,39 @@ namespace ForexExchange.Services
 
         public async Task ProcessAccountingDocumentAsync(AccountingDocument document)
         {
-            if (document.PayerType == PayerType.Customer)
+            // Handle Payer side of the transaction
+            if (document.PayerType == PayerType.Customer && document.PayerCustomerId.HasValue)
             {
-                // Customer pays - positive balance (reduces debt or increases credit)
+                // Customer is paying - decrease their balance (negative amount)
                 await UpdateCustomerBalanceAsync(
-                    document.CustomerId,
-                    document.CurrencyCode,
-                    document.Amount,
-                    $"Document #{document.Id} - {document.Title}"
-                );
-            }
-            else if (document.PayerType == PayerType.System)
-            {
-                // System pays - negative balance for customer (increases debt or reduces credit)
-                await UpdateCustomerBalanceAsync(
-                    document.CustomerId,
+                    document.PayerCustomerId.Value,
                     document.CurrencyCode,
                     -document.Amount,
-                    $"Document #{document.Id} - {document.Title}"
+                    $"Payment - Document #{document.Id} - {document.Title}"
                 );
             }
 
-            _logger.LogInformation("Processed accounting document {DocumentId}", document.Id);
+            // Handle Receiver side of the transaction
+            if (document.ReceiverType == ReceiverType.Customer && document.ReceiverCustomerId.HasValue)
+            {
+                // Customer is receiving - increase their balance (positive amount)
+                await UpdateCustomerBalanceAsync(
+                    document.ReceiverCustomerId.Value,
+                    document.CurrencyCode,
+                    document.Amount,
+                    $"Receipt - Document #{document.Id} - {document.Title}"
+                );
+            }
+
+            _logger.LogInformation("Processed bilateral accounting document {DocumentId}: " +
+                "Payer: {PayerType} {PayerId}, Receiver: {ReceiverType} {ReceiverId}, Amount: {Amount} {Currency}",
+                document.Id,
+                document.PayerType,
+                document.PayerType == PayerType.Customer ? document.PayerCustomerId?.ToString() : document.PayerBankAccountId?.ToString(),
+                document.ReceiverType,
+                document.ReceiverType == ReceiverType.Customer ? document.ReceiverCustomerId?.ToString() : document.ReceiverBankAccountId?.ToString(),
+                document.Amount,
+                document.CurrencyCode);
         }
 
         public async Task SetInitialBalanceAsync(int customerId, string currencyCode, decimal amount, string notes)

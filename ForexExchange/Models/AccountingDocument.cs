@@ -20,11 +20,18 @@ namespace ForexExchange.Models
         System = 1      // سیستم
     }
 
+    public enum ReceiverType
+    {
+        Customer = 0,   // مشتری
+        System = 1      // سیستم
+    }
+
     /// <summary>
-    /// Accounting Document (سند حسابداری) - replaces Receipt model
+    /// Accounting Document (سند حسابداری) - Enhanced for bilateral transactions
     /// Tracks all financial movements between customers, system, and bank accounts
+    /// Supports: Customer-to-Customer, Customer-to-System, System-to-Customer, System-to-Bank
     /// </summary>
-    public class AccountingDocument
+    public class AccountingDocument : IValidatableObject
     {
         public int Id { get; set; }
 
@@ -36,6 +43,22 @@ namespace ForexExchange.Models
         [Display(Name = "Payer Type - نوع پرداخت کننده")]
         public PayerType PayerType { get; set; }
 
+        [Display(Name = "Payer Customer - مشتری پرداخت کننده")]
+        public int? PayerCustomerId { get; set; }
+
+        [Display(Name = "Payer Bank Account - حساب بانکی پرداخت کننده")]
+        public int? PayerBankAccountId { get; set; }
+
+        [Required]
+        [Display(Name = "Receiver Type - نوع دریافت کننده")]
+        public ReceiverType ReceiverType { get; set; } = ReceiverType.System;
+
+        [Display(Name = "Receiver Customer - مشتری دریافت کننده")]
+        public int? ReceiverCustomerId { get; set; }
+
+        [Display(Name = "Receiver Bank Account - حساب بانکی دریافت کننده")]
+        public int? ReceiverBankAccountId { get; set; }
+
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Amount - مبلغ")]
@@ -45,13 +68,6 @@ namespace ForexExchange.Models
         [StringLength(3)]
         [Display(Name = "Currency - ارز")]
         public string CurrencyCode { get; set; } = string.Empty;
-
-        [Required]
-        [Display(Name = "Customer - مشتری")]
-        public int CustomerId { get; set; }
-
-        [Display(Name = "Bank Account - حساب بانکی")]
-        public int? BankAccountId { get; set; }
 
         [Required]
         [StringLength(100)]
@@ -100,11 +116,55 @@ namespace ForexExchange.Models
         public string? Notes { get; set; }
 
         // Navigation properties
-        [Display(Name = "Customer - مشتری")]
-        public Customer? Customer { get; set; }
+        [Display(Name = "Payer Customer - مشتری پرداخت کننده")]
+        public Customer? PayerCustomer { get; set; }
 
+        [Display(Name = "Receiver Customer - مشتری دریافت کننده")]
+        public Customer? ReceiverCustomer { get; set; }
+
+        [Display(Name = "Payer Bank Account - حساب بانکی پرداخت کننده")]
+        public BankAccount? PayerBankAccount { get; set; }
+
+        [Display(Name = "Receiver Bank Account - حساب بانکی دریافت کننده")]
+        public BankAccount? ReceiverBankAccount { get; set; }
+
+        // Legacy navigation properties (for backward compatibility)
+        [NotMapped]
+        [Display(Name = "Customer - مشتری")]
+        public Customer? Customer => PayerType == PayerType.Customer ? PayerCustomer : ReceiverCustomer;
+
+        [NotMapped]
         [Display(Name = "Bank Account - حساب بانکی")]
-        public BankAccount? BankAccount { get; set; }
+        public BankAccount? BankAccount => PayerType == PayerType.System ? PayerBankAccount : ReceiverBankAccount;
+
+        // Legacy properties for backward compatibility (will be removed after migration)
+        [NotMapped]
+        [Obsolete("Use PayerCustomerId or ReceiverCustomerId instead")]
+        public int CustomerId
+        {
+            get => PayerType == PayerType.Customer ? (PayerCustomerId ?? 0) : (ReceiverCustomerId ?? 0);
+            set
+            {
+                if (PayerType == PayerType.Customer)
+                    PayerCustomerId = value;
+                else
+                    ReceiverCustomerId = value;
+            }
+        }
+
+        [NotMapped]
+        [Obsolete("Use PayerBankAccountId or ReceiverBankAccountId instead")]
+        public int? BankAccountId
+        {
+            get => PayerType == PayerType.System ? PayerBankAccountId : ReceiverBankAccountId;
+            set
+            {
+                if (PayerType == PayerType.System)
+                    PayerBankAccountId = value;
+                else
+                    ReceiverBankAccountId = value;
+            }
+        }
 
         // Helper properties for display
         public string PayerName
@@ -113,8 +173,8 @@ namespace ForexExchange.Models
             {
                 return PayerType switch
                 {
-                    PayerType.Customer => Customer?.FullName ?? "مشتری نامشخص",
-                    PayerType.System => "سیستم",
+                    PayerType.Customer => PayerCustomer?.FullName ?? "مشتری نامشخص",
+                    PayerType.System => PayerBankAccount?.BankName + " - " + PayerBankAccount?.AccountNumber ?? "حساب نامشخص",
                     _ => "نامشخص"
                 };
             }
@@ -124,15 +184,99 @@ namespace ForexExchange.Models
         {
             get
             {
+                return ReceiverType switch
+                {
+                    ReceiverType.Customer => ReceiverCustomer?.FullName ?? "مشتری نامشخص",
+                    ReceiverType.System => ReceiverBankAccount?.BankName + " - " + ReceiverBankAccount?.AccountNumber ?? "حساب نامشخص",
+                    _ => "نامشخص"
+                };
+            }
+        }
+
+        public string PayerDisplayText
+        {
+            get
+            {
                 return PayerType switch
                 {
-                    PayerType.Customer => "سیستم",
-                    PayerType.System => Customer?.FullName ?? "مشتری نامشخص",
+                    PayerType.Customer => $"مشتری: {PayerName}",
+                    PayerType.System => $"سیستم: {PayerName}",
+                    _ => "نامشخص"
+                };
+            }
+        }
+
+        public string ReceiverDisplayText
+        {
+            get
+            {
+                return ReceiverType switch
+                {
+                    ReceiverType.Customer => $"مشتری: {ReceiverName}",
+                    ReceiverType.System => $"سیستم: {ReceiverName}",
                     _ => "نامشخص"
                 };
             }
         }
 
         public string FormattedAmount => $"{Amount:N0} {CurrencyCode}";
+
+        // IValidatableObject implementation for cross-field validation
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            var results = new List<ValidationResult>();
+
+            // Validate Payer constraints
+            if (PayerType == PayerType.Customer && !PayerCustomerId.HasValue)
+            {
+                results.Add(new ValidationResult(
+                    "وقتی نوع پرداخت کننده مشتری است، باید مشتری پرداخت کننده انتخاب شود.",
+                    new[] { nameof(PayerCustomerId) }));
+            }
+
+            if (PayerType == PayerType.System && !PayerBankAccountId.HasValue)
+            {
+                results.Add(new ValidationResult(
+                    "وقتی نوع پرداخت کننده سیستم است، باید حساب بانکی پرداخت کننده انتخاب شود.",
+                    new[] { nameof(PayerBankAccountId) }));
+            }
+
+            // Validate Receiver constraints
+            if (ReceiverType == ReceiverType.Customer && !ReceiverCustomerId.HasValue)
+            {
+                results.Add(new ValidationResult(
+                    "وقتی نوع دریافت کننده مشتری است، باید مشتری دریافت کننده انتخاب شود.",
+                    new[] { nameof(ReceiverCustomerId) }));
+            }
+
+            if (ReceiverType == ReceiverType.System && !ReceiverBankAccountId.HasValue)
+            {
+                results.Add(new ValidationResult(
+                    "وقتی نوع دریافت کننده سیستم است، باید حساب بانکی دریافت کننده انتخاب شود.",
+                    new[] { nameof(ReceiverBankAccountId) }));
+            }
+
+            // Prevent self-transactions for customers
+            if (PayerType == PayerType.Customer && ReceiverType == ReceiverType.Customer && 
+                PayerCustomerId.HasValue && ReceiverCustomerId.HasValue && 
+                PayerCustomerId == ReceiverCustomerId)
+            {
+                results.Add(new ValidationResult(
+                    "مشتری نمی‌تواند به خودش پرداخت کند.",
+                    new[] { nameof(PayerCustomerId), nameof(ReceiverCustomerId) }));
+            }
+
+            // Prevent self-transactions for bank accounts
+            if (PayerType == PayerType.System && ReceiverType == ReceiverType.System && 
+                PayerBankAccountId.HasValue && ReceiverBankAccountId.HasValue && 
+                PayerBankAccountId == ReceiverBankAccountId)
+            {
+                results.Add(new ValidationResult(
+                    "حساب بانکی نمی‌تواند به خودش انتقال داشته باشد.",
+                    new[] { nameof(PayerBankAccountId), nameof(ReceiverBankAccountId) }));
+            }
+
+            return results;
+        }
     }
 }

@@ -73,16 +73,96 @@
                                 <span asp-validation-for="Type" class="text-danger"></span>
                             </div>
 
+                        <div class="row">
                             <!-- Payer Type -->
                             <div class="col-md-6 mb-3">
-                                <label asp-for="PayerType" class="form-label"> پرداخت کننده <span class="text-danger">*</span></label>
-                                <select asp-for="PayerType" class="form-select" required>
+                                <label asp-for="PayerType" class="form-label">پرداخت کننده <span class="text-danger">*</span></label>
+                                <select asp-for="PayerType" class="form-select" id="payerType" required>
                                     <option value="">انتخاب کنید...</option>
                                     <option value="@ForexExchange.Models.PayerType.Customer">مشتری</option>
                                     <option value="@ForexExchange.Models.PayerType.System">سیستم</option>
                                 </select>
                                 <span asp-validation-for="PayerType" class="text-danger"></span>
                             </div>
+
+                            <!-- Receiver Type -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ReceiverType" class="form-label">دریافت کننده <span class="text-danger">*</span></label>
+                                <select asp-for="ReceiverType" class="form-select" id="receiverType" required>
+                                    <option value="">انتخاب کنید...</option>
+                                    <option value="@ForexExchange.Models.ReceiverType.Customer">مشتری</option>
+                                    <option value="@ForexExchange.Models.ReceiverType.System">سیستم</option>
+                                </select>
+                                <span asp-validation-for="ReceiverType" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Payer Selection -->
+                        <div class="row">
+                            <!-- Payer Customer -->
+                            <div class="col-md-6 mb-3" id="payerCustomerDiv" style="display: none;">
+                                <label asp-for="PayerCustomerId" class="form-label">مشتری پرداخت کننده <span class="text-danger">*</span></label>
+                                <select asp-for="PayerCustomerId" class="form-select">
+                                    <option value="">انتخاب مشتری...</option>
+                                    @if (ViewData["Customers"] is List<ForexExchange.Models.Customer> customers)
+                                    {
+                                        @foreach (var customer in customers)
+                                        {
+                                            <option value="@customer.Id">@customer.FullName (@customer.PhoneNumber)</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="PayerCustomerId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Payer Bank Account -->
+                            <div class="col-md-6 mb-3" id="payerBankDiv" style="display: none;">
+                                <label asp-for="PayerBankAccountId" class="form-label">حساب بانکی پرداخت کننده <span class="text-danger">*</span></label>
+                                <select asp-for="PayerBankAccountId" class="form-select">
+                                    <option value="">انتخاب حساب بانکی...</option>
+                                    @if (ViewData["BankAccounts"] is List<ForexExchange.Models.BankAccount> bankAccounts)
+                                    {
+                                        @foreach (var account in bankAccounts)
+                                        {
+                                            <option value="@account.Id" data-currency="@account.CurrencyCode">@account.AccountNumber - @account.BankName (@account.CurrencyCode)</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="PayerBankAccountId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Receiver Customer -->
+                            <div class="col-md-6 mb-3" id="receiverCustomerDiv" style="display: none;">
+                                <label asp-for="ReceiverCustomerId" class="form-label">مشتری دریافت کننده <span class="text-danger">*</span></label>
+                                <select asp-for="ReceiverCustomerId" class="form-select">
+                                    <option value="">انتخاب مشتری...</option>
+                                    @if (ViewData["Customers"] is List<ForexExchange.Models.Customer> customers)
+                                    {
+                                        @foreach (var customer in customers)
+                                        {
+                                            <option value="@customer.Id">@customer.FullName (@customer.PhoneNumber)</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="ReceiverCustomerId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Receiver Bank Account -->
+                            <div class="col-md-6 mb-3" id="receiverBankDiv" style="display: none;">
+                                <label asp-for="ReceiverBankAccountId" class="form-label">حساب بانکی دریافت کننده <span class="text-danger">*</span></label>
+                                <select asp-for="ReceiverBankAccountId" class="form-select">
+                                    <option value="">انتخاب حساب بانکی...</option>
+                                    @if (ViewData["BankAccounts"] is List<ForexExchange.Models.BankAccount> bankAccounts)
+                                    {
+                                        @foreach (var account in bankAccounts)
+                                        {
+                                            <option value="@account.Id" data-currency="@account.CurrencyCode">@account.AccountNumber - @account.BankName (@account.CurrencyCode)</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="ReceiverBankAccountId" class="text-danger"></span>
+                            </div>
+                        </div>
                         </div>
 
                         <div class="row">
@@ -143,46 +223,16 @@
                             </div>
                         </div>
 
-                        <!-- Customer -->
-                        <div class="mb-3">
-                            <label asp-for="CustomerId" class="form-label">مشتری <span class="text-danger">*</span></label>
-                            <select asp-for="CustomerId" class="form-select" required>
-                                <option value="">انتخاب مشتری...</option>
-                                @if (ViewData["Customers"] is List<ForexExchange.Models.Customer> customers)
-                                {
-                                    @foreach (var customer in customers)
-                                    {
-                                        <option value="@customer.Id">@customer.FullName (@customer.PhoneNumber)</option>
-                                    }
-                                }
-                            </select>
-                            <span asp-validation-for="CustomerId" class="text-danger"></span>
-                        </div>
-
-                        <!-- Bank Account (optional) -->
-                        <div class="mb-3">
-                            <label asp-for="BankAccountId" class="form-label">حساب بانکی</label>
-                            <select asp-for="BankAccountId" class="form-select">
-                                <option value="">انتخاب حساب بانکی (اختیاری)...</option>
-                                @if (ViewData["BankAccounts"] is List<ForexExchange.Models.BankAccount> bankAccounts)
-                                {
-                                    @foreach (var account in bankAccounts)
-                                    {
-                                        <option value="@account.Id">@account.AccountNumber - @account.BankName</option>
-                                    }
-                                }
-                            </select>
-                            <div id="currency-warning" class="alert alert-warning mt-2" style="display: none;">
-                                <small><i class="fas fa-exclamation-triangle"></i> ارز سند باید با ارز حساب بانکی انتخاب شده مطابقت داشته باشد.</small>
-                            </div>
-                            <span asp-validation-for="BankAccountId" class="text-danger"></span>
-                        </div>
-
                         <!-- File Upload -->
                         <div class="mb-3">
                             <label class="form-label">فایل سند (اختیاری)</label>
                             <input type="file" name="documentFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
                             <div class="form-text">فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX (حداکثر 10 مگابایت)</div>
+                        </div>
+
+                        <!-- Currency Warning for Bank Accounts -->
+                        <div id="currency-warning" class="alert alert-warning" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i> ارز سند باید با ارز حساب‌های بانکی انتخاب شده مطابقت داشته باشد.
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -210,24 +260,130 @@
             document.getElementById('DocumentDate').value = formatted;
         });
 
-        // Bank account currency validation
-        document.getElementById('BankAccountId').addEventListener('change', function() {
-            const bankAccountSelect = this;
-            const currencySelect = document.getElementById('CurrencyCode');
+        // Dynamic show/hide based on payer and receiver types
+        document.getElementById('payerType').addEventListener('change', function() {
+            const payerType = this.value;
+            const payerCustomerDiv = document.getElementById('payerCustomerDiv');
+            const payerBankDiv = document.getElementById('payerBankDiv');
             
-            if (bankAccountSelect.value) {
-                // Show warning that currency will be validated on server
-                const warningDiv = document.getElementById('currency-warning');
-                if (warningDiv) {
-                    warningDiv.style.display = 'block';
-                }
+            if (payerType === '@ForexExchange.Models.PayerType.Customer') {
+                payerCustomerDiv.style.display = 'block';
+                payerBankDiv.style.display = 'none';
+                // Clear bank account selection
+                document.querySelector('[name="PayerBankAccountId"]').value = '';
+            } else if (payerType === '@ForexExchange.Models.PayerType.System') {
+                payerCustomerDiv.style.display = 'none';
+                payerBankDiv.style.display = 'block';
+                // Clear customer selection
+                document.querySelector('[name="PayerCustomerId"]').value = '';
             } else {
-                const warningDiv = document.getElementById('currency-warning');
-                if (warningDiv) {
-                    warningDiv.style.display = 'none';
+                payerCustomerDiv.style.display = 'none';
+                payerBankDiv.style.display = 'none';
+                // Clear both selections
+                document.querySelector('[name="PayerCustomerId"]').value = '';
+                document.querySelector('[name="PayerBankAccountId"]').value = '';
+            }
+            validateCurrency();
+        });
+
+        document.getElementById('receiverType').addEventListener('change', function() {
+            const receiverType = this.value;
+            const receiverCustomerDiv = document.getElementById('receiverCustomerDiv');
+            const receiverBankDiv = document.getElementById('receiverBankDiv');
+            
+            if (receiverType === '@ForexExchange.Models.ReceiverType.Customer') {
+                receiverCustomerDiv.style.display = 'block';
+                receiverBankDiv.style.display = 'none';
+                // Clear bank account selection
+                document.querySelector('[name="ReceiverBankAccountId"]').value = '';
+            } else if (receiverType === '@ForexExchange.Models.ReceiverType.System') {
+                receiverCustomerDiv.style.display = 'none';
+                receiverBankDiv.style.display = 'block';
+                // Clear customer selection
+                document.querySelector('[name="ReceiverCustomerId"]').value = '';
+            } else {
+                receiverCustomerDiv.style.display = 'none';
+                receiverBankDiv.style.display = 'none';
+                // Clear both selections
+                document.querySelector('[name="ReceiverCustomerId"]').value = '';
+                document.querySelector('[name="ReceiverBankAccountId"]').value = '';
+            }
+            validateCurrency();
+        });
+
+        // Currency validation for bank accounts
+        function validateCurrency() {
+            const currencySelect = document.getElementById('CurrencyCode');
+            const payerBankSelect = document.querySelector('[name="PayerBankAccountId"]');
+            const receiverBankSelect = document.querySelector('[name="ReceiverBankAccountId"]');
+            const warningDiv = document.getElementById('currency-warning');
+            
+            if (!currencySelect.value) {
+                warningDiv.style.display = 'none';
+                return;
+            }
+
+            let hasConflict = false;
+            const selectedCurrency = currencySelect.value;
+
+            // Check payer bank account currency
+            if (payerBankSelect.value) {
+                const payerOption = payerBankSelect.options[payerBankSelect.selectedIndex];
+                const payerCurrency = payerOption.getAttribute('data-currency');
+                if (payerCurrency && payerCurrency !== selectedCurrency) {
+                    hasConflict = true;
                 }
             }
-        });
+
+            // Check receiver bank account currency
+            if (receiverBankSelect.value) {
+                const receiverOption = receiverBankSelect.options[receiverBankSelect.selectedIndex];
+                const receiverCurrency = receiverOption.getAttribute('data-currency');
+                if (receiverCurrency && receiverCurrency !== selectedCurrency) {
+                    hasConflict = true;
+                }
+            }
+
+            warningDiv.style.display = hasConflict ? 'block' : 'none';
+        }
+
+        // Add currency validation on all relevant changes
+        document.getElementById('CurrencyCode').addEventListener('change', validateCurrency);
+        document.querySelector('[name="PayerBankAccountId"]').addEventListener('change', validateCurrency);
+        document.querySelector('[name="ReceiverBankAccountId"]').addEventListener('change', validateCurrency);
+
+        // Prevent self-transactions
+        function validateSelfTransaction() {
+            const payerType = document.getElementById('payerType').value;
+            const receiverType = document.getElementById('receiverType').value;
+            
+            if (payerType === '@ForexExchange.Models.PayerType.Customer' && 
+                receiverType === '@ForexExchange.Models.ReceiverType.Customer') {
+                const payerCustomer = document.querySelector('[name="PayerCustomerId"]').value;
+                const receiverCustomer = document.querySelector('[name="ReceiverCustomerId"]').value;
+                
+                if (payerCustomer && receiverCustomer && payerCustomer === receiverCustomer) {
+                    alert('مشتری نمی‌تواند به خودش پرداخت کند.');
+                    document.querySelector('[name="ReceiverCustomerId"]').value = '';
+                }
+            }
+            
+            if (payerType === '@ForexExchange.Models.PayerType.System' && 
+                receiverType === '@ForexExchange.Models.ReceiverType.System') {
+                const payerBank = document.querySelector('[name="PayerBankAccountId"]').value;
+                const receiverBank = document.querySelector('[name="ReceiverBankAccountId"]').value;
+                
+                if (payerBank && receiverBank && payerBank === receiverBank) {
+                    alert('حساب بانکی نمی‌تواند به خودش انتقال داشته باشد.');
+                    document.querySelector('[name="ReceiverBankAccountId"]').value = '';
+                }
+            }
+        }
+
+        document.querySelector('[name="PayerCustomerId"]').addEventListener('change', validateSelfTransaction);
+        document.querySelector('[name="ReceiverCustomerId"]').addEventListener('change', validateSelfTransaction);
+        document.querySelector('[name="PayerBankAccountId"]').addEventListener('change', validateSelfTransaction);
+        document.querySelector('[name="ReceiverBankAccountId"]').addEventListener('change', validateSelfTransaction);
 
         // Form validation
         document.querySelector('form').addEventListener('submit', function(e) {

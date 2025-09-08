@@ -117,9 +117,13 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
-            // Load all accounting documents for this customer
+            // Load all accounting documents for this customer (as payer or receiver)
             var allAccountingDocuments = await _context.AccountingDocuments
-                .Where(d => d.CustomerId == id)
+                .Include(d => d.PayerCustomer)
+                .Include(d => d.ReceiverCustomer)
+                .Include(d => d.PayerBankAccount)
+                .Include(d => d.ReceiverBankAccount)
+                .Where(d => d.PayerCustomerId == id || d.ReceiverCustomerId == id)
                 .OrderByDescending(d => d.CreatedAt)
                 .ToListAsync();
 
@@ -168,10 +172,13 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
-            // Get all accounting documents for this customer
+            // Get all accounting documents for this customer (as payer or receiver)
             var documents = await _context.AccountingDocuments
-                .Include(a => a.BankAccount)
-                .Where(a => a.CustomerId == id)
+                .Include(a => a.PayerCustomer)
+                .Include(a => a.ReceiverCustomer)
+                .Include(a => a.PayerBankAccount)
+                .Include(a => a.ReceiverBankAccount)
+                .Where(a => a.PayerCustomerId == id || a.ReceiverCustomerId == id)
                 .OrderByDescending(a => a.DocumentDate)
                 .ToListAsync();
 
