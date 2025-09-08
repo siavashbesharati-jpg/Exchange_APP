@@ -934,99 +934,421 @@
                         </div>
                     </section>
 
-                    <!-- Accounting Section -->
-                    <section id="accounting" class="mb-5">
+                    <!-- Bilateral Accounting Documents Section -->
+                    <section id="accounting-documents" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
                             <i class="fas fa-file-invoice me-2"></i>
-                            اسناد حسابداری
+                            سیستم اسناد حسابداری دوطرفه (Bilateral Accounting Documents)
                         </h2>
-                        <div class="row">
+                        
+                        <div class="alert alert-success mb-4">
+                            <h5><i class="fas fa-star me-2"></i>سیستم نوین اسناد حسابداری</h5>
+                            <p class="mb-0">سیستم پیشرفته اسناد حسابداری دوطرفه که امکان ثبت و پیگیری تمام انواع تراکنش‌های مالی بین مشتریان، سیستم و حساب‌های بانکی را فراهم می‌کند.</p>
+                        </div>
+
+                        <div class="row mb-4">
                             <div class="col-lg-8">
-                                <div class="card mb-4">
-                                    <div class="card-header bg-gradient-dark text-white">
+                                <div class="card">
+                                    <div class="card-header bg-gradient-primary text-white">
                                         <h5 class="mb-0">
-                                            <i class="fas fa-book me-2"></i>
-                                            مدیریت اسناد حسابداری
+                                            <i class="fas fa-exchange-alt me-2"></i>
+                                            منطق تراز و بدهی (Balance & Debt Logic)
                                         </h5>
                                     </div>
                                     <div class="card-body">
-                                        <p><strong>کنترلر:</strong> AccountingDocumentsController</p>
-                                        <p><strong>مسیر:</strong> /AccountingDocuments</p>
-                                        
-                                        <h6>انواع اسناد حسابداری:</h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <ul class="list-unstyled">
-                                                    <li>📄 <strong>سند خرید ارز:</strong> ثبت خرید ارز از مشتری</li>
-                                                    <li>📄 <strong>سند فروش ارز:</strong> ثبت فروش ارز به مشتری</li>
-                                                    <li>📄 <strong>سند کامیسیون:</strong> ثبت درآمد کامیسیون</li>
-                                                    <li>📄 <strong>سند تعدیل:</strong> تصحیحات حسابداری</li>
-                                                </ul>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <ul class="list-unstyled">
-                                                    <li>📄 <strong>سند انتقال:</strong> انتقال وجه بین حساب‌ها</li>
-                                                    <li>📄 <strong>سند موجودی:</strong> تنظیم موجودی ارزها</li>
-                                                    <li>📄 <strong>سند بانکی:</strong> عملیات بانکی</li>
-                                                    <li>📄 <strong>سند گزارش:</strong> اسناد خلاصه دوره‌ای</li>
-                                                </ul>
-                                            </div>
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-lightbulb me-2"></i>درک صحیح سیستم:</h6>
+                                            <ul class="mb-0">
+                                                <li><strong>تراز مشتری = بدهی/بستانکاری:</strong> عدد منفی = بدهکار، عدد مثبت = بستانکار</li>
+                                                <li><strong>تراز حساب بانکی = موجودی واقعی:</strong> عدد مثبت = موجودی، عدد منفی = اوردرافت</li>
+                                            </ul>
                                         </div>
 
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-robot me-2"></i>
-                                            <strong>ثبت خودکار:</strong> اسناد حسابداری به صورت خودکار برای هر معامله تولید می‌شوند.
+                                        <h6>فرمول‌های محاسبه:</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>عمل</th>
+                                                        <th>تأثیر بر مشتری</th>
+                                                        <th>تأثیر بر حساب بانکی</th>
+                                                        <th>توضیح</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="table-success">
+                                                        <td><strong>مشتری پرداخت می‌کند</strong></td>
+                                                        <td><span class="badge bg-success">+مبلغ</span></td>
+                                                        <td>-</td>
+                                                        <td>بدهی کم می‌شود</td>
+                                                    </tr>
+                                                    <tr class="table-warning">
+                                                        <td><strong>مشتری دریافت می‌کند</strong></td>
+                                                        <td><span class="badge bg-warning text-dark">-مبلغ</span></td>
+                                                        <td>-</td>
+                                                        <td>بدهی زیاد می‌شود</td>
+                                                    </tr>
+                                                    <tr class="table-info">
+                                                        <td><strong>حساب بانکی پرداخت</strong></td>
+                                                        <td>-</td>
+                                                        <td><span class="badge bg-danger">-مبلغ</span></td>
+                                                        <td>موجودی کم می‌شود</td>
+                                                    </tr>
+                                                    <tr class="table-primary">
+                                                        <td><strong>حساب بانکی دریافت</strong></td>
+                                                        <td>-</td>
+                                                        <td><span class="badge bg-primary">+مبلغ</span></td>
+                                                        <td>موجودی زیاد می‌شود</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <div class="col-lg-4">
+                                <div class="card bg-gradient-info text-white">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-calculator display-4 mb-3"></i>
+                                        <h5>نمونه محاسبه</h5>
+                                        <div class="text-start">
+                                            <p><strong>قبل:</strong> مشتری: -500 USD</p>
+                                            <p><strong>پرداخت:</strong> +500 USD</p>
+                                            <p><strong>بعد:</strong> مشتری: 0 USD</p>
+                                            <hr>
+                                            <small>بدهی 500 دلاری تسویه شد</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- Scenarios Table -->
+                        <div class="card mb-4" id="scenarios-table">
+                            <div class="card-header bg-gradient-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-table me-2"></i>
+                                    جدول سناریوهای کامل با تراز دقیق
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover align-middle">
+                                        <thead class="table-dark text-center">
+                                            <tr>
+                                                <th width="15%">Scenario<br><small>سناریو</small></th>
+                                                <th width="12%">Payer<br><small>پرداخت‌کننده</small></th>
+                                                <th width="12%">Receiver<br><small>دریافت‌کننده</small></th>
+                                                <th width="10%">Amount<br><small>مبلغ</small></th>
+                                                <th width="25%">Balance Before Confirm<br><small>تراز قبل از تأیید</small></th>
+                                                <th width="26%">Balance After Confirm<br><small>تراز بعد از تأیید</small></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Customer to Customer -->
+                                            <tr class="table-light">
+                                                <td class="text-center">
+                                                    <span class="badge bg-primary mb-1">Customer → Customer</span><br>
+                                                    <small class="text-muted">مشتری به مشتری</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-info text-dark">احمد رضایی</span><br>
+                                                    <small class="text-muted">Customer A</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-info text-dark">فاطمه احمدی</span><br>
+                                                    <small class="text-muted">Customer B</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-primary">1,000 USD</strong>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-danger">احمد: <strong>-500 USD</strong></span><br>
+                                                        <span class="text-success">فاطمه: <strong>+200 USD</strong></span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-success">احمد: <strong>+500 USD</strong> (-500+1000)</span><br>
+                                                        <span class="text-danger">فاطمه: <strong>-800 USD</strong> (+200-1000)</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Customer to System -->
+                                            <tr class="table-success">
+                                                <td class="text-center">
+                                                    <span class="badge bg-success mb-1">Customer → System</span><br>
+                                                    <small class="text-muted">مشتری به سیستم</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-info text-dark">احمد رضایی</span><br>
+                                                    <small class="text-muted">Customer</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-danger">سیستم</span><br>
+                                                    <small class="text-muted">صندوق نقدی</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-success">500 USD</strong>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-danger">احمد: <strong>-500 USD</strong></span><br>
+                                                        <span class="text-primary">صندوق نقدی: <strong>10,000 USD</strong></span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-success">احمد: <strong>0 USD</strong> (-500+500)</span><br>
+                                                        <span class="text-primary">صندوق نقدی: <strong>10,500 USD</strong> (10000+500)</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <!-- System to Customer -->
+                                            <tr class="table-warning">
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning text-dark mb-1">System → Customer</span><br>
+                                                    <small class="text-muted">سیستم به مشتری</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-danger">سیستم</span><br>
+                                                    <small class="text-muted">صندوق نقدی</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-info text-dark">فاطمه احمدی</span><br>
+                                                    <small class="text-muted">Customer</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-warning">300 USD</strong>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-primary">صندوق نقدی: <strong>8,000 USD</strong></span><br>
+                                                        <span class="text-success">فاطمه: <strong>0 USD</strong></span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-danger">صندوق نقدی: <strong>7,700 USD</strong> (8000-300)</span><br>
+                                                        <span class="text-danger">فاطمه: <strong>-300 USD</strong> (0-300)</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <!-- System to System -->
+                                            <tr class="table-info">
+                                                <td class="text-center">
+                                                    <span class="badge bg-info mb-1">System → System</span><br>
+                                                    <small class="text-muted">سیستم به سیستم</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-danger">بانک پارسیان</span><br>
+                                                    <small class="text-muted">Payer Bank</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-danger">بانک ملی</span><br>
+                                                    <small class="text-muted">Receiver Bank</small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-info">5,000,000 تومان</strong>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-primary">پارسیان: <strong>50,000,000 تومان</strong></span><br>
+                                                        <span class="text-primary">ملی: <strong>20,000,000 تومان</strong></span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="small">
+                                                        <span class="text-danger">پارسیان: <strong>45,000,000 تومان</strong> (50M-5M)</span><br>
+                                                        <span class="text-success">ملی: <strong>25,000,000 تومان</strong> (20M+5M)</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Legend -->
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-info-circle me-2"></i>راهنمای رنگ‌ها:</h6>
+                                            <div class="small">
+                                                <span class="badge bg-success me-1">سبز</span> = مثبت (بستانکار/موجودی)<br>
+                                                <span class="badge bg-danger me-1">قرمز</span> = منفی (بدهکار/کسری)<br>
+                                                <span class="badge bg-primary me-1">آبی</span> = تغییر مثبت<br>
+                                                <span class="badge bg-warning text-dark me-1">زرد</span> = تغییر منفی
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="alert alert-warning">
+                                            <h6><i class="fas fa-calculator me-2"></i>فرمول محاسبه:</h6>
+                                            <div class="small">
+                                                <strong>مشتری:</strong> تراز جدید = تراز قبلی + (±مبلغ)<br>
+                                                <strong>بانک:</strong> موجودی جدید = موجودی قبلی + (±مبلغ)<br>
+                                                <em>نکته: علامت بستگی به نقش (پرداخت/دریافت) دارد</em>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Document Types -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
                                 <div class="card">
-                                    <div class="card-header bg-success text-white">
+                                    <div class="card-header bg-secondary text-white">
                                         <h5 class="mb-0">
-                                            <i class="fas fa-search me-2"></i>
-                                            جستجو و مدیریت اسناد
+                                            <i class="fas fa-file-alt me-2"></i>
+                                            انواع اسناد حسابداری
                                         </h5>
                                     </div>
                                     <div class="card-body">
-                                        <h6>امکانات مدیریتی:</h6>
-                                        <ul class="list-unstyled">
-                                            <li>🔍 جستجو بر اساس شماره سند</li>
-                                            <li>📅 فیلتر بر اساس تاریخ</li>
-                                            <li>💰 جستجو بر اساس مبلغ</li>
-                                            <li>👤 فیلتر بر اساس مشتری</li>
-                                            <li>📊 دسته‌بندی بر اساس نوع سند</li>
-                                            <li>📄 صادرات فهرست اسناد</li>
-                                            <li>✏️ ویرایش اسناد (با مجوز)</li>
-                                            <li>🗑️ حذف اسناد اشتباه</li>
-                                        </ul>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>نوع</th>
+                                                        <th>کاربرد</th>
+                                                        <th>مثال</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><span class="badge bg-success">نقدی</span></td>
+                                                        <td>تراکنش‌های نقدی</td>
+                                                        <td>دریافت وجه نقد</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><span class="badge bg-info">رسید بانکی</span></td>
+                                                        <td>تراکنش‌های بانکی</td>
+                                                        <td>واریز به حساب</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><span class="badge bg-warning text-dark">حواله</span></td>
+                                                        <td>انتقال وجه</td>
+                                                        <td>حواله بین بانکی</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="col-lg-4">
-                                <div class="card bg-primary text-white mb-3">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-chart-pie display-4 mb-3"></i>
-                                        <h5>حسابداری دقیق</h5>
-                                        <ul class="list-unstyled text-start">
-                                            <li>📊 ردیابی کامل تراکنش‌ها</li>
-                                            <li>💰 محاسبه دقیق سود و زیان</li>
-                                            <li>📈 تحلیل مالی پیشرفته</li>
-                                            <li>🔄 تطبیق خودکار</li>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-magic me-2"></i>
+                                            تولید خودکار عنوان
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>الگوی تولید:</strong></p>
+                                        <code>[نوع سند] - [پرداخت‌کننده] به [دریافت‌کننده] - [مبلغ] [ارز]</code>
+                                        
+                                        <h6 class="mt-3">نمونه‌های تولید شده:</h6>
+                                        <ul class="list-unstyled small">
+                                            <li><i class="fas fa-arrow-right text-success me-1"></i> نقدی - احمد رضایی به سیستم - ملی - ۱,۰۰۰,۰۰۰ IRR</li>
+                                            <li><i class="fas fa-arrow-right text-info me-1"></i> رسید بانکی - سیستم - پارسیان به فاطمه احمدی - ۵۰۰ USD</li>
+                                            <li><i class="fas fa-arrow-right text-warning me-1"></i> حواله - علی محمدی به مریم حسینی - ۲۰۰ EUR</li>
+                                        </ul>
+                                        
+                                        <div class="alert alert-info mt-3">
+                                            <small><i class="fas fa-info-circle me-1"></i> کاربر می‌تواند عنوان را دستی تغییر دهد</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Process Flow -->
+                        <div class="card mb-4" id="balance-logic">
+                            <div class="card-header bg-gradient-dark text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    فرآیند تأیید و اعمال سند
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-plus-circle text-primary me-2"></i>مرحله 1: ایجاد سند (Draft)</h6>
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-circle text-muted me-2" style="font-size: 0.5rem;"></i>سند ایجاد می‌شود اما <code>IsVerified = false</code></li>
+                                            <li><i class="fas fa-circle text-muted me-2" style="font-size: 0.5rem;"></i>هیچ تغییری در تراز ها اعمال نمی‌شود</li>
+                                            <li><i class="fas fa-circle text-muted me-2" style="font-size: 0.5rem;"></i>سند قابل ویرایش و حذف است</li>
+                                            <li><i class="fas fa-circle text-muted me-2" style="font-size: 0.5rem;"></i>عنوان خودکار تولید می‌شود</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-check-circle text-success me-2"></i>مرحله 2: تأیید سند (Confirmed)</h6>
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-circle text-success me-2" style="font-size: 0.5rem;"></i>بررسی اعتبار ارز و حساب‌ها</li>
+                                            <li><i class="fas fa-circle text-success me-2" style="font-size: 0.5rem;"></i>به‌روزرسانی تراز مشتری</li>
+                                            <li><i class="fas fa-circle text-success me-2" style="font-size: 0.5rem;"></i>به‌روزرسانی تراز حساب بانکی</li>
+                                            <li><i class="fas fa-circle text-success me-2" style="font-size: 0.5rem;"></i>ثبت تاریخ و کاربر تأیید‌کننده</li>
                                         </ul>
                                     </div>
                                 </div>
+                                
+                                <div class="alert alert-warning mt-3">
+                                    <h6><i class="fas fa-exclamation-triangle me-2"></i>قوانین مهم:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="mb-0">
+                                                <li>ارز حساب بانکی باید با ارز سند مطابقت داشته باشد</li>
+                                                <li>فقط سندهای تأیید شده روی تراز تأثیر می‌گذارند</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="mb-0">
+                                                <li>تأیید مجدد سند امکان‌پذیر نیست</li>
+                                                <li>حذف سند تأیید شده نیاز به برگشت تراز دارد</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                <div class="card bg-info text-white">
-                                    <div class="card-body text-center">
-                                        <i class="fas fa-archive display-4 mb-3"></i>
-                                        <h5>بایگانی اسناد</h5>
-                                        <ul class="list-unstyled text-start">
-                                            <li>🗂️ نگهداری دائمی</li>
-                                            <li>🔍 دسترسی سریع</li>
-                                            <li>📧 صادرات گزارشات</li>
-                                            <li>🛡️ پشتیبان‌گیری امن</li>
-                                        </ul>
+                        <!-- Quick Access Links -->
+                        <div class="card">
+                            <div class="card-header bg-gradient-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-link me-2"></i>
+                                    لینک‌های دسترسی سریع
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <a href="@Url.Action("Upload", "AccountingDocuments")" class="btn btn-primary btn-block mb-2">
+                                            <i class="fas fa-plus me-2"></i>ثبت سند جدید
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="@Url.Action("Index", "AccountingDocuments")" class="btn btn-secondary btn-block mb-2">
+                                            <i class="fas fa-list me-2"></i>مشاهده اسناد
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="#balance-logic" class="btn btn-info btn-block mb-2">
+                                            <i class="fas fa-calculator me-2"></i>منطق تراز
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <a href="#scenarios-table" class="btn btn-success btn-block mb-2">
+                                            <i class="fas fa-table me-2"></i>جدول سناریوها
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -1195,11 +1517,27 @@
                         <div class="accordion" id="faqAccordion">
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq0">
+                                        سیستم اسناد حسابداری دوطرفه چگونه کار می‌کند؟
+                                    </button>
+                                </h2>
+                                <div id="faq0" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        <strong>سیستم جدید اسناد حسابداری دوطرفه:</strong><br>
+                                        این سیستم امکان ثبت تراکنش‌های پیچیده بین مشتریان، سیستم و حساب‌های بانکی را فراهم می‌کند. 
+                                        منطق اصلی: <code>تراز مشتری = بدهی/بستانکاری</code> و <code>تراز بانک = موجودی واقعی</code>. 
+                                        وقتی مشتری پول می‌پردازد، بدهی‌اش کم می‌شود (+مبلغ). وقتی پول دریافت می‌کند، بدهی‌اش زیاد می‌شود (-مبلغ). 
+                                        عنوان اسناد نیز خودکار تولید می‌شود اما قابل ویرایش است.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
                                     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
                                         چگونه OCR اسناد بانکی کار می‌کند؟
                                     </button>
                                 </h2>
-                                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                                     <div class="accordion-body">
                                         سیستم OCR با استفاده از هوش مصنوعی OpenRouter، متن موجود در تصاویر اسناد بانکی را استخراج می‌کند. سپس اطلاعات مهم مانند مبلغ، تاریخ و نوع تراکنش را شناسایی کرده و در سیستم ثبت می‌کند. دقت این فرآیند بالای ۹۵٪ است.
                                     </div>
