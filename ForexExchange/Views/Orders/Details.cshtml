@@ -1,4 +1,5 @@
 @model ForexExchange.Models.Order
+@using ForexExchange.Extensions
 
 @{
     ViewData["Title"] = "جزئیات معامله";
@@ -80,22 +81,22 @@
                     @if (Model.FromCurrency?.Code == "IRR")
                     {
                         @* Show reversed rate when FromCurrency is IRR *@
-                        @((1 / Model.Rate).ToString("N0"))
+                        @((1 / Model.Rate).FormatCurrency("IRR"))
                     }
                     else if (Model.ToCurrency?.Code == "IRR")
                     {
-                        @Model.Rate.ToString("N0")
+                        @Model.Rate.FormatCurrency("IRR")
                     }
                     else
                     {
-                        @Model.Rate.ToString("N2")
+                        @Model.Rate.FormatCurrency(Model.ToCurrency?.Code)
                     }
                 </div>
                 
             </div>
             <div class="row mt-2">
-                        <div class="col-md-6"><strong> دریافت می کنیم  :</strong> @(Model.FromCurrency?.Code == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2")) @Model.FromCurrency?.Code
-                        <div class="col-md-6"><strong> پرداخت می کنیم    :</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.TotalAmount.ToString("N0") : Model.TotalAmount.ToString("N2")) @Model.ToCurrency?.Code</div>
+                        <div class="col-md-6"><strong> دریافت می کنیم  :</strong> @Model.Amount.FormatCurrency(Model.FromCurrency?.Code) @Model.FromCurrency?.Code
+                        <div class="col-md-6"><strong> پرداخت می کنیم    :</strong> @Model.TotalAmount.FormatCurrency(Model.ToCurrency?.Code) @Model.ToCurrency?.Code</div>
                 </div>
             </div>
         </div>
@@ -147,15 +148,15 @@
                                         <i class="fas fa-arrow-right mx-1"></i>
                                         <strong>@availableOrder.ToCurrency?.Code</strong>
                                     </td>
-                                    <td>@(availableOrder.FromCurrency?.Code == "IRR" ? availableOrder.Amount.ToString("N0") : availableOrder.Amount.ToString("N2")) @availableOrder.FromCurrency?.Code</td>
-                                    <td>@(availableOrder.ToCurrency?.Code == "IRR" ? availableOrder.Rate.ToString("N0") : availableOrder.Rate.ToString("N2"))</td>
+                                    <td>@availableOrder.Amount.FormatCurrency(availableOrder.FromCurrency?.Code) @availableOrder.FromCurrency?.Code</td>
+                                    <td>@availableOrder.Rate.FormatCurrency(availableOrder.ToCurrency?.Code == "IRR" ? "IRR" : availableOrder.ToCurrency?.Code)</td>
                                     <td>
                                         @{
                                             var remaining = availableOrder.Amount - availableOrder.FilledAmount;
                                         }
-                                        <strong>@(availableOrder.FromCurrency?.Code == "IRR" ? remaining.ToString("N0") : remaining.ToString("N2"))</strong> @availableOrder.FromCurrency?.Code
+                                        <strong>@remaining.FormatCurrency(availableOrder.FromCurrency?.Code)</strong> @availableOrder.FromCurrency?.Code
                                         <br>
-                                        <small class="text-muted">از @(availableOrder.FromCurrency?.Code == "IRR" ? availableOrder.Amount.ToString("N0") : availableOrder.Amount.ToString("N2"))</small>
+                                        <small class="text-muted">از @availableOrder.Amount.FormatCurrency(availableOrder.FromCurrency?.Code)</small>
                                     </td>
                                     <td>
                                         <small>@availableOrder.CreatedAt.ToString("yyyy/MM/dd")</small>

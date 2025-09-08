@@ -16,26 +16,25 @@ namespace ForexExchange.Extensions
         /// <returns>Formatted string with thousand separators</returns>
         public static string FormatCurrency(this decimal value, string currencyCode = null)
         {
-            // For IRR (Iranian Rial), use no decimal places as it's typically whole numbers
+            // For IRR (Iranian Rial), use no decimal places and round to nearest whole number
             if (currencyCode == "IRR")
             {
-                return value.ToString("N0", CultureInfo.InvariantCulture);
+                return Math.Round(value).ToString("N0", CultureInfo.InvariantCulture);
             }
             
-            // For other currencies, check if decimal part is zero
-            if (value % 1 == 0)
+            // For non-IRR currencies, use up to 3 decimal places with proper rounding, remove trailing zeros
+            var rounded = Math.Round(value, 3, MidpointRounding.AwayFromZero);
+            
+            // Format with 3 decimals first, then remove trailing zeros
+            var formatted = rounded.ToString("N3", CultureInfo.InvariantCulture);
+            
+            // Remove trailing zeros and decimal point if no decimals remain
+            if (formatted.Contains("."))
             {
-                // No decimal places if the value is a whole number
-                return value.ToString("N0", CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                // Use appropriate decimal places and remove trailing zeros
-                var formatted = value.ToString("N8", CultureInfo.InvariantCulture);
-                // Remove trailing zeros and decimal point if not needed
                 formatted = formatted.TrimEnd('0').TrimEnd('.');
-                return formatted;
             }
+            
+            return formatted;
         }
 
         /// <summary>

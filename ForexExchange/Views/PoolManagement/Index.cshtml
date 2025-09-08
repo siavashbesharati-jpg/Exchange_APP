@@ -296,7 +296,7 @@
             `;
             document.getElementById('editCurrentBalance').innerHTML = `
                 <strong class="${pool.balance >= 0 ? 'text-success' : 'text-danger'}">
-                    ${formatNumber(pool.balance)} ${pool.currencyCode}
+                    ${formatNumber(pool.balance, pool.currencyCode)} ${pool.currencyCode}
                 </strong>
             `;
             document.getElementById('newBalance').value = pool.balance;
@@ -318,7 +318,7 @@
                 const color = difference > 0 ? 'success' : 'danger';
                 diffElement.innerHTML = `
                     <i class="fas fa-calculator me-2"></i>
-                    <strong>تغییر: ${sign}${formatNumber(difference)} ${currentPoolData.currencyCode}</strong>
+                    <strong>تغییر: ${sign}${formatNumber(difference, currentPoolData.currencyCode)} ${currentPoolData.currencyCode}</strong>
                 `;
                 diffElement.className = `alert alert-${color}`;
                 diffElement.style.display = 'block';
@@ -399,7 +399,7 @@
             // Update balance
             balanceElement.innerHTML = `
                 <i class="${data.newBalance >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'} me-1"></i>
-                ${formatNumber(data.newBalance)}
+                ${formatNumber(data.newBalance, data.currencyCode)}
             `;
             balanceElement.className = `text-${data.newBalance >= 0 ? 'success' : 'danger'} mb-0 fw-bold`;
             
@@ -429,8 +429,9 @@
             return flags[currencyCode] || '💱';
         }
 
-        function formatNumber(num) {
-            return new Intl.NumberFormat('fa-IR').format(num);
+        function formatNumber(num, currencyCode = '') {
+            // Use the universal currency formatter
+            return formatCurrency(num, currencyCode);
         }
 
         function showAlert(type, message) {

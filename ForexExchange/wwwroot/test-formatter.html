@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Currency Formatter Test</title>
+    <script src="/js/currency-formatter.js"></script>
+</head>
+<body>
+    <h1>Currency Formatter Test</h1>
+    
+    <h2>Test Results:</h2>
+    <div id="test-results"></div>
+    
+    <script>
+        function runTests() {
+            const tests = [
+                // IRR Tests (no decimals)
+                { amount: 1234567.89, currency: 'IRR', expected: '1,234,568', description: 'IRR rounding' },
+                { amount: 1000000, currency: 'IRR', expected: '1,000,000', description: 'IRR whole number' },
+                { amount: 123.45, currency: 'IRR', expected: '123', description: 'IRR small amount' },
+                
+                // USD Tests (3 decimals)
+                { amount: 1234.5678, currency: 'USD', expected: '1,234.568', description: 'USD rounding' },
+                { amount: 1000, currency: 'USD', expected: '1,000.000', description: 'USD whole number' },
+                { amount: 12.345, currency: 'USD', expected: '12.345', description: 'USD exact 3 decimals' },
+                { amount: 12.3456, currency: 'USD', expected: '12.346', description: 'USD round up' },
+                
+                // EUR Tests (3 decimals)
+                { amount: 999.999, currency: 'EUR', expected: '999.999', description: 'EUR exact' },
+                { amount: 999.9996, currency: 'EUR', expected: '1,000.000', description: 'EUR round up to 1000' },
+                
+                // Edge cases
+                { amount: 0, currency: 'IRR', expected: '0', description: 'Zero IRR' },
+                { amount: 0, currency: 'USD', expected: '0.000', description: 'Zero USD' },
+            ];
+            
+            let html = '<ul>';
+            let passed = 0;
+            let failed = 0;
+            
+            tests.forEach(test => {
+                const result = formatCurrency(test.amount, test.currency);
+                const isPass = result === test.expected;
+                
+                if (isPass) passed++;
+                else failed++;
+                
+                html += `<li style="color: ${isPass ? 'green' : 'red'}">
+                    <strong>${test.description}:</strong> 
+                    ${test.amount} ${test.currency} → "${result}" 
+                    ${isPass ? '✓' : `✗ (expected "${test.expected}")`}
+                </li>`;
+            });
+            
+            html += '</ul>';
+            html += `<p><strong>Summary:</strong> ${passed} passed, ${failed} failed</p>`;
+            
+            document.getElementById('test-results').innerHTML = html;
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

@@ -87,7 +87,7 @@
                 <div class="card text-white bg-info">
                     <div class="card-body">
                         <h5 class="card-title">کل حجم</h5>
-                        <h2 class="mb-0">@Model.Sum(r => r.TotalVolume).ToString("N0")</h2>
+                        <h2 class="mb-0">@Model.Sum(r => r.TotalVolume).FormatCurrency("IRR")</h2>
                     </div>
                 </div>
             </div>
@@ -139,11 +139,11 @@
                                                 <div class="row mb-3">
                                                     <div class="col-6">
                                                         <small class="text-muted">کل حجم:</small>
-                                                        <div><strong>@orderBookReport.TotalVolume.ToString("N2")</strong></div>
+                                                        <div><strong>@orderBookReport.TotalVolume.FormatCurrency(orderBookReport.FromCurrencyCode)</strong></div>
                                                     </div>
                                                     <div class="col-6">
                                                         <small class="text-muted">میانگین نرخ:</small>
-                                                        <div><strong>@orderBookReport.AverageRate.ToString("N0")</strong> تومان</div>
+                                                        <div><strong>@orderBookReport.AverageRate.FormatCurrency("IRR")</strong> تومان</div>
                                                     </div>
                                                 </div>
                                                 
@@ -169,9 +169,9 @@
                                                                         <td>
                                                                             <small>@order.Customer?.FullName</small>
                                                                         </td>
-                                                                        <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</td>
-                                                                        <td class="fw-bold">@(order.FromCurrency?.Code == "IRR" ? remainingAmount.ToString("N0") : remainingAmount.ToString("N2"))</td>
-                                                                        <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
+                                                                        <td>@order.Amount.FormatCurrency(order.FromCurrency?.Code)</td>
+                                                                        <td class="fw-bold">@remainingAmount.FormatCurrency(order.FromCurrency?.Code)</td>
+                                                                        <td>@order.Rate.FormatCurrency(order.ToCurrency?.Code)</td>
                                                                         <td>
                                                                             <small>@order.CreatedAt.ToString("MM/dd HH:mm")</small>
                                                                         </td>

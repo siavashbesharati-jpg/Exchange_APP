@@ -1,4 +1,5 @@
 @model ForexExchange.Controllers.FinancialReport
+@using ForexExchange.Extensions
 @{
     ViewData["Title"] = "گزارش مالی";
 }
@@ -285,7 +286,7 @@
                             <i class="fas fa-exchange-alt fa-2x text-primary"></i>
                         </div>
                     </div>
-                    <h2 class="h4 mb-1 text-primary">@Model.TotalTransactions.ToString("N0")</h2>
+                    <h2 class="h4 mb-1 text-primary">@((decimal)Model.TotalTransactions).FormatCurrency("IRR")</h2>
                     <p class="text-muted mb-0">کل تراکنش‌ها</p>
                     <small class="text-muted">
                         @((Model.TotalTransactions > 0 ? (Model.CompletedTransactions * 100.0 /
@@ -302,7 +303,7 @@
                             <i class="fas fa-check-circle fa-2x text-success"></i>
                         </div>
                     </div>
-                    <h2 class="h4 mb-1 text-success">@Model.CompletedTransactions.ToString("N0")</h2>
+                    <h2 class="h4 mb-1 text-success">@((decimal)Model.CompletedTransactions).FormatCurrency("IRR")</h2>
                     <p class="text-muted mb-0">تراکنش‌های تکمیل شده</p>
                     <small class="text-muted">
                         @((Model.TotalTransactions > 0 ? (Model.CompletedTransactions * 100.0 /

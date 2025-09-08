@@ -271,7 +271,7 @@
                         beginAtZero: true,
                         ticks: {
                             callback: function(value, index, values) {
-                                return new Intl.NumberFormat('fa-IR').format(value) + ' تومان';
+                                return formatCurrency(value, 'IRR') + ' تومان';
                             }
                         }
                     }

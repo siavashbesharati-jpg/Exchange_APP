@@ -346,24 +346,18 @@
             const toCurrency = currencies[toId];
             
             // Format numbers for RTL display
-            const formatNumber = (num) => {
-                return new Intl.NumberFormat('fa-IR', { 
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: toCurrency.code === 'IRR' ? 0 : 4
-                }).format(num);
+            const formatNumber = (num, currencyCode = '') => {
+                return formatCurrency(num, currencyCode);
             };
 
             const formatRate = (num) => {
-                return new Intl.NumberFormat('fa-IR', { 
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 8
-                }).format(num);
+                return formatCurrency(num, 'IRR'); // Rates are always displayed as IRR format
             };
             
             // Display result with proper RTL formatting
             document.getElementById('resultAmount').innerHTML = 
-                `<span class="text-primary">${formatNumber(amount)}</span> ${fromCurrency.code} = ` +
-                `<span class="text-success fw-bold">${formatNumber(result)}</span> ${toCurrency.code}`;
+                `<span class="text-primary">${formatNumber(amount, fromCurrency.code)}</span> ${fromCurrency.code} = ` +
+                `<span class="text-success fw-bold">${formatNumber(result, toCurrency.code)}</span> ${toCurrency.code}`;
             
             document.getElementById('resultRate').innerHTML = 
                 `نرخ تبدیل: ${formatRate(rateUsed)} (${direction})`;

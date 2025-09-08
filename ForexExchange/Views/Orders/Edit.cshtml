@@ -156,12 +156,8 @@
         function updateRateInputStep(fromCurrencyCode = null) { return; }
 
         function formatNumber(num, fromCurrencyCode = null) {
-            if (num === 0) return '0';
-            const maxDecimals = (fromCurrencyCode && fromCurrencyCode.toUpperCase() === 'IRR') ? 7 : 2;
-            let str = num.toFixed(maxDecimals);
-            str = str.replace(/\.?0+$/, '');
-            if (str.endsWith('.')) { str = str.slice(0, -1); }
-            return str;
+            // Use the universal currency formatter
+            return formatCurrency(num, fromCurrencyCode);
         }
 
         function showCurrencyPoolInfo(fromCurrencyId, toCurrencyId) {
@@ -173,12 +169,12 @@
             if (fromCode && Object.prototype.hasOwnProperty.call(currencyPools, fromCode)) {
                 const fromVal = currencyPools[fromCode];
                 const fromBadge = fromVal < 0 ? 'badge bg-danger' : 'badge bg-success';
-                html += `<strong>موجودی ${fromCode}:</strong> <span class="${fromBadge}">${fromVal.toLocaleString()}</span>`;
+                html += `<strong>موجودی ${fromCode}:</strong> <span class="${fromBadge}">${formatCurrency(fromVal, fromCode)}</span>`;
             }
             if (toCode && Object.prototype.hasOwnProperty.call(currencyPools, toCode)) {
                 const toVal = currencyPools[toCode];
                 const toBadge = toVal < 0 ? 'badge bg-danger' : 'badge bg-success';
-                html += `<br><strong>موجودی ${toCode}:</strong> <span class="${toBadge}">${toVal.toLocaleString()}</span>`;
+                html += `<br><strong>موجودی ${toCode}:</strong> <span class="${toBadge}">${formatCurrency(toVal, toCode)}</span>`;
             }
             if (html) {
                 document.getElementById('currencyPoolText').innerHTML = html;
@@ -238,7 +234,7 @@
             const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
             if (amount && rate && parseFloat(rate) > 0) {
                 var total = parseFloat(amount) * parseFloat(rate);
-                document.getElementById('calculationText').innerHTML = `${parseFloat(amount).toLocaleString()} × ${formatNumber(parseFloat(rate), fromCode)} = <strong>${total.toLocaleString()}</strong>`;
+                document.getElementById('calculationText').innerHTML = `${formatCurrency(parseFloat(amount), fromCode)} × ${formatNumber(parseFloat(rate), fromCode)} = <strong>${formatCurrency(total, 'IRR')}</strong>`;
                 document.getElementById('calculationResult').style.display = 'block';
                 document.getElementById('hiddenTotalAmount').value = total;
                 document.getElementById('hiddenRate').value = rate;
