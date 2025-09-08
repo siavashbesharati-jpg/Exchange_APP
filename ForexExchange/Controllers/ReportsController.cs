@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
-using ForexExchange.Services;
-using System.Globalization;
 
 namespace ForexExchange.Controllers
 {
@@ -12,13 +10,11 @@ namespace ForexExchange.Controllers
     {
         private readonly ForexDbContext _context;
         private readonly ILogger<ReportsController> _logger;
-        private readonly ISettingsService _settingsService;
 
-        public ReportsController(ForexDbContext context, ILogger<ReportsController> logger, ISettingsService settingsService)
+        public ReportsController(ForexDbContext context, ILogger<ReportsController> logger)
         {
             _context = context;
             _logger = logger;
-            _settingsService = settingsService;
         }
 
         // GET: Reports
@@ -27,424 +23,330 @@ namespace ForexExchange.Controllers
             return View();
         }
 
-        // GET: Reports/Financial
-        public async Task<IActionResult> Financial(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId)
+        // POST: Reports/GetQuickSummary
+        [HttpPost]
+        public async Task<IActionResult> GetQuickSummary(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
         {
-            // Default to last 30 days if no dates provided
-            fromDate ??= DateTime.Now.AddDays(-30).Date;
-            toDate ??= DateTime.Now.Date;
-
-            // Ensure fromDate starts at beginning of day and toDate includes the entire day
-            var fromDateTime = fromDate.Value.Date;
-            var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
-
-            // TODO: Implement exchange report with AccountingDocuments in new architecture
-            /*
-            var query = _context.Transactions
-                .Include(t => t.BuyerCustomer)
-                .Include(t => t.SellerCustomer)
-                .Include(t => t.BuyOrder)
-                .Include(t => t.SellOrder)
-                .Include(t => t.FromCurrency)
-                .Include(t => t.ToCurrency)
-                .Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime);
-            */
-
-            // TODO: Implement filtering in new architecture
-            /*
-            if (customerId.HasValue)
+            try
             {
-                query = query.Where(t => t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId);
-            }
+                // Default to last 30 days if no dates provided
+                fromDate ??= DateTime.Now.AddDays(-30).Date;
+                toDate ??= DateTime.Now.Date.AddDays(1).AddTicks(-1);
 
-            if (currencyId.HasValue)
-            {
-                query = query.Where(t => t.FromCurrencyId == currencyId || t.ToCurrencyId == currencyId);
-            }
-
-            var transactions = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-            */
-
-            // For now return empty results
-            var transactions = new List<dynamic>();
-
-            // TODO: Calculate financial metrics with AccountingDocuments in new architecture
-            var report = new FinancialReport
-            {
-                FromDate = fromDate.Value,
-                ToDate = toDate.Value,
-                TotalTransactions = 0, // transactions.Count,
-                CompletedTransactions = 0, // transactions.Count(t => t.Status == TransactionStatus.Completed),
-                PendingTransactions = 0, // transactions.Count(t => t.Status == TransactionStatus.Pending || t.Status == TransactionStatus.PaymentUploaded || t.Status == TransactionStatus.ReceiptConfirmed),
-                FailedTransactions = 0, // transactions.Count(t => t.Status == TransactionStatus.Failed),
-                TotalVolumeInToman = 0, // transactions.Where(t => t.Status == TransactionStatus.Completed).Sum(t => t.TotalInToman),
-                TotalCommissionEarned = 0, // transactions.Where(t => t.Status == TransactionStatus.Completed).Sum(t => t.TotalInToman * 0.005m), // 0.5% commission
-                // Transactions = new List<Transaction>() // Empty for now - TODO: Re-implement with new architecture
-            };
-
-            // TODO: Currency breakdown with AccountingDocuments in new architecture
-            /*
-            // Currency breakdown - include all transactions, not just completed ones
-            report.CurrencyBreakdown = transactions
-                .Where(t => t.FromCurrencyId.HasValue)
-                .GroupBy(t => t.FromCurrencyId.Value)
-                .Select(g => new CurrencyVolumeReport
+                // Get total orders
+                var ordersQuery = _context.Orders.AsQueryable();
+                
+                if (fromDate.HasValue && toDate.HasValue)
                 {
-                    CurrencyId = g.Key,
-                    CurrencyCode = g.First().FromCurrency?.Code ?? "",
-                    CurrencyName = g.First().FromCurrency?.Name ?? "",
-                    TotalVolume = g.Sum(t => t.Amount),
-                    TransactionCount = g.Count(),
-                    TotalValueInToman = g.Sum(t => t.TotalInToman),
-                    AverageRate = (decimal)g.Average(t => t.Rate ?? 0)
-                })
-                .ToList();
-
-            // Daily breakdown for chart - include all transactions
-            report.DailyBreakdown = transactions
-                .GroupBy(t => t.CreatedAt.Date)
-                .Select(g => new DailyVolumeReport
+                    ordersQuery = ordersQuery.Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+                }
+                
+                if (customerId.HasValue)
                 {
-                    Date = g.Key,
-                    TransactionCount = g.Count(),
-                    TotalVolumeInToman = g.Sum(t => t.TotalInToman)
-                })
-                .OrderBy(d => d.Date)
-                .ToList();
-            */
+                    ordersQuery = ordersQuery.Where(o => o.CustomerId == customerId);
+                }
 
-            // For now return empty breakdowns
-            report.CurrencyBreakdown = new List<CurrencyVolumeReport>();
-            report.DailyBreakdown = new List<DailyVolumeReport>();
+                var totalOrders = await ordersQuery.CountAsync();
 
-            ViewBag.Customers = await _context.Customers
-                .Where(c => c.IsActive)
-                .Select(c => new { Id = c.Id, Name = c.FullName })
-                .ToListAsync();
+                // Get total volume (approximation)
+                var totalVolume = await ordersQuery
+                    .SumAsync(o => o.Amount * o.Rate); // Fixed: Use Rate instead of ExchangeRate
 
-            // Load currencies for filter dropdown
-            ViewBag.Currencies = await _context.Currencies
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.PersianName)
-                .Select(c => new { c.Id, c.Code, c.PersianName })
-                .ToListAsync();
+                // Get active customers count
+                var activeCustomers = await _context.Customers.CountAsync(c => c.IsActive);
 
-            // Preserve filter values in ViewBag
-            ViewBag.SelectedCustomerId = customerId;
-            ViewBag.SelectedCurrencyId = currencyId;
+                // Get system balance (sum of all bank accounts)
+                var systemBalance = await _context.BankAccounts
+                    .SumAsync(ba => ba.AccountBalance);
 
-            return View(report);
+                return Json(new
+                {
+                    totalOrders,
+                    totalVolume = (long)totalVolume,
+                    activeCustomers,
+                    systemBalance = (long)systemBalance
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting quick summary");
+                return Json(new { totalOrders = 0, totalVolume = 0, activeCustomers = 0, systemBalance = 0 });
+            }
         }
 
-        // GET: Reports/CustomerActivity
-        public async Task<IActionResult> CustomerActivity(DateTime? fromDate, DateTime? toDate)
+        // POST: Reports/GetOrdersData
+        [HttpPost]
+        public async Task<IActionResult> GetOrdersData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
         {
-            fromDate ??= DateTime.Now.AddDays(-30).Date;
-            toDate ??= DateTime.Now.Date;
-
-            // Ensure fromDate starts at beginning of day and toDate includes the entire day
-            var fromDateTime = fromDate.Value.Date;
-            var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
-
-            var customerActivity = await _context.Customers
-                .Include(c => c.Orders.Where(o => o.CreatedAt >= fromDateTime && o.CreatedAt <= toDateTime))
-                // TODO: Re-implement with new architecture
-                // .Include(c => c.BuyTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
-                // .Include(c => c.SellTransactions.Where(t => t.CreatedAt >= fromDateTime && t.CreatedAt <= toDateTime))
-                .Where(c => c.IsActive)
-                .Select(c => new CustomerActivityReport
+            try
+            {
+                _logger.LogInformation("GetOrdersData called with fromDate: {FromDate}, toDate: {ToDate}", fromDate, toDate);
+                
+                // If no dates provided, get all orders (don't restrict by date)
+                if (!fromDate.HasValue && !toDate.HasValue)
                 {
-                    Customer = c,
-                    TotalOrders = c.Orders.Count,
-                    CompletedOrders = 0, // Removed OrderStatus from Order model
-                    // TODO: Re-implement with new architecture
-                    TotalTransactions = 0, // c.BuyTransactions.Count + c.SellTransactions.Count,
-                    CompletedTransactions = 0, // c.BuyTransactions.Count(t => t.Status == TransactionStatus.Completed) + c.SellTransactions.Count(t => t.Status == TransactionStatus.Completed),
-                    TotalVolumeInToman = 0, // Removed TotalInToman from Order model
-                    LastActivityDate = c.Orders.Any() ? c.Orders.Max(o => o.CreatedAt) : c.CreatedAt
-                })
-                .ToListAsync();
-
-            // Apply client-side sorting for decimal field (TotalVolumeInToman)
-            customerActivity = customerActivity.OrderByDescending(c => c.TotalVolumeInToman).ToList();
-
-            ViewBag.FromDate = fromDate;
-            ViewBag.ToDate = toDate;
-
-            return View(customerActivity);
-        }
-
-        // GET: Reports/OrderBook
-        public async Task<IActionResult> OrderBook(int? currencyId, string? currency)
-        {
-            var query = _context.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.FromCurrency)
-                .Include(o => o.ToCurrency)
-                .AsQueryable();
-
-            if (currencyId.HasValue)
-            {
-                query = query.Where(o => o.FromCurrencyId == currencyId || o.ToCurrencyId == currencyId);
-            }
-            else if (!string.IsNullOrEmpty(currency))
-            {
-                query = query.Where(o => o.FromCurrency.Symbol == currency || o.ToCurrency.Symbol == currency);
-            }
-
-            // Load currencies for filter dropdown
-            ViewBag.Currencies = await _context.Currencies
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.PersianName)
-                .ToListAsync();
-            
-            ViewBag.SelectedCurrency = currency;
-
-            // Load data first, then sort client-side for decimal fields
-            var orders = await query
-                .OrderByDescending(o => o.Rate)
-                .ToListAsync();
-
-            // Group by currency pair only
-            var orderBook = orders
-                .GroupBy(o => new { o.FromCurrencyId, o.ToCurrencyId })
-                .Select(g => new OrderBookReport
+                    // Get all orders without date restriction
+                    fromDate = DateTime.MinValue;
+                    toDate = DateTime.MaxValue;
+                }
+                else
                 {
-                    FromCurrencyId = g.Key.FromCurrencyId,
-                    ToCurrencyId = g.Key.ToCurrencyId,
-                    FromCurrencyCode = g.First().FromCurrency?.Code ?? "",
-                    ToCurrencyCode = g.First().ToCurrency?.Code ?? "",
-                    Orders = g.OrderByDescending(o => o.Rate).ToList(),
-                    TotalVolume = g.Sum(o => o.Amount - o.FilledAmount),
-                    AverageRate = g.Average(o => o.Rate),
-                    OrderCount = g.Count()
-                })
-                .ToList();
+                    // Default to last 30 days if only one date provided
+                    fromDate ??= DateTime.Now.AddDays(-30).Date;
+                    toDate ??= DateTime.Now.Date.AddDays(1).AddTicks(-1);
+                }
 
-            return View(orderBook);
-        }
+                var query = _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .AsQueryable();
 
-        // GET: Reports/Commission
-        public async Task<IActionResult> Commission(DateTime? fromDate, DateTime? toDate)
-        {
-            fromDate ??= DateTime.Now.AddDays(-30).Date;
-            toDate ??= DateTime.Now.Date;
+                _logger.LogInformation("Total orders in database: {Count}", await _context.Orders.CountAsync());
 
-            // Ensure fromDate starts at beginning of day and toDate includes the entire day
-            var fromDateTime = fromDate.Value.Date;
-            var toDateTime = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of the day
+                // Apply filters
+                if (fromDate.HasValue && toDate.HasValue && fromDate != DateTime.MinValue)
+                {
+                    query = query.Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+                    _logger.LogInformation("Applied date filter: {FromDate} to {ToDate}", fromDate, toDate);
+                }
 
-            // TODO: Implement commission report with AccountingDocuments in new architecture
-            /*
-            var completedTransactions = await _context.Transactions
-                .Where(t => t.Status == TransactionStatus.Completed && 
-                           t.CompletedAt >= fromDateTime && t.CompletedAt <= toDateTime)
-                .Include(t => t.BuyerCustomer)
-                .Include(t => t.SellerCustomer)
-                .ToListAsync();
-            */
+                if (customerId.HasValue)
+                {
+                    query = query.Where(o => o.CustomerId == customerId);
+                    _logger.LogInformation("Applied customer filter: {CustomerId}", customerId);
+                }
 
-            // For now return empty results
-            var completedTransactions = new List<dynamic>();
+                if (currencyId.HasValue)
+                {
+                    query = query.Where(o => o.FromCurrencyId == currencyId || o.ToCurrencyId == currencyId);
+                    _logger.LogInformation("Applied currency filter: {CurrencyId}", currencyId);
+                }
 
-            // Get dynamic rates from settings
-            var commissionRate = await _settingsService.GetCommissionRateAsync();
-            var exchangeFeeRate = await _settingsService.GetExchangeFeeRateAsync();
+                var ordersCount = await query.CountAsync();
+                _logger.LogInformation("Orders matching filters: {Count}", ordersCount);
 
-            // TODO: Calculate commission report in new architecture
-            var commissionReport = new CommissionReport
-            {
-                FromDate = fromDate.Value,
-                ToDate = toDate.Value,
-                TotalTransactions = 0, // completedTransactions.Count,
-                TotalVolumeInToman = 0, // completedTransactions.Sum(t => t.TotalInToman),
-                TotalCommissionEarned = 0, // completedTransactions.Sum(t => t.TotalInToman * commissionRate),
-                TotalExchangeFeesEarned = 0, // completedTransactions.Sum(t => t.TotalInToman * exchangeFeeRate),
-                AverageTransactionValue = 0, // completedTransactions.Any() ? (decimal)completedTransactions.Average(t => t.TotalInToman) : 0,
-                DailyCommissions = new List<DailyCommissionReport>() // Empty for now
-                /*
-                DailyCommissions = completedTransactions
-                    .Where(t => t.CompletedAt.HasValue)
-                    .GroupBy(t => t.CompletedAt!.Value.Date)
-                    .Select(g => new DailyCommissionReport
+                var orders = await query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Take(1000) // Limit results
+                    .Select(o => new
                     {
-                        Date = g.Key,
-                        TransactionCount = g.Count(),
-                        TotalVolume = g.Sum(t => t.TotalInToman),
-                        CommissionEarned = g.Sum(t => t.TotalInToman * commissionRate),
-                        ExchangeFeesEarned = g.Sum(t => t.TotalInToman * exchangeFeeRate)
+                        id = o.Id,
+                        createdAt = o.CreatedAt,
+                        customerName = o.Customer != null ? o.Customer.FullName : "نامشخص",
+                        orderType = "تبدیل ارز",
+                        fromCurrency = o.FromCurrency != null ? o.FromCurrency.Code : "نامشخص",
+                        amount = o.Amount,
+                        toCurrency = o.ToCurrency != null ? o.ToCurrency.Code : "نامشخص",
+                        exchangeRate = o.Rate, // Fixed: Use Rate instead of ExchangeRate
+                        status = "فعال"
                     })
-                    .OrderBy(d => d.Date)
-                    .ToList()
-                */
-                    .ToList()
-            };
+                    .ToListAsync();
 
-            return View(commissionReport);
-        }
-
-        // API: Export financial report to CSV
-        [HttpGet]
-        public async Task<IActionResult> ExportFinancial(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId)
-        {
-            fromDate ??= DateTime.Now.AddDays(-30);
-            toDate ??= DateTime.Now;
-
-            // TODO: Implement export with AccountingDocuments in new architecture
-            /*
-            var query = _context.Transactions
-                .Include(t => t.BuyerCustomer)
-                .Include(t => t.SellerCustomer)
-                .Include(t => t.FromCurrency)
-                .Include(t => t.ToCurrency)
-                .Where(t => t.CreatedAt >= fromDate && t.CreatedAt <= toDate);
-
-            if (customerId.HasValue)
-            {
-                query = query.Where(t => t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId);
+                _logger.LogInformation("Returning {Count} orders", orders.Count);
+                return Json(orders);
             }
-
-            var transactions = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
-            */
-
-            // For now return empty CSV
-            var transactions = new List<dynamic>();
-
-            // TODO: Add currency filter in new architecture
-            /*
-            if (currencyId.HasValue)
+            catch (Exception ex)
             {
-                query = query.Where(t => t.FromCurrencyId == currencyId || t.ToCurrencyId == currencyId);
+                _logger.LogError(ex, "Error getting orders data");
+                return Json(new List<object>());
             }
-
-            var transactions = await query
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-            */
-
-            var csv = "No data available"; // GenerateTransactionsCsv(transactions);
-            var fileName = $"financial_report_{fromDate?.ToString("yyyyMMdd") ?? "unknown"}_{toDate?.ToString("yyyyMMdd") ?? "unknown"}.csv";
-
-            return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
         }
 
-        // TODO: Implement CSV generation with AccountingDocuments in new architecture
-        /*
-        private string GenerateTransactionsCsv(List<Transaction> transactions)
+        // POST: Reports/GetBalancesData
+        [HttpPost]
+        public async Task<IActionResult> GetBalancesData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
         {
-            var csv = new System.Text.StringBuilder();
-            csv.AppendLine("ID,تاریخ ایجاد,خریدار,فروشنده,ارز,مقدار,نرخ,کل به تومان,وضعیت,تاریخ تکمیل");
-
-            foreach (var transaction in transactions)
+            try
             {
-                csv.AppendLine($"{transaction.Id}," +
-                              $"{transaction.CreatedAt:yyyy/MM/dd HH:mm}," +
-                              $"{transaction.BuyerCustomer?.FullName}," +
-                              $"{transaction.SellerCustomer?.FullName}," +
-                              $"{transaction.FromCurrency?.Code}-{transaction.ToCurrency?.Code}," +
-                              $"{transaction.Amount}," +
-                              $"{transaction.Rate}," +
-                              $"{transaction.TotalInToman}," +
-                              $"{GetStatusText(transaction.Status)}," +
-                              $"{transaction.CompletedAt?.ToString("yyyy/MM/dd HH:mm") ?? "-"}");
+                var query = _context.CustomerBalances
+                    .Include(cb => cb.Customer)
+                    .AsQueryable();
+
+                // Apply filters
+                if (customerId.HasValue)
+                {
+                    query = query.Where(cb => cb.CustomerId == customerId);
+                }
+
+                if (!string.IsNullOrEmpty(currencyId?.ToString()))
+                {
+                    // Find currency code by ID first
+                    var currency = await _context.Currencies.FindAsync(currencyId);
+                    if (currency != null)
+                    {
+                        query = query.Where(cb => cb.CurrencyCode == currency.Code);
+                    }
+                }
+
+                var balances = await query
+                    .OrderBy(cb => cb.Customer.FullName)
+                    .Select(cb => new
+                    {
+                        customerId = cb.CustomerId,
+                        customerName = cb.Customer != null ? cb.Customer.FullName : "نامشخص",
+                        currencyCode = cb.CurrencyCode,
+                        balance = cb.Balance,
+                        lastUpdated = cb.LastUpdated
+                    })
+                    .ToListAsync();
+
+                return Json(balances);
             }
-
-            return csv.ToString();
-        }
-
-        private string GetStatusText(TransactionStatus status)
-        {
-            return status switch
+            catch (Exception ex)
             {
-                TransactionStatus.Pending => "در انتظار",
-                TransactionStatus.PaymentUploaded => "رسید آپلود شده",
-                TransactionStatus.ReceiptConfirmed => "سند حسابداری تأیید شده",
-                TransactionStatus.Completed => "تکمیل شده",
-                TransactionStatus.Failed => "ناموفق",
-                _ => status.ToString()
-            };
+                _logger.LogError(ex, "Error getting balances data");
+                return Json(new List<object>());
+            }
         }
-        */
-    }
 
-    // Report model classes
-    public class FinancialReport
-    {
-        public DateTime FromDate { get; set; }
-        public DateTime ToDate { get; set; }
-        public int TotalTransactions { get; set; }
-        public int CompletedTransactions { get; set; }
-        public int PendingTransactions { get; set; }
-        public int FailedTransactions { get; set; }
-        public decimal TotalVolumeInToman { get; set; }
-        public decimal TotalCommissionEarned { get; set; }
-        // TODO: Re-implement with new architecture
-        // public List<Transaction> Transactions { get; set; } = new();
-        public List<CurrencyVolumeReport> CurrencyBreakdown { get; set; } = new();
-        public List<DailyVolumeReport> DailyBreakdown { get; set; } = new();
-    }
+        // POST: Reports/GetBankBalancesData
+        [HttpPost]
+        public async Task<IActionResult> GetBankBalancesData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
+        {
+            try
+            {
+                var query = _context.BankAccounts.AsQueryable();
 
-    public class CurrencyVolumeReport
-    {
-        public int CurrencyId { get; set; }
-        public string CurrencyCode { get; set; } = "";
-        public string CurrencyName { get; set; } = "";
-        public decimal TotalVolume { get; set; }
-        public int TransactionCount { get; set; }
-        public decimal TotalValueInToman { get; set; }
-        public decimal AverageRate { get; set; }
-    }
+                // Apply filters
+                if (bankAccountId.HasValue)
+                {
+                    query = query.Where(ba => ba.Id == bankAccountId);
+                }
 
-    public class DailyVolumeReport
-    {
-        public DateTime Date { get; set; }
-        public int TransactionCount { get; set; }
-        public decimal TotalVolumeInToman { get; set; }
-    }
+                if (!string.IsNullOrEmpty(currencyId?.ToString()))
+                {
+                    // Find currency code by ID first
+                    var currency = await _context.Currencies.FindAsync(currencyId);
+                    if (currency != null)
+                    {
+                        query = query.Where(ba => ba.CurrencyCode == currency.Code);
+                    }
+                }
 
-    public class CustomerActivityReport
-    {
-        public Customer Customer { get; set; } = null!;
-        public int TotalOrders { get; set; }
-        public int CompletedOrders { get; set; }
-        public int TotalTransactions { get; set; }
-        public int CompletedTransactions { get; set; }
-        public decimal TotalVolumeInToman { get; set; }
-        public DateTime LastActivityDate { get; set; }
-    }
+                var bankBalances = await query
+                    .OrderBy(ba => ba.BankName)
+                    .Select(ba => new
+                    {
+                        id = ba.Id,
+                        bankName = ba.BankName,
+                        accountNumber = ba.AccountNumber,
+                        currencyCode = ba.CurrencyCode,
+                        balance = ba.AccountBalance,
+                        lastUpdated = ba.LastModified ?? ba.CreatedAt
+                    })
+                    .ToListAsync();
 
-    public class OrderBookReport
-    {
-    public int FromCurrencyId { get; set; }
-    public int ToCurrencyId { get; set; }
-    public string FromCurrencyCode { get; set; } = "";
-    public string ToCurrencyCode { get; set; } = "";
-    public List<Order> Orders { get; set; } = new();
-    public decimal TotalVolume { get; set; }
-    public decimal AverageRate { get; set; }
-    public int OrderCount { get; set; }
-    }
+                return Json(bankBalances);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting bank balances data");
+                return Json(new List<object>());
+            }
+        }
 
-    public class CommissionReport
-    {
-        public DateTime FromDate { get; set; }
-        public DateTime ToDate { get; set; }
-        public int TotalTransactions { get; set; }
-        public decimal TotalVolumeInToman { get; set; }
-        public decimal TotalCommissionEarned { get; set; }
-        public decimal TotalExchangeFeesEarned { get; set; }
-        public decimal AverageTransactionValue { get; set; }
-        public List<DailyCommissionReport> DailyCommissions { get; set; } = new();
-    }
+        // POST: Reports/GetChartsData
+        [HttpPost]
+        public async Task<IActionResult> GetChartsData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
+        {
+            try
+            {
+                // Default to last 30 days if no dates provided
+                fromDate ??= DateTime.Now.AddDays(-30).Date;
+                toDate ??= DateTime.Now.Date.AddDays(1).AddTicks(-1);
 
-    public class DailyCommissionReport
-    {
-        public DateTime Date { get; set; }
-        public int TransactionCount { get; set; }
-        public decimal TotalVolume { get; set; }
-        public decimal CommissionEarned { get; set; }
-        public decimal ExchangeFeesEarned { get; set; }
+                // Currency volume data
+                var currencyVolume = await _context.Orders
+                    .Include(o => o.FromCurrency)
+                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
+                    .GroupBy(o => o.FromCurrency.Code)
+                    .Select(g => new { currency = g.Key, volume = g.Sum(o => o.Amount) })
+                    .ToListAsync();
+
+                // Daily trend data
+                var dailyTrend = await _context.Orders
+                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
+                    .GroupBy(o => o.CreatedAt.Date)
+                    .Select(g => new { date = g.Key, count = g.Count() })
+                    .OrderBy(x => x.date)
+                    .ToListAsync();
+
+                // Customer balance distribution
+                var customerBalanceDistribution = await _context.CustomerBalances
+                    .GroupBy(cb => cb.Balance > 0 ? "بستانکار" : cb.Balance < 0 ? "بدهکار" : "صفر")
+                    .Select(g => new { type = g.Key, count = g.Count() })
+                    .ToListAsync();
+
+                // Bank balance data
+                var bankBalances = await _context.BankAccounts
+                    .Select(ba => new { bank = ba.BankName, balance = ba.AccountBalance })
+                    .ToListAsync();
+
+                return Json(new
+                {
+                    currencyVolume = new
+                    {
+                        labels = currencyVolume.Select(cv => cv.currency).ToArray(),
+                        data = currencyVolume.Select(cv => cv.volume).ToArray()
+                    },
+                    dailyTrend = new
+                    {
+                        labels = dailyTrend.Select(dt => dt.date.ToString("MM/dd")).ToArray(),
+                        data = dailyTrend.Select(dt => dt.count).ToArray()
+                    },
+                    customerBalance = new
+                    {
+                        data = customerBalanceDistribution.Select(cbd => cbd.count).ToArray()
+                    },
+                    bankBalance = new
+                    {
+                        labels = bankBalances.Select(bb => bb.bank).ToArray(),
+                        data = bankBalances.Select(bb => (double)bb.balance / 1000000).ToArray() // Convert to millions
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting charts data");
+                return Json(new { });
+            }
+        }
+
+        // GET: Reports/ExportToExcel
+        public IActionResult ExportToExcel(string type, DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus)
+        {
+            try
+            {
+                // Here you would implement Excel export functionality
+                // For now, return a simple CSV response
+                
+                var fileName = $"{type}_report_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                var contentType = "text/csv";
+                
+                string csvContent = "";
+                
+                switch (type)
+                {
+                    case "orders":
+                        csvContent = "ID,Date,Customer,Type,From Currency,Amount,To Currency,Rate,Status\n";
+                        break;
+                    case "balances":
+                        csvContent = "Customer,Currency,Balance,Status,Last Updated\n";
+                        break;
+                    case "bank_balances":
+                        csvContent = "Bank,Account Number,Currency,Balance,Status,Last Updated\n";
+                        break;
+                }
+                
+                var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
+                return File(bytes, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting to Excel");
+                return BadRequest("خطا در تولید فایل Excel");
+            }
+        }
     }
 }

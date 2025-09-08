@@ -7,41 +7,27 @@
     
     @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
     {
-        <!-- Management Section -->
+        <!-- First Section -->
         <div class="row mb-4">
             <div class="col-12">
                 <h4 class="border-bottom pb-2 mb-3">
-                    <i class="fas fa-clipboard-list text-primary me-2"></i>
-                    مدیریت معاملات و مشتریان
+                    <i class="fas fa-wallet text-primary me-2"></i>
+                    مدیریت مالی و حساب‌ها
                 </h4>
             </div>
         </div>
         
         <div class="row mb-4">
-            <!-- Orders Management -->
+            <!-- Pool Management -->
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="card h-100">
                     <div class="card-body text-center">
-                        <div class="text-primary mb-3">
-                            <i class="fas fa-clipboard-list fa-3x"></i>
+                        <div class="text-warning mb-3">
+                            <i class="fas fa-vault fa-3x"></i>
                         </div>
-                        <h5 class="card-title">مدیریت معاملات</h5>
-                        <p class="card-text">مشاهده و مدیریت تمامی معاملات مشتریان</p>
-                        <a href="@Url.Action("Index", "Orders")" class="btn btn-primary">مشاهده معاملات</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Customer Management -->
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="text-info mb-3">
-                            <i class="fas fa-users fa-3x"></i>
-                        </div>
-                        <h5 class="card-title">مدیریت مشتریان</h5>
-                        <p class="card-text">مشاهده اطلاعات و مدیریت مشتریان</p>
-                        <a href="@Url.Action("Index", "Customers")" class="btn btn-info">مدیریت مشتریان</a>
+                        <h5 class="card-title">مدیریت صندوق های ارزی</h5>
+                        <p class="card-text">مدیریت موجودی و آمار صندوق های ارزی</p>
+                        <a href="@Url.Action("Index", "PoolManagement")" class="btn btn-warning">مدیریت صندوق ها</a>
                     </div>
                 </div>
             </div>
@@ -59,34 +45,48 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Customer Management -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-info mb-3">
+                            <i class="fas fa-users fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت مشتریان</h5>
+                        <p class="card-text">مشاهده اطلاعات و مدیریت مشتریان</p>
+                        <a href="@Url.Action("Index", "Customers")" class="btn btn-info">مدیریت مشتریان</a>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Financial Section -->
+        <!-- Second Section -->
         <div class="row mb-4">
             <div class="col-12">
                 <h4 class="border-bottom pb-2 mb-3">
-                    <i class="fas fa-dollar-sign text-success me-2"></i>
-                    امور مالی
+                    <i class="fas fa-chart-line text-success me-2"></i>
+                    معاملات و گزارشات
                 </h4>
             </div>
         </div>
 
         <div class="row mb-4">
-            <!-- Settlements -->
+            <!-- Orders Management -->
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="card h-100">
                     <div class="card-body text-center">
-                        <div class="text-warning mb-3">
-                            <i class="fas fa-handshake fa-3x"></i>
+                        <div class="text-primary mb-3">
+                            <i class="fas fa-clipboard-list fa-3x"></i>
                         </div>
-                        <h5 class="card-title">تسویه حساب</h5>
-                        <p class="card-text">مدیریت تسویه‌های مالی و تراکنش‌ها</p>
-                        <a href="@Url.Action("Index", "Settlements")" class="btn btn-warning">تسویه حساب</a>
+                        <h5 class="card-title">مدیریت معاملات</h5>
+                        <p class="card-text">مشاهده و مدیریت تمامی معاملات مشتریان</p>
+                        <a href="@Url.Action("Index", "Orders")" class="btn btn-primary">مشاهده معاملات</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Receipts -->
+            <!-- Accounting Documents -->
             <div class="col-lg-4 col-md-6 mb-4">
                 <div class="card h-100">
                     <div class="card-body text-center">
@@ -150,20 +150,6 @@
                         <h5 class="card-title">مدیریت ارزها</h5>
                         <p class="card-text">مدیریت انواع ارزها و تنظیمات مربوطه</p>
                         <a href="@Url.Action("Index", "Currencies")" class="btn btn-success">مدیریت ارزها</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pool Management -->
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <div class="text-info mb-3">
-                            <i class="fas fa-swimming-pool fa-3x"></i>
-                        </div>
-                        <h5 class="card-title">مدیریت صندوق های ارزی</h5>
-                        <p class="card-text">مدیریت موجودی و آمار صندوق های ارزی</p>
-                        <a href="@Url.Action("Index", "PoolManagement")" class="btn btn-info">مدیریت صندوق ها</a>
                     </div>
                 </div>
             </div>
