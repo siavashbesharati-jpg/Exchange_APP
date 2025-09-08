@@ -67,16 +67,7 @@
                         </select>
                     </div>
                     
-                    <!-- Order Status Filter -->
-                    <div class="col-md-3">
-                        <label class="form-label">وضعیت معامله</label>
-                        <select class="form-select" id="orderStatus" name="orderStatus">
-                            <option value="">همه وضعیت‌ها</option>
-                            <option value="Pending">در انتظار</option>
-                            <option value="Completed">تکمیل شده</option>
-                            <option value="Cancelled">لغو شده</option>
-                        </select>
-                    </div>
+                  
                     
                     <!-- Action Buttons -->
                     <div class="col-md-3 d-flex align-items-end">
@@ -96,10 +87,19 @@
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card bg-info text-white h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h6 class="card-title">تراز کل سیستم</h6>
-                            <h3 id="systemBalance" dir="ltr">-</h3>
+                            <h6 class="card-title d-flex align-items-center">
+                                تراز کل سیستم
+                                <select id="currencySelector" class="form-select form-select-sm ms-2" style="width: 90px; display: inline-block; font-size: 0.9rem;">
+                                    <option value="IRR">IRR</option>
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="AED">AED</option>
+                                    <option value="OMR">OMR</option>
+                                </select>
+                            </h6>
+                            <h3 id="systemBalance" class="text-center" dir="ltr" style="text-align: center;">-</h3>
                         </div>
                         <div class="align-self-center">
                             <i class="fas fa-balance-scale fa-2x"></i>
@@ -157,10 +157,9 @@
                                     <th>مشتری</th>
                                     <th>نوع معامله</th>
                                     <th>ارز مبدا</th>
-                                    <th>مقدار</th>
+                                    <th class="text-center">مقدار</th>
                                     <th>ارز مقصد</th>
                                     <th>نرخ</th>
-                                    <th>وضعیت</th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
@@ -192,7 +191,7 @@
                                 <tr>
                                     <th>مشتری</th>
                                     <th>ارز</th>
-                                    <th>تراز</th>
+                                    <th class="text-center">تراز</th>
                                     <th>وضعیت</th>
                                     <th>آخرین بروزرسانی</th>
                                     <th>عملیات</th>
@@ -227,8 +226,7 @@
                                     <th>بانک</th>
                                     <th>شماره حساب</th>
                                     <th>ارز</th>
-                                    <th>موجودی</th>
-                                    <th>وضعیت</th>
+                                    <th class="text-center">موجودی</th>
                                     <th>آخرین بروزرسانی</th>
                                     <th>عملیات</th>
                                 </tr>
@@ -308,7 +306,6 @@
         
         $(document).ready(function() {
             loadFilterOptions();
-            loadQuickSummary();
             loadOrdersData();
             initializeCharts();
         });
@@ -343,20 +340,7 @@
             });
         }
 
-        // Load quick summary cards
-        function loadQuickSummary() {
-            const filters = getFilterData();
-            console.log('Loading quick summary with filters:', filters); // Debug log
-            $.post('/Reports/GetQuickSummary', filters, function(data) {
-                console.log('Quick summary data received:', data); // Debug log
-                $('#totalOrders').text(data.totalOrders?.toLocaleString() || '0');
-                $('#totalVolume').text((data.totalVolume?.toLocaleString() || '0') + ' تومان');
-                $('#activeCustomers').text(data.activeCustomers?.toLocaleString() || '0');
-                $('#systemBalance').text((data.systemBalance?.toLocaleString() || '0') + ' تومان');
-            }).fail(function(xhr, status, error) {
-                console.error('Error loading quick summary:', error, xhr.responseText); // Debug log
-            });
-        }
+      
 
         // Get current filter data
         function getFilterData() {
@@ -366,14 +350,12 @@
                 customerId: $('#customerId').val() || null,
                 currencyId: $('#currencyId').val() || null,
                 bankAccountId: $('#bankAccountId').val() || null,
-                orderStatus: $('#orderStatus').val() || null,
                 reportType: $('#reportType').val()
             };
         }
 
         // Apply filters
         function applyFilters() {
-            loadQuickSummary();
             loadOrdersData();
             loadBalancesData();
             loadBankBalancesData();
@@ -407,10 +389,9 @@
                                 <td>${order.customerName}</td>
                                 <td>${order.orderType}</td>
                                 <td>${order.fromCurrency}</td>
-                                <td dir="ltr">${order.amount?.toLocaleString()}</td>
+                                <td dir="ltr" style="text-align: center;">${order.amount?.toLocaleString()}</td>
                                 <td>${order.toCurrency}</td>
-                                <td dir="ltr">${order.exchangeRate?.toLocaleString()}</td>
-                                <td>${statusBadge}</td>
+                                <td dir="ltr" style="text-align: center;">${order.exchangeRate?.toLocaleString()}</td>
                                 <td>
                                     <a href="/Orders/Details/${order.id}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-eye"></i>
@@ -442,7 +423,7 @@
                             <tr>
                                 <td>${balance.customerName}</td>
                                 <td>${balance.currencyCode}</td>
-                                <td dir="ltr">${balance.balance?.toLocaleString()}</td>
+                                <td dir="ltr" style="text-align: center;">${balance.balance?.toLocaleString()}</td>
                                 <td>${balanceBadge}</td>
                                 <td>${new Date(balance.lastUpdated).toLocaleDateString('fa-IR')}</td>
                                 <td>
@@ -474,8 +455,7 @@
                                 <td>${account.bankName}</td>
                                 <td>${account.accountNumber}</td>
                                 <td>${account.currencyCode}</td>
-                                <td dir="ltr">${account.balance?.toLocaleString()}</td>
-                                <td>${balanceBadge}</td>
+                                <td dir="ltr" style="text-align: center;">${account.balance?.toLocaleString()}</td>
                                 <td>${new Date(account.lastUpdated).toLocaleDateString('fa-IR')}</td>
                                 <td>
                                     <a href="/BankAccount/Details/${account.id}" class="btn btn-sm btn-outline-primary">
