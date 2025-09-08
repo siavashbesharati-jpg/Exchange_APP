@@ -70,7 +70,7 @@ namespace ForexExchange.Controllers
 
             if (customerFilter.HasValue)
             {
-                documents = documents.Where(d => d.CustomerId == customerFilter);
+                documents = documents.Where(d => d.PayerCustomerId == customerFilter || d.ReceiverCustomerId == customerFilter);
             }
 
             if (typeFilter.HasValue)

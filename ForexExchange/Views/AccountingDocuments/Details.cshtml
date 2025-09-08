@@ -320,11 +320,15 @@
         <div class="document-row">
             <div class="document-label">پرداخت‌کننده:</div>
             <div class="document-value">
-                @if (Model.PayerType == ForexExchange.Models.PayerType.Customer && Model.Customer != null)
+                @if (Model.PayerType == ForexExchange.Models.PayerType.Customer && Model.PayerCustomer != null)
                 {
-                    <a asp-controller="Customers" asp-action="Profile" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
-                        @Model.Customer.FullName
+                    <a asp-controller="Customers" asp-action="Profile" asp-route-id="@Model.PayerCustomerId" style="color: #2c3e50; text-decoration: none;">
+                        @Model.PayerCustomer.FullName
                     </a>
+                }
+                else if (Model.PayerBankAccount != null)
+                {
+                    <span>@Model.PayerBankAccount.BankName - @Model.PayerBankAccount.AccountNumber</span>
                 }
                 else
                 {
@@ -336,15 +340,15 @@
         <div class="document-row">
             <div class="document-label">دریافت‌کننده:</div>
             <div class="document-value">
-                @if (Model.PayerType == ForexExchange.Models.PayerType.System && Model.Customer != null)
+                @if (Model.ReceiverType == ForexExchange.Models.ReceiverType.Customer && Model.ReceiverCustomer != null)
                 {
-                    <a asp-controller="Customers" asp-action="Profile" asp-route-id="@Model.CustomerId" style="color: #2c3e50; text-decoration: none;">
-                        @Model.Customer.FullName
+                    <a asp-controller="Customers" asp-action="Profile" asp-route-id="@Model.ReceiverCustomerId" style="color: #2c3e50; text-decoration: none;">
+                        @Model.ReceiverCustomer.FullName
                     </a>
                 }
-                else if (Model.BankAccount != null)
+                else if (Model.ReceiverBankAccount != null)
                 {
-                    <span>@Model.BankAccount.BankName - @Model.BankAccount.AccountNumber</span>
+                    <span>@Model.ReceiverBankAccount.BankName - @Model.ReceiverBankAccount.AccountNumber</span>
                 }
                 else
                 {

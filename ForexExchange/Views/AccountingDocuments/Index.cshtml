@@ -129,12 +129,19 @@
                                         }
                                     </td>
                                     <td>
-                                        @if (item.Customer != null)
+                                        @if (item.PayerType == ForexExchange.Models.PayerType.Customer && item.PayerCustomer != null)
                                         {
-                                            <a asp-controller="Customers" asp-action="Profile" asp-route-id="@item.CustomerId" class="text-decoration-none">
-                                                @item.Customer.FullName
+                                            <a asp-controller="Customers" asp-action="Profile" asp-route-id="@item.PayerCustomerId" class="text-decoration-none">
+                                                @item.PayerCustomer.FullName
                                             </a>
-                                            <br><small class="text-muted">@(item.PayerType == ForexExchange.Models.PayerType.Customer ? "پرداخت کرده است" : "دریافت کرده است")</small>
+                                            <br><small class="text-muted">پرداخت کرده است</small>
+                                        }
+                                        else if (item.ReceiverType == ForexExchange.Models.ReceiverType.Customer && item.ReceiverCustomer != null)
+                                        {
+                                            <a asp-controller="Customers" asp-action="Profile" asp-route-id="@item.ReceiverCustomerId" class="text-decoration-none">
+                                                @item.ReceiverCustomer.FullName
+                                            </a>
+                                            <br><small class="text-muted">دریافت کرده است</small>
                                         }
                                         else
                                         {
