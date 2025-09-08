@@ -291,8 +291,12 @@
             document.getElementById('calcToCurrencyName').textContent = toName;
             document.getElementById('fromCurrencyLabel').textContent = fromCode;
             document.getElementById('toCurrencyLabel').textContent = toCode;
-            document.getElementById('calcToCurrencyInRate').textContent = toCode;
-            document.getElementById('calcFromCurrencyInRate').textContent = fromCode;
+            
+            // Always display rate as "1 Non-IRR = X IRR" format
+            const nonIrrCode = fromCode.toUpperCase() === 'IRR' ? toCode : fromCode;
+            const irrCode = 'IRR';
+            document.getElementById('calcToCurrencyInRate').textContent = nonIrrCode;
+            document.getElementById('calcFromCurrencyInRate').textContent = irrCode;
 
             // Get current values from main form
             const currentAmount = parseFloat(document.getElementById('amountInput').value) || '';
@@ -304,14 +308,22 @@
             }
 
             if (currentRate && currentRate > 0) {
-                // Main form rate: IRR per USD (e.g., 0.0000097 USD per IRR)
-                // Calculator should show: USD to IRR rate (e.g., 103000 IRR per USD)
-                let displayRate = 1 / currentRate;
-                
-                // If the result currency is IRR, remove decimals
-                if (fromCode && fromCode.toUpperCase() === 'IRR') {
-                    displayRate = Math.round(displayRate);
+                // Always display rate as "1 Non-IRR = X IRR"
+                let displayRate;
+                if (fromCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // Main form rate: how much IRR per foreign currency unit
+                    // Display rate should be: 1 foreign currency = X IRR
+                    displayRate = 1 / currentRate;
+                } else {
+                    // FROM is foreign currency, TO is IRR
+                    // Main form rate: how much foreign currency per IRR unit
+                    // Display rate should be: 1 foreign currency = X IRR
+                    displayRate = currentRate;
                 }
+                
+                // Always round IRR amounts
+                displayRate = Math.round(displayRate);
                 
                 document.getElementById('calcRate').value = displayRate;
             }
@@ -328,15 +340,22 @@
         // Calculate FROM amount based on TO amount and rate
         function calculateFromToAmount() {
             const toAmount = parseFloat(document.getElementById('calcToAmount').value);
-            const rate = parseFloat(document.getElementById('calcRate').value);
+            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
             
             if (toAmount && rate && rate > 0) {
-                // Calculate from amount: to amount * rate
-                let fromAmount = toAmount * rate;
+                let fromAmount;
                 
-                // Check if from currency is IRR and remove decimals
-                if (calcFromCurrencyCode && calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    fromAmount = Math.round(fromAmount);
+                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // rate = 1 foreign currency = X IRR
+                    // fromAmount (IRR) = toAmount (foreign) * rate
+                    fromAmount = toAmount * rate;
+                    fromAmount = Math.round(fromAmount); // Round IRR amounts
+                } else {
+                    // FROM is foreign currency, TO is IRR
+                    // rate = 1 foreign currency = X IRR
+                    // fromAmount (foreign) = toAmount (IRR) / rate
+                    fromAmount = toAmount / rate;
                 }
                 
                 // Update from amount input
@@ -358,11 +377,23 @@
         // Calculate TO amount based on FROM amount and rate
         function calculateToFromAmount() {
             const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
-            const rate = parseFloat(document.getElementById('calcRate').value);
+            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
             
             if (fromAmount && rate && rate > 0) {
-                // Calculate to amount: from amount / rate
-                let toAmount = fromAmount / rate;
+                let toAmount;
+                
+                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // rate = 1 foreign currency = X IRR
+                    // toAmount (foreign) = fromAmount (IRR) / rate
+                    toAmount = fromAmount / rate;
+                } else {
+                    // FROM is foreign currency, TO is IRR
+                    // rate = 1 foreign currency = X IRR
+                    // toAmount (IRR) = fromAmount (foreign) * rate
+                    toAmount = fromAmount * rate;
+                    toAmount = Math.round(toAmount); // Round IRR amounts
+                }
                 
                 // Update to amount input
                 document.getElementById('calcToAmount').value = toAmount;
@@ -386,13 +417,22 @@
             const toAmount = parseFloat(document.getElementById('calcToAmount').value);
             
             if (fromAmount && toAmount && fromAmount > 0 && toAmount > 0) {
-                // Calculate rate: from amount / to amount
-                let rate = fromAmount / toAmount;
+                let rate;
                 
-                // Check if from currency is IRR and round appropriately
-                if (calcFromCurrencyCode && calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    rate = Math.round(rate);
+                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // rate = 1 foreign currency = X IRR
+                    // rate = fromAmount (IRR) / toAmount (foreign)
+                    rate = fromAmount / toAmount;
+                } else {
+                    // FROM is foreign currency, TO is IRR
+                    // rate = 1 foreign currency = X IRR
+                    // rate = toAmount (IRR) / fromAmount (foreign)
+                    rate = toAmount / fromAmount;
                 }
+                
+                // Always round IRR rates
+                rate = Math.round(rate);
                 
                 // Update rate input
                 document.getElementById('calcRate').value = rate;
@@ -413,7 +453,10 @@
         // Show calculation result display
         function showCalculationResult(toAmount, fromAmount, rate) {
             const formula = `${toAmount.toLocaleString()} ${calcToCurrencyCode} × ${rate.toLocaleString()} = ${fromAmount.toLocaleString()} ${calcFromCurrencyCode}`;
-            const details = `نرخ: ۱ ${calcToCurrencyCode} = ${rate.toLocaleString()} ${calcFromCurrencyCode}`;
+            
+            // Always display rate as "1 Non-IRR = X IRR"
+            const nonIrrCode = calcFromCurrencyCode.toUpperCase() === 'IRR' ? calcToCurrencyCode : calcFromCurrencyCode;
+            const details = `نرخ: ۱ ${nonIrrCode} = ${rate.toLocaleString()} IRR`;
             
             document.getElementById('calculationFormula').textContent = formula;
             document.getElementById('calculationDetails').textContent = details;
@@ -425,8 +468,20 @@
             // Put FROM amount back to main form (this represents what user is paying/receiving)
             document.getElementById('amountInput').value = fromAmount;
             
-            // Update main form rate (convert back to main form format)
-            const mainFormRate = 1 / rate;
+            // Convert calculator rate back to main form format
+            let mainFormRate;
+            if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                // FROM is IRR, TO is foreign currency
+                // Calculator rate: 1 foreign = X IRR
+                // Main form rate: 1 IRR = Y foreign
+                mainFormRate = 1 / rate;
+            } else {
+                // FROM is foreign currency, TO is IRR
+                // Calculator rate: 1 foreign = X IRR
+                // Main form rate: 1 foreign = X IRR (same)
+                mainFormRate = rate;
+            }
+            
             document.getElementById('rateInput').value = mainFormRate;
             document.getElementById('hiddenRate').value = mainFormRate;
             
