@@ -26,7 +26,7 @@
         </div>
     </div>
 
-   
+
 
     <!-- Bank Accounts List -->
     <div class="row">
@@ -46,7 +46,6 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th>بانک</th>
-                                        <th>شماره حساب</th>
                                         <th>ارز</th>
                                         <th>موجودی </th>
                                         <th>وضعیت</th>
@@ -57,30 +56,29 @@
                                     @foreach (var account in Model)
                                     {
                                         <tr>
-                                           
+
                                             <td>
                                                 <strong>@account.BankName</strong>
                                                 @if (!string.IsNullOrEmpty(account.Branch))
                                                 {
-                                                    <br><small class="text-muted">@account.Branch</small>
+                                                    <br>
+                                        
+                                                    <small class="text-muted">@account.Branch</small>
                                                 }
                                             </td>
-                                            <td>
-                                                <code>@account.AccountNumber</code>
-                                                @if (!string.IsNullOrEmpty(account.CardNumberLast4))
-                                                {
-                                                    <br><small class="text-muted">کارت: ****-****-****-@account.CardNumberLast4</small>
-                                                }
-                                            </td>
+
                                             <td>
                                                 <span class="badge bg-info">@account.CurrencyCode</span>
                                                 @if (account.IsDefault)
                                                 {
                                                     <span class="badge bg-warning ms-1">پیش‌فرض</span>
                                                 }
-                                            </td>
-                                            <td  dir="ltr">
-                                                @(account.CurrencyCode == "IRR" ? account.AccountBalance.ToString("N0") : account.AccountBalance.ToString("N2"))
+                                        </td>
+                                        <td>
+                                            <span dir="ltr">
+                                                @(account.CurrencyCode == "IRR" ? account.AccountBalance.ToString("N0") :
+                                                                                            account.AccountBalance.ToString("N2"))
+                                                </span>
                                             </td>
                                             <td>
                                                 @if (account.IsActive)
@@ -95,19 +93,16 @@
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="@Url.Action("Details", new { id = account.Id })"
-                                                       class="btn btn-sm btn-outline-info"
-                                                       title="جزئیات">
+                                                        class="btn btn-sm btn-outline-info" title="جزئیات">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                     <a href="@Url.Action("Edit", new { id = account.Id })"
-                                                       class="btn btn-sm btn-outline-warning"
-                                                       title="ویرایش">
+                                                        class="btn btn-sm btn-outline-warning" title="ویرایش">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     <a href="@Url.Action("Delete", new { id = account.Id })"
-                                                       class="btn btn-sm btn-outline-danger"
-                                                       title="حذف"
-                                                       onclick="return confirm('آیا از حذف این حساب بانکی اطمینان دارید؟')">
+                                                        class="btn btn-sm btn-outline-danger" title="حذف"
+                                                        onclick="return confirm('آیا از حذف این حساب بانکی اطمینان دارید؟')">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
                                                 </div>
@@ -139,7 +134,7 @@
 @section Scripts {
     <script>
         // Auto-refresh functionality (optional)
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Add any client-side functionality here
         });
     </script>

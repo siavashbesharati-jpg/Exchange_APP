@@ -24,6 +24,27 @@
         <div class="col-lg-10 mx-auto">
             <form asp-action="Edit" enctype="multipart/form-data">
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
+                @* Custom validation summary excluding documentFile errors *@
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> خطاهای اعتبارسنجی:</h6>
+                        <ul class="mb-0">
+                            @foreach (var modelState in ViewData.ModelState)
+                            {
+                                @if (modelState.Key != "documentFile")
+                                {
+                                    @foreach (var error in modelState.Value.Errors)
+                                    {
+                                        <li>@error.ErrorMessage</li>
+                                    }
+                                }
+                            }
+                        </ul>
+                    </div>
+                }
+                
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="CreatedAt" />
 
@@ -59,8 +80,9 @@
                                 <div class="mb-3">
                                     <label asp-for="Amount" class="form-label"> مقدار  <span
                                             class="text-danger">*</span></label>
-                                    <input asp-for="Amount" class="form-control" type="number" step="0.01" min="0" />
+                                    <input asp-for="Amount" class="form-control" type="number" step="0.01" />
                                     <span asp-validation-for="Amount" class="text-danger"></span>
+                                    <div class="form-text">مقادیر منفی برای تراکنش‌های برگشتی مجاز است</div>
                                 </div>
                             </div>
                             <div class="col-md-6">

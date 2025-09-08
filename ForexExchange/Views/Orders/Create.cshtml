@@ -83,9 +83,10 @@
 
                             <div class="col-md-4">
                                 <label asp-for="Amount" class="form-label">مقدار  (ارز دریافتی)</label>
-                                <input asp-for="Amount" type="number" class="form-control" step="0.01" min="0"
+                                <input asp-for="Amount" type="number" class="form-control" step="0.01"
                                     id="amountInput" required />
                                 <span asp-validation-for="Amount" class="text-danger"></span>
+                                <div class="form-text">مقادیر منفی برای تراکنش‌های برگشتی مجاز است</div>
                             </div>
                         </div>
 
@@ -110,7 +111,7 @@
                                             <div class="col-md-6">
                                                 <label asp-for="Rate" class="form-label">نرخ قابل ویرایش</label>
                                                 <div class="input-group">
-                                                    <input asp-for="Rate" type="number" class="form-control" step="any" min="0"
+                                                    <input asp-for="Rate" type="number" class="form-control" step="any"
                                                         id="rateInput" placeholder="نرخ ارز را وارد کنید" />
                                                     <button class="btn btn-outline-secondary" type="button" id="loadSuggestedRateBtn"
                                                         title="بارگذاری نرخ پیشنهادی" disabled>
@@ -169,37 +170,73 @@
 
 <!-- Calculator Modal -->
 <div class="modal fade" id="calculatorModal" tabindex="-1" aria-labelledby="calculatorModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
+    <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="calculatorModalLabel">ماشین حساب ارز</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Currency Pair Display -->
                 <div class="row mb-3">
                     <div class="col-12">
-                        <label class="form-label">نرخ</label>
-                        <input type="number" id="calcRate" class="form-control" step="any" min="0" placeholder="نرخ">
+                        <div class="alert alert-info text-center">
+                            <h6 class="mb-1">جفت ارز انتخاب شده:</h6>
+                            <div class="d-flex justify-content-center align-items-center">
+                                <span id="calcFromCurrencyDisplay" class="badge bg-primary fs-6 me-2">---</span>
+                                <i class="fas fa-arrow-left mx-2"></i>
+                                <span id="calcToCurrencyDisplay" class="badge bg-success fs-6">---</span>
+                            </div>
+                            <small class="text-muted mt-1 d-block">
+                                از <span id="calcFromCurrencyName">---</span> به <span id="calcToCurrencyName">---</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rate Input -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label">
+                            نرخ تبدیل 
+                            <small class="text-muted">(هر واحد <span id="calcToCurrencyInRate">---</span> چند <span id="calcFromCurrencyInRate">---</span>)</small>
+                        </label>
+                        <input type="number" id="calcRate" class="form-control" step="any" placeholder="نرخ">
                         <small class="text-muted">نرخ را ویرایش کنید یا از نرخ محاسبه شده استفاده کنید</small>
                     </div>
                 </div>
 
+                <!-- Both Currency Amount Inputs -->
                 <div class="row mb-3">
-                    <div class="col-12">
-                        <label class="form-label">مقدار <span id="inputCurrencyLabel">USD</span> مورد نیاز</label>
-                        <input type="number" id="calcInputAmount" class="form-control" step="any" min="0" placeholder="مقدار مورد نیاز">
+                    <div class="col-md-6">
+                        <label class="form-label">مقدار <span id="fromCurrencyLabel">---</span> مورد نیاز</label>
+                        <input type="number" id="calcFromAmount" class="form-control" step="any" placeholder="مقدار">
+                        <small class="text-muted">مقدار ارز مبدأ که باید پرداخت شود</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">مقدار <span id="toCurrencyLabel">---</span> مورد نیاز</label>
+                        <input type="number" id="calcToAmount" class="form-control" step="any" placeholder="مقدار">
+                        <small class="text-muted">مقدار ارز مقصد که دریافت می‌شود</small>
                     </div>
                 </div>
 
+                <!-- Calculation Result Display -->
                 <div class="alert alert-success" id="calcResult" style="display: none;">
-                    <h6>نتیجه:</h6>
-                    <div class="h5 text-center mb-0">
-                        <strong id="calculatedAmountDisplay">-</strong>
+                    <h6>نتیجه محاسبه:</h6>
+                    <div class="text-center">
+                        <div class="h6 mb-1" id="calculationFormula">-</div>
+                        <small class="text-muted" id="calculationDetails">-</small>
                     </div>
+                </div>
+
+                <!-- Sync Status -->
+                <div class="alert alert-warning" id="syncStatus" style="display: none;">
+                    <small><i class="fas fa-sync-alt"></i> تغییرات به طور خودکار در فرم اصلی اعمال می‌شود</small>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="applyCalculationBtn">اعمال نتیجه</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+                <button type="button" class="btn btn-primary" id="applyCalculationBtn">اعمال و بستن</button>
             </div>
         </div>
     </div>
@@ -234,19 +271,38 @@
                 return;
             }
 
-            // Get currency codes from main form
-            const fromCode = fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim(); // What user pays
-            const toCode = toSelect.options[toSelect.selectedIndex].text.split(' - ')[0].trim(); // What user gets
+            // Get currency codes and names from main form
+            const fromOption = fromSelect.options[fromSelect.selectedIndex];
+            const toOption = toSelect.options[toSelect.selectedIndex];
+            
+            const fromCode = fromOption.text.split(' - ')[0].trim(); // What user pays
+            const toCode = toOption.text.split(' - ')[0].trim(); // What user gets
+            const fromName = fromOption.text.split(' - ')[1] ? fromOption.text.split(' - ')[1].trim() : fromCode;
+            const toName = toOption.text.split(' - ')[1] ? toOption.text.split(' - ')[1].trim() : toCode;
             
             // Store for calculations
             calcFromCurrencyCode = fromCode; // What user pays (IRR)
             calcToCurrencyCode = toCode;     // What user gets (USD)
 
-            // Update input label to show what currency user wants
-            document.getElementById('inputCurrencyLabel').textContent = toCode;
+            // Update calculator display elements
+            document.getElementById('calcFromCurrencyDisplay').textContent = fromCode;
+            document.getElementById('calcToCurrencyDisplay').textContent = toCode;
+            document.getElementById('calcFromCurrencyName').textContent = fromName;
+            document.getElementById('calcToCurrencyName').textContent = toName;
+            document.getElementById('fromCurrencyLabel').textContent = fromCode;
+            document.getElementById('toCurrencyLabel').textContent = toCode;
+            document.getElementById('calcToCurrencyInRate').textContent = toCode;
+            document.getElementById('calcFromCurrencyInRate').textContent = fromCode;
 
-            // Get current rate from main form and reverse it
-            const currentRate = parseFloat(document.getElementById('rateInput').value);
+            // Get current values from main form
+            const currentAmount = parseFloat(document.getElementById('amountInput').value) || '';
+            const currentRate = parseFloat(document.getElementById('rateInput').value) || '';
+
+            // Pre-fill calculator with main form values
+            if (currentAmount) {
+                document.getElementById('calcFromAmount').value = currentAmount; // Amount goes to "From" currency
+            }
+
             if (currentRate && currentRate > 0) {
                 // Main form rate: IRR per USD (e.g., 0.0000097 USD per IRR)
                 // Calculator should show: USD to IRR rate (e.g., 103000 IRR per USD)
@@ -259,39 +315,123 @@
                 
                 document.getElementById('calcRate').value = displayRate;
             }
+
+            // Show sync status
+            document.getElementById('syncStatus').style.display = 'block';
+
+            // Calculate initial result if both values are present
+            if (currentAmount && currentRate) {
+                calculateToFromAmount(); // Calculate TO amount from FROM amount
+            }
         }
 
-        function calculateResult() {
-            const inputAmount = parseFloat(document.getElementById('calcInputAmount').value);
+        // Calculate FROM amount based on TO amount and rate
+        function calculateFromToAmount() {
+            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
             const rate = parseFloat(document.getElementById('calcRate').value);
             
-            if (inputAmount && rate && rate > 0) {
-                // Calculate result: input amount * rate
-                let resultAmount = inputAmount * rate;
+            if (toAmount && rate && rate > 0) {
+                // Calculate from amount: to amount * rate
+                let fromAmount = toAmount * rate;
                 
-                // Check if result currency is IRR and remove decimals
+                // Check if from currency is IRR and remove decimals
                 if (calcFromCurrencyCode && calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    resultAmount = Math.round(resultAmount);
+                    fromAmount = Math.round(fromAmount);
                 }
                 
-                // Display result
-                document.getElementById('calculatedAmountDisplay').textContent = `${resultAmount.toLocaleString()} ${calcFromCurrencyCode}`;
-                document.getElementById('calcResult').style.display = 'block';
+                // Update from amount input
+                document.getElementById('calcFromAmount').value = fromAmount;
                 
-                // Auto-update main form amount
-                document.getElementById('amountInput').value = resultAmount;
+                // Show calculation result
+                showCalculationResult(toAmount, fromAmount, rate);
                 
-                // Update main form rate (keep the original rate, don't reverse)
-                const mainFormRate = 1 / rate;
-                document.getElementById('rateInput').value = mainFormRate;
-                document.getElementById('hiddenRate').value = mainFormRate;
-                updateCalculation();
+                // Auto-update main form with FROM amount (what user is paying)
+                updateMainForm(fromAmount, rate);
                 
-                return resultAmount;
+                return fromAmount;
             } else {
                 document.getElementById('calcResult').style.display = 'none';
                 return null;
             }
+        }
+
+        // Calculate TO amount based on FROM amount and rate
+        function calculateToFromAmount() {
+            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
+            const rate = parseFloat(document.getElementById('calcRate').value);
+            
+            if (fromAmount && rate && rate > 0) {
+                // Calculate to amount: from amount / rate
+                let toAmount = fromAmount / rate;
+                
+                // Update to amount input
+                document.getElementById('calcToAmount').value = toAmount;
+                
+                // Show calculation result
+                showCalculationResult(toAmount, fromAmount, rate);
+                
+                // Auto-update main form with FROM amount (what user is paying)
+                updateMainForm(fromAmount, rate);
+                
+                return toAmount;
+            } else {
+                document.getElementById('calcResult').style.display = 'none';
+                return null;
+            }
+        }
+
+        // Calculate rate based on both amounts
+        function calculateRateFromAmounts() {
+            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
+            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
+            
+            if (fromAmount && toAmount && fromAmount > 0 && toAmount > 0) {
+                // Calculate rate: from amount / to amount
+                let rate = fromAmount / toAmount;
+                
+                // Check if from currency is IRR and round appropriately
+                if (calcFromCurrencyCode && calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    rate = Math.round(rate);
+                }
+                
+                // Update rate input
+                document.getElementById('calcRate').value = rate;
+                
+                // Show calculation result
+                showCalculationResult(toAmount, fromAmount, rate);
+                
+                // Auto-update main form with FROM amount (what user is paying)
+                updateMainForm(fromAmount, rate);
+                
+                return rate;
+            } else {
+                document.getElementById('calcResult').style.display = 'none';
+                return null;
+            }
+        }
+
+        // Show calculation result display
+        function showCalculationResult(toAmount, fromAmount, rate) {
+            const formula = `${toAmount.toLocaleString()} ${calcToCurrencyCode} × ${rate.toLocaleString()} = ${fromAmount.toLocaleString()} ${calcFromCurrencyCode}`;
+            const details = `نرخ: ۱ ${calcToCurrencyCode} = ${rate.toLocaleString()} ${calcFromCurrencyCode}`;
+            
+            document.getElementById('calculationFormula').textContent = formula;
+            document.getElementById('calculationDetails').textContent = details;
+            document.getElementById('calcResult').style.display = 'block';
+        }
+
+        // Update main form with calculator values
+        function updateMainForm(fromAmount, rate, isFromAmountSource = false) {
+            // Put FROM amount back to main form (this represents what user is paying/receiving)
+            document.getElementById('amountInput').value = fromAmount;
+            
+            // Update main form rate (convert back to main form format)
+            const mainFormRate = 1 / rate;
+            document.getElementById('rateInput').value = mainFormRate;
+            document.getElementById('hiddenRate').value = mainFormRate;
+            
+            // Trigger calculation update in main form
+            updateCalculation();
         }
 
         // Helper function to update rate input step based on currency
@@ -566,15 +706,36 @@
         });
 
         document.getElementById('calcRate').addEventListener('input', function() {
-            // If user changes rate, recalculate if there's an input amount
-            if (document.getElementById('calcInputAmount').value) {
-                calculateResult();
+            // When rate changes, recalculate based on TO amount if it exists
+            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
+            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
+            
+            if (toAmount) {
+                calculateFromToAmount();
+            } else if (fromAmount) {
+                calculateToFromAmount();
             }
         });
 
-        document.getElementById('calcInputAmount').addEventListener('input', calculateResult);
+        document.getElementById('calcToAmount').addEventListener('input', function() {
+            // When TO amount changes, calculate FROM amount based on rate
+            calculateFromToAmount();
+        });
+
+        document.getElementById('calcFromAmount').addEventListener('input', function() {
+            // When FROM amount changes, calculate TO amount based on rate
+            calculateToFromAmount();
+        });
 
         document.getElementById('applyCalculationBtn').addEventListener('click', function() {
+            // Ensure the main form is updated with final calculator values
+            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
+            const rate = parseFloat(document.getElementById('calcRate').value);
+            
+            if (fromAmount && rate && rate > 0) {
+                updateMainForm(fromAmount, rate);
+            }
+            
             calculatorModal.hide();
         });
     </script>

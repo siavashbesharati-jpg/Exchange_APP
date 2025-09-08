@@ -74,8 +74,9 @@
 
                             <div class="col-md-4">
                                 <label asp-for="Amount" class="form-label">مقدار  (ارز مبدأ)</label>
-                                <input asp-for="Amount" type="number" class="form-control" step="0.01" min="0" id="amountInput" required />
+                                <input asp-for="Amount" type="number" class="form-control" step="0.01" id="amountInput" required />
                                 <span asp-validation-for="Amount" class="text-danger"></span>
+                                <div class="form-text">مقادیر منفی برای تراکنش‌های برگشتی مجاز است</div>
                             </div>
                         </div>
 
@@ -97,7 +98,7 @@
                                             <div class="col-md-6">
                                                 <label asp-for="Rate" class="form-label">نرخ قابل ویرایش</label>
                                                 <div class="input-group">
-                                                    <input asp-for="Rate" type="number" class="form-control" step="any" min="0" id="rateInput" placeholder="نرخ ارز را وارد کنید" />
+                                                    <input asp-for="Rate" type="number" class="form-control" step="any" id="rateInput" placeholder="نرخ ارز را وارد کنید" />
                                                     <button class="btn btn-outline-secondary" type="button" id="loadSuggestedRateBtn" title="بارگذاری نرخ پیشنهادی">
                                                         <i class="bi bi-arrow-clockwise"></i>
                                                     </button>

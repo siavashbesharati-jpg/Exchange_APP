@@ -50,7 +50,10 @@
                                     {
                                         @foreach (var error in modelState.Errors)
                                         {
-                                            <li>@error.ErrorMessage</li>
+                                            @if (!error.ErrorMessage.Contains("documentFile") && !error.ErrorMessage.Contains("The documentFile field is required"))
+                                            {
+                                                <li>@error.ErrorMessage</li>
+                                            }
                                         }
                                     }
                                 </ul>
@@ -87,9 +90,10 @@
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Amount" class="form-label"> مقدار  <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <input asp-for="Amount" class="form-control" type="number" step="0.01" min="0" required />
+                                    <input asp-for="Amount" class="form-control" type="number" step="0.01" required />
                                 </div>
                                 <span asp-validation-for="Amount" class="text-danger"></span>
+                                <div class="form-text">مقادیر منفی برای تراکنش‌های برگشتی مجاز است</div>
                             </div>
 
                             <!-- Currency -->
@@ -176,18 +180,9 @@
 
                         <!-- File Upload -->
                         <div class="mb-3">
-                            <label class="form-label">فایل سند <span class="text-danger">*</span></label>
-                            <input type="file" name="documentFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required />
+                            <label class="form-label">فایل سند (اختیاری)</label>
+                            <input type="file" name="documentFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
                             <div class="form-text">فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX (حداکثر 10 مگابایت)</div>
-                            @if (ViewData.ModelState.TryGetValue("documentFile", out var documentFileState) && documentFileState?.Errors.Count > 0)
-                            {
-                                <span class="text-danger">
-                                    @foreach (var error in documentFileState.Errors)
-                                    {
-                                        <div>@error.ErrorMessage</div>
-                                    }
-                                </span>
-                            }
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -251,6 +246,27 @@
             if (!isValid) {
                 e.preventDefault();
                 alert('لطفاً تمامی فیلدهای اجباری را پر کنید.');
+            }
+        });
+
+        // File validation (only if file is selected)
+        document.querySelector('input[type="file"]').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
+                if (file.size > maxSize) {
+                    alert('حجم فایل نمی‌تواند بیشتر از ۱۰ مگابایت باشد.');
+                    e.target.value = '';
+                    return;
+                }
+
+                if (!allowedTypes.includes(file.type)) {
+                    alert('فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX');
+                    e.target.value = '';
+                    return;
+                }
             }
         });
     </script>

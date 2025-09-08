@@ -203,39 +203,38 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Upload(AccountingDocument accountingDocument, IFormFile documentFile)
         {
-            // Validate that file is required
-            if (documentFile == null || documentFile.Length == 0)
+            // Remove validation error for documentFile since it's optional
+            if (ModelState.ContainsKey("documentFile"))
             {
-                ModelState.AddModelError("documentFile", "انتخاب فایل الزامی است.");
-                TempData["ErrorMessage"] = "لطفا یک فایل برای آپلود انتخاب کنید.";
-                ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
-                ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
-                ViewData["BankAccounts"] = _context.BankAccounts.ToList();
-                return View(accountingDocument);
+                ModelState.Remove("documentFile");
             }
 
-            // Validate file size (max 10MB)
-            if (documentFile.Length > 10 * 1024 * 1024)
+            // File is now optional, but if provided, validate it
+            if (documentFile != null && documentFile.Length > 0)
             {
-                ModelState.AddModelError("documentFile", "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.");
-                TempData["ErrorMessage"] = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.";
-                ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
-                ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
-                ViewData["BankAccounts"] = _context.BankAccounts.ToList();
-                return View(accountingDocument);
-            }
+                // Validate file size (max 10MB)
+                if (documentFile.Length > 10 * 1024 * 1024)
+                {
+                    ModelState.AddModelError("documentFile", "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.");
+                    TempData["ErrorMessage"] = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.";
+                    ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+                    ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
+                    ViewData["BankAccounts"] = _context.BankAccounts.ToList();
+                    return View(accountingDocument);
+                }
 
-            // Validate file type
-            var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
-            var fileExtension = Path.GetExtension(documentFile.FileName).ToLower();
-            if (!allowedExtensions.Contains(fileExtension))
-            {
-                ModelState.AddModelError("documentFile", "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX");
-                TempData["ErrorMessage"] = "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX";
-                ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
-                ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
-                ViewData["BankAccounts"] = _context.BankAccounts.ToList();
-                return View(accountingDocument);
+                // Validate file type
+                var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx" };
+                var fileExtension = Path.GetExtension(documentFile.FileName).ToLower();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    ModelState.AddModelError("documentFile", "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX");
+                    TempData["ErrorMessage"] = "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX";
+                    ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+                    ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
+                    ViewData["BankAccounts"] = _context.BankAccounts.ToList();
+                    return View(accountingDocument);
+                }
             }
 
             // Validate bank account currency match
@@ -252,18 +251,21 @@ namespace ForexExchange.Controllers
             {
                 accountingDocument.CreatedAt = DateTime.Now;
 
-                // Handle file upload (we know file exists and is valid at this point)
-                using (var memoryStream = new MemoryStream())
+                // Handle file upload only if a file is provided
+                if (documentFile != null && documentFile.Length > 0)
                 {
-                    await documentFile.CopyToAsync(memoryStream);
-                    accountingDocument.FileData = memoryStream.ToArray();
-                    accountingDocument.FileName = documentFile.FileName;
-                    accountingDocument.ContentType = documentFile.ContentType;
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await documentFile.CopyToAsync(memoryStream);
+                        accountingDocument.FileData = memoryStream.ToArray();
+                        accountingDocument.FileName = documentFile.FileName;
+                        accountingDocument.ContentType = documentFile.ContentType;
+                    }
                 }
 
                 _context.Add(accountingDocument);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "سند حسابداری با موفقیت آپلود شد.";
+                TempData["SuccessMessage"] = "سند حسابداری با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -301,6 +303,12 @@ namespace ForexExchange.Controllers
             if (id != accountingDocument.Id)
             {
                 return NotFound();
+            }
+
+            // Remove validation error for documentFile since it's optional
+            if (ModelState.ContainsKey("documentFile"))
+            {
+                ModelState.Remove("documentFile");
             }
 
             // Validate bank account currency match
@@ -418,47 +426,55 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirm(int id)
         {
-            var accountingDocument = await _context.AccountingDocuments
-                .Include(a => a.BankAccount)
-                .FirstOrDefaultAsync(a => a.Id == id);
-                
-            if (accountingDocument == null)
+            try
             {
-                return NotFound();
-            }
-
-            // Validate bank account currency match
-            if (accountingDocument.BankAccountId.HasValue && accountingDocument.BankAccount != null)
-            {
-                if (accountingDocument.BankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                var accountingDocument = await _context.AccountingDocuments
+                    .Include(a => a.BankAccount)
+                    .FirstOrDefaultAsync(a => a.Id == id);
+                    
+                if (accountingDocument == null)
                 {
-                    TempData["ErrorMessage"] = $"ارز حساب بانکی انتخاب شده ({accountingDocument.BankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
-                    return RedirectToAction("Details", new { id });
+                    TempData["ErrorMessage"] = "سند حسابداری یافت نشد.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Validate bank account currency match
+                if (accountingDocument.BankAccountId.HasValue && accountingDocument.BankAccount != null)
+                {
+                    if (accountingDocument.BankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                    {
+                        TempData["ErrorMessage"] = $"ارز حساب بانکی انتخاب شده ({accountingDocument.BankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
+                        return RedirectToAction("Details", new { id });
+                    }
+                }
+
+                // Only process if not already verified
+                if (!accountingDocument.IsVerified)
+                {
+                    accountingDocument.IsVerified = true;
+                    accountingDocument.VerifiedAt = DateTime.Now;
+                    accountingDocument.VerifiedBy = User.Identity?.Name ?? "System";
+
+                    // Update balances (only customer and bank account balances)
+                    await _customerBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
+                    await _bankAccountBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
+                 
+                    _context.Update(accountingDocument);
+                    await _context.SaveChangesAsync();
+
+                    TempData["SuccessMessage"] = "سند حسابداری با موفقیت تأیید شد و ترازها بروزرسانی گردید.";
+                }
+                else
+                {
+                    TempData["InfoMessage"] = "این سند قبلاً تأیید شده است.";
                 }
             }
-
-            // Only process if not already verified
-            if (!accountingDocument.IsVerified)
+            catch (Exception ex)
             {
-                accountingDocument.IsVerified = true;
-                accountingDocument.VerifiedAt = DateTime.Now;
-                accountingDocument.VerifiedBy = User.Identity?.Name ?? "System";
-
-                // Update balances (only customer and bank account balances)
-                await _customerBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
-                await _bankAccountBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
-             
-
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "سند حسابداری با موفقیت تأیید شد و ترازها بروزرسانی گردید.";
-            }
-            else
-            {
-                TempData["InfoMessage"] = "این سند قبلاً تأیید شده است.";
+                TempData["ErrorMessage"] = $"خطا در تأیید سند: {ex.Message}";
             }
 
-            return RedirectToAction("Details", new { id });
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: AccountingDocuments/GetFile/5
