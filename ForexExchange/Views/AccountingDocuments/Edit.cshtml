@@ -338,65 +338,100 @@
             let content = '<div class="row">';
             
             if (data.amount) {
-                content += `<div class="col-md-6 mb-2"><strong>مبلغ:</strong> ${data.amount}</div>`;
+                content += `<div class="col-md-4 mb-2"><strong>مبلغ:</strong> ${data.amount}</div>`;
             }
             if (data.referenceId) {
-                content += `<div class="col-md-6 mb-2"><strong>شماره مرجع:</strong> ${data.referenceId}</div>`;
+                content += `<div class="col-md-4 mb-2"><strong>شماره مرجع:</strong> ${data.referenceId}</div>`;
             }
             if (data.date) {
-                content += `<div class="col-md-6 mb-2"><strong>تاریخ:</strong> ${data.date}</div>`;
-            }
-            if (data.accountNumber) {
-                content += `<div class="col-md-6 mb-2"><strong>شماره حساب:</strong> ${data.accountNumber}</div>`;
+                content += `<div class="col-md-4 mb-2"><strong>تاریخ:</strong> ${data.date}</div>`;
             }
             
             content += '</div>';
-            
-            if (data.rawText) {
-                content += `<div class="mt-2"><strong>متن کامل:</strong><br><small class="text-muted">${data.rawText.replace(/\n/g, '<br>')}</small></div>`;
-            }
             
             contentDiv.innerHTML = content;
             resultsDiv.style.display = 'block';
         }
 
         function applyOcrResults() {
-            if (ocrData.amount) {
-                const amountField = document.querySelector('[name="Amount"]');
-                if (amountField && !amountField.value) {
-                    // Extract numeric value from amount
-                    const numericAmount = ocrData.amount.replace(/[^\d.]/g, '');
-                    if (numericAmount) {
-                        amountField.value = numericAmount;
+            const ocrContent = document.getElementById('ocrContent');
+            const data = window.lastOcrResults;
+            
+            if (!data) return;
+            
+            if (data.amount) {
+                // If amount is in IRR and has 8+ digits, convert to Toman by removing one zero
+                let amountValue = data.amount.toString().replace(/[^\d]/g, '');
+                if (amountValue.length >= 8) {
+                    amountValue = amountValue.slice(0, -1); // Remove last digit (divide by 10)
+                }
+                const amountInput = document.querySelector('input[name="Amount"]');
+                if (amountInput) {
+                    amountInput.value = amountValue;
+                }
+            }
+            
+            if (data.referenceId) {
+                const referenceInput = document.querySelector('input[name="ReferenceNumber"]');
+                if (referenceInput) {
+                    referenceInput.value = data.referenceId;
+                }
+            }
+            
+            if (data.date) {
+                // Convert Shamsi date to Miladi
+                const miladiDate = convertShamsiToMiladi(data.date);
+                if (miladiDate) {
+                    const dateInput = document.querySelector('input[name="DocumentDate"]');
+                    if (dateInput) {
+                        dateInput.value = miladiDate;
                     }
                 }
             }
             
-            if (ocrData.referenceId) {
-                const refField = document.querySelector('[name="ReferenceNumber"]');
-                if (refField && !refField.value) {
-                    refField.value = ocrData.referenceId;
-                }
-            }
-            
-            if (ocrData.date) {
-                const dateField = document.querySelector('[name="DocumentDate"]');
-                if (dateField && !dateField.value) {
-                    // Try to convert date to ISO format
-                    try {
-                        const dateObj = new Date(ocrData.date);
-                        if (!isNaN(dateObj.getTime())) {
-                            const localDateTime = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000);
-                            dateField.value = localDateTime.toISOString().slice(0, 16);
-                        }
-                    } catch (e) {
-                        console.log('Could not parse date:', ocrData.date);
-                    }
-                }
-            }
-            
+            // Hide OCR results after applying
             hideOcrResults();
             alert('نتایج OCR اعمال شد!');
+        }
+        
+        function convertShamsiToMiladi(shamsiDate) {
+            try {
+                // Parse Shamsi date (format: YYYY/MM/DD)
+                const parts = shamsiDate.split('/');
+                if (parts.length !== 3) return null;
+                
+                const shamsiYear = parseInt(parts[0]);
+                const shamsiMonth = parseInt(parts[1]);
+                const shamsiDay = parseInt(parts[2]);
+                
+                // Simple conversion (approximate)
+                // This is a basic conversion - for production use a proper Persian calendar library
+                const miladiYear = shamsiYear + 621;
+                let miladiMonth = shamsiMonth + 3;
+                let miladiDay = shamsiDay + 21;
+                
+                // Handle month overflow
+                if (miladiMonth > 12) {
+                    miladiMonth -= 12;
+                    miladiYear++;
+                }
+                
+                // Handle day overflow (simplified)
+                if (miladiDay > 30) {
+                    miladiDay -= 30;
+                    miladiMonth++;
+                    if (miladiMonth > 12) {
+                        miladiMonth = 1;
+                        miladiYear++;
+                    }
+                }
+                
+                // Format as YYYY-MM-DD for HTML date input
+                return `${miladiYear}-${miladiMonth.toString().padStart(2, '0')}-${miladiDay.toString().padStart(2, '0')}`;
+            } catch (e) {
+                console.error('Error converting Shamsi to Miladi:', e);
+                return null;
+            }
         }
 
         function hideOcrResults() {
