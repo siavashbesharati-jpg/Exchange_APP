@@ -22,11 +22,11 @@
                     <!-- Date Range -->
                     <div class="col-md-3">
                         <label class="form-label">از تاریخ</label>
-                        <input type="date" class="form-control" id="fromDate" name="fromDate" value="@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")">
+                        <input type="date" class="form-control" id="fromDate" name="fromDate" value="">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">تا تاریخ</label>
-                        <input type="date" class="form-control" id="toDate" name="toDate" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        <input type="date" class="form-control" id="toDate" name="toDate" value="">
                     </div>
                     
                     <!-- Customer Filter -->
@@ -92,55 +92,6 @@
         </div>
     </div>
 
-    <!-- Quick Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-primary text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">کل معاملات</h6>
-                            <h3 id="totalOrders" dir="ltr">-</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-clipboard-list fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-success text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">حجم معاملات</h6>
-                            <h3 id="totalVolume" dir="ltr">-</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-dollar-sign fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-warning text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">مشتریان فعال</h6>
-                            <h3 id="activeCustomers" dir="ltr">-</h3>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-users fa-2x"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
         
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card bg-info text-white h-100">

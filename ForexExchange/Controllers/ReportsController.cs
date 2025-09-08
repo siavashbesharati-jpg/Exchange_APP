@@ -74,6 +74,42 @@ namespace ForexExchange.Controllers
             }
         }
 
+        // GET: Reports/TestOrders - Debug endpoint to check orders
+        [HttpGet]
+        public async Task<IActionResult> TestOrders()
+        {
+            try
+            {
+                var totalOrders = await _context.Orders.CountAsync();
+                var orders = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Take(10)
+                    .Select(o => new
+                    {
+                        Id = o.Id,
+                        CreatedAt = o.CreatedAt,
+                        CustomerId = o.CustomerId,
+                        CustomerName = o.Customer != null ? o.Customer.FullName : "NULL",
+                        Amount = o.Amount,
+                        Rate = o.Rate,
+                        FromCurrencyId = o.FromCurrencyId,
+                        FromCurrency = o.FromCurrency != null ? o.FromCurrency.Code : "NULL",
+                        ToCurrencyId = o.ToCurrencyId,
+                        ToCurrency = o.ToCurrency != null ? o.ToCurrency.Code : "NULL"
+                    })
+                    .ToListAsync();
+
+                return Json(new { totalOrders, orders });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message, stackTrace = ex.StackTrace });
+            }
+        }
+
         // POST: Reports/GetOrdersData
         [HttpPost]
         public async Task<IActionResult> GetOrdersData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
