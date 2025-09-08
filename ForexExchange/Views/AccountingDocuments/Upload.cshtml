@@ -196,8 +196,14 @@
                         <!-- Document Title -->
                         <div class="mb-3">
                             <label asp-for="Title" class="form-label">عنوان سند <span class="text-danger">*</span></label>
-                            <input asp-for="Title" class="form-control" placeholder="مثال: پرداخت مشتری برای خرید ارز" required />
+                            <div class="input-group">
+                                <input asp-for="Title" class="form-control" id="documentTitle" placeholder="عنوان خودکار تولید می‌شود..." required />
+                                <button type="button" class="btn btn-outline-secondary" id="autoGenerateTitle" title="تولید خودکار عنوان">
+                                    <i class="fas fa-magic"></i>
+                                </button>
+                            </div>
                             <span asp-validation-for="Title" class="text-danger"></span>
+                            <div class="form-text">عنوان بر اساس اطلاعات وارد شده خودکار تولید می‌شود. می‌توانید آن را تغییر دهید.</div>
                         </div>
 
                         <!-- Description -->
@@ -351,6 +357,105 @@
         document.getElementById('CurrencyCode').addEventListener('change', validateCurrency);
         document.querySelector('[name="PayerBankAccountId"]').addEventListener('change', validateCurrency);
         document.querySelector('[name="ReceiverBankAccountId"]').addEventListener('change', validateCurrency);
+
+        // Auto-generate title function
+        function generateTitle() {
+            const payerType = document.getElementById('payerType').value;
+            const receiverType = document.getElementById('receiverType').value;
+            const amount = document.querySelector('[name="Amount"]').value;
+            const currency = document.querySelector('[name="CurrencyCode"]').value;
+            const docType = document.querySelector('[name="Type"]').value;
+            
+            let payerName = '';
+            let receiverName = '';
+            
+            // Get payer name
+            if (payerType === '@ForexExchange.Models.PayerType.Customer') {
+                const payerSelect = document.querySelector('[name="PayerCustomerId"]');
+                if (payerSelect && payerSelect.selectedOptions[0]) {
+                    payerName = payerSelect.selectedOptions[0].text.split(' - ')[0] || 'مشتری';
+                } else {
+                    payerName = 'مشتری';
+                }
+            } else if (payerType === '@ForexExchange.Models.PayerType.System') {
+                const payerBankSelect = document.querySelector('[name="PayerBankAccountId"]');
+                if (payerBankSelect && payerBankSelect.selectedOptions[0]) {
+                    payerName = 'سیستم - ' + (payerBankSelect.selectedOptions[0].text.split(' - ')[1] || 'بانک');
+                } else {
+                    payerName = 'سیستم';
+                }
+            }
+            
+            // Get receiver name
+            if (receiverType === '@ForexExchange.Models.ReceiverType.Customer') {
+                const receiverSelect = document.querySelector('[name="ReceiverCustomerId"]');
+                if (receiverSelect && receiverSelect.selectedOptions[0]) {
+                    receiverName = receiverSelect.selectedOptions[0].text.split(' - ')[0] || 'مشتری';
+                } else {
+                    receiverName = 'مشتری';
+                }
+            } else if (receiverType === '@ForexExchange.Models.ReceiverType.System') {
+                const receiverBankSelect = document.querySelector('[name="ReceiverBankAccountId"]');
+                if (receiverBankSelect && receiverBankSelect.selectedOptions[0]) {
+                    receiverName = 'سیستم - ' + (receiverBankSelect.selectedOptions[0].text.split(' - ')[1] || 'بانک');
+                } else {
+                    receiverName = 'سیستم';
+                }
+            }
+            
+            // Get document type name
+            let docTypeName = '';
+            switch(docType) {
+                case '0': docTypeName = 'نقدی'; break;
+                case '1': docTypeName = 'رسید بانکی'; break;
+                case '2': docTypeName = 'حواله'; break;
+                default: docTypeName = 'سند';
+            }
+            
+            // Generate title
+            let title = '';
+            if (amount && currency) {
+                const formattedAmount = Number(amount).toLocaleString('fa-IR');
+                title = `${docTypeName} - ${payerName} به ${receiverName} - ${formattedAmount} ${currency}`;
+            } else {
+                title = `${docTypeName} - ${payerName} به ${receiverName}`;
+            }
+            
+            document.getElementById('documentTitle').value = title;
+        }
+
+        // Auto-generate title on field changes (only if title is empty or auto-generated)
+        function autoGenerateTitle() {
+            const currentTitle = document.getElementById('documentTitle').value;
+            if (!currentTitle || 
+                (currentTitle.includes(' - ') && 
+                (currentTitle.includes('نقدی') || currentTitle.includes('رسید بانکی') || currentTitle.includes('حواله')))) {
+                generateTitle();
+            }
+        }
+
+        // Manual title generation button
+        document.getElementById('autoGenerateTitle').addEventListener('click', generateTitle);
+
+        // Add auto-title generation to existing event listeners
+        const originalPayerTypeListener = document.getElementById('payerType').onchange;
+        document.getElementById('payerType').addEventListener('change', function() {
+            setTimeout(autoGenerateTitle, 100);
+        });
+
+        const originalReceiverTypeListener = document.getElementById('receiverType').onchange;
+        document.getElementById('receiverType').addEventListener('change', function() {
+            setTimeout(autoGenerateTitle, 100);
+        });
+        
+        // Add auto-title generation to other field changes
+        document.querySelector('[name="PayerCustomerId"]').addEventListener('change', autoGenerateTitle);
+        document.querySelector('[name="ReceiverCustomerId"]').addEventListener('change', autoGenerateTitle);
+        document.querySelector('[name="PayerBankAccountId"]').addEventListener('change', autoGenerateTitle);
+        document.querySelector('[name="ReceiverBankAccountId"]').addEventListener('change', autoGenerateTitle);
+        document.querySelector('[name="Amount"]').addEventListener('input', autoGenerateTitle);
+        document.querySelector('[name="CurrencyCode"]').addEventListener('change', autoGenerateTitle);
+        document.querySelector('[name="Type"]').addEventListener('change', autoGenerateTitle);
 
         // Prevent self-transactions
         function validateSelfTransaction() {

@@ -176,24 +176,24 @@ namespace ForexExchange.Services
             // Handle Payer side of the transaction
             if (document.PayerType == PayerType.Customer && document.PayerCustomerId.HasValue)
             {
-                // Customer is paying - decrease their balance (negative amount)
+                // Customer is paying - their debt DECREASES (more positive/less negative)
                 await UpdateCustomerBalanceAsync(
                     document.PayerCustomerId.Value,
                     document.CurrencyCode,
-                    -document.Amount,
-                    $"Payment - Document #{document.Id} - {document.Title}"
+                    document.Amount,
+                    $"Customer Payment - Document #{document.Id} - {document.Title}"
                 );
             }
 
             // Handle Receiver side of the transaction
             if (document.ReceiverType == ReceiverType.Customer && document.ReceiverCustomerId.HasValue)
             {
-                // Customer is receiving - increase their balance (positive amount)
+                // Customer is receiving - their debt INCREASES (more negative/less positive)
                 await UpdateCustomerBalanceAsync(
                     document.ReceiverCustomerId.Value,
                     document.CurrencyCode,
-                    document.Amount,
-                    $"Receipt - Document #{document.Id} - {document.Title}"
+                    -document.Amount,
+                    $"Customer Receipt - Document #{document.Id} - {document.Title}"
                 );
             }
 

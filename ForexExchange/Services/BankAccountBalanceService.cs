@@ -119,24 +119,24 @@ namespace ForexExchange.Services
             // Handle Payer side of the transaction
             if (document.PayerType == PayerType.System && document.PayerBankAccountId.HasValue)
             {
-                // System is paying from bank account - decrease bank account balance
+                // System pays from bank account - bank balance DECREASES
                 await UpdateBankAccountBalanceAsync(
                     document.PayerBankAccountId.Value,
                     document.CurrencyCode,
                     -document.Amount,
-                    $"System payment from bank - Document #{document.Id} - {document.Title}"
+                    $"System Payment - Document #{document.Id} - {document.Title}"
                 );
             }
 
             // Handle Receiver side of the transaction
             if (document.ReceiverType == ReceiverType.System && document.ReceiverBankAccountId.HasValue)
             {
-                // System is receiving to bank account - increase bank account balance
+                // System receives to bank account - bank balance INCREASES
                 await UpdateBankAccountBalanceAsync(
                     document.ReceiverBankAccountId.Value,
                     document.CurrencyCode,
                     document.Amount,
-                    $"System receipt to bank - Document #{document.Id} - {document.Title}"
+                    $"System Receipt - Document #{document.Id} - {document.Title}"
                 );
             }
 
