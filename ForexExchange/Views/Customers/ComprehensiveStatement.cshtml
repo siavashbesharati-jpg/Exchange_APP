@@ -525,7 +525,7 @@
                                     <td>@order.ToCurrency?.Code</td>
                                     <td>@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</td>
                                     <td>@(order.ToCurrency?.Code == "IRR" ? order.Rate.ToString("N0") : order.Rate.ToString("N2"))</td>
-                                    <td>@order.CreatedAt.ToString("MM/dd")</td>
+                                    <td>@order.CreatedAt.ToString("yy/MM/dd")</td>
                                 </tr>
                             }
                         </tbody>
@@ -596,7 +596,7 @@
                                             <span style="color: #f39c12; font-size: 10px;">انتظار</span>
                                         }
                                     </td>
-                                    <td>@doc.DocumentDate.ToString("MM/dd")</td>
+                                    <td>@doc.DocumentDate.ToString("yy/MM/dd")</td>
                                 </tr>
                             }
                         </tbody>

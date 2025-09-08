@@ -347,7 +347,7 @@
                                                                 <span class="fw-bold">@(doc.CurrencyCode == "IRR" ? doc.Amount.ToString("N0") : doc.Amount.ToString("N2"))</span>
                                                                 <small class="text-muted">@doc.CurrencyCode</small>
                                                             </td>
-                                                            <td>@doc.CreatedAt.ToString("MM/dd")</td>
+                                                            <td>@doc.CreatedAt.ToString("yy/MM/dd")</td>
                                                             <td>
                                                                 @if (doc.IsVerified)
                                                                 {
