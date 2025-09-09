@@ -85,30 +85,28 @@
 
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-gradient-info text-white h-100 shadow-lg border-0 system-balance-card">
+            <div class="card h-100 shadow-lg border-0 system-balance-card">
                 <div class="card-body p-4 position-relative overflow-hidden">
                     <!-- Background Pattern -->
                     <div class="position-absolute top-0 end-0 opacity-10">
-                        <i class="fas fa-coins fa-5x"></i>
                     </div>
                     
                     <!-- Header Section -->
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="flex-grow-1">
                             <div class="d-flex align-items-center mb-2">
-                                <i class="fas fa-balance-scale me-2 text-warning"></i>
-                                <h6 class="card-title mb-0 fw-bold">تراز کل سیستم</h6>
+                                <i class="fas fa-balance-scale me-2 text-primary"></i>
+                                <h6 class="card-title mb-0 fw-bold text-dark">تراز کل سیستم</h6>
                             </div>
                             
                             <!-- Currency Selector with enhanced styling -->
                             <div class="currency-selector-wrapper">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="form-label text-light opacity-75 small mb-0">
+                                    <label class="form-label text-muted small mb-0">
                                         <i class="fas fa-exchange-alt me-1"></i>نمایش بر حسب:
                                     </label>
-                                    <button type="button" class="btn btn-sm btn-outline-light opacity-75" 
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
                                             onclick="loadSystemBalance()" title="بروزرسانی">
-                                        <i class="fas fa-sync-alt"></i>
                                     </button>
                                 </div>
                                 <select id="currencySelector" class="form-select form-select-sm currency-select bg-white text-dark border-0 shadow-sm">
@@ -125,17 +123,17 @@
                     <!-- Balance Display Section -->
                     <div class="balance-display-section">
                         <div class="balance-wrapper text-center">
-                            <div class="balance-label text-light opacity-75 small mb-1">
+                            <div class="balance-label text-muted small mb-1">
                                 <i class="fas fa-calculator me-1"></i>مجموع تراز
                             </div>
-                            <div id="systemBalance" class="system-balance-amount fw-bold display-6 text-warning mb-2" dir="ltr">
+                            <div id="systemBalance" class="system-balance-amount fw-bold text-primary mb-2" dir="ltr">
                                 <div class="loading-placeholder">
                                     <div class="spinner-border spinner-border-sm me-2" role="status"></div>
                                     در حال محاسبه...
                                 </div>
                             </div>
                             <div id="balanceStatus" class="balance-status-indicator">
-                                <span class="badge bg-light text-dark opacity-75">
+                                <span class="badge bg-primary text-white">
                                     <i class="fas fa-sync-alt fa-spin me-1"></i>بروزرسانی...
                                 </span>
                             </div>
@@ -143,10 +141,10 @@
                     </div>
                     
                     <!-- Quick Info Footer -->
-                    <div class="quick-info-footer mt-3 pt-2 border-top border-light border-opacity-25">
+                    <div class="quick-info-footer mt-3 pt-2">
                         <div class="row text-center">
                             <div class="col">
-                                <small class="text-light opacity-75">
+                                <small class="text-muted">
                                     <i class="fas fa-clock me-1"></i>
                                     <span id="lastUpdate">همین الان</span>
                                 </small>
@@ -383,6 +381,7 @@
             align-items: center;
             justify-content: center;
             font-weight: 600;
+            font-size: 20px !important; /* Set balance font size to 20px */
         }
 
         .balance-display-section {
@@ -412,17 +411,17 @@
         /* Positive/Negative Balance Colors */
         .balance-positive {
             color: #28a745 !important;
-            text-shadow: 2px 2px 4px rgba(40, 167, 69, 0.3);
+            text-shadow: none; /* Remove text shadow */
         }
 
         .balance-negative {
             color: #dc3545 !important;
-            text-shadow: 2px 2px 4px rgba(220, 53, 69, 0.3);
+            text-shadow: none; /* Remove text shadow */
         }
 
         .balance-neutral {
-            color: #ffc107 !important;
-            text-shadow: 2px 2px 4px rgba(255, 193, 7, 0.3);
+            color: #007bff !important;
+            text-shadow: none; /* Remove text shadow */
         }
 
         /* Animation for balance updates */
@@ -438,16 +437,15 @@
 
         /* Currency selector wrapper */
         .currency-selector-wrapper {
-            backdrop-filter: blur(5px);
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 123, 255, 0.05);
             border-radius: 8px;
             padding: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 123, 255, 0.1);
         }
 
         /* Quick info footer */
         .quick-info-footer {
-            backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(0, 123, 255, 0.1) !important;
         }
 
         /* Responsive adjustments */
@@ -592,7 +590,7 @@
             `);
             
             statusElement.html(`
-                <span class="badge bg-light text-dark opacity-75">
+                <span class="badge bg-primary text-white">
                     <i class="fas fa-sync-alt fa-spin me-1"></i>در حال بروزرسانی...
                 </span>
             `);
@@ -606,9 +604,9 @@
                         // Add animation class
                         balanceElement.addClass('balance-updating');
                         
-                        // Format the balance with proper styling
+                        // Format the balance with proper styling - use English numbers
                         const balance = parseFloat(data.balance);
-                        const formattedBalance = balance.toLocaleString('fa-IR', {
+                        const formattedBalance = balance.toLocaleString('en-US', {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 2
                         });
@@ -645,9 +643,9 @@
                             </span>
                         `);
                         
-                        // Update last update time
+                        // Update last update time - use English numbers
                         const now = new Date();
-                        lastUpdateElement.text(now.toLocaleTimeString('fa-IR', {
+                        lastUpdateElement.text(now.toLocaleTimeString('en-US', {
                             hour: '2-digit',
                             minute: '2-digit'
                         }));
