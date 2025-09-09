@@ -169,6 +169,17 @@
     {
         @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
         {
+            <!-- Currency Pool Display Section for Admin -->
+            <div class="fixed-bottom" style="bottom: 80px;">
+                <div class="container-fluid">
+                    <div class="bg-light border-top border-bottom shadow-sm p-2 currency-pool-section" id="currency-pool-section-admin" style="display: none;">
+                        <div class="row" id="currency-pool-row-admin">
+                            <!-- Currency pool data will be loaded here via AJAX -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Admin Action Footer -->
             <div class="fixed-bottom bg-light border-top shadow-lg p-3" style="border-top: 3px solid #00000014   !important;">
                 <div class="container-fluid">
@@ -247,7 +258,7 @@
     }
     else
     {
-        <!-- Login action in  Footer -->
+        <!-- Login action in Footer -->
         <div class="fixed-bottom bg-white border-top shadow-lg p-3">
             <div class="container-fluid">
                 <div class="row">
@@ -304,6 +315,89 @@
     <script src="~/js/currency-amount-formatter.js" asp-append-version="true"></script>
     <script src="~/js/currency-form-helper.js" asp-append-version="true"></script>
     <script src="~/js/auto-currency-display-formatter.js" asp-append-version="true"></script>
+
+    <!-- Currency Pool Footer Script -->
+    <script>
+        $(document).ready(function() {
+            loadCurrencyPoolData();
+        });
+
+        function loadCurrencyPoolData() {
+            $.ajax({
+                url: '@Url.Action("GetAllPoolsForFooter", "PoolManagement")',
+                type: 'GET',
+                success: function(response) {
+                    if (response.success && response.pools && response.pools.length > 0) {
+                        displayCurrencyPools(response.pools);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading currency pool data:', error);
+                }
+            });
+        }
+
+        function displayCurrencyPools(pools) {
+            // Clear admin container
+            $('#currency-pool-row-admin').empty();
+            
+            // Calculate column width and offset based on number of currencies
+            const poolCount = pools.length;
+            let colClass = 'col-12';
+            let offsetClass = '';
+            
+            if (poolCount <= 2) {
+                colClass = 'col-6';
+            } else if (poolCount <= 3) {
+                colClass = 'col-4';
+            } else if (poolCount <= 4) {
+                colClass = 'col-3';
+            } else if (poolCount <= 6) {
+                colClass = 'col-2';
+            } else if (poolCount === 7) {
+                colClass = 'col-1';
+                offsetClass = 'offset-2'; // Center 7 columns: (12-7)/2 = 2.5, rounded down to 2
+            } else if (poolCount === 8) {
+                colClass = 'col-1';
+                offsetClass = 'offset-2'; // Center 8 columns: (12-8)/2 = 2
+            } else if (poolCount === 9) {
+                colClass = 'col-1';
+                offsetClass = 'offset-1'; // Center 9 columns: (12-9)/2 = 1.5, rounded down to 1
+            } else if (poolCount === 10) {
+                colClass = 'col-1';
+                offsetClass = 'offset-1'; // Center 10 columns: (12-10)/2 = 1
+            } else if (poolCount === 11) {
+                colClass = 'col-1';
+                offsetClass = ''; // 11 columns, only 1 empty space, no offset needed
+            } else {
+                colClass = 'col-1';
+            }
+            
+            const poolsHtml = pools.map(function(pool, index) {
+                const firstItemClass = index === 0 && offsetClass ? offsetClass : '';
+                return `
+                    <div class="${colClass} ${firstItemClass} text-center border-end currency-pool-item">
+                        <div class="currency-pool-code text-muted">${pool.currencyCode}</div>
+                        <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}">
+                            ${formatNumber(pool.balance)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add to admin container only and show admin section
+            $('#currency-pool-row-admin').html(poolsHtml);
+            $('#currency-pool-section-admin').show();
+        }
+
+        function formatNumber(num) {
+            if (num === 0) return '0';
+            return num.toLocaleString('fa-IR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
