@@ -33,3 +33,42 @@ body {
 .balance-display {
     direction: ltr;
 }
+
+/* Currency Pool Footer Styling */
+.currency-pool-section {
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+}
+
+.currency-pool-item {
+    padding: 0.5rem 0.25rem;
+    transition: background-color 0.2s ease;
+}
+
+.currency-pool-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.currency-pool-balance {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.currency-pool-code {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+@media (max-width: 576px) {
+    .currency-pool-section {
+        font-size: 0.75rem;
+    }
+    
+    .currency-pool-balance {
+        font-size: 0.8rem;
+    }
+    
+    .currency-pool-code {
+        font-size: 0.7rem;
+    }
+}

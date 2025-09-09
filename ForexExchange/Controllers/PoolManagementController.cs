@@ -204,5 +204,30 @@ namespace ForexExchange.Controllers
                 return Json(new { success = false, message = "خطا در دریافت جزئیات صندوق " });
             }
         }
+
+        /// <summary>
+        /// Get all currency pools for footer display
+        /// دریافت تمام صندوق های ارزی برای نمایش در فوتر
+        /// </summary>
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllPoolsForFooter()
+        {
+            try
+            {
+                var pools = await _poolService.GetAllPoolsAsync();
+                var poolData = pools.Select(p => new {
+                    currencyCode = p.Currency?.Code ?? p.CurrencyCode,
+                    balance = p.Balance
+                }).ToList();
+
+                return Json(new { success = true, pools = poolData });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting currency pools for footer");
+                return Json(new { success = false, message = "خطا در دریافت داده‌های صندوق ارزی" });
+            }
+        }
     }
 }
