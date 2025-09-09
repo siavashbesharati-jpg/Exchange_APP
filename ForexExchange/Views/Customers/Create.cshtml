@@ -99,6 +99,11 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     
     <script>
+        // Disable Select2 on this page specifically
+        window.disableSelect2 = true;
+    </script>
+    
+    <script>
         // Password confirmation validation
         var confirmPasswordInput = document.querySelector('input[name="ConfirmPassword"]');
         var passwordInput = document.querySelector('input[name="Password"]');

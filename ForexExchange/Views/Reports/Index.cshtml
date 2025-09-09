@@ -11,146 +11,144 @@
         </div>
     </div>
 
-    <!-- Advanced Filters -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>فیلترهای پیشرفته</h5>
-        </div>
-        <div class="card-body">
-            <form id="reportFilters">
-                <div class="row g-3">
-                    <!-- Date Range -->
-                    <div class="col-md-3">
-                        <label class="form-label">از تاریخ</label>
-                        <input type="date" class="form-control" id="fromDate" name="fromDate" value="">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">تا تاریخ</label>
-                        <input type="date" class="form-control" id="toDate" name="toDate" value="">
-                    </div>
-                    
-                    <!-- Customer Filter -->
-                    <div class="col-md-3">
-                        <label class="form-label">مشتری</label>
-                        <select class="form-select" id="customerId" name="customerId">
-                            <option value="">همه مشتریان</option>
-                            <!-- Will be populated via AJAX -->
-                        </select>
-                    </div>
-                    
-                    <!-- Currency Filter -->
-                    <div class="col-md-3">
-                        <label class="form-label">ارز</label>
-                        <select class="form-select" id="currencyId" name="currencyId">
-                            <option value="">همه ارزها</option>
-                            <!-- Will be populated via AJAX -->
-                        </select>
-                    </div>
-                    
-                    <!-- Bank Account Filter -->
-                    <div class="col-md-3">
-                        <label class="form-label">حساب بانکی</label>
-                        <select class="form-select" id="bankAccountId" name="bankAccountId">
-                            <option value="">همه حساب‌ها</option>
-                            <!-- Will be populated via AJAX -->
-                        </select>
-                    </div>
-                    
-                    <!-- Report Type -->
-                    <div class="col-md-3">
-                        <label class="form-label">نوع گزارش</label>
-                        <select class="form-select" id="reportType" name="reportType">
-                            <option value="all">همه گزارشات</option>
-                            <option value="orders">معاملات مشتریان</option>
-                            <option value="balances">تراز مشتریان</option>
-                            <option value="bank_balances">موجودی بانک‌ها</option>
-                        </select>
-                    </div>
-                    
-                  
-                    
-                    <!-- Action Buttons -->
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button type="button" class="btn btn-primary me-2" onclick="applyFilters()">
-                            <i class="fas fa-search me-1"></i>اعمال فیلتر
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
-                            <i class="fas fa-undo me-1"></i>پاک کردن
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-        
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card h-100 shadow-lg border-0 system-balance-card">
-                <div class="card-body p-4 position-relative overflow-hidden">
-                    <!-- Background Pattern -->
-                    <div class="position-absolute top-0 end-0 opacity-10">
-                    </div>
-                    
-                    <!-- Header Section -->
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="flex-grow-1">
-                            <div class="d-flex align-items-center mb-2">
+    <!-- System Balance - Thin Horizontal Box -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 system-balance-horizontal-card">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <!-- Title and Currency Selector -->
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
                                 <i class="fas fa-balance-scale me-2 text-primary"></i>
-                                <h6 class="card-title mb-0 fw-bold text-dark">تراز کل سیستم</h6>
+                                <h6 class="mb-0 fw-bold text-dark">تراز کل سیستم</h6>
                             </div>
-                            
-                            <!-- Currency Selector with enhanced styling -->
-                            <div class="currency-selector-wrapper">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="form-label text-muted small mb-0">
-                                        <i class="fas fa-exchange-alt me-1"></i>نمایش بر حسب:
-                                    </label>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                            onclick="loadSystemBalance()" title="بروزرسانی">
-                                    </button>
-                                </div>
-                                <select id="currencySelector" class="form-select form-select-sm currency-select bg-white text-dark border-0 shadow-sm">
-                                    <option value="IRR" data-flag="🇮🇷">🇮🇷 IRR - ریال ایران</option>
-                                    <option value="USD" data-flag="🇺🇸">🇺🇸 USD - دلار آمریکا</option>
-                                    <option value="EUR" data-flag="🇪🇺">🇪🇺 EUR - یورو اروپا</option>
-                                    <option value="AED" data-flag="🇦🇪">🇦🇪 AED - درهم امارات</option>
-                                    <option value="OMR" data-flag="🇴🇲">🇴🇲 OMR - ریال عمان</option>
+                        </div>
+                        
+                        <!-- Currency Selector -->
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <label class="form-label text-muted small mb-0 me-2">
+                                    <i class="fas fa-exchange-alt me-1"></i>نمایش بر حسب:
+                                </label>
+                                <select id="currencySelector" class="form-select form-select-sm currency-select bg-white text-dark">
+                                    <option value="IRR" data-flag="🇮🇷">🇮🇷 IRR</option>
+                                    <option value="USD" data-flag="🇺🇸">🇺🇸 USD</option>
+                                    <option value="EUR" data-flag="🇪🇺">🇪🇺 EUR</option>
+                                    <option value="AED" data-flag="🇦🇪">🇦🇪 AED</option>
+                                    <option value="OMR" data-flag="🇴🇲">🇴🇲 OMR</option>
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Balance Display Section -->
-                    <div class="balance-display-section">
-                        <div class="balance-wrapper text-center">
-                            <div class="balance-label text-muted small mb-1">
-                                <i class="fas fa-calculator me-1"></i>مجموع تراز
-                            </div>
-                            <div id="systemBalance" class="system-balance-amount fw-bold text-primary mb-2" dir="ltr">
-                                <div class="loading-placeholder">
-                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                                    در حال محاسبه...
+                        
+                        <!-- Balance Display -->
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <div class="text-center">
+                                    <div class="balance-label text-muted small mb-1">
+                                        <i class="fas fa-calculator me-1"></i>مجموع تراز
+                                    </div>
+                                    <div id="systemBalance" class="system-balance-amount fw-bold text-primary" dir="ltr">
+                                        <div class="loading-placeholder">
+                                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                            در حال محاسبه...
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div id="balanceStatus" class="balance-status-indicator">
-                                <span class="badge bg-primary text-white">
-                                    <i class="fas fa-sync-alt fa-spin me-1"></i>بروزرسانی...
-                                </span>
+                        </div>
+                        
+                        <!-- Status and Actions -->
+                        <div class="col-md-2">
+                            <div class="d-flex align-items-center justify-content-end">
+                                <div class="text-center">
+                                    <div id="balanceStatus" class="balance-status-indicator mb-1">
+                                        <span class="badge bg-primary text-white">
+                                            <i class="fas fa-sync-alt fa-spin me-1"></i>بروزرسانی...
+                                        </span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="loadSystemBalance()" title="بروزرسانی">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Quick Info Footer -->
-                    <div class="quick-info-footer mt-3 pt-2">
-                        <div class="row text-center">
-                            <div class="col">
-                                <small class="text-muted">
-                                    <i class="fas fa-clock me-1"></i>
-                                    <span id="lastUpdate">همین الان</span>
-                                </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>فیلترهای پیشرفته</h5>
+                </div>
+                <div class="card-body">
+                    <form id="reportFilters">
+                        <div class="row g-3">
+                            <!-- Date Range -->
+                            <div class="col-md-3">
+                                <label class="form-label">از تاریخ</label>
+                                <input type="date" class="form-control" id="fromDate" name="fromDate" value="">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">تا تاریخ</label>
+                                <input type="date" class="form-control" id="toDate" name="toDate" value="">
+                            </div>
+                            
+                            <!-- Customer Filter -->
+                            <div class="col-md-3">
+                                <label class="form-label">مشتری</label>
+                                <select class="form-select" id="customerId" name="customerId">
+                                    <option value="">همه مشتریان</option>
+                                    <!-- Will be populated via AJAX -->
+                                </select>
+                            </div>
+                            
+                            <!-- Currency Filter -->
+                            <div class="col-md-3">
+                                <label class="form-label">ارز</label>
+                                <select class="form-select" id="currencyId" name="currencyId">
+                                    <option value="">همه ارزها</option>
+                                    <!-- Will be populated via AJAX -->
+                                </select>
+                            </div>
+                            
+                            <!-- Bank Account Filter -->
+                            <div class="col-md-4">
+                                <label class="form-label">حساب بانکی</label>
+                                <select class="form-select" id="bankAccountId" name="bankAccountId">
+                                    <option value="">همه حساب‌ها</option>
+                                    <!-- Will be populated via AJAX -->
+                                </select>
+                            </div>
+                            
+                            <!-- Report Type -->
+                            <div class="col-md-4">
+                                <label class="form-label">نوع گزارش</label>
+                                <select class="form-select" id="reportType" name="reportType">
+                                    <option value="all">همه گزارشات</option>
+                                    <option value="orders">معاملات مشتریان</option>
+                                    <option value="balances">تراز مشتریان</option>
+                                    <option value="bank_balances">موجودی بانک‌ها</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="button" class="btn btn-primary me-2" onclick="applyFilters()">
+                                    <i class="fas fa-search me-1"></i>اعمال فیلتر
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
+                                    <i class="fas fa-undo me-1"></i>پاک کردن
+                                </button>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -361,15 +359,52 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
         }
 
+        .system-balance-card .card-body {
+            padding: 1rem !important;
+        }
+
+        .system-balance-card .card-title {
+            font-size: 0.9rem !important;
+        }
+
         .currency-select {
             border-radius: 8px !important;
             font-weight: 500;
             transition: all 0.2s ease;
+            font-size: 0.8rem !important;
         }
 
         .currency-select:focus {
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3) !important;
             border-color: transparent !important;
+        }
+
+        /* Horizontal System Balance Card Styles */
+        .system-balance-horizontal-card {
+            transition: all 0.3s ease;
+            border-radius: 10px !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+            border: 1px solid #dee2e6 !important;
+            color: #495057 !important;
+        }
+
+        .system-balance-horizontal-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .system-balance-horizontal-card .currency-select {
+            font-size: 0.85rem !important;
+            min-width: 120px;
+        }
+
+        .system-balance-horizontal-card .system-balance-amount {
+            font-size: 1.25rem !important;
+            margin-bottom: 0 !important;
+        }
+
+        .system-balance-horizontal-card .balance-label {
+            font-size: 0.75rem !important;
         }
 
         .system-balance-amount {
@@ -451,11 +486,45 @@
         /* Responsive adjustments */
         @@media (max-width: 768px) {
             .system-balance-amount {
-                font-size: 1.5rem !important;
+                font-size: 1.1rem !important;
             }
             
             .currency-selector-wrapper {
-                padding: 8px;
+                padding: 6px;
+            }
+
+            .system-balance-card .card-title {
+                font-size: 0.8rem !important;
+            }
+
+            .currency-select {
+                font-size: 0.7rem !important;
+            }
+
+            /* Horizontal balance card responsive */
+            .system-balance-horizontal-card .row {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .system-balance-horizontal-card .col-md-3,
+            .system-balance-horizontal-card .col-md-4,
+            .system-balance-horizontal-card .col-md-2 {
+                margin-bottom: 1rem;
+            }
+
+            .system-balance-horizontal-card .system-balance-amount {
+                font-size: 1rem !important;
+            }
+        }
+
+        @@media (max-width: 992px) {
+            .system-balance-horizontal-card .row {
+                gap: 0.5rem;
+            }
+            
+            .system-balance-horizontal-card .system-balance-amount {
+                font-size: 1.1rem !important;
             }
         }
 

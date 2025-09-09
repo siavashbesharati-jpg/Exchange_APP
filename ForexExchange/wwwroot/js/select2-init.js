@@ -7,11 +7,22 @@
 $(document).ready(function() {
     console.log('Select2 initialization script loaded');
     
+    // Check if Select2 is disabled for this page
+    if (window.disableSelect2 === true) {
+        console.log('Select2 disabled for this page');
+        return;
+    }
+    
     // Initialize Select2 on all select elements
     initializeSelect2();
     
     // Re-initialize Select2 when new content is loaded dynamically
     $(document).on('DOMNodeInserted', function(e) {
+        // Skip if Select2 is disabled
+        if (window.disableSelect2 === true) {
+            return;
+        }
+        
         if ($(e.target).find('select').length || $(e.target).is('select')) {
             setTimeout(function() {
                 initializeSelect2();
@@ -24,6 +35,12 @@ $(document).ready(function() {
  * Initialize Select2 on all select elements that aren't already initialized
  */
 function initializeSelect2() {
+    // Check if Select2 is disabled for this page
+    if (window.disableSelect2 === true) {
+        console.log('Select2 initialization skipped - disabled for this page');
+        return;
+    }
+    
     console.log('Initializing Select2 on select elements...');
     
     $('select:not(.select2-hidden-accessible)').each(function() {
