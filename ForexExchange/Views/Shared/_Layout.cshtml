@@ -238,17 +238,6 @@
         }
         else if (User.IsInRole("Customer"))
         {
-            <!-- Currency Pool Display Section for Customer -->
-            <div class="fixed-bottom" style="bottom: 80px;">
-                <div class="container-fluid">
-                    <div class="bg-light border-top border-bottom shadow-sm p-2 currency-pool-section" id="currency-pool-section-customer" style="display: none;">
-                        <div class="row" id="currency-pool-row-customer">
-                            <!-- Currency pool data will be loaded here via AJAX -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Customer Profile Footer -->
             <div class="fixed-bottom bg-white border-top shadow-lg p-3">
                 <div class="container-fluid">
@@ -269,17 +258,6 @@
     }
     else
     {
-        <!-- Currency Pool Display Section -->
-        <div class="fixed-bottom" style="bottom: 80px;">
-            <div class="container-fluid">
-                <div class="bg-light border-top border-bottom shadow-sm p-2 currency-pool-section" id="currency-pool-section" style="display: none;">
-                    <div class="row" id="currency-pool-row">
-                        <!-- Currency pool data will be loaded here via AJAX -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Login action in Footer -->
         <div class="fixed-bottom bg-white border-top shadow-lg p-3">
             <div class="container-fluid">
@@ -360,8 +338,8 @@
         }
 
         function displayCurrencyPools(pools) {
-            // Clear all containers first
-            $('#currency-pool-row-admin, #currency-pool-row-customer, #currency-pool-row').empty();
+            // Clear admin container
+            $('#currency-pool-row-admin').empty();
             
             // Calculate column width and offset based on number of currencies
             const poolCount = pools.length;
@@ -407,13 +385,9 @@
                 `;
             }).join('');
             
-            // Add to all containers and show appropriate section
+            // Add to admin container only and show admin section
             $('#currency-pool-row-admin').html(poolsHtml);
-            $('#currency-pool-row-customer').html(poolsHtml);
-            $('#currency-pool-row').html(poolsHtml);
-            
-            // Show the appropriate currency pool section
-            $('#currency-pool-section-admin, #currency-pool-section-customer, #currency-pool-section').show();
+            $('#currency-pool-section-admin').show();
         }
 
         function formatNumber(num) {
