@@ -177,26 +177,63 @@ class AdminNotificationManager {
      */
     getNotificationConfig(notification) {
         const baseConfig = {
-            title: notification.title || 'اعلان',
-            text: notification.message || '',
+            title: `<i class="fas fa-bell me-2 text-primary"></i>${notification.title || 'اعلان'}`,
+            html: `<div class="notification-content">
+                      <div class="notification-message mb-3">${notification.message || ''}</div>
+                      ${notification.data ? this.formatNotificationData(notification.data) : ''}
+                      <small class="text-muted"><i class="fas fa-clock me-1"></i>${new Date(notification.timestamp).toLocaleString('fa-IR')}</small>
+                   </div>`,
             icon: this.getIconForType(notification.type),
             showConfirmButton: true,
             showCancelButton: true,
-            confirmButtonText: 'بروزسانی',
-            cancelButtonText: 'بی خیال',
+            confirmButtonText: '<i class="fas fa-sync-alt me-2"></i>بروزرسانی صفحه',
+            cancelButtonText: '<i class="fas fa-times me-2"></i>ادامه کار',
             customClass: {
-                popup: 'admin-notification-modal rtl-swal-popup',
-                title: 'rtl-swal-title',
-                content: 'rtl-swal-content',
-                confirmButton: 'btn btn-primary',
-                cancelButton: 'btn btn-secondary'
+                popup: 'admin-notification-modal rtl-swal-popup shadow-lg',
+                title: 'rtl-swal-title fw-bold',
+                htmlContainer: 'rtl-swal-content',
+                confirmButton: 'btn btn-primary mx-2',
+                cancelButton: 'btn btn-outline-secondary mx-2',
+                actions: 'gap-2'
             },
             buttonsStyling: false,
+            allowEscapeKey: true,
+            allowOutsideClick: false,
+            focusConfirm: false,
+            focusCancel: true,
             showClass: {
-                popup: 'animate__animated animate__fadeInDown'
+                popup: 'animate__animated animate__bounceIn animate__faster'
             },
             hideClass: {
-                popup: 'animate__animated animate__fadeOutUp'
+                popup: 'animate__animated animate__fadeOut animate__faster'
+            },
+            timer: 15000, // Auto-dismiss after 15 seconds
+            timerProgressBar: true,
+            didOpen: (popup) => {
+                // Add sound effect for notifications (optional)
+                this.playNotificationSound(notification.type);
+                
+                // Add hover effects for buttons
+                const confirmBtn = popup.querySelector('.swal2-confirm');
+                const cancelBtn = popup.querySelector('.swal2-cancel');
+                
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('mouseenter', () => {
+                        confirmBtn.style.transform = 'scale(1.05)';
+                    });
+                    confirmBtn.addEventListener('mouseleave', () => {
+                        confirmBtn.style.transform = 'scale(1)';
+                    });
+                }
+                
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('mouseenter', () => {
+                        cancelBtn.style.transform = 'scale(1.05)';
+                    });
+                    cancelBtn.addEventListener('mouseleave', () => {
+                        cancelBtn.style.transform = 'scale(1)';
+                    });
+                }
             }
         };
 
@@ -205,26 +242,36 @@ class AdminNotificationManager {
             case 'success':
                 return {
                     ...baseConfig,
-                    icon: 'success'
+                    icon: 'success',
+                    iconColor: '#28a745',
+                    background: '#f8f9fa'
                 };
 
             case 'error':
                 return {
                     ...baseConfig,
-                    icon: 'error'
+                    icon: 'error',
+                    iconColor: '#dc3545',
+                    background: '#fff5f5',
+                    timer: null // Don't auto-dismiss errors
                 };
 
             case 'warning':
                 return {
                     ...baseConfig,
-                    icon: 'warning'
+                    icon: 'warning',
+                    iconColor: '#ffc107',
+                    background: '#fffbf0',
+                    timer: 20000 // Longer time for warnings
                 };
 
             case 'info':
             default:
                 return {
                     ...baseConfig,
-                    icon: 'info'
+                    icon: 'info',
+                    iconColor: '#17a2b8',
+                    background: '#f0f9ff'
                 };
         }
     }
@@ -347,6 +394,109 @@ class AdminNotificationManager {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
         return null;
+    }
+
+    /**
+     * Format notification data for display
+     * فرمت کردن داده‌های اعلان برای نمایش
+     */
+    formatNotificationData(data) {
+        if (!data) return '';
+        
+        let html = '<div class="notification-details bg-light p-3 rounded mt-2">';
+        
+        // Order details
+        if (data.orderId) {
+            html += `<div class="detail-item mb-2">
+                        <i class="fas fa-receipt text-primary me-2"></i>
+                        <strong>شماره معامله:</strong> #${data.orderId}
+                     </div>`;
+        }
+        
+        if (data.customerName) {
+            html += `<div class="detail-item mb-2">
+                        <i class="fas fa-user text-success me-2"></i>
+                        <strong>مشتری:</strong> ${data.customerName}
+                     </div>`;
+        }
+        
+        if (data.amount && data.currency) {
+            html += `<div class="detail-item mb-2">
+                        <i class="fas fa-money-bill-wave text-warning me-2"></i>
+                        <strong>مبلغ:</strong> ${this.formatCurrency(data.amount)} ${data.currency}
+                     </div>`;
+        }
+        
+        // Document details
+        if (data.documentId) {
+            html += `<div class="detail-item mb-2">
+                        <i class="fas fa-file-invoice text-info me-2"></i>
+                        <strong>شماره سند:</strong> #${data.documentId}
+                     </div>`;
+        }
+        
+        // Account details
+        if (data.accountNumber) {
+            html += `<div class="detail-item mb-2">
+                        <i class="fas fa-university text-secondary me-2"></i>
+                        <strong>شماره حساب:</strong> ${data.accountNumber}
+                     </div>`;
+        }
+        
+        if (data.balance !== undefined) {
+            html += `<div class="detail-item mb-2">
+                        <i class="fas fa-balance-scale text-dark me-2"></i>
+                        <strong>موجودی:</strong> ${this.formatCurrency(data.balance)}
+                     </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+
+    /**
+     * Format currency for display
+     * فرمت کردن ارز برای نمایش
+     */
+    formatCurrency(amount) {
+        if (typeof amount !== 'number') return amount;
+        return new Intl.NumberFormat('fa-IR').format(amount);
+    }
+
+    /**
+     * Play notification sound
+     * پخش صدای اعلان
+     */
+    playNotificationSound(type) {
+        // Only play sound if user hasn't disabled it
+        if (localStorage.getItem('notificationSounds') === 'false') return;
+        
+        try {
+            // Create a subtle notification sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Different frequencies for different notification types
+            const frequency = type === 'error' ? 300 : 
+                             type === 'warning' ? 400 : 
+                             type === 'success' ? 800 : 600;
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        } catch (error) {
+            // Silently fail if audio is not supported
+            console.log('Notification sound not supported:', error);
+        }
     }
 
     /**

@@ -18,16 +18,20 @@ namespace ForexExchange.Controllers
         private readonly ICustomerBalanceService _customerBalanceService;
         private readonly IBankAccountBalanceService _bankAccountBalanceService;
         private readonly IOcrService _ocrService;
+        private readonly AdminNotificationService _adminNotificationService;
 
         public AccountingDocumentsController(
             ForexDbContext context,
             ICustomerBalanceService customerBalanceService,
             IBankAccountBalanceService bankAccountBalanceService,
-            IOcrService ocrService)
+            IOcrService ocrService,
+            AdminNotificationService adminNotificationService)
         {
             _context = context;
             _customerBalanceService = customerBalanceService;
             _bankAccountBalanceService = bankAccountBalanceService;
+            _ocrService = ocrService;
+            _adminNotificationService = adminNotificationService;
             _ocrService = ocrService;
         }
 

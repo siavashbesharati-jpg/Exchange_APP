@@ -16,19 +16,22 @@ namespace ForexExchange.Controllers
     private readonly ILogger<CustomersController> _logger;
     private readonly CustomerDebtCreditService _debtCreditService;
     private readonly IShareableLinkService _shareableLinkService;
+    private readonly AdminNotificationService _adminNotificationService;
 
     public CustomersController(
         ForexDbContext context,
         UserManager<ApplicationUser> userManager,
         ILogger<CustomersController> logger,
         CustomerDebtCreditService debtCreditService,
-        IShareableLinkService shareableLinkService)
+        IShareableLinkService shareableLinkService,
+        AdminNotificationService adminNotificationService)
     {
         _context = context;
         _userManager = userManager;
         _logger = logger;
         _debtCreditService = debtCreditService;
         _shareableLinkService = shareableLinkService;
+        _adminNotificationService = adminNotificationService;
     }        // GET: Customers
         public async Task<IActionResult> Index()
         {
@@ -444,6 +447,10 @@ namespace ForexExchange.Controllers
                         await _context.SaveChangesAsync();
                         _logger.LogInformation($"CREATE: Successfully saved {initialBalances.Count} initial balances");
                     }
+
+                    // Send notification about new customer
+                    await _adminNotificationService.SendCustomerNotificationAsync(customer, "created");
+
                     TempData["SuccessMessage"] = "مشتری و حساب کاربری با موفقیت ایجاد شد.";
                     return RedirectToAction(nameof(Profile), new { id = customer.Id });
                 }
@@ -680,6 +687,10 @@ namespace ForexExchange.Controllers
                     }
 
                     await _context.SaveChangesAsync();
+
+                    // Send notification about customer update
+                    await _adminNotificationService.SendCustomerNotificationAsync(customer, "updated");
+
                     TempData["SuccessMessage"] = "اطلاعات مشتری با موفقیت به‌روزرسانی شد.";
                     return RedirectToAction(nameof(Profile), new { id = customer.Id });
                 }

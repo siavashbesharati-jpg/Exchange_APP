@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Services;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -15,10 +16,12 @@ namespace ForexExchange.Controllers
     public class BankAccountController : Controller
     {
         private readonly ForexDbContext _context;
+        private readonly AdminNotificationService _adminNotificationService;
 
-        public BankAccountController(ForexDbContext context)
+        public BankAccountController(ForexDbContext context, AdminNotificationService adminNotificationService)
         {
             _context = context;
+            _adminNotificationService = adminNotificationService;
         }
 
         /// <summary>
@@ -191,6 +194,9 @@ namespace ForexExchange.Controllers
                 _context.BankAccounts.Add(model);
                 await _context.SaveChangesAsync();
 
+                // Send notification about new bank account
+                await _adminNotificationService.SendBankAccountNotificationAsync(model, "created");
+
                 TempData["Success"] = $"حساب بانکی {model.BankName} با موفقیت ایجاد شد.";
                 return RedirectToAction("CustomerAccounts", new { customerId = model.CustomerId });
             }
@@ -291,6 +297,9 @@ namespace ForexExchange.Controllers
                 model.LastModified = DateTime.Now;
                 _context.BankAccounts.Update(model);
                 await _context.SaveChangesAsync();
+
+                // Send notification about bank account update
+                await _adminNotificationService.SendBankAccountNotificationAsync(model, "updated");
 
                 TempData["Success"] = $"حساب بانکی {model.BankName} با موفقیت بروزرسانی شد.";
                 return RedirectToAction("CustomerAccounts", new { customerId = model.CustomerId });

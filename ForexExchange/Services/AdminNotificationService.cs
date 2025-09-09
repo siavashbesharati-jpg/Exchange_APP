@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
 using ForexExchange.Hubs;
-using ForexExchange.Services;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using ForexExchange.Models;
@@ -8,82 +7,62 @@ using ForexExchange.Models;
 namespace ForexExchange.Services
 {
     /// <summary>
-    /// Admin Notification Service for real-time notifications
-    /// سرویس اعلان ادمین برای اعلان‌های بلادرنگ
+    /// Service for sending real-time notifications to admin users using SignalR
+    /// Enhanced with comprehensive notification methods for all admin events
     /// </summary>
     public class AdminNotificationService
     {
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly AdminActivityService _adminActivityService;
 
         public AdminNotificationService(
             IHubContext<NotificationHub> hubContext,
-            UserManager<ApplicationUser> userManager,
-            AdminActivityService adminActivityService)
+            UserManager<ApplicationUser> userManager)
         {
             _hubContext = hubContext;
             _userManager = userManager;
-            _adminActivityService = adminActivityService;
         }
 
+        #region Core Notification Methods
+
         /// <summary>
-        /// Send notification to all admin users
-        /// ارسال اعلان به تمام کاربران ادمین
+        /// Send notification to all admin users (Admin, Manager, Staff roles)
         /// </summary>
         public async Task SendToAllAdminsAsync(string title, string message, string type = "info", object? data = null)
         {
-            var notification = new
-            {
-                title = title,
-                message = message,
-                type = type,
-                data = data,
-                timestamp = DateTime.Now
-            };
-
-            await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", notification);
+            await _hubContext.Clients.Groups("Admin", "Manager", "Staff")
+                .SendAsync("ReceiveNotification", new
+                {
+                    title = title,
+                    message = message,
+                    type = type,
+                    timestamp = DateTime.Now,
+                    data = data
+                });
         }
 
         /// <summary>
-        /// Send notification to all admin users
-        /// ارسال اعلان به تمام کاربران ادمین
-        /// </summary>
-        public async Task SendToAdminsAsync(string title, string message, string type = "info", object? data = null)
-        {
-            var notification = new
-            {
-                title = title,
-                message = message,
-                type = type,
-                data = data,
-                timestamp = DateTime.Now
-            };
-
-            await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", notification);
-        }
-
-        /// <summary>
-        /// Send notification to a specific user
-        /// ارسال اعلان به کاربر خاص
+        /// Send notification to specific user by user ID
         /// </summary>
         public async Task SendToUserAsync(string userId, string title, string message, string type = "info", object? data = null)
         {
-            var notification = new
-            {
-                title = title,
-                message = message,
-                type = type,
-                data = data,
-                timestamp = DateTime.Now
-            };
-
-            await _hubContext.Clients.Group($"User_{userId}").SendAsync("ReceiveNotification", notification);
+            await _hubContext.Clients.User(userId)
+                .SendAsync("ReceiveNotification", new
+                {
+                    title = title,
+                    message = message,
+                    type = type,
+                    timestamp = DateTime.Now,
+                    data = data
+                });
         }
 
+        #endregion
+
+        #region Order Notifications
+
         /// <summary>
-        /// Send order-related notification to admins
-        /// ارسال اعلان مرتبط با معامله به ادمین‌ها
+        /// Send notification when an order is created, updated, cancelled, or completed
         /// </summary>
         public async Task SendOrderNotificationAsync(Order order, string action)
         {
@@ -96,17 +75,20 @@ namespace ForexExchange.Services
                 orderId = order.Id,
                 customerId = order.CustomerId,
                 customerName = order.Customer?.FullName,
+                action = action,
                 amount = order.Amount,
-                currency = order.FromCurrency?.Code,
-                rate = order.Rate,
-                totalAmount = order.TotalAmount,
-                status = "N/A"
+                fromCurrency = order.FromCurrency?.Code,
+                toCurrency = order.ToCurrency?.Code,
+                timestamp = DateTime.Now
             });
         }
 
+        #endregion
+
+        #region Exchange Rate Notifications
+
         /// <summary>
-        /// Send exchange rate notification to admins
-        /// ارسال اعلان نرخ ارز به ادمین‌ها
+        /// Send notification when exchange rates are updated
         /// </summary>
         public async Task SendExchangeRateNotificationAsync(ExchangeRate exchangeRate, string action, string? oldRate = null)
         {
@@ -117,61 +99,36 @@ namespace ForexExchange.Services
             await SendToAllAdminsAsync(title, message, type, new
             {
                 exchangeRateId = exchangeRate.Id,
-                fromCurrency = exchangeRate.FromCurrency?.Code,
-                toCurrency = exchangeRate.ToCurrency?.Code,
                 currencyPair = exchangeRate.CurrencyPair,
                 newRate = exchangeRate.Rate,
                 oldRate = oldRate,
-                updatedAt = exchangeRate.UpdatedAt
-            });
-        }
-
-        /// <summary>
-        /// Send system alert to all admins
-        /// ارسال هشدار سیستمی به تمام ادمین‌ها
-        /// </summary>
-        public async Task SendSystemAlertAsync(string message, string severity = "warning")
-        {
-            var title = "هشدار سیستمی";
-            var type = severity switch
-            {
-                "error" => "error",
-                "success" => "success",
-                "info" => "info",
-                _ => "warning"
-            };
-
-            await SendToAllAdminsAsync(title, message, type);
-        }
-
-        /// <summary>
-        /// Send security alert to super admins
-        /// ارسال هشدار امنیتی به سوپر ادمین‌ها
-        /// </summary>
-        public async Task SendSecurityAlertAsync(string message, string? details = null)
-        {
-            var title = "هشدار امنیتی";
-            var fullMessage = string.IsNullOrEmpty(details) ? message : $"{message}\n{details}";
-
-            await SendToAdminsAsync(title, fullMessage, "error", new
-            {
-                alertType = "security",
-                details = details,
+                action = action,
                 timestamp = DateTime.Now
             });
         }
 
+        #endregion
+
+        #region User Management Notifications
+
         /// <summary>
-        /// Send user management notification
-        /// ارسال اعلان مدیریت کاربر
+        /// Send notification for user management actions (create, update, delete, role changes)
         /// </summary>
         public async Task SendUserManagementNotificationAsync(string action, string targetUserName, string performedBy)
         {
-            var title = "مدیریت کاربران";
-            var message = GetUserManagementMessage(action, targetUserName, performedBy);
-            var type = "info";
+            var title = action switch
+            {
+                "created" => "کاربر جدید",
+                "updated" => "کاربر بروزرسانی شد",
+                "deleted" => "کاربر حذف شد",
+                "role_changed" => "نقش کاربر تغییر یافت",
+                _ => "اعلان کاربر"
+            };
 
-            await SendToAdminsAsync(title, message, type, new
+            var message = GetUserManagementMessage(action, targetUserName, performedBy);
+            var type = action == "deleted" ? "warning" : "info";
+
+            await SendToAllAdminsAsync(title, message, type, new
             {
                 action = action,
                 targetUser = targetUserName,
@@ -180,27 +137,128 @@ namespace ForexExchange.Services
             });
         }
 
-        /// <summary>
-        /// Send bulk operation notification
-        /// ارسال اعلان عملیات انبوه
-        /// </summary>
-        public async Task SendBulkOperationNotificationAsync(string operation, int affectedCount, string? details = null)
-        {
-            var title = "عملیات انبوه";
-            var message = $"عملیات {operation} با موفقیت انجام شد. تعداد موارد تاثیرپذیر: {affectedCount}";
-            if (!string.IsNullOrEmpty(details))
-            {
-                message += $"\n{details}";
-            }
+        #endregion
 
-            await SendToAllAdminsAsync(title, message, "success", new
+        #region Document Notifications
+
+        /// <summary>
+        /// Send notification when accounting documents are created, updated, or deleted
+        /// </summary>
+        public async Task SendDocumentNotificationAsync(AccountingDocument document, string action)
+        {
+            var title = GetDocumentNotificationTitle(action);
+            var message = GetDocumentNotificationMessage(document, action);
+            var type = GetDocumentNotificationType(action);
+
+            await SendToAllAdminsAsync(title, message, type, new
             {
-                operation = operation,
-                affectedCount = affectedCount,
+                documentId = document.Id,
+                documentType = document.Type.ToString(),
+                amount = document.Amount,
+                currencyCode = document.CurrencyCode,
+                payerCustomerId = document.PayerCustomerId,
+                receiverCustomerId = document.ReceiverCustomerId,
+                action = action,
+                timestamp = DateTime.Now
+            });
+        }
+
+        #endregion
+
+        #region Customer Notifications
+
+        /// <summary>
+        /// Send notification when customers are created, updated, or deleted
+        /// </summary>
+        public async Task SendCustomerNotificationAsync(Customer customer, string action)
+        {
+            var title = GetCustomerNotificationTitle(action);
+            var message = GetCustomerNotificationMessage(customer, action);
+            var type = GetCustomerNotificationType(action);
+
+            await SendToAllAdminsAsync(title, message, type, new
+            {
+                customerId = customer.Id,
+                customerName = customer.FullName,
+                nationalId = customer.NationalId,
+                phoneNumber = customer.PhoneNumber,
+                action = action,
+                timestamp = DateTime.Now
+            });
+        }
+
+        #endregion
+
+        #region Bank Account Notifications
+
+        /// <summary>
+        /// Send notification when bank accounts are created, updated, or deleted
+        /// </summary>
+        public async Task SendBankAccountNotificationAsync(BankAccount bankAccount, string action)
+        {
+            var title = GetBankAccountNotificationTitle(action);
+            var message = GetBankAccountNotificationMessage(bankAccount, action);
+            var type = GetBankAccountNotificationType(action);
+
+            await SendToAllAdminsAsync(title, message, type, new
+            {
+                bankAccountId = bankAccount.Id,
+                bankName = bankAccount.BankName,
+                accountNumber = bankAccount.AccountNumber,
+                currencyCode = bankAccount.CurrencyCode,
+                action = action,
+                timestamp = DateTime.Now
+            });
+        }
+
+        #endregion
+
+        #region Pool Balance Notifications
+
+        /// <summary>
+        /// Send notification when currency pool balances are updated
+        /// </summary>
+        public async Task SendPoolBalanceNotificationAsync(CurrencyPool pool, decimal oldBalance, decimal newBalance, string action = "balance_updated")
+        {
+            var title = GetPoolBalanceNotificationTitle(action);
+            var message = GetPoolBalanceNotificationMessage(pool, oldBalance, newBalance, action);
+            var type = GetPoolBalanceNotificationType(action);
+
+            await SendToAllAdminsAsync(title, message, type, new
+            {
+                poolId = pool.Id,
+                currency = pool.Currency?.Code,
+                oldBalance = oldBalance,
+                newBalance = newBalance,
+                difference = newBalance - oldBalance,
+                timestamp = DateTime.Now
+            });
+        }
+
+        #endregion
+
+        #region Bulk Operations Notifications
+
+        /// <summary>
+        /// Send notification for bulk operations
+        /// </summary>
+        public async Task SendBulkOperationNotificationAsync(string operationType, int recordCount, string details = "")
+        {
+            var title = $"عملیات گروهی: {operationType}";
+            var message = string.IsNullOrEmpty(details) 
+                ? $"عملیات {operationType} بر روی {recordCount} رکورد انجام شد"
+                : $"{details}\nتعداد رکوردها: {recordCount}";
+
+            await SendToAllAdminsAsync(title, message, "info", new
+            {
+                operationType = operationType,
+                recordCount = recordCount,
                 details = details,
                 timestamp = DateTime.Now
             });
         }
+
+        #endregion
 
         #region Helper Methods
 
@@ -290,6 +348,146 @@ namespace ForexExchange.Services
                 "deleted" => $"کاربر {targetUserName} توسط {performedBy} حذف شد.",
                 "role_changed" => $"نقش کاربر {targetUserName} توسط {performedBy} تغییر یافت.",
                 _ => $"کاربر {targetUserName} توسط {performedBy} تغییر یافت."
+            };
+        }
+
+        private string GetDocumentNotificationTitle(string action)
+        {
+            return action switch
+            {
+                "created" => "سند جدید",
+                "updated" => "سند بروزرسانی شد",
+                "deleted" => "سند حذف شد",
+                _ => "اعلان سند"
+            };
+        }
+
+        private string GetDocumentNotificationMessage(AccountingDocument document, string action)
+        {
+            var customerName = document.PayerCustomer?.FullName ?? document.ReceiverCustomer?.FullName ?? "مشتری ناشناس";
+            var currencyCode = document.CurrencyCode ?? "ارز نامشخص";
+
+            return action switch
+            {
+                "created" => $"سند حسابداری جدید ثبت شد\nمشتری: {customerName}\nنوع سند: {document.Type}\nمبلغ: {document.Amount:N0} {currencyCode}",
+                "updated" => $"سند #{document.Id} بروزرسانی شد\nمشتری: {customerName}\nمبلغ: {document.Amount:N0} {currencyCode}",
+                "deleted" => $"سند #{document.Id} حذف شد\nمشتری: {customerName}",
+                _ => $"سند #{document.Id} تغییر یافت."
+            };
+        }
+
+        private string GetDocumentNotificationType(string action)
+        {
+            return action switch
+            {
+                "created" => "success",
+                "updated" => "info",
+                "deleted" => "warning",
+                _ => "info"
+            };
+        }
+
+        private string GetCustomerNotificationTitle(string action)
+        {
+            return action switch
+            {
+                "created" => "مشتری جدید",
+                "updated" => "مشتری بروزرسانی شد",
+                "deleted" => "مشتری حذف شد",
+                _ => "اعلان مشتری"
+            };
+        }
+
+        private string GetCustomerNotificationMessage(Customer customer, string action)
+        {
+            return action switch
+            {
+                "created" => $"مشتری جدید ثبت شد\nنام: {customer.FullName}\nکد ملی: {customer.NationalId}\nتلفن: {customer.PhoneNumber}",
+                "updated" => $"اطلاعات مشتری {customer.FullName} بروزرسانی شد",
+                "deleted" => $"مشتری {customer.FullName} حذف شد",
+                _ => $"مشتری {customer.FullName} تغییر یافت."
+            };
+        }
+
+        private string GetCustomerNotificationType(string action)
+        {
+            return action switch
+            {
+                "created" => "success",
+                "updated" => "info",
+                "deleted" => "warning",
+                _ => "info"
+            };
+        }
+
+        private string GetBankAccountNotificationTitle(string action)
+        {
+            return action switch
+            {
+                "created" => "حساب بانکی جدید",
+                "updated" => "حساب بانکی بروزرسانی شد",
+                "deleted" => "حساب بانکی حذف شد",
+                _ => "اعلان حساب بانکی"
+            };
+        }
+
+        private string GetBankAccountNotificationMessage(BankAccount bankAccount, string action)
+        {
+            var currencyCode = bankAccount.CurrencyCode ?? "ارز نامشخص";
+
+            return action switch
+            {
+                "created" => $"حساب بانکی جدید ثبت شد\nبانک: {bankAccount.BankName}\nشماره حساب: {bankAccount.AccountNumber}\nارز: {currencyCode}",
+                "updated" => $"حساب بانکی بروزرسانی شد\nبانک: {bankAccount.BankName}\nشماره حساب: {bankAccount.AccountNumber}",
+                "deleted" => $"حساب بانکی حذف شد\nبانک: {bankAccount.BankName}\nشماره حساب: {bankAccount.AccountNumber}",
+                _ => $"حساب بانکی {bankAccount.AccountNumber} تغییر یافت."
+            };
+        }
+
+        private string GetBankAccountNotificationType(string action)
+        {
+            return action switch
+            {
+                "created" => "success",
+                "updated" => "info",
+                "deleted" => "warning",
+                _ => "info"
+            };
+        }
+
+        private string GetPoolBalanceNotificationTitle(string action)
+        {
+            return action switch
+            {
+                "balance_updated" => "موجودی استخر بروزرسانی شد",
+                "balance_increased" => "موجودی استخر افزایش یافت",
+                "balance_decreased" => "موجودی استخر کاهش یافت",
+                _ => "اعلان موجودی استخر"
+            };
+        }
+
+        private string GetPoolBalanceNotificationMessage(CurrencyPool pool, decimal oldBalance, decimal newBalance, string action)
+        {
+            var currencyCode = pool.Currency?.Code ?? "ارز نامشخص";
+            var difference = newBalance - oldBalance;
+
+            return action switch
+            {
+                "balance_updated" => $"موجودی استخر {currencyCode} بروزرسانی شد\nموجودی قبلی: {oldBalance:N0}\nموجودی جدید: {newBalance:N0}\nتغییر: {difference:N0}",
+                "balance_increased" => $"موجودی استخر {currencyCode} افزایش یافت\nمقدار افزایش: {difference:N0}\nموجودی فعلی: {newBalance:N0}",
+                "balance_decreased" => $"موجودی استخر {currencyCode} کاهش یافت\nمقدار کاهش: {Math.Abs(difference):N0}\nموجودی فعلی: {newBalance:N0}",
+                _ => $"موجودی استخر {currencyCode} تغییر یافت."
+            };
+        }
+
+        private string GetPoolBalanceNotificationType(string action)
+        {
+            return action switch
+            {
+                "balance_increased" => "success",
+                "balance_decreased" => "warning",
+                "balance_updated" => "info",
+                _ => "info"
             };
         }
 
