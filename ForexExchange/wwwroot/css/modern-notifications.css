@@ -108,7 +108,7 @@
 .modern-title-text {
     font-size: 16px;
     font-weight: 700;
-    color: #0f172a;
+    color: #000000 !important;
     line-height: 1.2;
     letter-spacing: -0.02em;
 }
@@ -129,7 +129,7 @@
 .notification-message-modern {
     font-size: 14px;
     line-height: 1.4;
-    color: #0f172a;
+    color: #000000 !important;
     margin-bottom: 12px;
     white-space: pre-line;
     font-weight: 600;
@@ -158,7 +158,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #6b7280;
+    color: #000000 !important;
     font-size: 12px;
     font-weight: 500;
 }
@@ -303,7 +303,7 @@
 
 .modern-btn-secondary {
     background: linear-gradient(145deg, #f1f5f9, #e2e8f0) !important;
-    color: #334155 !important;
+    color: #000000 !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
@@ -399,7 +399,7 @@
 }
 
 .loading-text {
-    color: #374151;
+    color: #000000 !important;
     font-weight: 600;
     font-size: 14px;
 }

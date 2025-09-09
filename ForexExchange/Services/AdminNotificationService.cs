@@ -386,6 +386,7 @@ namespace ForexExchange.Services
             {
                 "created" => "سند جدید",
                 "updated" => "سند بروزرسانی شد",
+                "confirmed" => "سند تایید شد",
                 "deleted" => "سند حذف شد",
                 _ => "اعلان سند"
             };
@@ -400,6 +401,7 @@ namespace ForexExchange.Services
             {
                 "created" => $"سند جدید ثبت شد\n\n{customerName}\n{document.Amount:N0} {currencyCode}",
                 "updated" => $"سند #{document.Id} بروزرسانی شد\n\n{customerName}\n{document.Amount:N0} {currencyCode}",
+                "confirmed" => $"سند #{document.Id} تایید شد\n\n{customerName}\n{document.Amount:N0} {currencyCode}",
                 "deleted" => $"سند #{document.Id} حذف شد\n\n{customerName}",
                 _ => $"سند #{document.Id} تغییر یافت\n\n{customerName}"
             };
@@ -410,6 +412,7 @@ namespace ForexExchange.Services
             return action switch
             {
                 "created" => "success",
+                "confirmed" => "success",
                 "updated" => "info",
                 "deleted" => "warning",
                 _ => "info"

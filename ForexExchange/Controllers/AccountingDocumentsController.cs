@@ -290,6 +290,10 @@ namespace ForexExchange.Controllers
 
                 _context.Add(accountingDocument);
                 await _context.SaveChangesAsync();
+                
+                // Send notification to admins about new accounting document
+                await _adminNotificationService.SendDocumentNotificationAsync(accountingDocument, "created");
+                
                 TempData["SuccessMessage"] = "سند حسابداری با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Index));
             }
@@ -435,6 +439,19 @@ namespace ForexExchange.Controllers
 
                     _context.Update(accountingDocument);
                     await _context.SaveChangesAsync();
+                    
+                    // Send appropriate notification based on what changed
+                    if (accountingDocument.IsVerified && !existingDocument.IsVerified)
+                    {
+                        // Document was just confirmed
+                        await _adminNotificationService.SendDocumentNotificationAsync(accountingDocument, "confirmed");
+                    }
+                    else
+                    {
+                        // Document was updated
+                        await _adminNotificationService.SendDocumentNotificationAsync(accountingDocument, "updated");
+                    }
+                    
                     TempData["SuccessMessage"] = "سند حسابداری با موفقیت ویرایش شد.";
                 }
                 catch (DbUpdateConcurrencyException)
@@ -511,6 +528,9 @@ namespace ForexExchange.Controllers
                  
                     _context.Update(accountingDocument);
                     await _context.SaveChangesAsync();
+
+                    // Send notification about document confirmation
+                    await _adminNotificationService.SendDocumentNotificationAsync(accountingDocument, "confirmed");
 
                     TempData["SuccessMessage"] = "سند حسابداری با موفقیت تأیید شد و ترازها بروزرسانی گردید.";
                 }
