@@ -157,6 +157,10 @@
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    
+    <!-- Include Currency Formatter -->
+    <script src="~/js/currency-formatter.js"></script>
+    
     <script>
         let currentRate = null;
         let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
@@ -169,10 +173,24 @@
         }
 
         function showCurrencyPoolInfo(fromCurrencyId, toCurrencyId) {
-            const fromSelect = document.getElementById('fromCurrencySelect');
-            const toSelect = document.getElementById('toCurrencySelect');
-            const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
-            const toCode = toSelect.value ? toSelect.options[toSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+            // Get currency codes from Select2 data
+            const fromSelect = $('#fromCurrencySelect');
+            const toSelect = $('#toCurrencySelect');
+            
+            let fromCode = null, toCode = null;
+            
+            if (fromSelect.val()) {
+                const fromData = fromSelect.select2('data')[0];
+                fromCode = fromData.text.split(' - ')[0].trim();
+            }
+            
+            if (toSelect.val()) {
+                const toData = toSelect.select2('data')[0];
+                toCode = toData.text.split(' - ')[0].trim();
+            }
+            
+            console.log('currencyPools:', currencyPools);
+            console.log('fromCode:', fromCode, 'toCode:', toCode);
             let html = '';
             if (fromCode && Object.prototype.hasOwnProperty.call(currencyPools, fromCode)) {
                 const fromVal = currencyPools[fromCode];
@@ -193,17 +211,29 @@
         }
 
         function loadExchangeRate(fromCurrencyId, toCurrencyId) {
+            console.log('loadExchangeRate called with:', fromCurrencyId, toCurrencyId);
             document.getElementById('selectedExchangeRate').style.display = 'block';
             document.getElementById('rateLoader').style.display = 'inline-block';
             document.getElementById('rateInfo').innerHTML = 'در حال بارگذاری نرخ ارز...';
-            fetch(`/Orders/GetExchangeRate?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}`)
-                .then(response => response.json())
+            const url = `/Orders/GetExchangeRate?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}&orderType=Buy`;
+            console.log('Fetching rate from URL:', url);
+            fetch(url)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Rate data received:', data);
                     document.getElementById('rateLoader').style.display = 'none';
                     if (data.success) {
                         if (data.rate > 0) {
-                            const fromSelect = document.getElementById('fromCurrencySelect');
-                            const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+                            // Get from currency code for conditional rounding using Select2
+                            const fromSelect = $('#fromCurrencySelect');
+                            let fromCode = null;
+                            if (fromSelect.val()) {
+                                const fromData = fromSelect.select2('data')[0];
+                                fromCode = fromData.text.split(' - ')[0].trim();
+                            }
                             const roundingFactor = (fromCode && fromCode.toUpperCase() === 'IRR') ? 10000000 : 100;
                             const roundedRate = Math.round(data.rate * roundingFactor) / roundingFactor;
                             currentRate = roundedRate;
@@ -238,8 +268,13 @@
         function updateCalculation() {
             var amount = document.getElementById('amountInput').value;
             var rate = document.getElementById('rateInput').value;
-            const fromSelect = document.getElementById('fromCurrencySelect');
-            const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+            // Get from currency code using Select2
+            const fromSelect = $('#fromCurrencySelect');
+            let fromCode = null;
+            if (fromSelect.val()) {
+                const fromData = fromSelect.select2('data')[0];
+                fromCode = fromData.text.split(' - ')[0].trim();
+            }
             if (amount && rate && parseFloat(rate) > 0) {
                 var total = parseFloat(amount) * parseFloat(rate);
                 document.getElementById('calculationText').innerHTML = `${formatCurrency(parseFloat(amount), fromCode)} × ${formatNumber(parseFloat(rate), fromCode)} = <strong>${formatCurrency(total, 'IRR')}</strong>`;
@@ -253,25 +288,37 @@
             }
         }
 
-        document.getElementById('fromCurrencySelect').addEventListener('change', function () {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+        // Use Select2 events since Select2 replaces the original elements
+        $('#fromCurrencySelect').on('select2:select', function (e) {
+            console.log('From currency changed via Select2');
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
+            console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
+            
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                console.log('Loading exchange rate...');
                 loadExchangeRate(fromCurrency, toCurrency);
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
+                console.log('Hiding rate display - invalid currencies');
                 document.getElementById('selectedExchangeRate').style.display = 'none';
                 document.getElementById('calculationResult').style.display = 'none';
                 document.getElementById('currencyPoolInfo').style.display = 'none';
             }
         });
-        document.getElementById('toCurrencySelect').addEventListener('change', function () {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+        
+        $('#toCurrencySelect').on('select2:select', function (e) {
+            console.log('To currency changed via Select2');
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
+            console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
+            
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                console.log('Loading exchange rate...');
                 loadExchangeRate(fromCurrency, toCurrency);
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
+                console.log('Hiding rate display - invalid currencies');
                 document.getElementById('selectedExchangeRate').style.display = 'none';
                 document.getElementById('calculationResult').style.display = 'none';
                 document.getElementById('currencyPoolInfo').style.display = 'none';
@@ -282,8 +329,13 @@
         document.getElementById('rateInput').addEventListener('input', function() {
             var rateValue = parseFloat(this.value);
             if (!isNaN(rateValue) && rateValue > 0) {
-                const fromSelect = document.getElementById('fromCurrencySelect');
-                const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+                // Get from currency code to determine rounding precision using Select2
+                const fromSelect = $('#fromCurrencySelect');
+                let fromCode = null;
+                if (fromSelect.val()) {
+                    const fromData = fromSelect.select2('data')[0];
+                    fromCode = fromData.text.split(' - ')[0].trim();
+                }
                 const roundingFactor = (fromCode && fromCode.toUpperCase() === 'IRR') ? 10000000 : 100;
                 var roundedRate = Math.round(rateValue * roundingFactor) / roundingFactor;
                 if (roundedRate !== rateValue) { this.value = roundedRate; }
@@ -292,8 +344,9 @@
         });
 
         document.getElementById('loadSuggestedRateBtn').addEventListener('click', function() {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
+            console.log('Load suggested rate clicked - From:', fromCurrency, 'To:', toCurrency);
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
                 loadExchangeRate(fromCurrency, toCurrency);
             } else {
@@ -302,8 +355,8 @@
         });
 
         document.querySelector('form').addEventListener('submit', function (e) {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
             var amount = document.getElementById('amountInput').value;
             var customerId = document.getElementById('customerSelect').value;
             var rate = document.getElementById('rateInput').value;
