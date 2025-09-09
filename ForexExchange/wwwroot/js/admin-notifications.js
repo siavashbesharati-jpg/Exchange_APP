@@ -9,6 +9,7 @@ class AdminNotificationManager {
         this.isConnected = false;
         this.notificationQueue = [];
         this.maxQueueSize = 10;
+        this.soundEnabled = true; // Enable sound by default
         this.init();
     }
 
@@ -162,12 +163,19 @@ class AdminNotificationManager {
     showNotification(notification) {
         const config = this.getNotificationConfig(notification);
 
+        // Add haptic feedback for mobile devices
+        if (navigator.vibrate) {
+            navigator.vibrate(200);
+        }
+
         Swal.fire(config).then((result) => {
             if (result.isConfirmed) {
-                // User clicked "بروزسانی" - refresh the page
-                this.refreshCurrentPage();
+                // Smooth page refresh with loading animation
+                this.showLoadingOverlay();
+                setTimeout(() => {
+                    this.refreshCurrentPage();
+                }, 500);
             }
-            // If user clicked "بی خیال" or dismissed, do nothing
         });
     }
 
@@ -177,103 +185,157 @@ class AdminNotificationManager {
      */
     getNotificationConfig(notification) {
         const baseConfig = {
-            title: `<i class="fas fa-bell me-2 text-primary"></i>${notification.title || 'اعلان'}`,
-            html: `<div class="notification-content">
-                      <div class="notification-message mb-3">${notification.message || ''}</div>
-                      ${notification.data ? this.formatNotificationData(notification.data) : ''}
-                      <small class="text-muted"><i class="fas fa-clock me-1"></i>${new Date(notification.timestamp).toLocaleString('fa-IR')}</small>
-                   </div>`,
-            icon: this.getIconForType(notification.type),
+            title: this.createModernTitle(notification),
+            html: this.createModernContent(notification),
+            icon: false, // We'll use custom icons
+            width: '480px',
+            padding: '0',
             showConfirmButton: true,
             showCancelButton: true,
             confirmButtonText: '<i class="fas fa-sync-alt me-2"></i>بروزرسانی صفحه',
-            cancelButtonText: '<i class="fas fa-times me-2"></i>ادامه کار',
+            cancelButtonText: '<i class="fas fa-check me-2"></i>متوجه شدم',
             customClass: {
-                popup: 'admin-notification-modal rtl-swal-popup shadow-lg',
-                title: 'rtl-swal-title fw-bold',
-                htmlContainer: 'rtl-swal-content',
-                confirmButton: 'btn btn-primary mx-2',
-                cancelButton: 'btn btn-outline-secondary mx-2',
-                actions: 'gap-2'
+                popup: `modern-notification-popup ${this.getThemeClass(notification.type)} shadow-2xl`,
+                title: 'modern-notification-title',
+                htmlContainer: 'modern-notification-content',
+                confirmButton: 'modern-btn modern-btn-primary',
+                cancelButton: 'modern-btn modern-btn-secondary',
+                actions: 'modern-notification-actions'
             },
             buttonsStyling: false,
             allowEscapeKey: true,
-            allowOutsideClick: false,
+            allowOutsideClick: true,
             focusConfirm: false,
             focusCancel: true,
             showClass: {
-                popup: 'animate__animated animate__bounceIn animate__faster'
+                popup: 'animate__animated animate__zoomIn animate__faster'
             },
             hideClass: {
-                popup: 'animate__animated animate__fadeOut animate__faster'
+                popup: 'animate__animated animate__zoomOut animate__faster'
             },
-            timer: 15000, // Auto-dismiss after 15 seconds
+            timer: this.getTimerForType(notification.type),
             timerProgressBar: true,
+            backdrop: 'rgba(0, 0, 0, 0.4)',
             didOpen: (popup) => {
-                // Add sound effect for notifications (optional)
-                this.playNotificationSound(notification.type);
-                
-                // Add hover effects for buttons
-                const confirmBtn = popup.querySelector('.swal2-confirm');
-                const cancelBtn = popup.querySelector('.swal2-cancel');
-                
-                if (confirmBtn) {
-                    confirmBtn.addEventListener('mouseenter', () => {
-                        confirmBtn.style.transform = 'scale(1.05)';
-                    });
-                    confirmBtn.addEventListener('mouseleave', () => {
-                        confirmBtn.style.transform = 'scale(1)';
-                    });
-                }
-                
-                if (cancelBtn) {
-                    cancelBtn.addEventListener('mouseenter', () => {
-                        cancelBtn.style.transform = 'scale(1.05)';
-                    });
-                    cancelBtn.addEventListener('mouseleave', () => {
-                        cancelBtn.style.transform = 'scale(1)';
-                    });
-                }
+                this.initializeModernNotification(popup, notification);
+            },
+            didClose: () => {
+                this.cleanupNotificationEffects();
             }
         };
 
-        // Add specific configurations based on notification type
-        switch (notification.type) {
-            case 'success':
-                return {
-                    ...baseConfig,
-                    icon: 'success',
-                    iconColor: '#28a745',
-                    background: '#f8f9fa'
-                };
+        return baseConfig;
+    }
 
-            case 'error':
-                return {
-                    ...baseConfig,
-                    icon: 'error',
-                    iconColor: '#dc3545',
-                    background: '#fff5f5',
-                    timer: null // Don't auto-dismiss errors
-                };
+    /**
+     * Create modern title with icons and styling
+     */
+    createModernTitle(notification) {
+        const iconConfig = this.getIconConfig(notification.type);
+        return `
+            <div class="modern-title-container">
+                <div class="modern-icon-wrapper ${iconConfig.class}">
+                    <i class="${iconConfig.icon}"></i>
+                </div>
+                <span class="modern-title-text">${notification.title || 'اعلان'}</span>
+            </div>
+        `;
+    }
 
-            case 'warning':
-                return {
-                    ...baseConfig,
-                    icon: 'warning',
-                    iconColor: '#ffc107',
-                    background: '#fffbf0',
-                    timer: 20000 // Longer time for warnings
-                };
+    /**
+     * Create modern notification content
+     */
+    createModernContent(notification) {
+        const timestamp = new Date(notification.timestamp).toLocaleString('fa-IR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
 
-            case 'info':
-            default:
-                return {
-                    ...baseConfig,
-                    icon: 'info',
-                    iconColor: '#17a2b8',
-                    background: '#f0f9ff'
-                };
+        return `
+            <div class="modern-notification-body">
+                <div class="notification-message-modern">
+                    ${this.formatMessage(notification.message || '')}
+                </div>
+                
+                ${notification.data ? this.createDataSection(notification.data) : ''}
+                
+                <div class="notification-footer-modern">
+                    <div class="timestamp-container">
+                        <i class="fas fa-clock timestamp-icon"></i>
+                        <span class="timestamp-text">${timestamp}</span>
+                    </div>
+                    <div class="notification-badge ${this.getBadgeClass(notification.type)}">
+                        ${this.getTypeLabel(notification.type)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Format message with modern styling
+     */
+    formatMessage(message) {
+        // Replace line breaks with styled breaks
+        return message.replace(/\n\n/g, '<div class="message-break"></div>')
+                     .replace(/\n/g, '<br>');
+    }
+
+    /**
+     * Create data section with modern cards
+     */
+    createDataSection(data) {
+        if (!data) return '';
+
+        const dataItems = Object.entries(data)
+            .filter(([key, value]) => key !== 'timestamp' && value !== null && value !== undefined)
+            .map(([key, value]) => {
+                const label = this.getDataLabel(key);
+                const formattedValue = this.formatDataValue(key, value);
+                
+                return `
+                    <div class="data-item">
+                        <span class="data-label">${label}:</span>
+                        <span class="data-value">${formattedValue}</span>
+                    </div>
+                `;
+            })
+            .join('');
+
+        return dataItems ? `
+            <div class="notification-data-section">
+                <div class="data-grid">
+                    ${dataItems}
+                </div>
+            </div>
+        ` : '';
+    }
+
+    /**
+     * Initialize modern notification with animations and effects
+     */
+    initializeModernNotification(popup, notification) {
+        // Play modern notification sound
+        this.playModernNotificationSound(notification.type);
+        
+        // Add particle effect for success notifications
+        if (notification.type === 'success') {
+            this.addParticleEffect(popup);
         }
+        
+        // Add pulse effect for errors
+        if (notification.type === 'error') {
+            this.addPulseEffect(popup);
+        }
+        
+        // Add interactive hover effects
+        this.addInteractiveEffects(popup);
+        
+        // Auto-scroll to important content if notification is tall
+        this.autoScrollContent(popup);
     }
 
     /**
@@ -536,6 +598,236 @@ class AdminNotificationManager {
     refreshCurrentPage() {
         // Get current URL and refresh the page
         window.location.reload();
+    }
+
+    // Modern Notification Helper Methods
+    
+    /**
+     * Get icon configuration for notification type
+     */
+    getIconConfig(type) {
+        const configs = {
+            'success': { icon: 'fas fa-check-circle', class: 'icon-success' },
+            'error': { icon: 'fas fa-exclamation-triangle', class: 'icon-error' },
+            'warning': { icon: 'fas fa-exclamation-circle', class: 'icon-warning' },
+            'info': { icon: 'fas fa-info-circle', class: 'icon-info' }
+        };
+        return configs[type] || configs['info'];
+    }
+
+    /**
+     * Get theme class for notification type
+     */
+    getThemeClass(type) {
+        const themes = {
+            'success': 'theme-success',
+            'error': 'theme-error', 
+            'warning': 'theme-warning',
+            'info': 'theme-info'
+        };
+        return themes[type] || themes['info'];
+    }
+
+    /**
+     * Get timer duration for notification type
+     */
+    getTimerForType(type) {
+        const timers = {
+            'success': 8000,
+            'error': null, // No auto-dismiss for errors
+            'warning': 12000,
+            'info': 10000
+        };
+        return timers[type] !== undefined ? timers[type] : 10000;
+    }
+
+    /**
+     * Get badge class for notification type
+     */
+    getBadgeClass(type) {
+        const badges = {
+            'success': 'badge-success',
+            'error': 'badge-error',
+            'warning': 'badge-warning', 
+            'info': 'badge-info'
+        };
+        return badges[type] || badges['info'];
+    }
+
+    /**
+     * Get type label in Persian
+     */
+    getTypeLabel(type) {
+        const labels = {
+            'success': 'موفق',
+            'error': 'خطا',
+            'warning': 'هشدار',
+            'info': 'اطلاع'
+        };
+        return labels[type] || labels['info'];
+    }
+
+    /**
+     * Get data label in Persian
+     */
+    getDataLabel(key) {
+        const labels = {
+            'orderId': 'شماره سفارش',
+            'customerId': 'شناسه مشتری',
+            'customerName': 'نام مشتری',
+            'amount': 'مبلغ',
+            'fromCurrency': 'ارز مبدا',
+            'toCurrency': 'ارز مقصد',
+            'documentId': 'شناسه سند',
+            'documentType': 'نوع سند',
+            'bankAccountId': 'شناسه حساب',
+            'bankName': 'نام بانک',
+            'accountNumber': 'شماره حساب',
+            'currencyCode': 'کد ارز',
+            'action': 'عملیات'
+        };
+        return labels[key] || key;
+    }
+
+    /**
+     * Format data value based on key type
+     */
+    formatDataValue(key, value) {
+        if (key === 'amount' && typeof value === 'number') {
+            return value.toLocaleString('fa-IR');
+        }
+        if (key.includes('Id') && typeof value === 'number') {
+            return `#${value}`;
+        }
+        return value;
+    }
+
+    /**
+     * Play modern notification sound
+     */
+    playModernNotificationSound(type) {
+        if (!this.soundEnabled) return;
+
+        // Create audio context for modern sound synthesis
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Different frequencies for different notification types
+            const frequencies = {
+                'success': [523.25, 659.25, 783.99], // C5, E5, G5 (happy chord)
+                'error': [220, 185], // A3, F#3 (dissonant)
+                'warning': [440, 554.37], // A4, C#5 (attention)
+                'info': [523.25, 698.46] // C5, F5 (neutral)
+            };
+
+            const freqs = frequencies[type] || frequencies['info'];
+            
+            oscillator.frequency.setValueAtTime(freqs[0], audioCtx.currentTime);
+            if (freqs[1]) {
+                oscillator.frequency.setValueAtTime(freqs[1], audioCtx.currentTime + 0.1);
+            }
+            if (freqs[2]) {
+                oscillator.frequency.setValueAtTime(freqs[2], audioCtx.currentTime + 0.2);
+            }
+
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        } catch (e) {
+            console.log('Audio not supported');
+        }
+    }
+
+    /**
+     * Add particle effect for success notifications
+     */
+    addParticleEffect(popup) {
+        const particles = document.createElement('div');
+        particles.className = 'particle-container';
+        particles.innerHTML = Array.from({length: 20}, () => 
+            '<div class="particle"></div>'
+        ).join('');
+        
+        popup.appendChild(particles);
+        
+        setTimeout(() => {
+            if (particles.parentNode) {
+                particles.parentNode.removeChild(particles);
+            }
+        }, 3000);
+    }
+
+    /**
+     * Add pulse effect for error notifications
+     */
+    addPulseEffect(popup) {
+        popup.classList.add('notification-pulse');
+        setTimeout(() => {
+            popup.classList.remove('notification-pulse');
+        }, 2000);
+    }
+
+    /**
+     * Add interactive hover effects
+     */
+    addInteractiveEffects(popup) {
+        const buttons = popup.querySelectorAll('.modern-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                btn.style.transform = 'translateY(-2px) scale(1.02)';
+                btn.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+            });
+            
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'translateY(0) scale(1)';
+                btn.style.boxShadow = '';
+            });
+        });
+    }
+
+    /**
+     * Auto-scroll content if notification is tall
+     */
+    autoScrollContent(popup) {
+        const content = popup.querySelector('.modern-notification-content');
+        if (content && content.scrollHeight > content.clientHeight) {
+            content.scrollTop = 0;
+        }
+    }
+
+    /**
+     * Show loading overlay for smooth transitions
+     */
+    showLoadingOverlay() {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="loading-text">در حال بروزرسانی...</div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    /**
+     * Cleanup notification effects
+     */
+    cleanupNotificationEffects() {
+        // Remove any particle effects
+        const particles = document.querySelectorAll('.particle-container');
+        particles.forEach(p => p.remove());
+        
+        // Remove loading overlays
+        const overlays = document.querySelectorAll('.loading-overlay');
+        overlays.forEach(o => o.remove());
     }
 }
 

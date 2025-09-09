@@ -38,6 +38,9 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Animate.css for modern animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
@@ -48,6 +51,7 @@
 
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/currency-formatter.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/modern-notifications.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ForexExchange.styles.css" asp-append-version="true" />
 
     <!-- Favicon -->
@@ -400,6 +404,97 @@
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Modern Notification Test Button (Only for Development) -->
+    @if (Context.Request.Host.Host == "localhost")
+    {
+        <div class="modern-notification-test-fab" onclick="testModernNotifications()">
+            <i class="fas fa-bell"></i>
+        </div>
+    }
+
+    <style>
+        .modern-notification-test-fab {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(145deg, #3b82f6, #2563eb);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            font-size: 20px;
+        }
+        
+        .modern-notification-test-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
+        }
+    </style>
+
+    <script>
+        function testModernNotifications() {
+            if (window.adminNotificationManager) {
+                const testNotifications = [
+                    {
+                        title: 'معامله جدید',
+                        message: 'معامله جدید ثبت شد\n\nمشتری: علی احمدی\nمبلغ: 1,000\nارز مبدا: USD\nارز مقصد: IRR',
+                        type: 'success',
+                        timestamp: new Date(),
+                        data: {
+                            orderId: 1234,
+                            customerName: 'علی احمدی',
+                            amount: 1000,
+                            fromCurrency: 'USD',
+                            toCurrency: 'IRR'
+                        }
+                    },
+                    {
+                        title: 'خطا در پردازش',
+                        message: 'خطا در پردازش درخواست\n\nلطفاً دوباره تلاش کنید',
+                        type: 'error',
+                        timestamp: new Date(),
+                        data: {
+                            errorCode: 'ERR_001',
+                            action: 'Process Payment'
+                        }
+                    },
+                    {
+                        title: 'هشدار موجودی',
+                        message: 'موجودی استخر کاهش یافت\n\nارز: USD\nموجودی فعلی: 5,000',
+                        type: 'warning',
+                        timestamp: new Date(),
+                        data: {
+                            currencyCode: 'USD',
+                            currentBalance: 5000
+                        }
+                    },
+                    {
+                        title: 'اطلاع رسانی',
+                        message: 'نرخ ارز بروزرسانی شد\n\nجفت ارز: USD/IRR\nنرخ جدید: 42,500',
+                        type: 'info',
+                        timestamp: new Date(),
+                        data: {
+                            currencyPair: 'USD/IRR',
+                            newRate: 42500
+                        }
+                    }
+                ];
+
+                const randomNotification = testNotifications[Math.floor(Math.random() * testNotifications.length)];
+                window.adminNotificationManager.showNotification(randomNotification);
+            } else {
+                alert('Notification manager not initialized');
+            }
+        }
+    </script>
 </body>
 
 </html>

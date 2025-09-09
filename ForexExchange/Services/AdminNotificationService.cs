@@ -311,11 +311,11 @@ namespace ForexExchange.Services
 
             return action switch
             {
-                "created" => $"معامله جدید ثبت شد\n\nمشتری: {customerName}\nمبلغ: {order.Amount:N0}\nارز مبدا: {fromCurrency}\nارز مقصد: {toCurrency}",
-                "updated" => $"معامله #{order.Id} بروزرسانی شد\n\nمشتری: {customerName}",
-                "cancelled" => $"معامله #{order.Id} لغو شد\n\nمشتری: {customerName}",
-                "completed" => $"معامله #{order.Id} تکمیل شد\n\nمشتری: {customerName}",
-                _ => $"معامله #{order.Id} تغییر وضعیت یافت\n\nمشتری: {customerName}"
+                "created" => $"معامله جدید ثبت شد\n\n{customerName}\n{order.Amount:N0} {fromCurrency} → {toCurrency}",
+                "updated" => $"معامله #{order.Id} بروزرسانی شد\n\n{customerName}",
+                "cancelled" => $"معامله #{order.Id} لغو شد\n\n{customerName}",
+                "completed" => $"معامله #{order.Id} تکمیل شد\n\n{customerName}",
+                _ => $"معامله #{order.Id} تغییر یافت\n\n{customerName}"
             };
         }
 
@@ -349,11 +349,11 @@ namespace ForexExchange.Services
             return action switch
             {
                 "updated" => string.IsNullOrEmpty(oldRate)
-                    ? $"نرخ ارز بروزرسانی شد\n\nجفت ارز: {pair}\nنرخ جدید: {exchangeRate.Rate:N0}"
-                    : $"نرخ ارز تغییر یافت\n\nجفت ارز: {pair}\nنرخ قبلی: {oldRate}\nنرخ جدید: {exchangeRate.Rate:N0}",
-                "created" => $"نرخ ارز جدید اضافه شد\n\nجفت ارز: {pair}\nنرخ: {exchangeRate.Rate:N0}",
-                "deleted" => $"نرخ ارز حذف شد\n\nجفت ارز: {pair}",
-                _ => $"نرخ ارز تغییر یافت\n\nجفت ارز: {pair}"
+                    ? $"نرخ {pair} بروزرسانی شد\n\n{exchangeRate.Rate:N0}"
+                    : $"نرخ {pair} تغییر یافت\n\n{oldRate} → {exchangeRate.Rate:N0}",
+                "created" => $"نرخ جدید {pair}\n\n{exchangeRate.Rate:N0}",
+                "deleted" => $"نرخ {pair} حذف شد",
+                _ => $"نرخ {pair} تغییر یافت\n\n{exchangeRate.Rate:N0}"
             };
         }
 
@@ -398,10 +398,10 @@ namespace ForexExchange.Services
 
             return action switch
             {
-                "created" => $"سند حسابداری جدید ثبت شد\n\nمشتری: {customerName}\nنوع سند: {document.Type}\nمبلغ: {document.Amount:N0} {currencyCode}",
-                "updated" => $"سند #{document.Id} بروزرسانی شد\n\nمشتری: {customerName}\nنوع سند: {document.Type}\nمبلغ: {document.Amount:N0} {currencyCode}",
-                "deleted" => $"سند #{document.Id} حذف شد\n\nمشتری: {customerName}\nنوع سند: {document.Type}",
-                _ => $"سند #{document.Id} تغییر یافت\n\nمشتری: {customerName}"
+                "created" => $"سند جدید ثبت شد\n\n{customerName}\n{document.Amount:N0} {currencyCode}",
+                "updated" => $"سند #{document.Id} بروزرسانی شد\n\n{customerName}\n{document.Amount:N0} {currencyCode}",
+                "deleted" => $"سند #{document.Id} حذف شد\n\n{customerName}",
+                _ => $"سند #{document.Id} تغییر یافت\n\n{customerName}"
             };
         }
 
@@ -431,10 +431,10 @@ namespace ForexExchange.Services
         {
             return action switch
             {
-                "created" => $"مشتری جدید ثبت شد\n\nنام: {customer.FullName}\nکد ملی: {customer.NationalId}\nتلفن: {customer.PhoneNumber}",
-                "updated" => $"اطلاعات مشتری بروزرسانی شد\n\nنام: {customer.FullName}\nکد ملی: {customer.NationalId}",
-                "deleted" => $"مشتری حذف شد\n\nنام: {customer.FullName}\nکد ملی: {customer.NationalId}",
-                _ => $"مشتری تغییر یافت\n\nنام: {customer.FullName}"
+                "created" => $"مشتری جدید: {customer.FullName}\n\n{customer.NationalId} | {customer.PhoneNumber}",
+                "updated" => $"مشتری بروزرسانی شد\n\n{customer.FullName}",
+                "deleted" => $"مشتری حذف شد\n\n{customer.FullName}",
+                _ => $"مشتری تغییر یافت\n\n{customer.FullName}"
             };
         }
 
@@ -466,10 +466,10 @@ namespace ForexExchange.Services
 
             return action switch
             {
-                "created" => $"حساب بانکی جدید ثبت شد\n\nبانک: {bankAccount.BankName}\nشماره حساب: {bankAccount.AccountNumber}\nارز: {currencyCode}",
-                "updated" => $"حساب بانکی بروزرسانی شد\n\nبانک: {bankAccount.BankName}\nشماره حساب: {bankAccount.AccountNumber}\nارز: {currencyCode}",
-                "deleted" => $"حساب بانکی حذف شد\n\nبانک: {bankAccount.BankName}\nشماره حساب: {bankAccount.AccountNumber}",
-                _ => $"حساب بانکی تغییر یافت\n\nشماره حساب: {bankAccount.AccountNumber}"
+                "created" => $"حساب بانکی جدید\n\n{bankAccount.BankName}\n{bankAccount.AccountNumber}",
+                "updated" => $"حساب بانکی بروزرسانی شد\n\n{bankAccount.BankName}\n{bankAccount.AccountNumber}",
+                "deleted" => $"حساب بانکی حذف شد\n\n{bankAccount.BankName}\n{bankAccount.AccountNumber}",
+                _ => $"حساب بانکی تغییر یافت\n\n{bankAccount.AccountNumber}"
             };
         }
 
@@ -502,10 +502,10 @@ namespace ForexExchange.Services
 
             return action switch
             {
-                "balance_updated" => $"موجودی استخر بروزرسانی شد\n\nارز: {currencyCode}\nموجودی قبلی: {oldBalance:N0}\nموجودی جدید: {newBalance:N0}\nتغییر: {difference:N0}",
-                "balance_increased" => $"موجودی استخر افزایش یافت\n\nارز: {currencyCode}\nمقدار افزایش: {difference:N0}\nموجودی فعلی: {newBalance:N0}",
-                "balance_decreased" => $"موجودی استخر کاهش یافت\n\nارز: {currencyCode}\nمقدار کاهش: {Math.Abs(difference):N0}\nموجودی فعلی: {newBalance:N0}",
-                _ => $"موجودی استخر تغییر یافت\n\nارز: {currencyCode}\nموجودی فعلی: {newBalance:N0}"
+                "balance_updated" => $"موجودی {currencyCode} بروزرسانی شد\n\n{oldBalance:N0} → {newBalance:N0}",
+                "balance_increased" => $"موجودی {currencyCode} افزایش یافت\n\n+{difference:N0} = {newBalance:N0}",
+                "balance_decreased" => $"موجودی {currencyCode} کاهش یافت\n\n-{Math.Abs(difference):N0} = {newBalance:N0}",
+                _ => $"موجودی {currencyCode} تغییر یافت\n\n{newBalance:N0}"
             };
         }
 
