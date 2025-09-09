@@ -418,7 +418,7 @@
     <style>
         .modern-notification-test-fab {
             position: fixed;
-            bottom: 20px;
+            bottom: 140px;
             left: 20px;
             width: 56px;
             height: 56px;
@@ -431,13 +431,23 @@
             cursor: pointer;
             box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
             transition: all 0.3s ease;
-            z-index: 1000;
+            z-index: 1050;
             font-size: 20px;
         }
         
         .modern-notification-test-fab:hover {
             transform: scale(1.1);
             box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
+        }
+        
+        /* Responsive positioning for mobile */
+        @@media (max-width: 576px) {
+            .modern-notification-test-fab {
+                bottom: 160px;
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
+            }
         }
     </style>
 
