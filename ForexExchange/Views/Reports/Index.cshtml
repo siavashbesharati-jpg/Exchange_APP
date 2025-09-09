@@ -85,24 +85,72 @@
 
         
         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card bg-info text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="card-title d-flex align-items-center">
-                                تراز کل سیستم
-                                <select id="currencySelector" class="form-select form-select-sm ms-2" style="width: 90px; display: inline-block; font-size: 0.9rem;">
-                                    <option value="IRR">IRR</option>
-                                    <option value="USD">USD</option>
-                                    <option value="EUR">EUR</option>
-                                    <option value="AED">AED</option>
-                                    <option value="OMR">OMR</option>
+            <div class="card bg-gradient-info text-white h-100 shadow-lg border-0 system-balance-card">
+                <div class="card-body p-4 position-relative overflow-hidden">
+                    <!-- Background Pattern -->
+                    <div class="position-absolute top-0 end-0 opacity-10">
+                        <i class="fas fa-coins fa-5x"></i>
+                    </div>
+                    
+                    <!-- Header Section -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-balance-scale me-2 text-warning"></i>
+                                <h6 class="card-title mb-0 fw-bold">تراز کل سیستم</h6>
+                            </div>
+                            
+                            <!-- Currency Selector with enhanced styling -->
+                            <div class="currency-selector-wrapper">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label text-light opacity-75 small mb-0">
+                                        <i class="fas fa-exchange-alt me-1"></i>نمایش بر حسب:
+                                    </label>
+                                    <button type="button" class="btn btn-sm btn-outline-light opacity-75" 
+                                            onclick="loadSystemBalance()" title="بروزرسانی">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <select id="currencySelector" class="form-select form-select-sm currency-select bg-white text-dark border-0 shadow-sm">
+                                    <option value="IRR" data-flag="🇮🇷">🇮🇷 IRR - ریال ایران</option>
+                                    <option value="USD" data-flag="🇺🇸">🇺🇸 USD - دلار آمریکا</option>
+                                    <option value="EUR" data-flag="🇪🇺">🇪🇺 EUR - یورو اروپا</option>
+                                    <option value="AED" data-flag="🇦🇪">🇦🇪 AED - درهم امارات</option>
+                                    <option value="OMR" data-flag="🇴🇲">🇴🇲 OMR - ریال عمان</option>
                                 </select>
-                            </h6>
-                            <h3 id="systemBalance" class="text-center" dir="ltr" style="text-align: center;">-</h3>
+                            </div>
                         </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-balance-scale fa-2x"></i>
+                    </div>
+                    
+                    <!-- Balance Display Section -->
+                    <div class="balance-display-section">
+                        <div class="balance-wrapper text-center">
+                            <div class="balance-label text-light opacity-75 small mb-1">
+                                <i class="fas fa-calculator me-1"></i>مجموع تراز
+                            </div>
+                            <div id="systemBalance" class="system-balance-amount fw-bold display-6 text-warning mb-2" dir="ltr">
+                                <div class="loading-placeholder">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    در حال محاسبه...
+                                </div>
+                            </div>
+                            <div id="balanceStatus" class="balance-status-indicator">
+                                <span class="badge bg-light text-dark opacity-75">
+                                    <i class="fas fa-sync-alt fa-spin me-1"></i>بروزرسانی...
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Info Footer -->
+                    <div class="quick-info-footer mt-3 pt-2 border-top border-light border-opacity-25">
+                        <div class="row text-center">
+                            <div class="col">
+                                <small class="text-light opacity-75">
+                                    <i class="fas fa-clock me-1"></i>
+                                    <span id="lastUpdate">همین الان</span>
+                                </small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -299,6 +347,158 @@
     </div>
 </div>
 
+@section Styles {
+    <style>
+        /* Enhanced System Balance Card Styles */
+        .system-balance-card {
+            transition: all 0.3s ease;
+            border-radius: 15px !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+            border: 1px solid #dee2e6 !important;
+            color: #495057 !important;
+        }
+
+        .system-balance-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .currency-select {
+            border-radius: 8px !important;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .currency-select:focus {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3) !important;
+            border-color: transparent !important;
+        }
+
+        .system-balance-amount {
+            font-family: inherit; /* Keep consistent with page font */
+            text-shadow: none; /* Remove text shadow for cleaner look */
+            transition: all 0.4s ease;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .balance-display-section {
+            background: rgba(0, 123, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(0, 123, 255, 0.1);
+        }
+
+        .loading-placeholder {
+            color: #007bff;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .balance-status-indicator {
+            transition: all 0.3s ease;
+        }
+
+        .balance-status-indicator .badge {
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+
+        /* Positive/Negative Balance Colors */
+        .balance-positive {
+            color: #28a745 !important;
+            text-shadow: 2px 2px 4px rgba(40, 167, 69, 0.3);
+        }
+
+        .balance-negative {
+            color: #dc3545 !important;
+            text-shadow: 2px 2px 4px rgba(220, 53, 69, 0.3);
+        }
+
+        .balance-neutral {
+            color: #ffc107 !important;
+            text-shadow: 2px 2px 4px rgba(255, 193, 7, 0.3);
+        }
+
+        /* Animation for balance updates */
+        @@keyframes balanceUpdate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .balance-updating {
+            animation: balanceUpdate 0.6s ease-in-out;
+        }
+
+        /* Currency selector wrapper */
+        .currency-selector-wrapper {
+            backdrop-filter: blur(5px);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Quick info footer */
+        .quick-info-footer {
+            backdrop-filter: blur(5px);
+        }
+
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .system-balance-amount {
+                font-size: 1.5rem !important;
+            }
+            
+            .currency-selector-wrapper {
+                padding: 8px;
+            }
+        }
+
+        /* Additional existing styles */
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        
+        .card-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+        }
+        
+        .spinner-border {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: transparent;
+            border-bottom: 3px solid #007bff;
+            color: #007bff;
+        }
+    </style>
+}
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -379,24 +579,110 @@
         // Load system balance converted to selected currency
         function loadSystemBalance() {
             const selectedCurrency = $('#currencySelector').val();
+            const balanceElement = $('#systemBalance');
+            const statusElement = $('#balanceStatus');
+            const lastUpdateElement = $('#lastUpdate');
+            
+            // Show loading state with enhanced UI
+            balanceElement.html(`
+                <div class="loading-placeholder">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    محاسبه تراز...
+                </div>
+            `);
+            
+            statusElement.html(`
+                <span class="badge bg-light text-dark opacity-75">
+                    <i class="fas fa-sync-alt fa-spin me-1"></i>در حال بروزرسانی...
+                </span>
+            `);
             
             $.ajax({
                 url: '/Reports/GetSystemBalance',
                 type: 'GET',
                 data: { targetCurrency: selectedCurrency },
-                beforeSend: function() {
-                    $('#systemBalance').html('<div class="spinner-border spinner-border-sm" role="status"></div>');
-                },
                 success: function(data) {
                     if (data.success) {
-                        $('#systemBalance').text(data.balance.toLocaleString('fa-IR') + ' ' + selectedCurrency);
+                        // Add animation class
+                        balanceElement.addClass('balance-updating');
+                        
+                        // Format the balance with proper styling
+                        const balance = parseFloat(data.balance);
+                        const formattedBalance = balance.toLocaleString('fa-IR', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2
+                        });
+                        
+                        // Determine balance color class based on value
+                        let balanceClass = 'balance-neutral';
+                        let statusBadgeClass = 'bg-warning';
+                        let statusIcon = 'fa-equals';
+                        let statusText = 'متعادل';
+                        
+                        if (balance > 0) {
+                            balanceClass = 'balance-positive';
+                            statusBadgeClass = 'bg-success';
+                            statusIcon = 'fa-arrow-up';
+                            statusText = 'مثبت';
+                        } else if (balance < 0) {
+                            balanceClass = 'balance-negative';
+                            statusBadgeClass = 'bg-danger';
+                            statusIcon = 'fa-arrow-down';
+                            statusText = 'منفی';
+                        }
+                        
+                        // Update balance display
+                        balanceElement.html(`
+                            <span class="${balanceClass}">
+                                ${formattedBalance} <small class="opacity-75">${selectedCurrency}</small>
+                            </span>
+                        `);
+                        
+                        // Update status indicator
+                        statusElement.html(`
+                            <span class="badge ${statusBadgeClass} text-white">
+                                <i class="fas ${statusIcon} me-1"></i>${statusText}
+                            </span>
+                        `);
+                        
+                        // Update last update time
+                        const now = new Date();
+                        lastUpdateElement.text(now.toLocaleTimeString('fa-IR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }));
+                        
+                        // Remove animation class after animation completes
+                        setTimeout(() => {
+                            balanceElement.removeClass('balance-updating');
+                        }, 600);
+                        
                     } else {
-                        $('#systemBalance').text('خطا در بارگذاری');
+                        balanceElement.html(`
+                            <span class="text-danger">
+                                <i class="fas fa-exclamation-triangle me-1"></i>خطا در بارگذاری
+                            </span>
+                        `);
+                        statusElement.html(`
+                            <span class="badge bg-danger text-white">
+                                <i class="fas fa-times me-1"></i>خطا
+                            </span>
+                        `);
                         console.error('Error loading system balance:', data.message);
                     }
                 },
-                error: function() {
-                    $('#systemBalance').text('خطا در اتصال');
+                error: function(xhr, status, error) {
+                    balanceElement.html(`
+                        <span class="text-danger">
+                            <i class="fas fa-wifi me-1"></i>خطا در اتصال
+                        </span>
+                    `);
+                    statusElement.html(`
+                        <span class="badge bg-danger text-white">
+                            <i class="fas fa-exclamation-circle me-1"></i>اتصال قطع
+                        </span>
+                    `);
+                    console.error('Network error loading system balance:', error);
                 }
             });
         }
@@ -637,43 +923,4 @@
             }
         });
     </script>
-}
-
-@section Styles {
-    <style>
-        .card {
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            border: 1px solid rgba(0, 0, 0, 0.125);
-        }
-        
-        .card-header {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-        }
-        
-        .table th {
-            border-top: none;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-        
-        .badge {
-            font-size: 0.75rem;
-        }
-        
-        .spinner-border {
-            width: 1.5rem;
-            height: 1.5rem;
-        }
-        
-        .nav-tabs .nav-link {
-            border: none;
-            color: #6c757d;
-        }
-        
-        .nav-tabs .nav-link.active {
-            background-color: transparent;
-            border-bottom: 3px solid #007bff;
-            color: #007bff;
-        }
-    </style>
 }
