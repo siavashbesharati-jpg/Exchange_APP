@@ -279,6 +279,15 @@
 
 @section Scripts {
     <script>
+        // Wait for Select2 to initialize before running page-specific scripts
+        $(document).ready(function() {
+            // Give Select2 time to initialize
+            setTimeout(function() {
+                initializePageScripts();
+            }, 500);
+        });
+
+        function initializePageScripts() {
         // Auto-fill current date/time
         document.addEventListener('DOMContentLoaded', function() {
             const now = new Date();
@@ -296,19 +305,19 @@
             if (payerType === '@ForexExchange.Models.PayerType.Customer') {
                 payerCustomerDiv.style.display = 'block';
                 payerBankDiv.style.display = 'none';
-                // Clear bank account selection
-                document.querySelector('[name="PayerBankAccountId"]').value = '';
+                // Clear bank account selection (Select2 compatible)
+                $('[name="PayerBankAccountId"]').val('').trigger('change');
             } else if (payerType === '@ForexExchange.Models.PayerType.System') {
                 payerCustomerDiv.style.display = 'none';
                 payerBankDiv.style.display = 'block';
-                // Clear customer selection
-                document.querySelector('[name="PayerCustomerId"]').value = '';
+                // Clear customer selection (Select2 compatible)
+                $('[name="PayerCustomerId"]').val('').trigger('change');
             } else {
                 payerCustomerDiv.style.display = 'none';
                 payerBankDiv.style.display = 'none';
-                // Clear both selections
-                document.querySelector('[name="PayerCustomerId"]').value = '';
-                document.querySelector('[name="PayerBankAccountId"]').value = '';
+                // Clear both selections (Select2 compatible)
+                $('[name="PayerCustomerId"]').val('').trigger('change');
+                $('[name="PayerBankAccountId"]').val('').trigger('change');
             }
             validateCurrency();
         });
@@ -321,19 +330,19 @@
             if (receiverType === '@ForexExchange.Models.ReceiverType.Customer') {
                 receiverCustomerDiv.style.display = 'block';
                 receiverBankDiv.style.display = 'none';
-                // Clear bank account selection
-                document.querySelector('[name="ReceiverBankAccountId"]').value = '';
+                // Clear bank account selection (Select2 compatible)
+                $('[name="ReceiverBankAccountId"]').val('').trigger('change');
             } else if (receiverType === '@ForexExchange.Models.ReceiverType.System') {
                 receiverCustomerDiv.style.display = 'none';
                 receiverBankDiv.style.display = 'block';
-                // Clear customer selection
-                document.querySelector('[name="ReceiverCustomerId"]').value = '';
+                // Clear customer selection (Select2 compatible)
+                $('[name="ReceiverCustomerId"]').val('').trigger('change');
             } else {
                 receiverCustomerDiv.style.display = 'none';
                 receiverBankDiv.style.display = 'none';
-                // Clear both selections
-                document.querySelector('[name="ReceiverCustomerId"]').value = '';
-                document.querySelector('[name="ReceiverBankAccountId"]').value = '';
+                // Clear both selections (Select2 compatible)
+                $('[name="ReceiverCustomerId"]').val('').trigger('change');
+                $('[name="ReceiverBankAccountId"]').val('').trigger('change');
             }
             validateCurrency();
         });
@@ -353,19 +362,19 @@
             let hasConflict = false;
             const selectedCurrency = currencySelect.value;
 
-            // Check payer bank account currency
-            if (payerBankSelect.value) {
+            // Check payer bank account currency (Select2 compatible)
+            if (payerBankSelect && payerBankSelect.value) {
                 const payerOption = payerBankSelect.options[payerBankSelect.selectedIndex];
-                const payerCurrency = payerOption.getAttribute('data-currency');
+                const payerCurrency = payerOption ? payerOption.getAttribute('data-currency') : null;
                 if (payerCurrency && payerCurrency !== selectedCurrency) {
                     hasConflict = true;
                 }
             }
 
-            // Check receiver bank account currency
-            if (receiverBankSelect.value) {
+            // Check receiver bank account currency (Select2 compatible)
+            if (receiverBankSelect && receiverBankSelect.value) {
                 const receiverOption = receiverBankSelect.options[receiverBankSelect.selectedIndex];
-                const receiverCurrency = receiverOption.getAttribute('data-currency');
+                const receiverCurrency = receiverOption ? receiverOption.getAttribute('data-currency') : null;
                 if (receiverCurrency && receiverCurrency !== selectedCurrency) {
                     hasConflict = true;
                 }
@@ -374,12 +383,14 @@
             warningDiv.style.display = hasConflict ? 'block' : 'none';
         }
 
-        // Add currency validation on all relevant changes
+        // Add currency validation on all relevant changes (Select2 compatible)
         document.getElementById('CurrencyCode').addEventListener('change', validateCurrency);
-        document.querySelector('[name="PayerBankAccountId"]').addEventListener('change', validateCurrency);
-        document.querySelector('[name="ReceiverBankAccountId"]').addEventListener('change', validateCurrency);
+        
+        // Use jQuery event delegation for Select2 elements
+        $(document).on('change', '[name="PayerBankAccountId"]', validateCurrency);
+        $(document).on('change', '[name="ReceiverBankAccountId"]', validateCurrency);
 
-        // Auto-generate title function
+        // Auto-generate title function (Select2 compatible)
         function generateTitle() {
             const payerType = document.getElementById('payerType').value;
             const receiverType = document.getElementById('receiverType').value;
@@ -390,34 +401,34 @@
             let payerName = '';
             let receiverName = '';
             
-            // Get payer name
+            // Get payer name (Select2 compatible)
             if (payerType === '@ForexExchange.Models.PayerType.Customer') {
                 const payerSelect = document.querySelector('[name="PayerCustomerId"]');
-                if (payerSelect && payerSelect.selectedOptions[0]) {
+                if (payerSelect && payerSelect.selectedOptions && payerSelect.selectedOptions[0]) {
                     payerName = payerSelect.selectedOptions[0].text.split(' - ')[0] || 'مشتری';
                 } else {
                     payerName = 'مشتری';
                 }
             } else if (payerType === '@ForexExchange.Models.PayerType.System') {
                 const payerBankSelect = document.querySelector('[name="PayerBankAccountId"]');
-                if (payerBankSelect && payerBankSelect.selectedOptions[0]) {
+                if (payerBankSelect && payerBankSelect.selectedOptions && payerBankSelect.selectedOptions[0]) {
                     payerName = 'سیستم - ' + (payerBankSelect.selectedOptions[0].text.split(' - ')[1] || 'بانک');
                 } else {
                     payerName = 'سیستم';
                 }
             }
             
-            // Get receiver name
+            // Get receiver name (Select2 compatible)
             if (receiverType === '@ForexExchange.Models.ReceiverType.Customer') {
                 const receiverSelect = document.querySelector('[name="ReceiverCustomerId"]');
-                if (receiverSelect && receiverSelect.selectedOptions[0]) {
+                if (receiverSelect && receiverSelect.selectedOptions && receiverSelect.selectedOptions[0]) {
                     receiverName = receiverSelect.selectedOptions[0].text.split(' - ')[0] || 'مشتری';
                 } else {
                     receiverName = 'مشتری';
                 }
             } else if (receiverType === '@ForexExchange.Models.ReceiverType.System') {
                 const receiverBankSelect = document.querySelector('[name="ReceiverBankAccountId"]');
-                if (receiverBankSelect && receiverBankSelect.selectedOptions[0]) {
+                if (receiverBankSelect && receiverBankSelect.selectedOptions && receiverBankSelect.selectedOptions[0]) {
                     receiverName = 'سیستم - ' + (receiverBankSelect.selectedOptions[0].text.split(' - ')[1] || 'بانک');
                 } else {
                     receiverName = 'سیستم';
@@ -469,47 +480,48 @@
             setTimeout(autoGenerateTitle, 100);
         });
         
-        // Add auto-title generation to other field changes
-        document.querySelector('[name="PayerCustomerId"]').addEventListener('change', autoGenerateTitle);
-        document.querySelector('[name="ReceiverCustomerId"]').addEventListener('change', autoGenerateTitle);
-        document.querySelector('[name="PayerBankAccountId"]').addEventListener('change', autoGenerateTitle);
-        document.querySelector('[name="ReceiverBankAccountId"]').addEventListener('change', autoGenerateTitle);
+        // Add auto-title generation to other field changes (Select2 compatible)
+        $(document).on('change', '[name="PayerCustomerId"]', autoGenerateTitle);
+        $(document).on('change', '[name="ReceiverCustomerId"]', autoGenerateTitle);
+        $(document).on('change', '[name="PayerBankAccountId"]', autoGenerateTitle);
+        $(document).on('change', '[name="ReceiverBankAccountId"]', autoGenerateTitle);
         document.querySelector('[name="Amount"]').addEventListener('input', autoGenerateTitle);
         document.querySelector('[name="CurrencyCode"]').addEventListener('change', autoGenerateTitle);
         document.querySelector('[name="Type"]').addEventListener('change', autoGenerateTitle);
 
-        // Prevent self-transactions
+        // Prevent self-transactions (Select2 compatible)
         function validateSelfTransaction() {
             const payerType = document.getElementById('payerType').value;
             const receiverType = document.getElementById('receiverType').value;
             
             if (payerType === '@ForexExchange.Models.PayerType.Customer' && 
                 receiverType === '@ForexExchange.Models.ReceiverType.Customer') {
-                const payerCustomer = document.querySelector('[name="PayerCustomerId"]').value;
-                const receiverCustomer = document.querySelector('[name="ReceiverCustomerId"]').value;
+                const payerCustomer = document.querySelector('[name="PayerCustomerId"]') ? document.querySelector('[name="PayerCustomerId"]').value : '';
+                const receiverCustomer = document.querySelector('[name="ReceiverCustomerId"]') ? document.querySelector('[name="ReceiverCustomerId"]').value : '';
                 
                 if (payerCustomer && receiverCustomer && payerCustomer === receiverCustomer) {
                     alert('مشتری نمی‌تواند به خودش پرداخت کند.');
-                    document.querySelector('[name="ReceiverCustomerId"]').value = '';
+                    $('[name="ReceiverCustomerId"]').val('').trigger('change');
                 }
             }
             
             if (payerType === '@ForexExchange.Models.PayerType.System' && 
                 receiverType === '@ForexExchange.Models.ReceiverType.System') {
-                const payerBank = document.querySelector('[name="PayerBankAccountId"]').value;
-                const receiverBank = document.querySelector('[name="ReceiverBankAccountId"]').value;
+                const payerBank = document.querySelector('[name="PayerBankAccountId"]') ? document.querySelector('[name="PayerBankAccountId"]').value : '';
+                const receiverBank = document.querySelector('[name="ReceiverBankAccountId"]') ? document.querySelector('[name="ReceiverBankAccountId"]').value : '';
                 
                 if (payerBank && receiverBank && payerBank === receiverBank) {
                     alert('حساب بانکی نمی‌تواند به خودش انتقال داشته باشد.');
-                    document.querySelector('[name="ReceiverBankAccountId"]').value = '';
+                    $('[name="ReceiverBankAccountId"]').val('').trigger('change');
                 }
             }
         }
 
-        document.querySelector('[name="PayerCustomerId"]').addEventListener('change', validateSelfTransaction);
-        document.querySelector('[name="ReceiverCustomerId"]').addEventListener('change', validateSelfTransaction);
-        document.querySelector('[name="PayerBankAccountId"]').addEventListener('change', validateSelfTransaction);
-        document.querySelector('[name="ReceiverBankAccountId"]').addEventListener('change', validateSelfTransaction);
+        // Use jQuery event delegation for Select2 elements
+        $(document).on('change', '[name="PayerCustomerId"]', validateSelfTransaction);
+        $(document).on('change', '[name="ReceiverCustomerId"]', validateSelfTransaction);
+        $(document).on('change', '[name="PayerBankAccountId"]', validateSelfTransaction);
+        $(document).on('change', '[name="ReceiverBankAccountId"]', validateSelfTransaction);
 
         // Form validation
         document.querySelector('form').addEventListener('submit', function(e) {
@@ -727,5 +739,7 @@
         function hideOcrResults() {
             document.getElementById('ocrResults').style.display = 'none';
         }
+        
+        } // End of initializePageScripts function
     </script>
 }
