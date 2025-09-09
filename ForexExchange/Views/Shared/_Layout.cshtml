@@ -156,7 +156,7 @@
 </head>
 
 <body>
- 
+
     <!-- Connection Status Indicator -->
     <div id="connectionStatus" class="connection-status">
         <i class="fas fa-circle"></i>
@@ -182,10 +182,10 @@
                             <!-- Currency pool data will be loaded here via AJAX -->
                         </div>
                     </div>
-                    
+
                     <!-- Elegant separator line -->
                     <div class="footer-separator"></div>
-                    
+
                     <!-- Action Links Section -->
                     <div class="p-3">
                         <div class="row">
@@ -294,7 +294,7 @@
 
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
+
     <!-- Select2 Persian Language -->
     <script src="~/js/select2-fa.js" asp-append-version="true"></script>
 
@@ -322,9 +322,11 @@
     <script src="~/js/currency-form-helper.js" asp-append-version="true"></script>
     <script src="~/js/auto-currency-display-formatter.js" asp-append-version="true"></script>
 
+
+
     <!-- Currency Pool Footer Script -->
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             loadCurrencyPoolData();
         });
 
@@ -332,26 +334,208 @@
             $.ajax({
                 url: '@Url.Action("GetAllPoolsForFooter", "PoolManagement")',
                 type: 'GET',
-                success: function(response) {
+                success: function (response) {
                     if (response.success && response.pools && response.pools.length > 0) {
                         displayCurrencyPools(response.pools);
                     }
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error('Error loading currency pool data:', error);
                 }
             });
         }
 
+        // Currency to flag emoji mapping
+        function getCurrencyFlag(currencyCode) {
+            const currencyFlags = {
+                'USD': '🇺🇸', // United States Dollar
+                'EUR': '🇪🇺', // European Union Euro
+                'GBP': '🇬🇧', // British Pound Sterling
+                'JPY': '🇯🇵', // Japanese Yen
+                'CHF': '🇨🇭', // Swiss Franc
+                'CAD': '🇨🇦', // Canadian Dollar
+                'AUD': '🇦🇺', // Australian Dollar
+                'NZD': '🇳🇿', // New Zealand Dollar
+                'SEK': '🇸🇪', // Swedish Krona
+                'NOK': '🇳🇴', // Norwegian Krone
+                'DKK': '🇩🇰', // Danish Krone
+                'CNY': '🇨🇳', // Chinese Yuan
+                'HKD': '🇭🇰', // Hong Kong Dollar
+                'SGD': '🇸🇬', // Singapore Dollar
+                'KRW': '🇰🇷', // South Korean Won
+                'INR': '🇮🇳', // Indian Rupee
+                'THB': '🇹🇭', // Thai Baht
+                'MYR': '🇲🇾', // Malaysian Ringgit
+                'IDR': '🇮🇩', // Indonesian Rupiah
+                'PHP': '🇵🇭', // Philippine Peso
+                'VND': '🇻🇳', // Vietnamese Dong
+                'BRL': '🇧🇷', // Brazilian Real
+                'MXN': '🇲🇽', // Mexican Peso
+                'RUB': '🇷🇺', // Russian Ruble
+                'TRY': '🇹🇷', // Turkish Lira
+                'SAR': '🇸🇦', // Saudi Riyal
+                'AED': '🇦🇪', // UAE Dirham
+                'KWD': '🇰🇼', // Kuwaiti Dinar
+                'QAR': '🇶🇦', // Qatari Riyal
+                'BHD': '🇧🇭', // Bahraini Dinar
+                'OMR': '🇴🇲', // Omani Rial
+                'JOD': '🇯🇴', // Jordanian Dinar
+                'LBP': '🇱🇧', // Lebanese Pound
+                'EGP': '🇪🇬', // Egyptian Pound
+                'MAD': '🇲🇦', // Moroccan Dirham
+                'DZD': '🇩🇿', // Algerian Dinar
+                'TND': '🇹🇳', // Tunisian Dinar
+                'IQD': '🇮🇶', // Iraqi Dinar
+                'SYP': '🇸🇾', // Syrian Pound
+                'AFN': '🇦🇫', // Afghan Afghani
+                'PKR': '🇵🇰', // Pakistani Rupee
+                'BDT': '🇧🇩', // Bangladeshi Taka
+                'LKR': '🇱🇰', // Sri Lankan Rupee
+                'NPR': '🇳🇵', // Nepalese Rupee
+                'BTN': '🇧🇹', // Bhutanese Ngultrum
+                'IRR': '🇮🇷', // Iranian Rial
+                'IRT': '🇮🇷', // Iranian Toman (same flag as IRR)
+                'AMD': '🇦🇲', // Armenian Dram
+                'AZN': '🇦🇿', // Azerbaijani Manat
+                'GEL': '🇬🇪', // Georgian Lari
+                'KZT': '🇰🇿', // Kazakhstani Tenge
+                'KGS': '🇰🇬', // Kyrgyzstani Som
+                'TJS': '🇹🇯', // Tajikistani Somoni
+                'TMT': '🇹🇲', // Turkmenistani Manat
+                'UZS': '🇺🇿', // Uzbekistani Som
+                'ZAR': '🇿🇦', // South African Rand
+                'NGN': '🇳🇬', // Nigerian Naira
+                'KES': '🇰🇪', // Kenyan Shilling
+                'GHS': '🇬🇭', // Ghanaian Cedi
+                'ETB': '🇪🇹', // Ethiopian Birr
+                'UGX': '🇺🇬', // Ugandan Shilling
+                'TZS': '🇹🇿', // Tanzanian Shilling
+                'RWF': '🇷🇼', // Rwandan Franc
+                'XOF': '🌍', // West African CFA Franc
+                'XAF': '🌍', // Central African CFA Franc
+                'COP': '🇨🇴', // Colombian Peso
+                'PEN': '🇵🇪', // Peruvian Sol
+                'CLP': '🇨🇱', // Chilean Peso
+                'ARS': '🇦🇷', // Argentine Peso
+                'UYU': '🇺🇾', // Uruguayan Peso
+                'PYG': '🇵🇾', // Paraguayan Guarani
+                'BOB': '🇧🇴', // Bolivian Boliviano
+                'VES': '🇻🇪', // Venezuelan Bolívar
+                'GYD': '🇬🇾', // Guyanese Dollar
+                'SRD': '🇸🇷', // Surinamese Dollar
+                'FKP': '🇫🇰', // Falkland Islands Pound
+                'BTC': '₿', // Bitcoin (using Bitcoin symbol)
+                'ETH': 'Ξ', // Ethereum (using Ethereum symbol)
+                'USDT': '₮', // Tether (using Tether symbol)
+                'USDC': 'Ⓒ', // USD Coin
+                'BNB': 'Ⓑ', // Binance Coin
+                'ADA': 'Ⓐ', // Cardano
+                'SOL': 'Ⓢ', // Solana
+                'DOT': 'Ⓓ', // Polkadot
+                'MATIC': 'Ⓜ', // Polygon
+                'LTC': 'Ł', // Litecoin
+                'DOGE': 'Ð', // Dogecoin
+                'SHIB': '🐕', // Shiba Inu
+                'AVAX': '🔺', // Avalanche
+                'TRX': 'Ⓣ', // Tron
+                'UNI': '🦄', // Uniswap
+                'LINK': '🔗', // Chainlink
+                'XRP': '⚡', // Ripple
+                'XLM': '⭐', // Stellar
+                'VET': '✔️', // VeChain
+                'FIL': '📁', // Filecoin
+                'THETA': 'Θ', // Theta Network
+                'ICP': '∞', // Internet Computer
+                'ALGO': '△', // Algorand
+                'XTZ': 'ꜩ', // Tezos
+                'ATOM': '⚛️', // Cosmos
+                'CRO': '♢', // Crypto.com Coin
+                'NEAR': '◯', // NEAR Protocol
+                'SAND': '🏖️', // The Sandbox
+                'MANA': '🎮', // Decentraland
+                'AXS': '🎯', // Axie Infinity
+                'ENJ': '🎲', // Enjin Coin
+                'CHZ': '🏟️', // Chiliz
+                'BAT': '🦇', // Basic Attention Token
+                'ZIL': '◊', // Zilliqa
+                'ONE': '1️⃣', // Harmony
+                'HOT': '🔥', // Holo
+                'IOST': '🌐', // IOST
+                'ONT': '⭕', // Ontology
+                'ICX': '❄️', // ICON
+                'ZRX': '0️⃣', // 0x Protocol
+                'REP': '📊', // Augur
+                'KNC': '🔵', // Kyber Network Crystal
+                'LRC': '⭕', // Loopring
+                'SNX': '📈', // Synthetix Network Token
+                'COMP': '🏛️', // Compound
+                'YFI': '🏦', // yearn.finance
+                'SUSHI': '🍣', // SushiSwap
+                'CRV': '📈', // Curve DAO Token
+                'AAVE': '👻', // Aave
+                'MKR': '🏭', // Maker
+                'REN': '🔄', // Republic Protocol
+                'KSM': '🐦', // Kusama
+                'DASH': '💨', // Dash
+                'ZEC': '🛡️', // Zcash
+                'XMR': '🕵️', // Monero
+                'DCR': '💎', // Decred
+                'SC': '☁️', // Siacoin
+                'DGB': '⚡', // DigiByte
+                'RVN': '🐦‍⬛', // Ravencoin
+                'BTG': '🟨', // Bitcoin Gold
+                'BCH': '💚', // Bitcoin Cash
+                'BSV': '🔶', // Bitcoin SV
+                'ETC': '💚', // Ethereum Classic
+                'XEM': '🔶', // NEM
+                'WAVES': '🌊', // Waves
+                'LSK': '🔗', // Lisk
+                'STRAT': '⚡', // Stratis
+                'ARK': '🚢', // Ark
+                'PIVX': '🔒', // PIVX
+                'NAV': '⚡', // NavCoin
+                'PART': '🔐', // Particl
+                'BLK': '⚫', // BlackCoin
+                'BLOCK': '🧱', // Blocknet
+                'SYS': '⚙️', // Syscoin
+                'VIA': '🛣️', // Viacoin
+                'VTC': '🟢', // Vertcoin
+                'GRS': '💎', // Groestlcoin
+                'MONA': '🐱', // MonaCoin
+                'DGD': '🏆', // DigixDAO
+                'GNT': '🤖', // Golem
+                'ANT': '🐜', // Aragon
+                'BAL': '⚖️', // Balancer
+                'BAND': '📻', // Band Protocol
+                'NMR': '🧮', // Numeraire
+                'MLN': '🚀', // Enzyme
+                'LPT': '📹', // Livepeer
+                'STORJ': '☁️', // Storj
+                'GRT': '📊', // The Graph
+                'OCEAN': '🌊', // Ocean Protocol
+                'FET': '🤖', // Fetch.ai
+                'AGIX': '🧠', // SingularityNET
+                'RLC': '☁️', // iExec RLC
+                'NKN': '🌐', // NKN
+                'API3': '🔌', // API3
+                'CELR': '⚡', // Celer Network
+                'CTK': '🔐', // CertiK
+                'DENT': '📱', // Dent
+                'WIN': '🎰' // WINkLink
+            };
+            
+            return currencyFlags[currencyCode] || '💱'; // Default to generic currency exchange emoji
+        }
+
         function displayCurrencyPools(pools) {
             // Clear admin container
             $('#currency-pool-row-admin').empty();
-            
+
             // Calculate column width and offset based on number of currencies
             const poolCount = pools.length;
             let colClass = 'col-12';
             let offsetClass = '';
-            
+
             if (poolCount <= 2) {
                 colClass = 'col-6';
             } else if (poolCount <= 3) {
@@ -378,19 +562,21 @@
             } else {
                 colClass = 'col-1';
             }
-            
-            const poolsHtml = pools.map(function(pool, index) {
+
+            const poolsHtml = pools.map(function (pool, index) {
                 const firstItemClass = index === 0 && offsetClass ? offsetClass : '';
+                const flagEmoji = getCurrencyFlag(pool.currencyCode);
                 return `
                     <div class="${colClass} ${firstItemClass} text-center border-end currency-pool-item">
-                        <div class="currency-pool-code text-muted">${pool.currencyCode}</div>
+                        <div class="currency-pool-flag" style="font-size: 1.5rem; margin-bottom: 2px;" title="${pool.currencyCode}">${flagEmoji}</div>
+                        <div class="currency-pool-code text-muted small">${pool.currencyCode}</div>
                         <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}">
                             ${formatNumber(pool.balance)}
                         </div>
                     </div>
                 `;
             }).join('');
-            
+
             // Add to admin container only and show admin section
             $('#currency-pool-row-admin').html(poolsHtml);
             $('#currency-pool-section-admin').show();
@@ -434,12 +620,12 @@
             z-index: 1050;
             font-size: 20px;
         }
-        
+
         .modern-notification-test-fab:hover {
             transform: scale(1.1);
             box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
         }
-        
+
         /* Responsive positioning for mobile */
         @@media (max-width: 576px) {
             .modern-notification-test-fab {
@@ -528,6 +714,13 @@
                 alert('Notification manager not initialized');
             }
         }
+
+
+
+
+
+
+
     </script>
 </body>
 
