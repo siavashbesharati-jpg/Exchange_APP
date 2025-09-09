@@ -33,8 +33,10 @@ namespace ForexExchange.Hubs
                     // Add user to their personal group for targeted notifications
                     await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{user.Id}");
 
-                    // Add admin users to admin group
-                    if (await _userManager.IsInRoleAsync(user, "Admin"))
+                    // Add admin users (Admin, Manager, Staff) to admin group
+                    if (await _userManager.IsInRoleAsync(user, "Admin") ||
+                        await _userManager.IsInRoleAsync(user, "Manager") ||
+                        await _userManager.IsInRoleAsync(user, "Staff"))
                     {
                         await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
                     }

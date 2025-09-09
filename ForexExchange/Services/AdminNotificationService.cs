@@ -3,6 +3,7 @@ using ForexExchange.Hubs;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using ForexExchange.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ForexExchange.Services
 {
@@ -14,13 +15,16 @@ namespace ForexExchange.Services
     {
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<AdminNotificationService> _logger;
 
         public AdminNotificationService(
             IHubContext<NotificationHub> hubContext,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ILogger<AdminNotificationService> logger)
         {
             _hubContext = hubContext;
             _userManager = userManager;
+            _logger = logger;
         }
 
         #region Core Notification Methods
@@ -30,15 +34,27 @@ namespace ForexExchange.Services
         /// </summary>
         public async Task SendToAllAdminsAsync(string title, string message, string type = "info", object? data = null)
         {
-            await _hubContext.Clients.Groups("Admin", "Manager", "Staff")
-                .SendAsync("ReceiveNotification", new
-                {
-                    title = title,
-                    message = message,
-                    type = type,
-                    timestamp = DateTime.Now,
-                    data = data
-                });
+            try
+            {
+                _logger.LogInformation("Sending notification to Admins group: {Title} - {Message}", title, message);
+                
+                // Send to the "Admins" group (set up in NotificationHub)
+                await _hubContext.Clients.Group("Admins")
+                    .SendAsync("ReceiveNotification", new
+                    {
+                        title = title,
+                        message = message,
+                        type = type,
+                        timestamp = DateTime.Now,
+                        data = data
+                    });
+                    
+                _logger.LogInformation("Notification sent successfully to Admins group");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending notification to Admins group: {Title}", title);
+            }
         }
 
         /// <summary>
@@ -66,21 +82,34 @@ namespace ForexExchange.Services
         /// </summary>
         public async Task SendOrderNotificationAsync(Order order, string action)
         {
-            var title = GetOrderNotificationTitle(action);
-            var message = GetOrderNotificationMessage(order, action);
-            var type = GetOrderNotificationType(action);
-
-            await SendToAllAdminsAsync(title, message, type, new
+            try
             {
-                orderId = order.Id,
-                customerId = order.CustomerId,
-                customerName = order.Customer?.FullName,
-                action = action,
-                amount = order.Amount,
-                fromCurrency = order.FromCurrency?.Code,
-                toCurrency = order.ToCurrency?.Code,
-                timestamp = DateTime.Now
-            });
+                _logger.LogInformation("Preparing to send order notification for Order {OrderId}, Action: {Action}", order.Id, action);
+                
+                var title = GetOrderNotificationTitle(action);
+                var message = GetOrderNotificationMessage(order, action);
+                var type = GetOrderNotificationType(action);
+
+                _logger.LogInformation("Order notification details - Title: {Title}, Type: {Type}", title, type);
+
+                await SendToAllAdminsAsync(title, message, type, new
+                {
+                    orderId = order.Id,
+                    customerId = order.CustomerId,
+                    customerName = order.Customer?.FullName,
+                    action = action,
+                    amount = order.Amount,
+                    fromCurrency = order.FromCurrency?.Code,
+                    toCurrency = order.ToCurrency?.Code,
+                    timestamp = DateTime.Now
+                });
+                
+                _logger.LogInformation("Order notification sent successfully for Order {OrderId}", order.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending order notification for Order {OrderId}, Action: {Action}", order.Id, action);
+            }
         }
 
         #endregion
