@@ -13,6 +13,7 @@
                 </div>
                 <div class="card-body">
                     <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
                         @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Count > 0)) {
                             <div class="alert alert-danger mt-2" id="validationSummaryBox">
                                 <ul class="mb-0">
@@ -34,7 +35,6 @@
                             </div>
                         }
                         <div class="alert alert-info mt-2" id="currencyPairMsgBox" style="display: none;"></div>
-                        <div class="alert alert-danger mt-2" id="validationSummaryBox" style="display: none;"></div>
 
                         <div class="row mb-3">
                             <!-- Currency Pool Information -->
@@ -256,6 +256,8 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
+    <!-- Include Currency Formatter -->
+    <script src="~/js/currency-formatter.js"></script>
 
     <script>
         let currentRate = null;
@@ -270,24 +272,25 @@
         let calcToCurrencyCode = null;
         
         function initializeCalculator() {
-            // Get current selections from main form
-            const fromSelect = document.getElementById('fromCurrencySelect');
-            const toSelect = document.getElementById('toCurrencySelect');
+            // Get current selections from main form using jQuery
+            const fromSelect = $('#fromCurrencySelect');
+            const toSelect = $('#toCurrencySelect');
 
             // Check if both currencies are selected in main form
-            if (!fromSelect.value || !toSelect.value) {
+            if (!fromSelect.val() || !toSelect.val()) {
                 alert('لطفا ابتدا ارزهای مبدا و مقصد را انتخاب کنید');
                 return;
             }
 
-            // Get currency codes and names from main form
-            const fromOption = fromSelect.options[fromSelect.selectedIndex];
-            const toOption = toSelect.options[toSelect.selectedIndex];
+            // Get currency codes and names from main form using Select2 data
+            const fromData = fromSelect.select2('data')[0];
+            const toData = toSelect.select2('data')[0];
             
-            const fromCode = fromOption.text.split(' - ')[0].trim(); // What user pays
-            const toCode = toOption.text.split(' - ')[0].trim(); // What user gets
-            const fromName = fromOption.text.split(' - ')[1] ? fromOption.text.split(' - ')[1].trim() : fromCode;
-            const toName = toOption.text.split(' - ')[1] ? toOption.text.split(' - ')[1].trim() : toCode;
+            // Extract code from text (format: "CODE - Name")
+            const fromCode = fromData.text.split(' - ')[0].trim(); // What user pays
+            const toCode = toData.text.split(' - ')[0].trim(); // What user gets
+            const fromName = fromData.text.split(' - ')[1] ? fromData.text.split(' - ')[1].trim() : fromCode;
+            const toName = toData.text.split(' - ')[1] ? toData.text.split(' - ')[1].trim() : toCode;
             
             // Store for calculations
             calcFromCurrencyCode = fromCode; // What user pays (IRR)
@@ -313,8 +316,7 @@
 
             // Pre-fill calculator with main form values
             if (currentAmount) {
-                const formattedAmount = ForexCurrencyFormatter.formatForInput(currentAmount, fromCode);
-                document.getElementById('calcFromAmount').value = formattedAmount; // Amount goes to "From" currency
+                document.getElementById('calcFromAmount').value = currentAmount; // Amount goes to "From" currency
             }
 
             if (currentRate && currentRate > 0) {
@@ -370,7 +372,7 @@
                 }
                 
                 // Update from amount input using the universal formatter
-                document.getElementById('calcFromAmount').value = ForexCurrencyFormatter.formatForInput(fromAmount, calcFromCurrencyCode);
+                document.getElementById('calcFromAmount').value = fromAmount;
                 
                 // Show calculation result
                 showCalculationResult(toAmount, fromAmount, rate);
@@ -408,7 +410,7 @@
                 }
                 
                 // Update to amount input using the universal formatter
-                document.getElementById('calcToAmount').value = ForexCurrencyFormatter.formatForInput(toAmount, calcToCurrencyCode);
+                document.getElementById('calcToAmount').value = toAmount;
                 
                 // Show calculation result
                 showCalculationResult(toAmount, fromAmount, rate);
@@ -519,15 +521,192 @@
             return formatCurrency(num, fromCurrencyCode);
         }
 
+        // Calculate FROM amount based on TO amount and rate
+        function calculateFromToAmount() {
+            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
+            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
+            
+            if (toAmount && rate && rate > 0) {
+                let fromAmount;
+                
+                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // rate = 1 foreign currency = X IRR
+                    // fromAmount (IRR) = toAmount (foreign) * rate
+                    fromAmount = toAmount * rate;
+                    fromAmount = Math.round(fromAmount); // Round IRR amounts
+                } else {
+                    // FROM is foreign currency, TO is IRR
+                    // rate = 1 foreign currency = X IRR
+                    // fromAmount (foreign) = toAmount (IRR) / rate
+                    fromAmount = toAmount / rate;
+                    fromAmount = Math.round(fromAmount * 1000) / 1000; // Round to 3 decimal places
+                }
+                
+                // Update from amount input using the universal formatter
+                document.getElementById('calcFromAmount').value = fromAmount;
+                
+                // Show calculation result
+                showCalculationResult(toAmount, fromAmount, rate);
+                
+                // Auto-update main form with FROM amount (what user is paying)
+                updateMainForm(fromAmount, rate);
+                
+                return fromAmount;
+            } else {
+                document.getElementById('calcResult').style.display = 'none';
+                return null;
+            }
+        }
+
+        // Calculate TO amount based on FROM amount and rate
+        function calculateToFromAmount() {
+            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
+            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
+            
+            if (fromAmount && rate && rate > 0) {
+                let toAmount;
+                
+                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // rate = 1 foreign currency = X IRR
+                    // toAmount (foreign) = fromAmount (IRR) / rate
+                    toAmount = fromAmount / rate;
+                    toAmount = Math.round(toAmount * 1000) / 1000; // Round to 3 decimal places
+                } else {
+                    // FROM is foreign currency, TO is IRR
+                    // rate = 1 foreign currency = X IRR
+                    // toAmount (IRR) = fromAmount (foreign) * rate
+                    toAmount = fromAmount * rate;
+                    toAmount = Math.round(toAmount); // Round IRR amounts
+                }
+                
+                // Update to amount input using the universal formatter
+                document.getElementById('calcToAmount').value = toAmount;
+                
+                // Show calculation result
+                showCalculationResult(toAmount, fromAmount, rate);
+                
+                // Auto-update main form with FROM amount (what user is paying)
+                updateMainForm(fromAmount, rate);
+                
+                return toAmount;
+            } else {
+                document.getElementById('calcResult').style.display = 'none';
+                return null;
+            }
+        }
+
+        // Calculate rate based on both amounts
+        function calculateRateFromAmounts() {
+            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
+            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
+            
+            if (fromAmount && toAmount && fromAmount > 0 && toAmount > 0) {
+                let rate;
+                
+                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // rate = 1 foreign currency = X IRR
+                    // rate = fromAmount (IRR) / toAmount (foreign)
+                    rate = fromAmount / toAmount;
+                } else {
+                    // FROM is foreign currency, TO is IRR
+                    // rate = 1 foreign currency = X IRR
+                    // rate = toAmount (IRR) / fromAmount (foreign)
+                    rate = toAmount / fromAmount;
+                }
+                
+                // Always round IRR rates
+                rate = Math.round(rate);
+                
+                // Update rate input
+                document.getElementById('calcRate').value = rate;
+                
+                // Show calculation result
+                showCalculationResult(toAmount, fromAmount, rate);
+                
+                // Auto-update main form with FROM amount (what user is paying)
+                updateMainForm(fromAmount, rate);
+                
+                return rate;
+            } else {
+                document.getElementById('calcResult').style.display = 'none';
+                return null;
+            }
+        }
+
+        // Show calculation result display
+        function showCalculationResult(toAmount, fromAmount, rate) {
+            // Use the universal currency formatter
+            const formattedToAmount = formatCurrency(toAmount, calcToCurrencyCode);
+            const formattedFromAmount = formatCurrency(fromAmount, calcFromCurrencyCode);
+            const formattedRate = formatCurrency(rate, 'IRR'); // Rate is always displayed as IRR format
+                
+            const formula = `${formattedToAmount} ${calcToCurrencyCode} × ${formattedRate} = ${formattedFromAmount} ${calcFromCurrencyCode}`;
+            
+            // Always display rate as "1 Non-IRR = X IRR"
+            const nonIrrCode = calcFromCurrencyCode.toUpperCase() === 'IRR' ? calcToCurrencyCode : calcFromCurrencyCode;
+            const details = `نرخ: ۱ ${nonIrrCode} = ${formattedRate} IRR`;
+            
+            document.getElementById('calculationFormula').textContent = formula;
+            document.getElementById('calculationDetails').textContent = details;
+            document.getElementById('calcResult').style.display = 'block';
+        }
+
+        // Update main form with calculator values
+        function updateMainForm(fromAmount, rate, isFromAmountSource = false) {
+            // Put FROM amount back to main form (this represents what user is paying/receiving)
+            document.getElementById('amountInput').value = fromAmount;
+            
+            // Convert calculator rate back to main form format
+            let mainFormRate;
+            if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                // FROM is IRR, TO is foreign currency
+                // Calculator rate: 1 foreign = X IRR
+                // Main form rate: 1 IRR = Y foreign
+                mainFormRate = 1 / rate;
+            } else {
+                // FROM is foreign currency, TO is IRR
+                // Calculator rate: 1 foreign = X IRR
+                // Main form rate: 1 foreign = X IRR (same)
+                mainFormRate = rate;
+            }
+            
+            document.getElementById('rateInput').value = mainFormRate;
+            document.getElementById('hiddenRate').value = mainFormRate;
+            
+            // Trigger calculation update in main form
+            updateCalculation();
+        }
+
+        // Helper function to update rate input step based on currency
+        function updateRateInputStep(fromCurrencyCode = null) {
+            // Since we use step="any", we don't need to update the HTML step attribute
+            // But we keep this function for potential future use or rounding logic
+            return;
+        }
+
 
 
 
         function showCurrencyPoolInfo(fromCurrencyId, toCurrencyId) {
-            // Get currency codes from dropdown values (not text)
-            const fromSelect = document.getElementById('fromCurrencySelect');
-            const toSelect = document.getElementById('toCurrencySelect');
-            const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
-            const toCode = toSelect.value ? toSelect.options[toSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+            // Get currency codes from Select2 data
+            const fromSelect = $('#fromCurrencySelect');
+            const toSelect = $('#toCurrencySelect');
+            
+            let fromCode = null, toCode = null;
+            
+            if (fromSelect.val()) {
+                const fromData = fromSelect.select2('data')[0];
+                fromCode = fromData.text.split(' - ')[0].trim();
+            }
+            
+            if (toSelect.val()) {
+                const toData = toSelect.select2('data')[0];
+                toCode = toData.text.split(' - ')[0].trim();
+            }
+            
             // Debug logs
             console.log('currencyPools:', currencyPools);
             console.log('fromCode:', fromCode, 'toCode:', toCode);
@@ -553,18 +732,29 @@
         }
 
         function loadExchangeRate(fromCurrencyId, toCurrencyId) {
+            console.log('loadExchangeRate called with:', fromCurrencyId, toCurrencyId);
             document.getElementById('selectedExchangeRate').style.display = 'block';
             document.getElementById('rateLoader').style.display = 'inline-block';
             document.getElementById('rateInfo').innerHTML = 'در حال بارگذاری نرخ ارز...';
-            fetch(`/Orders/GetExchangeRate?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}`)
-                .then(response => response.json())
+            const url = `/Orders/GetExchangeRate?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}&orderType=Buy`;
+            console.log('Fetching rate from URL:', url);
+            fetch(url)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Rate data received:', data);
                     document.getElementById('rateLoader').style.display = 'none';
                     if (data.success) {
                         if (data.rate > 0) {
-                            // Get from currency code for conditional rounding
-                            const fromSelect = document.getElementById('fromCurrencySelect');
-                            const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+                            // Get from currency code for conditional rounding using Select2
+                            const fromSelect = $('#fromCurrencySelect');
+                            let fromCode = null;
+                            if (fromSelect.val()) {
+                                const fromData = fromSelect.select2('data')[0];
+                                fromCode = fromData.text.split(' - ')[0].trim();
+                            }
                             
                             // Determine rounding precision based on currency
                             const roundingFactor = (fromCode && fromCode.toUpperCase() === 'IRR') ? 10000000 : 100;
@@ -638,8 +828,8 @@
 
         // Function to update button states based on currency selection
         function updateButtonStates() {
-            const fromCurrency = document.getElementById('fromCurrencySelect').value;
-            const toCurrency = document.getElementById('toCurrencySelect').value;
+            const fromCurrency = $('#fromCurrencySelect').val();
+            const toCurrency = $('#toCurrencySelect').val();
             const hasValidCurrencies = fromCurrency && toCurrency && fromCurrency !== toCurrency;
             
             // Enable/disable buttons based on currency selection
@@ -647,31 +837,39 @@
             document.getElementById('openCalculatorBtn').disabled = !hasValidCurrencies;
         }
 
-        // Add event listeners
-        document.getElementById('fromCurrencySelect').addEventListener('change', function () {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+        // Add event listeners - Use Select2 events since Select2 replaces the original elements
+        $('#fromCurrencySelect').on('select2:select', function (e) {
+            console.log('From currency changed via Select2');
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
+            console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
             updateButtonStates(); // Update button states
             
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                console.log('Loading exchange rate...');
                 loadExchangeRate(fromCurrency, toCurrency);
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
+                console.log('Hiding rate display - invalid currencies');
                 document.getElementById('selectedExchangeRate').style.display = 'none';
                 document.getElementById('calculationResult').style.display = 'none';
                 document.getElementById('currencyPoolInfo').style.display = 'none';
             }
         });
         
-        document.getElementById('toCurrencySelect').addEventListener('change', function () {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+        $('#toCurrencySelect').on('select2:select', function (e) {
+            console.log('To currency changed via Select2');
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
+            console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
             updateButtonStates(); // Update button states
             
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                console.log('Loading exchange rate...');
                 loadExchangeRate(fromCurrency, toCurrency);
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
+                console.log('Hiding rate display - invalid currencies');
                 document.getElementById('selectedExchangeRate').style.display = 'none';
                 document.getElementById('calculationResult').style.display = 'none';
                 document.getElementById('currencyPoolInfo').style.display = 'none';
@@ -683,9 +881,13 @@
         document.getElementById('rateInput').addEventListener('input', function() {
             var rateValue = parseFloat(this.value);
             if (!isNaN(rateValue) && rateValue > 0) {
-                // Get from currency code to determine rounding precision
-                const fromSelect = document.getElementById('fromCurrencySelect');
-                const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
+                // Get from currency code to determine rounding precision using Select2
+                const fromSelect = $('#fromCurrencySelect');
+                let fromCode = null;
+                if (fromSelect.val()) {
+                    const fromData = fromSelect.select2('data')[0];
+                    fromCode = fromData.text.split(' - ')[0].trim();
+                }
                 
                 // Determine rounding precision based on currency
                 const roundingFactor = (fromCode && fromCode.toUpperCase() === 'IRR') ? 10000000 : 100;
@@ -702,8 +904,9 @@
 
         // Add event listener for load suggested rate button
         document.getElementById('loadSuggestedRateBtn').addEventListener('click', function() {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
+            console.log('Load suggested rate clicked - From:', fromCurrency, 'To:', toCurrency);
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
                 loadExchangeRate(fromCurrency, toCurrency);
             } else {
@@ -713,8 +916,8 @@
 
         // Add form submission validation
         document.querySelector('form').addEventListener('submit', function (e) {
-            var fromCurrency = document.getElementById('fromCurrencySelect').value;
-            var toCurrency = document.getElementById('toCurrencySelect').value;
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
             var amount = document.getElementById('amountInput').value;
             var customerId = document.getElementById('customerSelect').value;
             var rate = document.getElementById('rateInput').value;
@@ -759,8 +962,8 @@
         // Calculator event listeners
         document.getElementById('openCalculatorBtn').addEventListener('click', function() {
             // Double-check currencies are selected (button should be disabled if not)
-            const fromCurrency = document.getElementById('fromCurrencySelect').value;
-            const toCurrency = document.getElementById('toCurrencySelect').value;
+            const fromCurrency = $('#fromCurrencySelect').val();
+            const toCurrency = $('#toCurrencySelect').val();
             
             if (!fromCurrency || !toCurrency || fromCurrency === toCurrency) {
                 alert('لطفا ابتدا ارزهای مبدا و مقصد را انتخاب کنید');
@@ -787,7 +990,7 @@
             // Format the input value based on currency type using the universal formatter
             let value = parseFloat(this.value);
             if (!isNaN(value)) {
-                this.value = ForexCurrencyFormatter.formatForInput(value, calcToCurrencyCode);
+                this.value = value;
             }
             
             // When TO amount changes, calculate FROM amount based on rate
@@ -798,7 +1001,7 @@
             // Format the input value based on currency type using the universal formatter
             let value = parseFloat(this.value);
             if (!isNaN(value)) {
-                this.value = ForexCurrencyFormatter.formatForInput(value, calcFromCurrencyCode);
+                this.value = value;
             }
             
             // When FROM amount changes, calculate TO amount based on rate
