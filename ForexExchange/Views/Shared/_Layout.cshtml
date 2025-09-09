@@ -457,6 +457,28 @@
                         }
                     },
                     {
+                        title: '⚠️ موجودی استخر صفر شد',
+                        message: 'موجودی USD به صفر رسید!\n\n5,000 → 0\n\nنیاز به تامین فوری',
+                        type: 'warning',
+                        timestamp: new Date(),
+                        data: {
+                            currencyCode: 'USD',
+                            oldBalance: 5000,
+                            newBalance: 0
+                        }
+                    },
+                    {
+                        title: '🚨 موجودی استخر منفی شد',
+                        message: 'موجودی EUR منفی شد!\n\n100 → -500\n\nوضعیت اضطراری',
+                        type: 'error',
+                        timestamp: new Date(),
+                        data: {
+                            currencyCode: 'EUR',
+                            oldBalance: 100,
+                            newBalance: -500
+                        }
+                    },
+                    {
                         title: 'خطا در پردازش',
                         message: 'خطا در پردازش درخواست\n\nلطفاً دوباره تلاش کنید',
                         type: 'error',

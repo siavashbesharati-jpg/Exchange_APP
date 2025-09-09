@@ -494,6 +494,8 @@ namespace ForexExchange.Services
                 "balance_updated" => "موجودی استخر بروزرسانی شد",
                 "balance_increased" => "موجودی استخر افزایش یافت",
                 "balance_decreased" => "موجودی استخر کاهش یافت",
+                "balance_zero" => "⚠️ موجودی استخر صفر شد",
+                "balance_below_zero" => "🚨 موجودی استخر منفی شد",
                 _ => "اعلان موجودی استخر"
             };
         }
@@ -508,6 +510,8 @@ namespace ForexExchange.Services
                 "balance_updated" => $"موجودی {currencyCode} بروزرسانی شد\n\n{oldBalance:N0} → {newBalance:N0}",
                 "balance_increased" => $"موجودی {currencyCode} افزایش یافت\n\n+{difference:N0} = {newBalance:N0}",
                 "balance_decreased" => $"موجودی {currencyCode} کاهش یافت\n\n-{Math.Abs(difference):N0} = {newBalance:N0}",
+                "balance_zero" => $"موجودی {currencyCode} به صفر رسید!\n\n{oldBalance:N0} → 0\n\nنیاز به تامین فوری",
+                "balance_below_zero" => $"موجودی {currencyCode} منفی شد!\n\n{oldBalance:N0} → {newBalance:N0}\n\nوضعیت اضطراری",
                 _ => $"موجودی {currencyCode} تغییر یافت\n\n{newBalance:N0}"
             };
         }
@@ -518,6 +522,8 @@ namespace ForexExchange.Services
             {
                 "balance_increased" => "success",
                 "balance_decreased" => "warning",
+                "balance_zero" => "warning",
+                "balance_below_zero" => "error",
                 "balance_updated" => "info",
                 _ => "info"
             };

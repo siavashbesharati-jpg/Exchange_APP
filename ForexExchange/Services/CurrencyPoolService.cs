@@ -11,11 +11,16 @@ namespace ForexExchange.Services
     {
         private readonly ForexDbContext _context;
         private readonly ILogger<CurrencyPoolService> _logger;
+        private readonly AdminNotificationService _adminNotificationService;
 
-        public CurrencyPoolService(ForexDbContext context, ILogger<CurrencyPoolService> logger)
+        public CurrencyPoolService(
+            ForexDbContext context, 
+            ILogger<CurrencyPoolService> logger,
+            AdminNotificationService adminNotificationService)
         {
             _context = context;
             _logger = logger;
+            _adminNotificationService = adminNotificationService;
         }
 
         /// <summary>
@@ -30,9 +35,10 @@ namespace ForexExchange.Services
             {
                 _logger.LogWarning($"Currency pool not found for currency ID {currencyId}");
                 throw new InvalidOperationException($"Currency pool not found for currency ID {currencyId}");
-
-
             }
+
+            // Store old balance for notification
+            decimal oldBalance = pool.Balance;
 
             // Update balances based on transaction type
             if (transactionType == PoolTransactionType.Buy)
@@ -57,6 +63,9 @@ namespace ForexExchange.Services
             await _context.SaveChangesAsync();
 
             _logger.LogInformation($"Pool updated for currency ID {currencyId}: Balance={pool.Balance}, Type={transactionType}, Amount={amount}");
+
+            // Check for critical balance levels and send notifications
+            await CheckAndSendBalanceNotifications(pool, oldBalance);
 
             return pool;
         }
@@ -459,6 +468,41 @@ namespace ForexExchange.Services
             {
                 _logger.LogError(ex, $"Error processing accounting document {document.Id}");
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Check balance levels and send appropriate notifications
+        /// بررسی سطح موجودی و ارسال اعلان‌های مناسب
+        /// </summary>
+        private async Task CheckAndSendBalanceNotifications(CurrencyPool pool, decimal oldBalance)
+        {
+            try
+            {
+                // Check if balance reached zero or went below zero
+                if (pool.Balance == 0 && oldBalance > 0)
+                {
+                    // Balance just reached zero
+                    await _adminNotificationService.SendPoolBalanceNotificationAsync(pool, oldBalance, pool.Balance, "balance_zero");
+                    _logger.LogWarning($"Currency pool {pool.Currency?.Code} balance reached ZERO! Old: {oldBalance}, New: {pool.Balance}");
+                }
+                else if (pool.Balance < 0 && oldBalance >= 0)
+                {
+                    // Balance just went below zero
+                    await _adminNotificationService.SendPoolBalanceNotificationAsync(pool, oldBalance, pool.Balance, "balance_below_zero");
+                    _logger.LogError($"Currency pool {pool.Currency?.Code} balance is NEGATIVE! Old: {oldBalance}, New: {pool.Balance}");
+                }
+                else if (pool.Balance < 0 && oldBalance < 0)
+                {
+                    // Balance was already negative but changed (for monitoring)
+                    await _adminNotificationService.SendPoolBalanceNotificationAsync(pool, oldBalance, pool.Balance, "balance_below_zero");
+                    _logger.LogError($"Currency pool {pool.Currency?.Code} negative balance updated! Old: {oldBalance}, New: {pool.Balance}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error sending balance notification for pool {pool.Id}");
+                // Don't throw here - we don't want notification errors to break the transaction
             }
         }
     }
