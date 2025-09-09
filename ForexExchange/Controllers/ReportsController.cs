@@ -384,5 +384,91 @@ namespace ForexExchange.Controllers
                 return BadRequest("خطا در تولید فایل Excel");
             }
         }
+
+        // GET: Reports/GetSystemBalance
+        [HttpGet]
+        public async Task<IActionResult> GetSystemBalance(string targetCurrency = "IRR")
+        {
+            try
+            {
+                // Get all currency pools with their currencies
+                var currencyPools = await _context.CurrencyPools
+                    .Include(cp => cp.Currency)
+                    .Where(cp => cp.Balance != 0) // Only non-zero balances
+                    .ToListAsync();
+
+                if (!currencyPools.Any())
+                {
+                    return Json(new { success = true, balance = 0m });
+                }
+
+                decimal totalBalance = 0m;
+
+                // Find the target currency
+                var targetCurrencyEntity = await _context.Currencies
+                    .FirstOrDefaultAsync(c => c.Code == targetCurrency);
+
+                if (targetCurrencyEntity == null)
+                {
+                    return Json(new { success = false, message = "Target currency not found" });
+                }
+
+                foreach (var pool in currencyPools)
+                {
+                    decimal convertedAmount = 0m;
+
+                    if (pool.Currency.Code == targetCurrency)
+                    {
+                        // Same currency, no conversion needed
+                        convertedAmount = pool.Balance;
+                    }
+                    else
+                    {
+                        // Convert from pool currency to target currency
+                        var exchangeRate = await GetExchangeRate(pool.CurrencyId, targetCurrencyEntity.Id);
+                        if (exchangeRate.HasValue)
+                        {
+                            convertedAmount = pool.Balance * exchangeRate.Value;
+                        }
+                        else
+                        {
+                            // If no direct rate, try reverse rate
+                            var reverseRate = await GetExchangeRate(targetCurrencyEntity.Id, pool.CurrencyId);
+                            if (reverseRate.HasValue && reverseRate.Value > 0)
+                            {
+                                convertedAmount = pool.Balance / reverseRate.Value;
+                            }
+                            // If no rate found, skip this currency (logged but continues)
+                            else
+                            {
+                                _logger.LogWarning($"No exchange rate found between {pool.Currency.Code} and {targetCurrency}");
+                                continue;
+                            }
+                        }
+                    }
+
+                    totalBalance += convertedAmount;
+                }
+
+                return Json(new { success = true, balance = Math.Round(totalBalance, 2) });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating system balance for currency: {Currency}", targetCurrency);
+                return Json(new { success = false, message = "خطا در محاسبه تراز سیستم" });
+            }
+        }
+
+        // Helper method to get exchange rate between two currencies
+        private async Task<decimal?> GetExchangeRate(int fromCurrencyId, int toCurrencyId)
+        {
+            var rate = await _context.ExchangeRates
+                .Where(er => er.FromCurrencyId == fromCurrencyId && er.ToCurrencyId == toCurrencyId)
+                .OrderByDescending(er => er.UpdatedAt)
+                .Select(er => er.Rate)
+                .FirstOrDefaultAsync();
+
+            return rate == 0 ? null : rate;
+        }
     }
 }

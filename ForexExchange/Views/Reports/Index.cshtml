@@ -308,6 +308,12 @@
             loadFilterOptions();
             loadOrdersData();
             initializeCharts();
+            loadSystemBalance(); // Load initial system balance
+            
+            // Add currency selector change event
+            $('#currencySelector').change(function() {
+                loadSystemBalance();
+            });
         });
 
         // Load filter dropdown options
@@ -368,6 +374,31 @@
             $('#fromDate').val('@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")');
             $('#toDate').val('@DateTime.Now.ToString("yyyy-MM-dd")');
             applyFilters();
+        }
+
+        // Load system balance converted to selected currency
+        function loadSystemBalance() {
+            const selectedCurrency = $('#currencySelector').val();
+            
+            $.ajax({
+                url: '/Reports/GetSystemBalance',
+                type: 'GET',
+                data: { targetCurrency: selectedCurrency },
+                beforeSend: function() {
+                    $('#systemBalance').html('<div class="spinner-border spinner-border-sm" role="status"></div>');
+                },
+                success: function(data) {
+                    if (data.success) {
+                        $('#systemBalance').text(data.balance.toLocaleString('fa-IR') + ' ' + selectedCurrency);
+                    } else {
+                        $('#systemBalance').text('خطا در بارگذاری');
+                        console.error('Error loading system balance:', data.message);
+                    }
+                },
+                error: function() {
+                    $('#systemBalance').text('خطا در اتصال');
+                }
+            });
         }
 
         // Load orders data
