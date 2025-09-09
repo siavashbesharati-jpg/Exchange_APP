@@ -38,25 +38,39 @@ body {
 .currency-pool-section {
     font-size: 0.85rem;
     transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 1px solid #dee2e6 !important;
 }
 
 .currency-pool-item {
     padding: 0.5rem 0.25rem;
     transition: background-color 0.2s ease;
+    border-radius: 4px;
 }
 
 .currency-pool-item:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
 }
 
 .currency-pool-balance {
     font-weight: 600;
     font-size: 0.9rem;
+    color: #2c3e50;
 }
 
 .currency-pool-code {
     font-size: 0.75rem;
     opacity: 0.8;
+    color: #6c757d;
+}
+
+/* Footer separator styling */
+.footer-separator {
+    height: 1px;
+    background: linear-gradient(to right, transparent 0%, #dee2e6 20%, #dee2e6 80%, transparent 100%);
+    margin: 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 @media (max-width: 576px) {
@@ -70,5 +84,10 @@ body {
     
     .currency-pool-code {
         font-size: 0.7rem;
+    }
+    
+    /* Increase bottom padding for mobile to account for taller footer */
+    .container {
+        padding-bottom: 140px !important;
     }
 }
