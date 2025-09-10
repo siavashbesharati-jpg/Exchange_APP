@@ -75,6 +75,9 @@ builder.Services.AddScoped<AdminNotificationService>();
 builder.Services.AddScoped<ICustomerBalanceService, CustomerBalanceService>();
 builder.Services.AddScoped<IBankAccountBalanceService, BankAccountBalanceService>();
 builder.Services.AddScoped<IShareableLinkService, ShareableLinkService>();
+// Push notification services
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+builder.Services.AddScoped<IVapidService, VapidService>();
 
 
 var app = builder.Build();
@@ -84,11 +87,11 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
-    
+
     try
     {
         var dbContext = services.GetRequiredService<ForexDbContext>();
-        
+
         // Check if there are pending migrations
         var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
         if (pendingMigrations.Any())
@@ -98,7 +101,7 @@ using (var scope = app.Services.CreateScope())
             {
                 logger.LogInformation("Pending migration: {Migration}", migration);
             }
-            
+
             // Apply all pending migrations
             await dbContext.Database.MigrateAsync();
             logger.LogInformation("All migrations applied successfully");
@@ -108,12 +111,12 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Database is up to date. No pending migrations found");
         }
 
-      
+
 
         // // Seed initial data
-        // var dataSeedService = services.GetRequiredService<IDataSeedService>();
-        // await dataSeedService.SeedDataAsync();
-        
+        var dataSeedService = services.GetRequiredService<IDataSeedService>();
+        await dataSeedService.SeedDataAsync();
+
         logger.LogInformation("Application startup completed successfully");
     }
     catch (Exception ex)
@@ -129,10 +132,10 @@ if (!app.Environment.IsDevelopment())
     // SECURITY WARNING: This shows detailed exception information in production
     // Remove this configuration before deploying to a public production environment
     app.UseDeveloperExceptionPage();
-    
+
     // Alternative: Use custom error handling with detailed logging
     // app.UseExceptionHandler("/Home/Error");
-    
+
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }

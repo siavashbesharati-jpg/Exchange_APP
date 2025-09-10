@@ -309,6 +309,7 @@
 
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/admin-notifications.js" asp-append-version="true"></script>
+    <script src="~/js/web-push-manager.js" asp-append-version="true"></script>
 
     <!-- Select2 Global Initialization -->
     <script src="~/js/select2-init.js" asp-append-version="true"></script>
@@ -599,6 +600,10 @@
         <div class="modern-notification-test-fab" onclick="testModernNotifications()">
             <i class="fas fa-bell"></i>
         </div>
+        
+        <div class="push-notification-test-fab" onclick="showPushNotificationSettings()">
+            <i class="fas fa-mobile-alt"></i>
+        </div>
     }
 
     <style>
@@ -634,6 +639,37 @@
                 height: 48px;
                 font-size: 18px;
             }
+            
+            .push-notification-test-fab {
+                bottom: 220px;
+                width: 48px;
+                height: 48px;
+                font-size: 18px;
+            }
+        }
+
+        .push-notification-test-fab {
+            position: fixed;
+            bottom: 210px;
+            left: 20px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(145deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1050;
+            font-size: 20px;
+        }
+
+        .push-notification-test-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.6);
         }
     </style>
 
@@ -714,6 +750,100 @@
                 alert('Notification manager not initialized');
             }
         }
+
+        function testPushNotifications() {
+            if (window.webPushManager) {
+                if (window.webPushManager.isSubscribed) {
+                    window.webPushManager.testPushNotification();
+                } else {
+                    Swal.fire({
+                        title: 'اعلان‌های فشاری',
+                        text: 'برای تست اعلان‌های فشاری، ابتدا باید آن‌ها را فعال کنید.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'فعال کردن',
+                        cancelButtonText: 'انصراف',
+                        customClass: {
+                            popup: 'rtl-swal-popup',
+                            title: 'rtl-swal-title'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.webPushManager.requestPermissionAndSubscribe();
+                        }
+                    });
+                }
+            } else {
+                alert('Push notification manager not available');
+            }
+        }
+
+        function showPushNotificationSettings() {
+            if (window.webPushManager && window.webPushManager.isSupported) {
+                const status = window.webPushManager.getSubscriptionStatus();
+                
+                Swal.fire({
+                    title: 'تنظیمات اعلان‌های فشاری',
+                    html: `
+                        <div class="text-right" style="direction: rtl;">
+                            <p><strong>وضعیت پشتیبانی:</strong> ${status.isSupported ? 'پشتیبانی می‌شود' : 'پشتیبانی نمی‌شود'}</p>
+                            <p><strong>وضعیت مجوز:</strong> ${status.permission}</p>
+                            <p><strong>وضعیت اشتراک:</strong> ${status.isSubscribed ? 'فعال' : 'غیرفعال'}</p>
+                            <hr>
+                            <div class="d-grid gap-2">
+                                <button onclick="window.webPushManager.requestPermissionAndSubscribe()" class="btn btn-success btn-sm" ${status.isSubscribed ? 'disabled' : ''}>
+                                    فعال کردن اعلان‌های فشاری
+                                </button>
+                                <button onclick="window.webPushManager.unsubscribeFromPush()" class="btn btn-warning btn-sm" ${!status.isSubscribed ? 'disabled' : ''}>
+                                    غیرفعال کردن اعلان‌های فشاری
+                                </button>
+                                <button onclick="window.webPushManager.testPushNotification()" class="btn btn-info btn-sm" ${!status.isSubscribed ? 'disabled' : ''}>
+                                    تست اعلان فشاری
+                                </button>
+                            </div>
+                        </div>
+                    `,
+                    icon: 'info',
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'بستن',
+                    customClass: {
+                        popup: 'rtl-swal-popup',
+                        title: 'rtl-swal-title',
+                        htmlContainer: 'rtl-swal-content'
+                    },
+                    width: '500px'
+                });
+            } else {
+                Swal.fire({
+                    title: 'عدم پشتیبانی',
+                    text: 'متأسفانه مرورگر شما از اعلان‌های فشاری پشتیبانی نمی‌کند.',
+                    icon: 'error',
+                    customClass: {
+                        popup: 'rtl-swal-popup',
+                        title: 'rtl-swal-title'
+                    }
+                });
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Initialize push notifications after a short delay
+            setTimeout(() => {
+                if (window.webPushManager && window.webPushManager.isSupported) {
+                    // Check if user has been prompted before
+                    const hasBeenPrompted = localStorage.getItem('pushNotificationPrompted');
+                    
+                    if (!hasBeenPrompted && Notification.permission === 'default') {
+                        // Show push notification setup after 5 seconds
+                        setTimeout(() => {
+                            window.webPushManager.showNotificationSetup();
+                            localStorage.setItem('pushNotificationPrompted', 'true');
+                        }, 5000);
+                    }
+                }
+            }, 1000);
+        });
 
 
 
