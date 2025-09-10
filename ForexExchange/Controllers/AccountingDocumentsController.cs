@@ -1,13 +1,11 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using Microsoft.AspNetCore.Authorization;
-using System.IO;
-using Microsoft.AspNetCore.Http;
 using ForexExchange.Services;
+using Microsoft.AspNetCore.Identity;
+using ForexExchange.Services.Notifications;
 
 namespace ForexExchange.Controllers
 {
@@ -19,20 +17,25 @@ namespace ForexExchange.Controllers
         private readonly IBankAccountBalanceService _bankAccountBalanceService;
         private readonly IOcrService _ocrService;
         private readonly AdminNotificationService _adminNotificationService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationHub _notificationHub;
 
         public AccountingDocumentsController(
             ForexDbContext context,
             ICustomerBalanceService customerBalanceService,
             IBankAccountBalanceService bankAccountBalanceService,
             IOcrService ocrService,
-            AdminNotificationService adminNotificationService)
+            AdminNotificationService adminNotificationService,
+            UserManager<ApplicationUser> userManager,
+            INotificationHub notificationHub)
         {
             _context = context;
             _customerBalanceService = customerBalanceService;
             _bankAccountBalanceService = bankAccountBalanceService;
             _ocrService = ocrService;
             _adminNotificationService = adminNotificationService;
-            _ocrService = ocrService;
+            _userManager = userManager;
+            _notificationHub = notificationHub;
         }
 
         // GET: AccountingDocuments
@@ -291,8 +294,12 @@ namespace ForexExchange.Controllers
                 _context.Add(accountingDocument);
                 await _context.SaveChangesAsync();
                 
-                // Send notification to admins about new accounting document
-                await _adminNotificationService.SendDocumentNotificationAsync(accountingDocument, "created");
+                // Send notifications through central hub
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    await _notificationHub.SendAccountingDocumentNotificationAsync(accountingDocument, NotificationEventType.AccountingDocumentCreated, currentUser.Id);
+                }
                 
                 TempData["SuccessMessage"] = "سند حسابداری با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Index));
@@ -529,8 +536,12 @@ namespace ForexExchange.Controllers
                     _context.Update(accountingDocument);
                     await _context.SaveChangesAsync();
 
-                    // Send notification about document confirmation
-                    await _adminNotificationService.SendDocumentNotificationAsync(accountingDocument, "confirmed");
+                    // Send notifications through central hub
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        await _notificationHub.SendAccountingDocumentNotificationAsync(accountingDocument, NotificationEventType.AccountingDocumentVerified, currentUser.Id);
+                    }
 
                     TempData["SuccessMessage"] = "سند حسابداری با موفقیت تأیید شد و ترازها بروزرسانی گردید.";
                 }

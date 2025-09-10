@@ -78,13 +78,32 @@ namespace ForexExchange.Controllers
         [Authorize]
         public async Task<IActionResult> Subscribe([FromBody] PushSubscriptionRequest request)
         {
+            string? userId = null;
             try
             {
-                var userId = User.Identity?.Name;
+                // Use ClaimTypes.NameIdentifier to get the actual user ID instead of username
+                userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                _logger.LogInformation("Push subscription request from user: {UserId}", userId);
+                
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized();
+                    _logger.LogWarning("Push subscription request with no user identity");
+                    return Unauthorized(new { error = "User not authenticated" });
                 }
+
+                // Validate request
+                if (request?.Subscription?.Endpoint == null || 
+                    request.Subscription.Keys?.P256dh == null || 
+                    request.Subscription.Keys?.Auth == null)
+                {
+                    _logger.LogWarning("Invalid subscription request from user {UserId}", userId);
+                    return BadRequest(new { error = "Invalid subscription data" });
+                }
+
+                _logger.LogInformation("Subscription data: Endpoint={Endpoint}, P256dh length={P256dhLength}, Auth length={AuthLength}", 
+                    request.Subscription.Endpoint, 
+                    request.Subscription.Keys.P256dh?.Length ?? 0,
+                    request.Subscription.Keys.Auth?.Length ?? 0);
 
                 // Validate that the user exists in the database
                 var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
@@ -101,8 +120,8 @@ namespace ForexExchange.Controllers
                 if (existingSubscription != null)
                 {
                     // Update existing subscription
-                    existingSubscription.P256dhKey = request.Subscription.Keys.P256dh;
-                    existingSubscription.AuthKey = request.Subscription.Keys.Auth;
+                    existingSubscription.P256dhKey = request.Subscription.Keys.P256dh!;
+                    existingSubscription.AuthKey = request.Subscription.Keys.Auth!;
                     existingSubscription.IsActive = true;
                     existingSubscription.UpdatedAt = DateTime.UtcNow;
                 }
@@ -113,30 +132,32 @@ namespace ForexExchange.Controllers
                     {
                         UserId = userId,
                         Endpoint = request.Subscription.Endpoint,
-                        P256dhKey = request.Subscription.Keys.P256dh,
-                        AuthKey = request.Subscription.Keys.Auth,
+                        P256dhKey = request.Subscription.Keys.P256dh!,
+                        AuthKey = request.Subscription.Keys.Auth!,
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
 
                     _context.PushSubscriptions.Add(subscription);
+                    _logger.LogInformation("Creating new push subscription for user {UserId} with endpoint {Endpoint}", 
+                        userId, request.Subscription.Endpoint);
                 }
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Push subscription created/updated for user {UserId}", userId);
-                return Ok(new { message = "Subscription saved successfully" });
+                _logger.LogInformation("Push subscription created/updated successfully for user {UserId}", userId);
+                return Ok(new { message = "Subscription saved successfully", userId = userId });
             }
             catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx) when (dbEx.InnerException?.Message.Contains("FOREIGN KEY constraint failed") == true)
             {
-                _logger.LogError(dbEx, "Foreign key constraint failed when subscribing user {UserId}", User.Identity?.Name);
-                return BadRequest(new { error = "Invalid user reference" });
+                _logger.LogError(dbEx, "Foreign key constraint failed when subscribing user {UserId}", userId);
+                return BadRequest(new { error = "Invalid user reference", details = dbEx.InnerException?.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error subscribing to push notifications for user {UserId}", User.Identity?.Name);
-                return StatusCode(500, new { error = "Failed to save subscription" });
+                _logger.LogError(ex, "Error subscribing to push notifications for user {UserId}", userId);
+                return StatusCode(500, new { error = "Failed to save subscription", details = ex.Message });
             }
         }
 
@@ -149,7 +170,7 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var userId = User.Identity?.Name;
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
                     return Unauthorized();
@@ -185,7 +206,7 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var userId = User.Identity?.Name;
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
                     return Unauthorized();
@@ -194,7 +215,7 @@ namespace ForexExchange.Controllers
                 var hasActiveSubscription = await _context.PushSubscriptions
                     .AnyAsync(ps => ps.UserId == userId && ps.IsActive);
 
-                return Ok(new { isSubscribed = hasActiveSubscription });
+                return Ok(new { isSubscribed = hasActiveSubscription, hasActiveSubscriptions = hasActiveSubscription });
             }
             catch (Exception ex)
             {
@@ -207,15 +228,18 @@ namespace ForexExchange.Controllers
         /// Send test notification to current user
         /// </summary>
         [HttpPost("test")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize] // Temporarily allow any authenticated user for debugging
         public async Task<IActionResult> SendTestNotification()
         {
             try
             {
-                var userId = User.Identity?.Name;
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                _logger.LogInformation("Test notification request from user: {UserId}", userId);
+                
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized();
+                    _logger.LogWarning("Test notification request with no user identity");
+                    return Unauthorized(new { error = "User not authenticated" });
                 }
 
                 // Get user's subscriptions
@@ -223,13 +247,24 @@ namespace ForexExchange.Controllers
                     .Where(ps => ps.UserId == userId && ps.IsActive)
                     .ToListAsync();
 
+                _logger.LogInformation("Found {Count} active subscriptions for user {UserId}", subscriptions.Count, userId);
+
                 if (!subscriptions.Any())
                 {
-                    return BadRequest(new { error = "No active subscriptions found" });
+                    return BadRequest(new { error = "No active subscriptions found", userId = userId });
                 }
 
                 // Initialize VAPID
-                await InitializeVapidAsync();
+                try
+                {
+                    await InitializeVapidAsync();
+                    _logger.LogInformation("VAPID initialized successfully");
+                }
+                catch (Exception vapidEx)
+                {
+                    _logger.LogError(vapidEx, "Failed to initialize VAPID");
+                    return StatusCode(500, new { error = "VAPID initialization failed", details = vapidEx.Message });
+                }
 
                 var payload = JsonSerializer.Serialize(new
                 {

@@ -104,7 +104,8 @@ class WebPushManager {
             
             if (this.isSubscribed) {
                 console.log('Existing push subscription found');
-                await this.sendSubscriptionToServer(this.subscription);
+                // Only sync with server silently, don't show success message
+                await this.syncSubscriptionWithServer(this.subscription);
             }
         } catch (error) {
             console.error('Error checking existing subscription:', error);
@@ -192,11 +193,17 @@ class WebPushManager {
      */
     async sendSubscriptionToServer(subscription) {
         try {
+            console.log('Sending subscription to server:', {
+                endpoint: subscription.endpoint,
+                keys: subscription.keys
+            });
+
             const response = await fetch('/api/push/subscribe', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // Include authentication cookies
                 body: JSON.stringify({
                     subscription: subscription,
                     userAgent: navigator.userAgent,
@@ -205,12 +212,25 @@ class WebPushManager {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to send subscription to server');
+                let errorMessage = 'Failed to send subscription to server';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                console.error('Subscription error:', errorMessage);
+                this.showNotificationMessage(`❌ خطا در ثبت اشتراک: ${errorMessage}`, 'error');
+                throw new Error(errorMessage);
             }
 
-            console.log('Subscription sent to server successfully');
+            const result = await response.json();
+            console.log('Subscription sent to server successfully:', result);
+            this.showNotificationMessage('✅ اشتراک اعلان‌ها با موفقیت ثبت شد', 'success');
         } catch (error) {
             console.error('Error sending subscription to server:', error);
+            this.showNotificationMessage(`❌ خطا در ارسال اشتراک: ${error.message}`, 'error');
+            throw error;
         }
     }
 
@@ -225,6 +245,7 @@ class WebPushManager {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // Include authentication cookies
                 body: JSON.stringify({
                     endpoint: this.subscription.endpoint
                 })
@@ -237,6 +258,50 @@ class WebPushManager {
             console.log('Subscription removed from server successfully');
         } catch (error) {
             console.error('Error removing subscription from server:', error);
+        }
+    }
+
+    /**
+     * Sync subscription with server silently (no success message)
+     * همگام‌سازی بی‌صدا اشتراک با سرور
+     */
+    async syncSubscriptionWithServer(subscription) {
+        try {
+            const response = await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include', // Include authentication cookies
+                body: JSON.stringify({
+                    subscription: {
+                        endpoint: subscription.endpoint,
+                        keys: {
+                            p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
+                            auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))))
+                        }
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Failed to sync subscription with server';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                console.error('Subscription sync error:', errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            const result = await response.json();
+            console.log('Subscription synced with server successfully:', result);
+            // Note: No success message shown for silent sync
+        } catch (error) {
+            console.error('Error syncing subscription with server:', error);
+            throw error;
         }
     }
 
@@ -446,13 +511,93 @@ class WebPushManager {
     }
 
     /**
+     * Force re-subscription (for debugging)
+     * اجبار اشتراک مجدد (برای دیباگ)
+     */
+    async forceResubscribe() {
+        try {
+            console.log('Force re-subscribing...');
+            
+            // First unsubscribe if already subscribed
+            if (this.subscription) {
+                await this.subscription.unsubscribe();
+                console.log('Unsubscribed from existing subscription');
+            }
+
+            // Request permission if needed
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Notification permission denied');
+            }
+
+            // Create new subscription
+            this.subscription = await this.serviceWorkerRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this.urlB64ToUint8Array(this.publicKey)
+            });
+
+            this.isSubscribed = true;
+            console.log('New subscription created:', this.subscription);
+
+            // Send to server
+            await this.sendSubscriptionToServer(this.subscription);
+            
+            this.showNotificationMessage('✅ اشتراک مجدد با موفقیت انجام شد', 'success');
+        } catch (error) {
+            console.error('Error in force resubscribe:', error);
+            this.showNotificationMessage(`❌ خطا در اشتراک مجدد: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Check subscription status on server
+     * بررسی وضعیت اشتراک در سرور
+     */
+    async checkServerSubscriptionStatus() {
+        try {
+            const response = await fetch('/api/push/status', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const status = await response.json();
+                console.log('Server subscription status:', status);
+                return status;
+            } else {
+                console.error('Failed to get subscription status from server');
+                return null;
+            }
+        } catch (error) {
+            console.error('Error checking server subscription status:', error);
+            return null;
+        }
+    }
+
+    /**
      * Test push notification (for development)
      * تست اعلان فشاری (برای توسعه)
      */
     async testPushNotification() {
         if (!this.isSubscribed) {
-            console.warn('Not subscribed to push notifications');
-            return;
+            console.warn('Not subscribed to push notifications, attempting to subscribe...');
+            try {
+                await this.forceResubscribe();
+                if (!this.isSubscribed) {
+                    this.showNotificationMessage('❌ لطفاً ابتدا اشتراک اعلان‌ها را فعال کنید', 'error');
+                    return;
+                }
+            } catch (error) {
+                this.showNotificationMessage('❌ خطا در فعال‌سازی اشتراک اعلان‌ها', 'error');
+                return;
+            }
+        }
+
+        // Check server subscription status first
+        const serverStatus = await this.checkServerSubscriptionStatus();
+        if (serverStatus && !serverStatus.hasActiveSubscriptions) {
+            console.warn('No active subscriptions on server, re-subscribing...');
+            await this.forceResubscribe();
         }
 
         try {
@@ -461,6 +606,7 @@ class WebPushManager {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // Include authentication cookies
                 body: JSON.stringify({
                     title: 'تست اعلان فشاری',
                     message: 'این یک اعلان تستی است',
@@ -469,12 +615,46 @@ class WebPushManager {
             });
 
             if (response.ok) {
-                console.log('Test push notification sent');
+                const result = await response.json();
+                console.log('Test push notification sent:', result);
+                // Show success message to user
+                this.showNotificationMessage('✅ اعلان تست با موفقیت ارسال شد', 'success');
             } else {
-                console.error('Failed to send test push notification');
+                // Get error details from response
+                let errorMessage = 'Failed to send test push notification';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                console.error('Failed to send test push notification:', errorMessage);
+                this.showNotificationMessage(`❌ خطا در ارسال اعلان تست: ${errorMessage}`, 'error');
             }
         } catch (error) {
             console.error('Error sending test push notification:', error);
+            this.showNotificationMessage(`❌ خطا در ارسال اعلان تست: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Show notification message to user
+     * نمایش پیام اعلان به کاربر
+     */
+    showNotificationMessage(message, type = 'info') {
+        // Try to use existing notification system (like toastr, sweetalert, etc.)
+        if (typeof toastr !== 'undefined') {
+            toastr[type](message);
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                text: message,
+                icon: type === 'error' ? 'error' : type === 'success' ? 'success' : 'info',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        } else {
+            // Fallback to browser alert
+            alert(message);
         }
     }
 }
@@ -482,6 +662,18 @@ class WebPushManager {
 // Initialize Web Push Manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.webPushManager = new WebPushManager();
+    
+    // Add debugging functions to global scope
+    window.debugPushNotifications = {
+        forceResubscribe: () => window.webPushManager?.forceResubscribe(),
+        checkStatus: () => window.webPushManager?.checkServerSubscriptionStatus(),
+        testNotification: () => window.webPushManager?.testPushNotification(),
+        getSubscription: () => {
+            console.log('Current subscription:', window.webPushManager?.subscription);
+            console.log('Is subscribed:', window.webPushManager?.isSubscribed);
+            return window.webPushManager?.subscription;
+        }
+    };
 });
 
 // Export for use in other scripts
