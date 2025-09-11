@@ -77,7 +77,29 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IVapidService, VapidService>();
 
 // Central notification system
-builder.Services.AddScoped<INotificationHub, ForexExchange.Services.Notifications.NotificationHub>();
+builder.Services.AddScoped<INotificationHub>(serviceProvider =>
+{
+    var context = serviceProvider.GetRequiredService<ForexDbContext>();
+    var logger = serviceProvider.GetRequiredService<ILogger<ForexExchange.Services.Notifications.NotificationHub>>();
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    
+    var hub = new ForexExchange.Services.Notifications.NotificationHub(context, logger, configuration);
+    
+    // Register providers
+    var signalRProvider = serviceProvider.GetRequiredService<SignalRNotificationProvider>();
+    var pushProvider = serviceProvider.GetRequiredService<PushNotificationProvider>();
+    var smsProvider = serviceProvider.GetRequiredService<SmsNotificationProvider>();
+    var emailProvider = serviceProvider.GetRequiredService<EmailNotificationProvider>();
+    var telegramProvider = serviceProvider.GetRequiredService<TelegramNotificationProvider>();
+    
+    hub.RegisterProvider(signalRProvider);
+    hub.RegisterProvider(pushProvider);
+    hub.RegisterProvider(smsProvider);
+    hub.RegisterProvider(emailProvider);
+    hub.RegisterProvider(telegramProvider);
+    
+    return hub;
+});
 
 // Notification providers - register as individual services, not as INotificationProvider
 builder.Services.AddScoped<SignalRNotificationProvider>();
@@ -88,25 +110,6 @@ builder.Services.AddScoped<TelegramNotificationProvider>();
 
 
 var app = builder.Build();
-
-// Register notification providers with the hub
-using (var scope = app.Services.CreateScope())
-{
-    var notificationHub = scope.ServiceProvider.GetRequiredService<INotificationHub>();
-    
-    // Register each provider individually
-    var signalRProvider = scope.ServiceProvider.GetRequiredService<SignalRNotificationProvider>();
-    var pushProvider = scope.ServiceProvider.GetRequiredService<PushNotificationProvider>();
-    var smsProvider = scope.ServiceProvider.GetRequiredService<SmsNotificationProvider>();
-    var emailProvider = scope.ServiceProvider.GetRequiredService<EmailNotificationProvider>();
-    var telegramProvider = scope.ServiceProvider.GetRequiredService<TelegramNotificationProvider>();
-    
-    notificationHub.RegisterProvider(signalRProvider);
-    notificationHub.RegisterProvider(pushProvider);
-    notificationHub.RegisterProvider(smsProvider);
-    notificationHub.RegisterProvider(emailProvider);
-    notificationHub.RegisterProvider(telegramProvider);
-}
 
 // Auto-apply migrations and seed data
 using (var scope = app.Services.CreateScope())

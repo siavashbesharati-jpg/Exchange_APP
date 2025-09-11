@@ -191,7 +191,7 @@ class WebPushManager {
      * Send subscription to server
      * ارسال اشتراک به سرور
      */
-    async sendSubscriptionToServer(subscription) {
+    async sendSubscriptionToServer(subscription, showSuccessMessage = true) {
         try {
             console.log('Sending subscription to server:', {
                 endpoint: subscription.endpoint,
@@ -226,7 +226,11 @@ class WebPushManager {
 
             const result = await response.json();
             console.log('Subscription sent to server successfully:', result);
-            this.showNotificationMessage('✅ اشتراک اعلان‌ها با موفقیت ثبت شد', 'success');
+            
+            // Only show success message if explicitly requested (not for silent syncs)
+            if (showSuccessMessage) {
+                this.showNotificationMessage('✅ اشتراک اعلان‌ها با موفقیت ثبت شد', 'success');
+            }
         } catch (error) {
             console.error('Error sending subscription to server:', error);
             this.showNotificationMessage(`❌ خطا در ارسال اشتراک: ${error.message}`, 'error');
@@ -334,7 +338,7 @@ class WebPushManager {
     async syncSubscriptionStatus() {
         try {
             if (this.subscription) {
-                await this.sendSubscriptionToServer(this.subscription);
+                await this.sendSubscriptionToServer(this.subscription, false); // Don't show success message for sync
             }
         } catch (error) {
             console.error('Error syncing subscription status:', error);
