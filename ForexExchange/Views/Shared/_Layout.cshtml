@@ -174,6 +174,61 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        /* Currency Pool Mobile Styles */
+        .currency-pool-mobile-scroll .d-flex {
+            overflow-x: auto;
+            padding-bottom: 5px;
+            /* Webkit scrollbar styling */
+            scrollbar-width: thin;
+            scrollbar-color: #888 #f1f1f1;
+        }
+
+        .currency-pool-mobile-scroll .d-flex::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .currency-pool-mobile-scroll .d-flex::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+
+        .currency-pool-mobile-scroll .d-flex::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 2px;
+        }
+
+        .currency-pool-mobile-scroll .d-flex::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .currency-pool-mobile-item {
+            min-width: 80px;
+            margin-right: 10px;
+            flex-shrink: 0;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .currency-pool-mobile-item:last-child {
+            margin-right: 0;
+        }
+
+        .currency-pool-mobile-item .currency-pool-flag {
+            font-size: 1.2rem !important;
+            margin-bottom: 2px;
+        }
+
+        .currency-pool-mobile-item .currency-pool-code {
+            font-size: 0.7rem !important;
+        }
+
+        .currency-pool-mobile-item .currency-pool-balance {
+            font-size: 0.75rem !important;
+            font-weight: 600;
+        }
     </style>
     @RenderSection("Styles", required: false)
 </head>
@@ -201,8 +256,30 @@
                 <div class="container-fluid">
                     <!-- Currency Pool Section -->
                     <div class="currency-pool-section p-2" id="currency-pool-section-admin" style="display: none;">
-                        <div class="row" id="currency-pool-row-admin">
-                            <!-- Currency pool data will be loaded here via AJAX -->
+                        <!-- Desktop version: Original row layout -->
+                        <div class="d-none d-md-block">
+                            <div class="row" id="currency-pool-row-admin">
+                                <!-- Currency pool data will be loaded here via AJAX -->
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile version toggle button -->
+                        <div class="d-md-none text-center mb-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleMobilePoolDisplay()" style="padding: 2px 8px; font-size: 0.75rem;">
+                                <i class="fas fa-exchange-alt me-1"></i>تغییر نمایش
+                            </button>
+                        </div>
+                        
+                        <!-- Mobile version: Option 1 - 3 columns per row -->
+                        <div class="d-md-none d-none" id="currency-pool-mobile-rows">
+                            <!-- Mobile rows will be populated here -->
+                        </div>
+                        
+                        <!-- Mobile version: Option 2 - Horizontal scrollable (default) -->
+                        <div class="d-md-none currency-pool-mobile-scroll" id="currency-pool-mobile-scroll">
+                            <div class="d-flex">
+                                <!-- Mobile scroll items will be populated here -->
+                            </div>
                         </div>
                     </div>
 
@@ -566,8 +643,10 @@
         }
 
         function displayCurrencyPools(pools) {
-            // Clear admin container
+            // Clear all containers
             $('#currency-pool-row-admin').empty();
+            $('#currency-pool-mobile-rows').empty();
+            $('#currency-pool-mobile-scroll .d-flex').empty();
 
             // Calculate column width and offset based on number of currencies
             const poolCount = pools.length;
@@ -601,7 +680,8 @@
                 colClass = 'col-1';
             }
 
-            const poolsHtml = pools.map(function (pool, index) {
+            // Generate Desktop HTML
+            const desktopPoolsHtml = pools.map(function (pool, index) {
                 const firstItemClass = index === 0 && offsetClass ? offsetClass : '';
                 const flagEmoji = getCurrencyFlag(pool.currencyCode);
                 return `
@@ -615,8 +695,44 @@
                 `;
             }).join('');
 
-            // Add to admin container only and show admin section
-            $('#currency-pool-row-admin').html(poolsHtml);
+            // Generate Mobile Horizontal Scroll HTML
+            const mobileScrollHtml = pools.map(function (pool) {
+                const flagEmoji = getCurrencyFlag(pool.currencyCode);
+                return `
+                    <div class="currency-pool-mobile-item text-center">
+                        <div class="currency-pool-flag" title="${pool.currencyCode}">${flagEmoji}</div>
+                        <div class="currency-pool-code text-muted">${pool.currencyCode}</div>
+                        <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}">
+                            ${formatNumber(pool.balance)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Generate Mobile Rows HTML (3 columns per row)
+            let mobileRowsHtml = '';
+            for (let i = 0; i < pools.length; i += 3) {
+                const rowPools = pools.slice(i, i + 3);
+                mobileRowsHtml += '<div class="row mb-2">';
+                rowPools.forEach(function(pool) {
+                    const flagEmoji = getCurrencyFlag(pool.currencyCode);
+                    mobileRowsHtml += `
+                        <div class="col-4 text-center border-end currency-pool-item">
+                            <div class="currency-pool-flag" style="font-size: 1.2rem; margin-bottom: 2px;" title="${pool.currencyCode}">${flagEmoji}</div>
+                            <div class="currency-pool-code text-muted small">${pool.currencyCode}</div>
+                            <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}" style="font-size: 0.8rem;">
+                                ${formatNumber(pool.balance)}
+                            </div>
+                        </div>
+                    `;
+                });
+                mobileRowsHtml += '</div>';
+            }
+
+            // Update all containers
+            $('#currency-pool-row-admin').html(desktopPoolsHtml);
+            $('#currency-pool-mobile-scroll .d-flex').html(mobileScrollHtml);
+            $('#currency-pool-mobile-rows').html(mobileRowsHtml);
             $('#currency-pool-section-admin').show();
         }
 
@@ -626,6 +742,22 @@
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2
             });
+        }
+
+        // Function to toggle between mobile display modes
+        function toggleMobilePoolDisplay() {
+            const scrollContainer = $('#currency-pool-mobile-scroll');
+            const rowsContainer = $('#currency-pool-mobile-rows');
+            
+            if (scrollContainer.hasClass('d-none')) {
+                // Switch to scroll mode
+                scrollContainer.removeClass('d-none');
+                rowsContainer.addClass('d-none');
+            } else {
+                // Switch to rows mode
+                scrollContainer.addClass('d-none');
+                rowsContainer.removeClass('d-none');
+            }
         }
     </script>
 
