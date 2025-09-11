@@ -151,6 +151,29 @@
             color: #856404;
             border: 1px solid #ffeaa7;
         }
+
+        /* Floating Gear Button Styles */
+        .floating-gear-btn {
+            transition: all 0.3s ease;
+        }
+
+        .floating-gear-btn:hover {
+            color: #495057 !important;
+            transform: scale(1.1);
+        }
+
+        .floating-gear-btn:hover i {
+            animation: fastSpin 0.3s linear infinite;
+        }
+
+        .floating-gear-btn.active {
+            color: #007bff !important;
+        }
+
+        @@keyframes fastSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
     @RenderSection("Styles", required: false)
 </head>
@@ -218,28 +241,42 @@
                                         <span class="d-sm-none">معامله</span>
                                     </a>
 
-                                    <!-- Create Customer -->
-                                    <a href="@Url.Action("Create", "Customers")"
-                                        class="btn btn-info btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "active" : "")"
-                                        style="background-color: #17a2b8; border-color: #17a2b8; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "box-shadow: 0 0 10px rgba(23, 162, 184, 0.5); transform: scale(1.05);" : "")">
-                                        <i class="fas fa-user-plus me-1"></i>
-                                        <span class="d-none d-sm-inline">ثبت مشتری جدید</span>
-                                        <span class="d-sm-none">مشتری</span>
+                                    <!-- Reports -->
+                                    <a href="@Url.Action("Index", "Reports")"
+                                        class="btn btn-info btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "active" : "")"
+                                        style="background-color: #17a2b8; border-color: #17a2b8; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reports" ? "box-shadow: 0 0 10px rgba(23, 162, 184, 0.5); transform: scale(1.05);" : "")">
+                                        <i class="fas fa-chart-bar me-1"></i>
+                                        <span class="d-none d-sm-inline">گزارشات</span>
+                                        <span class="d-sm-none">گزارش</span>
                                     </a>
 
-                                    <!-- Advanced Manage -->
-                                    <a href="@Url.Action("Management", "Home")"
-                                        class="btn btn-warning btn-sm fw-normal flex-fill flex-sm-grow-0 @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
-                                        style="background-color: #ffc107; border-color: #ffc107; color: #212529; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); transform: scale(1.05);" : "")">
-                                        <i class="fas fa-cogs me-1"></i>
-                                        <span class="d-none d-sm-inline">مدیریت پیشرفته</span>
-                                        <span class="d-sm-none">مدیریت</span>
-                                    </a>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Mobile Management Button (visible only on mobile) -->
+                        <div class="d-sm-none mt-2">
+                            <a href="@Url.Action("Management", "Home")"
+                                class="btn btn-warning btn-sm fw-normal w-100 @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                                style="background-color: #ffc107; border-color: #ffc107; color: #212529; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "box-shadow: 0 0 10px rgba(255, 193, 7, 0.5); transform: scale(1.05);" : "")">
+                                <i class="fas fa-cogs me-1"></i>
+                                مدیریت پیشرفته
+                            </a>
+                        </div>
                     </div>
                 </div>
+            </div>
+        }
+        
+        <!-- Desktop Floating Management Button (visible only on desktop for Admin/Manager/Staff) -->
+        @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+        {
+            <div class="d-none d-sm-block position-fixed" style="bottom: 16px; right: 20px; z-index: 1050;">
+                <a href="@Url.Action("Management", "Home")"
+                    class="floating-gear-btn @(ViewContext.RouteData.Values["action"]?.ToString() == "Management" && ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")"
+                    style="color: #6c757d; font-size: 24px; text-decoration: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: all 0.3s ease;">
+                    <i class="fas fa-gear"></i>
+                </a>
             </div>
         }
         else if (User.IsInRole("Customer"))
