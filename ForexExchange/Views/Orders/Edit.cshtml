@@ -71,7 +71,7 @@
                                 <span asp-validation-for="ToCurrencyId" class="text-danger"></span>
                             </div>
 
-                            <div class="col-md-4">
+                            <div class="col-md-4" style="display: none;">
                                 <label asp-for="Amount" class="form-label">مقدار  (ارز مبدأ)</label>
                                 <input asp-for="Amount" type="number" class="form-control" step="0.01" id="amountInput" required />
                                 <span asp-validation-for="Amount" class="text-danger"></span>
@@ -94,7 +94,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-6" style="display: none;">
                                                 <label asp-for="Rate" class="form-label">نرخ قابل ویرایش</label>
                                                 <div class="input-group">
                                                     <input asp-for="Rate" type="number" class="form-control" step="any" id="rateInput" placeholder="نرخ ارز را وارد کنید" />
@@ -113,8 +113,88 @@
                             </div>
                         </div>
 
+                        <!-- Inline Currency Calculator Section -->
+                        <div class="row mb-3" id="currencyCalculatorSection" style="display: none;">
+                            <div class="col-12">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-calculator"></i> ماشین حساب ارز
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Currency Pair Display -->
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <div class="alert alert-info text-center">
+                                                    <h6 class="mb-1">جفت ارز انتخاب شده:</h6>
+                                                    <div class="d-flex justify-content-center align-items-center">
+                                                        <span id="inlineCalcFromCurrencyDisplay" class="badge bg-primary fs-6 me-2">---</span>
+                                                        <i class="fas fa-arrow-left mx-2"></i>
+                                                        <span id="inlineCalcToCurrencyDisplay" class="badge bg-success fs-6">---</span>
+                                                    </div>
+                                                    <small class="text-muted mt-1 d-block">
+                                                        از <span id="inlineCalcFromCurrencyName">---</span> به <span id="inlineCalcToCurrencyName">---</span>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Rate Input -->
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <label class="form-label">
+                                                    نرخ تبدیل 
+                                                    <small class="text-muted">(هر واحد <span id="inlineCalcToCurrencyInRate">---</span> چند <span id="inlineCalcFromCurrencyInRate">---</span>)</small>
+                                                </label>
+                                                <input type="number" id="inlineCalcRate" class="form-control" step="any" placeholder="نرخ">
+                                                <small class="text-muted">نرخ را ویرایش کنید یا از نرخ محاسبه شده استفاده کنید</small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Both Currency Amount Inputs -->
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">مقدار <span id="inlineFromCurrencyLabel">---</span> مورد نیاز</label>
+                                                <input type="number" id="inlineCalcFromAmount" class="form-control" step="any" placeholder="مقدار">
+                                                <small class="text-muted">مقدار ارز مبدأ که باید پرداخت شود</small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">مقدار <span id="inlineToCurrencyLabel">---</span> مورد نیاز</label>
+                                                <input type="number" id="inlineCalcToAmount" class="form-control" step="any" placeholder="مقدار">
+                                                <small class="text-muted">مقدار ارز مقصد که دریافت می‌شود</small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Calculation Result Display -->
+                                        <div class="alert alert-success" id="inlineCalcResult" style="display: none;">
+                                            <h6>نتیجه محاسبه:</h6>
+                                            <div class="text-center">
+                                                <div class="h6 mb-1" id="inlineCalculationFormula">-</div>
+                                                <small class="text-muted" id="inlineCalculationDetails">-</small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-primary w-100" id="applyInlineCalculationBtn">
+                                                    <i class="fas fa-check"></i> اعمال به فرم
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <button type="button" class="btn btn-outline-secondary w-100" id="clearInlineCalculationBtn">
+                                                    <i class="fas fa-times"></i> پاک کردن
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Calculation Result -->
-                        <div class="row mb-3">
+                        <div class="row mb-3" style="display: none;">
                             <div class="col-12">
                                 <div class="alert alert-info" id="calculationResult" style="display: none;">
                                     <h6>محاسبه خودکار:</h6>
@@ -288,12 +368,44 @@
             }
         }
 
+        // Function to update button states based on currency selection
+        function updateButtonStates() {
+            let fromCurrency, toCurrency;
+            
+            // Try Select2 first, then fallback to regular select
+            if (typeof $.fn.select2 !== 'undefined' && $('#fromCurrencySelect').hasClass('select2-hidden-accessible')) {
+                fromCurrency = $('#fromCurrencySelect').val();
+                toCurrency = $('#toCurrencySelect').val();
+            } else {
+                fromCurrency = document.getElementById('fromCurrencySelect').value;
+                toCurrency = document.getElementById('toCurrencySelect').value;
+            }
+            
+            const hasValidCurrencies = fromCurrency && toCurrency && fromCurrency !== toCurrency;
+            
+            console.log('updateButtonStates - fromCurrency:', fromCurrency, 'toCurrency:', toCurrency, 'hasValidCurrencies:', hasValidCurrencies);
+            
+            // Enable/disable buttons based on currency selection
+            const loadSuggestedBtn = document.getElementById('loadSuggestedRateBtn');
+            const calculatorBtn = document.getElementById('openCalculatorBtn');
+            
+            if (loadSuggestedBtn) {
+                loadSuggestedBtn.disabled = !hasValidCurrencies;
+            }
+            if (calculatorBtn) {
+                calculatorBtn.disabled = !hasValidCurrencies;
+                console.log('Calculator button disabled state:', calculatorBtn.disabled);
+            }
+        }
+
         // Use Select2 events since Select2 replaces the original elements
         $('#fromCurrencySelect').on('select2:select', function (e) {
             console.log('From currency changed via Select2');
             var fromCurrency = $('#fromCurrencySelect').val();
             var toCurrency = $('#toCurrencySelect').val();
             console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
+            
+            updateButtonStates(); // Update button states
             
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
                 console.log('Loading exchange rate...');
@@ -312,6 +424,8 @@
             var fromCurrency = $('#fromCurrencySelect').val();
             var toCurrency = $('#toCurrencySelect').val();
             console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
+            
+            updateButtonStates(); // Update button states
             
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
                 console.log('Loading exchange rate...');
@@ -375,6 +489,44 @@
                 alert('نرخ ارز باید بزرگتر از صفر باشد.');
                 return false;
             }
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Select2 if available
+            if (typeof $.fn.select2 !== 'undefined') {
+                console.log('Initializing Select2...');
+                $('#fromCurrencySelect').select2();
+                $('#toCurrencySelect').select2();
+                $('#customerSelect').select2();
+            } else {
+                console.log('Select2 not available, using regular select events');
+                // Add fallback event listeners for regular select change
+                document.getElementById('fromCurrencySelect').addEventListener('change', function() {
+                    console.log('From currency changed via regular event');
+                    updateButtonStates();
+                    var fromCurrency = this.value;
+                    var toCurrency = document.getElementById('toCurrencySelect').value;
+                    if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                        showCurrencyPoolInfo(fromCurrency, toCurrency);
+                        loadExchangeRate(fromCurrency, toCurrency);
+                    }
+                });
+                
+                document.getElementById('toCurrencySelect').addEventListener('change', function() {
+                    console.log('To currency changed via regular event');
+                    updateButtonStates();
+                    var fromCurrency = document.getElementById('fromCurrencySelect').value;
+                    var toCurrency = this.value;
+                    if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                        showCurrencyPoolInfo(fromCurrency, toCurrency);
+                        loadExchangeRate(fromCurrency, toCurrency);
+                    }
+                });
+            }
+            
+            // Initialize button states
+            updateButtonStates();
         });
     </script>
 }
