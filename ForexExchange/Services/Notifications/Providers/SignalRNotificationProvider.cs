@@ -44,6 +44,8 @@ namespace ForexExchange.Services.Notifications.Providers
                     timestamp = DateTime.UtcNow
                 };
 
+                _logger.LogInformation("SignalR order notification data: Title={Title}, URL={Url}", context.Title, context.NavigationUrl);
+
                 if (context.SendToAllAdmins)
                 {
                     await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", notificationData);

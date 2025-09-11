@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification URL Test</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 8px; }
+        button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Notification URL Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Push Notifications with Different URLs</h3>
+        <button onclick="testUrl('/Orders/Details/1')">Test Order Details #1</button>
+        <button onclick="testUrl('/Customers/Details/1')">Test Customer Details #1</button>
+        <button onclick="testUrl('/AccountingDocuments/Details/1')">Test Document Details #1</button>
+        <button onclick="testUrl('/admin')">Test Admin Page</button>
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Manual URL Test</h3>
+        <input type="text" id="customUrl" placeholder="Enter URL (e.g., /Orders/Details/123)" style="width: 300px; padding: 8px;">
+        <button onclick="testCustomUrl()">Test Custom URL</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Debug Information</h3>
+        <button onclick="checkSubscription()">Check Push Subscription</button>
+        <button onclick="viewConsole()">Open Console for Debug Logs</button>
+        <div id="debug" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function testUrl(url) {
+            try {
+                showResult(`Testing URL: ${url}...`, 'info');
+                
+                const response = await fetch('/api/push/test-url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Success! Test notification sent to ${result.testUrl}`, 'success');
+                    showResult(`Check your browser notifications and click on them to test navigation!`, 'info');
+                } else {
+                    showResult(`❌ Error: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Network Error: ${error.message}`, 'error');
+                console.error('Test URL error:', error);
+            }
+        }
+
+        async function testCustomUrl() {
+            const url = document.getElementById('customUrl').value;
+            if (!url) {
+                showResult('Please enter a URL', 'error');
+                return;
+            }
+            await testUrl(url);
+        }
+
+        async function checkSubscription() {
+            try {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                    showDebug('❌ Push notifications not supported in this browser', 'error');
+                    return;
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                
+                if (subscription) {
+                    showDebug(`✅ Active subscription found: ${subscription.endpoint.substring(0, 50)}...`, 'success');
+                } else {
+                    showDebug('❌ No active push subscription found. Please enable notifications first.', 'error');
+                }
+            } catch (error) {
+                showDebug(`❌ Error checking subscription: ${error.message}`, 'error');
+            }
+        }
+
+        function viewConsole() {
+            showDebug('Open browser DevTools (F12) and check the Console tab for detailed logs', 'info');
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<div style="color: ${getColor(type)}">${message}</div>`;
+        }
+
+        function showDebug(message, type) {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.style.display = 'block';
+            debugDiv.innerHTML = `<div style="color: ${getColor(type)}">${message}</div>`;
+        }
+
+        function getColor(type) {
+            switch(type) {
+                case 'success': return '#28a745';
+                case 'error': return '#dc3545';
+                case 'info': return '#17a2b8';
+                default: return '#333';
+            }
+        }
+
+        function getAntiForgeryToken() {
+            // Try to get anti-forgery token from various sources
+            const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (tokenElement) return tokenElement.value;
+            
+            const metaToken = document.querySelector('meta[name="__RequestVerificationToken"]');
+            if (metaToken) return metaToken.content;
+            
+            return ''; // Fallback - some endpoints might not require it
+        }
+
+        // Add service worker debugging
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', event => {
+                console.log('Message from service worker:', event.data);
+                if (event.data.type === 'NOTIFICATION_CLICK') {
+                    showDebug(`Service Worker reported click: URL = ${event.data.url}`, 'info');
+                }
+            });
+        }
+
+        console.log('Notification URL Test page loaded. Use buttons above to test different URLs.');
+    </script>
+</body>
+</html>

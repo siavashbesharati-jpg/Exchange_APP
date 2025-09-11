@@ -128,18 +128,44 @@ self.addEventListener('notificationclick', event => {
         return;
     }
 
+    // Extract notification data
+    const data = event.notification.data;
+
     // Handle notification click
     event.waitUntil(
         clients.matchAll({
             type: 'window',
             includeUncontrolled: true
         }).then(clientList => {
-            const data = event.notification.data;
+            console.log('Service Worker: Notification data received:', data);
+            console.log('Service Worker: Full event notification object:', event.notification);
             
-            // Determine URL to open
+            // Use URL from notification data (set by NotificationHub)
             let url = '/';
             if (data) {
-                if (data.orderId) {
+                console.log('Service Worker: Looking for URL in data.url:', data.url);
+                // First priority: use the explicit URL from notification context
+                if (data.url && data.url !== '/') {
+                    url = data.url;
+                    console.log('Service Worker: Using data.url:', url);
+                }
+                // Fallback: determine URL based on entity data
+                else if (data.contextData) {
+                    console.log('Service Worker: Using contextData fallback:', data.contextData);
+                    const contextData = data.contextData;
+                    if (contextData.orderId) {
+                        url = `/Orders/Details/${contextData.orderId}`;
+                    } else if (contextData.customerId && data.type === 'customer') {
+                        url = `/Customers/Details/${contextData.customerId}`;
+                    } else if (contextData.documentId) {
+                        url = `/AccountingDocuments/Details/${contextData.documentId}`;
+                    } else if (contextData.bankAccountId) {
+                        url = `/BankAccount/Details/${contextData.bankAccountId}`;
+                    }
+                }
+                // Legacy fallback for old notification format
+                else if (data.orderId) {
+                    console.log('Service Worker: Using legacy orderId fallback:', data.orderId);
                     url = `/Orders/Details/${data.orderId}`;
                 } else if (data.customerId) {
                     url = `/Customers/Details/${data.customerId}`;
@@ -149,11 +175,16 @@ self.addEventListener('notificationclick', event => {
                     url = `/BankAccount/Details/${data.bankAccountId}`;
                 }
             }
+            
+            console.log('Service Worker: Final URL determined:', url);
+
+            console.log('Service Worker: Opening URL:', url, 'from data:', data);
 
             // Check if app is already open
             for (const client of clientList) {
                 if (client.url.includes(self.location.origin) && 'focus' in client) {
                     client.focus();
+                    // Navigate the existing client to the new URL
                     client.postMessage({
                         type: 'NOTIFICATION_CLICK',
                         url: url,
@@ -163,9 +194,12 @@ self.addEventListener('notificationclick', event => {
                 }
             }
 
-            // Open new window
+            // Open new window with the proper URL
             if (clients.openWindow) {
-                return clients.openWindow(self.location.origin + url);
+                // Ensure URL is properly formatted
+                const fullUrl = url.startsWith('http') ? url : self.location.origin + url;
+                console.log('Service Worker: Opening window with full URL:', fullUrl);
+                return clients.openWindow(fullUrl);
             }
         })
     );

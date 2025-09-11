@@ -142,13 +142,17 @@ namespace ForexExchange.Services.Notifications
         {
             try
             {
+                // Use explicit URL or default to /admin
+                var finalUrl = !string.IsNullOrEmpty(navigationUrl) ? navigationUrl : "/admin";
+                _logger.LogInformation("Custom notification URL: {NavigationUrl} -> {FinalUrl}", navigationUrl, finalUrl);
+
                 var context = new NotificationContext
                 {
                     EventType = eventType,
                     UserId = userId,
                     Title = title,
                     Message = message,
-                    NavigationUrl = navigationUrl,
+                    NavigationUrl = finalUrl,
                     Priority = priority,
                     SendToAllAdmins = string.IsNullOrEmpty(userId)
                 };
@@ -211,13 +215,16 @@ namespace ForexExchange.Services.Notifications
                 _ => $"رویداد سفارش #{order.Id}"
             };
 
+            var navigationUrl = $"/Orders/Details/{order.Id}";
+            _logger.LogInformation("Order notification URL generated: {NavigationUrl} for order {OrderId}", navigationUrl, order.Id);
+
             return new NotificationContext
             {
                 EventType = eventType,
                 UserId = userId,
                 Title = title,
                 Message = message,
-                NavigationUrl = $"/Orders/Details/{order.Id}",
+                NavigationUrl = navigationUrl,
                 Priority = NotificationPriority.Normal,
                 RelatedEntity = new RelatedEntity
                 {
@@ -279,13 +286,16 @@ namespace ForexExchange.Services.Notifications
                 message += $" به {receiverCustomer.FullName}";
             }
 
+            var navigationUrl = $"/AccountingDocuments/Details/{document.Id}";
+            _logger.LogInformation("Document notification URL generated: {NavigationUrl} for document {DocumentId}", navigationUrl, document.Id);
+
             return new NotificationContext
             {
                 EventType = eventType,
                 UserId = userId,
                 Title = title,
                 Message = message,
-                NavigationUrl = $"/AccountingDocuments/Details/{document.Id}",
+                NavigationUrl = navigationUrl,
                 Priority = eventType == NotificationEventType.AccountingDocumentVerified ? NotificationPriority.High : NotificationPriority.Normal,
                 RelatedEntity = new RelatedEntity
                 {
@@ -331,13 +341,16 @@ namespace ForexExchange.Services.Notifications
                 _ => $"رویداد مشتری {customer.FullName}"
             };
 
+            var navigationUrl = $"/Customers/Details/{customer.Id}";
+            _logger.LogInformation("Customer notification URL generated: {NavigationUrl} for customer {CustomerId}", navigationUrl, customer.Id);
+
             return Task.FromResult(new NotificationContext
             {
                 EventType = eventType,
                 UserId = userId,
                 Title = title,
                 Message = message,
-                NavigationUrl = $"/Customers/Details/{customer.Id}",
+                NavigationUrl = navigationUrl,
                 Priority = NotificationPriority.Normal,
                 RelatedEntity = new RelatedEntity
                 {

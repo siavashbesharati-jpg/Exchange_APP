@@ -137,6 +137,23 @@ class AdminNotificationManager {
                 this.connection.stop();
             }
         });
+
+        // Handle service worker messages (for notification click navigation)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                console.log('AdminNotifications: Service worker message received:', event.data);
+                
+                if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+                    const url = event.data.url;
+                    console.log('AdminNotifications: Navigating to URL from notification click:', url);
+                    
+                    if (url && url !== '/') {
+                        // Navigate to the URL
+                        window.location.href = url;
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -145,6 +162,8 @@ class AdminNotificationManager {
      */
     handleNotification(notification) {
         console.log('Received notification:', notification);
+        console.log('Notification URL:', notification.url);
+        console.log('Notification type:', notification.type);
 
         // Add to queue if page is not visible
         if (document.hidden) {
@@ -170,11 +189,19 @@ class AdminNotificationManager {
 
         Swal.fire(config).then((result) => {
             if (result.isConfirmed) {
-                // Smooth page refresh with loading animation
-                this.showLoadingOverlay();
-                setTimeout(() => {
-                    this.refreshCurrentPage();
-                }, 500);
+                console.log('Notification click confirmed. URL:', notification.url);
+                // Navigate to detail page if URL is provided, otherwise refresh
+                if (notification.url && notification.url !== '/') {
+                    console.log('Navigating to URL:', notification.url);
+                    this.navigateToUrl(notification.url);
+                } else {
+                    console.log('No specific URL, refreshing page');
+                    // Smooth page refresh with loading animation
+                    this.showLoadingOverlay();
+                    setTimeout(() => {
+                        this.refreshCurrentPage();
+                    }, 500);
+                }
             }
         });
     }
@@ -184,6 +211,9 @@ class AdminNotificationManager {
      * دریافت تنظیمات اعلان بر اساس نوع
      */
     getNotificationConfig(notification) {
+        console.log('Getting config for notification with URL:', notification.url);
+        console.log('URL check result:', notification.url && notification.url !== '/');
+        
         const baseConfig = {
             title: this.createModernTitle(notification),
             html: this.createModernContent(notification),
@@ -192,7 +222,9 @@ class AdminNotificationManager {
             padding: '0',
             showConfirmButton: true,
             showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-sync-alt me-2"></i>بروزرسانی صفحه',
+            confirmButtonText: notification.url && notification.url !== '/' ? 
+                '<i class="fas fa-eye me-2"></i>مشاهده جزئیات' : 
+                '<i class="fas fa-sync-alt me-2"></i>بروزرسانی صفحه',
             cancelButtonText: '<i class="fas fa-check me-2"></i>متوجه شدم',
             customClass: {
                 popup: `modern-notification-popup ${this.getThemeClass(notification.type)} shadow-2xl`,
@@ -800,6 +832,17 @@ class AdminNotificationManager {
         if (content && content.scrollHeight > content.clientHeight) {
             content.scrollTop = 0;
         }
+    }
+
+    /**
+     * Navigate to specific URL with smooth transition
+     * هدایت به آدرس مشخص با انتقال نرم
+     */
+    navigateToUrl(url) {
+        this.showLoadingOverlay();
+        setTimeout(() => {
+            window.location.href = url;
+        }, 500);
     }
 
     /**

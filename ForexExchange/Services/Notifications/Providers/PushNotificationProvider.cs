@@ -127,6 +127,8 @@ namespace ForexExchange.Services.Notifications.Providers
             var icon = GetIconForEventType(context.EventType);
             var badge = "/badge-72x72.png";
 
+            _logger.LogInformation("Creating push payload for {Type}: Title={Title}, URL={Url}", notificationType, context.Title, context.NavigationUrl);
+
             return JsonSerializer.Serialize(new
             {
                 title = context.Title,

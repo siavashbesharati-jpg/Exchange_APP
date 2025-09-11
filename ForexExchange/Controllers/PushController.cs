@@ -364,6 +364,63 @@ namespace ForexExchange.Controllers
                 return StatusCode(500, new { error = "Failed to get statistics" });
             }
         }
+
+        /// <summary>
+        /// Send test notification with specific URL to current user
+        /// ارسال اعلان تست با آدرس مشخص به کاربر فعلی
+        /// </summary>
+        [HttpPost("test-url")]
+        [Authorize]
+        public async Task<IActionResult> SendTestNotificationWithUrl([FromBody] TestUrlRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                _logger.LogInformation("Test URL notification request from user: {UserId} with URL: {Url}", userId, request.Url);
+
+                // Create test push notification with explicit URL
+                var payload = JsonSerializer.Serialize(new
+                {
+                    title = $"🧪 تست آدرس | URL Test",
+                    body = $"تست هدایت به: {request.Url}",
+                    icon = "/favicon/apple-touch-icon.png",
+                    badge = "/favicon/favicon-32x32.png",
+                    tag = "test-url-notification",
+                    data = new
+                    {
+                        type = "test-url",
+                        eventType = "Custom",
+                        priority = "Normal",
+                        timestamp = DateTime.UtcNow,
+                        url = request.Url, // Explicit URL for testing
+                        contextData = new { testUrl = request.Url }
+                    }
+                });
+
+                // Get user subscriptions and send test notification
+                var subscriptions = await _context.PushSubscriptions
+                    .Where(s => s.UserId == userId && s.IsActive)
+                    .ToListAsync();
+
+                foreach (var subscription in subscriptions)
+                {
+                    await InitializeVapidAsync();
+                    var pushSubscription = new WebPush.PushSubscription(subscription.Endpoint, subscription.P256dhKey, subscription.AuthKey);
+                    await _webPushClient.SendNotificationAsync(pushSubscription, payload);
+                }
+
+                return Ok(new { 
+                    success = true,
+                    message = $"Test URL notification sent to {subscriptions.Count} subscription(s)",
+                    testUrl = request.Url
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending test URL notification");
+                return StatusCode(500, new { error = "Failed to send test URL notification" });
+            }
+        }
     }
 
     /// <summary>
@@ -390,5 +447,13 @@ namespace ForexExchange.Controllers
     {
         public string P256dh { get; set; } = string.Empty;
         public string Auth { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Test URL request model
+    /// </summary>
+    public class TestUrlRequest
+    {
+        public string Url { get; set; } = string.Empty;
     }
 }
