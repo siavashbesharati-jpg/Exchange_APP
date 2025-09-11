@@ -10,27 +10,32 @@ namespace ForexExchange.Services
     /// <summary>
     /// Service for sending real-time notifications to admin users using SignalR
     /// Enhanced with comprehensive notification methods for all admin events
+    /// Now includes push notification support
     /// </summary>
     public class AdminNotificationService
     {
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<AdminNotificationService> _logger;
+        private readonly IPushNotificationService? _pushNotificationService;
 
         public AdminNotificationService(
             IHubContext<NotificationHub> hubContext,
             UserManager<ApplicationUser> userManager,
-            ILogger<AdminNotificationService> logger)
+            ILogger<AdminNotificationService> logger,
+            IPushNotificationService? pushNotificationService = null)
         {
             _hubContext = hubContext;
             _userManager = userManager;
             _logger = logger;
+            _pushNotificationService = pushNotificationService;
         }
 
         #region Core Notification Methods
 
         /// <summary>
         /// Send notification to all admin users (Admin, Manager, Staff roles)
+        /// Now includes push notifications
         /// </summary>
         public async Task SendToAllAdminsAsync(string title, string message, string type = "info", object? data = null)
         {
@@ -38,7 +43,7 @@ namespace ForexExchange.Services
             {
                 _logger.LogInformation("Sending notification to Admins group: {Title} - {Message}", title, message);
                 
-                // Send to the "Admins" group (set up in NotificationHub)
+                // Send SignalR notification to the "Admins" group (set up in NotificationHub)
                 await _hubContext.Clients.Group("Admins")
                     .SendAsync("ReceiveNotification", new
                     {
@@ -48,8 +53,14 @@ namespace ForexExchange.Services
                         timestamp = DateTime.Now,
                         data = data
                     });
+
+                // Send push notification to all admin users
+                if (_pushNotificationService != null)
+                {
+                    await _pushNotificationService.SendToAllAdminsAsync(title, message, type, data);
+                }
                     
-                _logger.LogInformation("Notification sent successfully to Admins group");
+                _logger.LogInformation("Notification sent successfully to Admins group (SignalR + Push)");
             }
             catch (Exception ex)
             {
@@ -59,18 +70,33 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Send notification to specific user by user ID
+        /// Now includes push notifications
         /// </summary>
         public async Task SendToUserAsync(string userId, string title, string message, string type = "info", object? data = null)
         {
-            await _hubContext.Clients.User(userId)
-                .SendAsync("ReceiveNotification", new
+            try
+            {
+                // Send SignalR notification
+                await _hubContext.Clients.User(userId)
+                    .SendAsync("ReceiveNotification", new
+                    {
+                        title = title,
+                        message = message,
+                        type = type,
+                        timestamp = DateTime.Now,
+                        data = data
+                    });
+
+                // Send push notification
+                if (_pushNotificationService != null)
                 {
-                    title = title,
-                    message = message,
-                    type = type,
-                    timestamp = DateTime.Now,
-                    data = data
-                });
+                    await _pushNotificationService.SendToUserAsync(userId, title, message, type, data);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending notification to user {UserId}: {Title}", userId, title);
+            }
         }
 
         #endregion

@@ -5,6 +5,7 @@ using System.Text.Json;
 using ForexExchange.Services;
 using ForexExchange.Models;
 using Microsoft.AspNetCore.Identity;
+using ForexExchange.Services.Notifications;
 
 namespace ForexExchange.Controllers
 {
@@ -15,26 +16,26 @@ namespace ForexExchange.Controllers
         private readonly ILogger<OrdersController> _logger;
         private readonly ICurrencyPoolService _poolService;
         private readonly AdminActivityService _adminActivityService;
-        private readonly AdminNotificationService _adminNotificationService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICustomerBalanceService _customerBalanceService;
+        private readonly INotificationHub _notificationHub;
 
         public OrdersController(
             ForexDbContext context,
             ILogger<OrdersController> logger,
             ICurrencyPoolService poolService,
             AdminActivityService adminActivityService,
-            AdminNotificationService adminNotificationService,
             UserManager<ApplicationUser> userManager,
-            ICustomerBalanceService customerBalanceService)
+            ICustomerBalanceService customerBalanceService,
+            INotificationHub notificationHub)
         {
             _context = context;
             _logger = logger;
             _poolService = poolService;
             _adminActivityService = adminActivityService;
-            _adminNotificationService = adminNotificationService;
             _userManager = userManager;
             _customerBalanceService = customerBalanceService;
+            _notificationHub = notificationHub;
         }
 
 
@@ -398,12 +399,14 @@ namespace ForexExchange.Controllers
                 await _customerBalanceService.ProcessOrderCreationAsync(order);
                 _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", order.Id);
 
-                // Log admin activity
+                // Log admin activity and send notifications
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser != null)
                 {
                     await _adminActivityService.LogOrderCreatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                    await _adminNotificationService.SendOrderNotificationAsync(order, "created");
+                    
+                    // Send notifications through central hub (replaces individual notification calls)
+                    await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCreated, currentUser.Id);
                 }
 
                 // Update currency pools
@@ -523,7 +526,7 @@ namespace ForexExchange.Controllers
                     if (currentUser != null)
                     {
                         await _adminActivityService.LogOrderUpdatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                        await _adminNotificationService.SendOrderNotificationAsync(order, "updated");
+                        await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderUpdated, currentUser.Id);
                     }
 
                     TempData["SuccessMessage"] = "معامله با موفقیت بروزرسانی شد.";
@@ -640,8 +643,8 @@ namespace ForexExchange.Controllers
                     {
                         await _adminActivityService.LogOrderCancelledAsync(originalOrder, currentUser.Id, currentUser.UserName ?? "Unknown");
                         await _adminActivityService.LogOrderCreatedAsync(reverseOrder, currentUser.Id, currentUser.UserName ?? "Unknown");
-                        await _adminNotificationService.SendOrderNotificationAsync(originalOrder, "cancelled");
-                        await _adminNotificationService.SendOrderNotificationAsync(reverseOrder, "created");
+                        await _notificationHub.SendOrderNotificationAsync(originalOrder, NotificationEventType.OrderCancelled, currentUser.Id);
+                        await _notificationHub.SendOrderNotificationAsync(reverseOrder, NotificationEventType.OrderCreated, currentUser.Id);
                     }
 
                     TempData["SuccessMessage"] = $"معامله لغو شد و معامله معکوس با نرخ {reverseRate:N4} ایجاد شد.";
@@ -891,7 +894,7 @@ namespace ForexExchange.Controllers
                     {
                         // Note: LogOrderCompletedAsync method needs to be added to AdminActivityService
                         // await _adminActivityService.LogOrderCompletedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                        await _adminNotificationService.SendOrderNotificationAsync(order, "manually completed");
+                        await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCompleted, currentUser.Id);
                     }
 
                     _logger.LogInformation($"Order {id} manually completed by admin. From: {order.Amount} {order.FromCurrency?.Code}, To: {order.Amount * order.Rate} {order.ToCurrency?.Code}");

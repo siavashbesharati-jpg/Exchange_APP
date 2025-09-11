@@ -28,6 +28,9 @@ namespace ForexExchange.Models
         public DbSet<CustomerBalance> CustomerBalances { get; set; }
         public DbSet<AccountingDocument> AccountingDocuments { get; set; }
         public DbSet<ShareableLink> ShareableLinks { get; set; }
+        public DbSet<PushSubscription> PushSubscriptions { get; set; }
+        public DbSet<PushNotificationLog> PushNotificationLogs { get; set; }
+        public DbSet<VapidConfiguration> VapidConfigurations { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -362,6 +365,67 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => e.Token).IsUnique();
                 entity.HasIndex(e => e.CustomerId);
                 entity.HasIndex(e => new { e.IsActive, e.ExpiresAt });
+            });
+
+            // PushSubscription configurations
+            modelBuilder.Entity<PushSubscription>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+                entity.Property(e => e.Endpoint).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.P256dhKey).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.AuthKey).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                entity.Property(e => e.DeviceType).HasMaxLength(50);
+                
+                // Configure foreign key relationship to ApplicationUser (AspNet Identity)
+                entity.HasOne<ApplicationUser>()
+                      .WithMany()
+                      .HasForeignKey(e => e.UserId)
+                      .HasPrincipalKey(u => u.Id)
+                      .OnDelete(DeleteBehavior.Cascade)
+                      .HasConstraintName("FK_PushSubscriptions_AspNetUsers_UserId");
+                      
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.Endpoint);
+                entity.HasIndex(e => new { e.IsActive, e.UserId });
+            });
+
+            // PushNotificationLog configurations
+            modelBuilder.Entity<PushNotificationLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Message).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.Type).HasMaxLength(20);
+                entity.Property(e => e.Data).HasColumnType("TEXT");
+                entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+                
+                // Configure foreign key relationship to PushSubscription
+                entity.HasOne(e => e.PushSubscription)
+                      .WithMany()
+                      .HasForeignKey(e => e.PushSubscriptionId)
+                      .HasPrincipalKey(ps => ps.Id)
+                      .OnDelete(DeleteBehavior.Cascade)
+                      .HasConstraintName("FK_PushNotificationLogs_PushSubscriptions_PushSubscriptionId");
+                      
+                entity.HasIndex(e => e.PushSubscriptionId);
+                entity.HasIndex(e => e.SentAt);
+                entity.HasIndex(e => e.WasSuccessful);
+            });
+
+            // VapidConfiguration configurations
+            modelBuilder.Entity<VapidConfiguration>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ApplicationId).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Subject).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.PublicKey).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.PrivateKey).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.Notes).HasMaxLength(1000);
+                entity.HasIndex(e => e.ApplicationId).IsUnique();
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.CreatedAt);
             });
 
             // Seed currencies

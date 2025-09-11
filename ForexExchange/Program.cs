@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using ForexExchange.Models;
 using ForexExchange.Services;
 using ForexExchange.Hubs;
+using ForexExchange.Services.Notifications.Providers;
+using ForexExchange.Services.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,9 +53,6 @@ builder.Services.AddHttpClient();
 // Add HttpContextAccessor for admin activity logging
 builder.Services.AddHttpContextAccessor();
 
-// Add HttpClient for OpenRouter API
-builder.Services.AddHttpClient();
-
 // Add SignalR
 builder.Services.AddSignalR();
 
@@ -62,8 +61,6 @@ builder.Services.AddScoped<IOcrService, OpenRouterOcrService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBankStatementService, BankStatementService>();
 builder.Services.AddScoped<ICurrencyPoolService, CurrencyPoolService>();
-// TODO: Re-enable after new architecture implementation
-// builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IDataSeedService, DataSeedService>();
 builder.Services.AddScoped<IWebScrapingService, WebScrapingService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
@@ -75,20 +72,52 @@ builder.Services.AddScoped<AdminNotificationService>();
 builder.Services.AddScoped<ICustomerBalanceService, CustomerBalanceService>();
 builder.Services.AddScoped<IBankAccountBalanceService, BankAccountBalanceService>();
 builder.Services.AddScoped<IShareableLinkService, ShareableLinkService>();
+// Push notification services
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+builder.Services.AddScoped<IVapidService, VapidService>();
+
+// Central notification system
+builder.Services.AddScoped<INotificationHub, ForexExchange.Services.Notifications.NotificationHub>();
+
+// Notification providers - register as individual services, not as INotificationProvider
+builder.Services.AddScoped<SignalRNotificationProvider>();
+builder.Services.AddScoped<PushNotificationProvider>();
+builder.Services.AddScoped<SmsNotificationProvider>();
+builder.Services.AddScoped<EmailNotificationProvider>();
+builder.Services.AddScoped<TelegramNotificationProvider>();
 
 
 var app = builder.Build();
+
+// Register notification providers with the hub
+using (var scope = app.Services.CreateScope())
+{
+    var notificationHub = scope.ServiceProvider.GetRequiredService<INotificationHub>();
+    
+    // Register each provider individually
+    var signalRProvider = scope.ServiceProvider.GetRequiredService<SignalRNotificationProvider>();
+    var pushProvider = scope.ServiceProvider.GetRequiredService<PushNotificationProvider>();
+    var smsProvider = scope.ServiceProvider.GetRequiredService<SmsNotificationProvider>();
+    var emailProvider = scope.ServiceProvider.GetRequiredService<EmailNotificationProvider>();
+    var telegramProvider = scope.ServiceProvider.GetRequiredService<TelegramNotificationProvider>();
+    
+    notificationHub.RegisterProvider(signalRProvider);
+    notificationHub.RegisterProvider(pushProvider);
+    notificationHub.RegisterProvider(smsProvider);
+    notificationHub.RegisterProvider(emailProvider);
+    notificationHub.RegisterProvider(telegramProvider);
+}
 
 // Auto-apply migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var logger = services.GetRequiredService<ILogger<Program>>();
-    
+
     try
     {
         var dbContext = services.GetRequiredService<ForexDbContext>();
-        
+
         // Check if there are pending migrations
         var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
         if (pendingMigrations.Any())
@@ -98,7 +127,7 @@ using (var scope = app.Services.CreateScope())
             {
                 logger.LogInformation("Pending migration: {Migration}", migration);
             }
-            
+
             // Apply all pending migrations
             await dbContext.Database.MigrateAsync();
             logger.LogInformation("All migrations applied successfully");
@@ -108,12 +137,12 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Database is up to date. No pending migrations found");
         }
 
-      
+
 
         // // Seed initial data
-        // var dataSeedService = services.GetRequiredService<IDataSeedService>();
-        // await dataSeedService.SeedDataAsync();
-        
+        var dataSeedService = services.GetRequiredService<IDataSeedService>();
+        await dataSeedService.SeedDataAsync();
+
         logger.LogInformation("Application startup completed successfully");
     }
     catch (Exception ex)
@@ -129,10 +158,10 @@ if (!app.Environment.IsDevelopment())
     // SECURITY WARNING: This shows detailed exception information in production
     // Remove this configuration before deploying to a public production environment
     app.UseDeveloperExceptionPage();
-    
+
     // Alternative: Use custom error handling with detailed logging
     // app.UseExceptionHandler("/Home/Error");
-    
+
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
@@ -155,6 +184,6 @@ app.MapControllerRoute(
     pattern: "{controller=ExchangeRates}/{action=Index}/{id?}");
 
 // Map SignalR hubs
-app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<ForexExchange.Hubs.NotificationHub>("/notificationHub");
 
 app.Run();
