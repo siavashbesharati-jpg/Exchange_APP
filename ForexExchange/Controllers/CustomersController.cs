@@ -17,6 +17,7 @@ namespace ForexExchange.Controllers
     private readonly CustomerDebtCreditService _debtCreditService;
     private readonly IShareableLinkService _shareableLinkService;
     private readonly AdminNotificationService _adminNotificationService;
+    private readonly ICentralFinancialService _centralFinancialService;
 
     public CustomersController(
         ForexDbContext context,
@@ -24,7 +25,8 @@ namespace ForexExchange.Controllers
         ILogger<CustomersController> logger,
         CustomerDebtCreditService debtCreditService,
         IShareableLinkService shareableLinkService,
-        AdminNotificationService adminNotificationService)
+        AdminNotificationService adminNotificationService,
+        ICentralFinancialService centralFinancialService)
     {
         _context = context;
         _userManager = userManager;
@@ -32,6 +34,7 @@ namespace ForexExchange.Controllers
         _debtCreditService = debtCreditService;
         _shareableLinkService = shareableLinkService;
         _adminNotificationService = adminNotificationService;
+        _centralFinancialService = centralFinancialService;
     }        // GET: Customers
         public async Task<IActionResult> Index()
         {
@@ -416,14 +419,17 @@ namespace ForexExchange.Controllers
                 if (result.Succeeded)
                 {
                     await _userManager.AddToRoleAsync(user, "Customer");
-                    // Extract and save initial balances with robust parsing
+                    // Extract and save initial balances using centralized service
                     var initialBalances = ExtractInitialBalancesFromForm();
                     _logger.LogInformation($"CREATE: Processing {initialBalances.Count} initial balances");
+                    
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    var performedBy = currentUser?.UserName ?? "System";
                     
                     foreach (var balance in initialBalances)
                     {
                         var code = balance.Key?.Trim().ToUpperInvariant();
-                        var amount = balance.Value; // Preserve original value (including negative)
+                        var amount = balance.Value; // Initial balance amount
                         
                         if (string.IsNullOrWhiteSpace(code) || code.Length != 3)
                         {
@@ -431,21 +437,22 @@ namespace ForexExchange.Controllers
                             continue;
                         }
                         
-                        _logger.LogInformation($"CREATE: Saving {code} = {amount}");
-                        _context.CustomerBalances.Add(new CustomerBalance
+                        if (amount != 0)
                         {
-                            CustomerId = customer.Id,
-                            CurrencyCode = code,
-                            Balance = amount,
-                            LastUpdated = DateTime.Now,
-                            Notes = "موجودی اولیه در زمان ثبت مشتری"
-                        });
+                            _logger.LogInformation($"CREATE: Setting initial {code} balance = {amount}");
+                            await _centralFinancialService.AdjustCustomerBalanceAsync(
+                                customerId: customer.Id,
+                                currencyCode: code,
+                                adjustmentAmount: amount,
+                                reason: "Initial balance during customer creation",
+                                performedBy: performedBy
+                            );
+                        }
                     }
                     
                     if (initialBalances.Count > 0)
                     {
-                        await _context.SaveChangesAsync();
-                        _logger.LogInformation($"CREATE: Successfully saved {initialBalances.Count} initial balances");
+                        _logger.LogInformation($"CREATE: Successfully processed {initialBalances.Count} initial balances");
                     }
 
                     // Send notification about new customer
@@ -505,11 +512,20 @@ namespace ForexExchange.Controllers
             };
 
             // supply currency dropdown
-            ViewBag.CurrencyOptions = await _context.Currencies
+            var currencies = await _context.Currencies
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new { c.Code, c.PersianName })
                 .ToListAsync();
+            
+            ViewBag.CurrencyOptions = currencies;
+            
+            // Debug logging
+            _logger.LogInformation($"EDIT: Loading {currencies.Count} currencies for customer {id}");
+            foreach (var currency in currencies)
+            {
+                _logger.LogInformation($"EDIT: Currency available: {currency.Code} - {currency.PersianName}");
+            }
 
             return View(model);
         }
@@ -633,7 +649,7 @@ namespace ForexExchange.Controllers
                         }
                     }
 
-                    // Extract and update CustomerBalances
+                    // Extract and update CustomerBalances using centralized service
                     var providedBalances = ExtractInitialBalancesFromForm();
                     _logger.LogInformation($"EDIT: Processing {providedBalances.Count} initial balances");
                     
@@ -641,21 +657,33 @@ namespace ForexExchange.Controllers
                         .Where(b => b.CustomerId == customer.Id)
                         .ToListAsync();
 
-                    // Delete balances not in the provided list
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    var performedBy = currentUser?.UserName ?? "Unknown";
+
+                    // Handle balance removals (set to zero through centralized service)
                     foreach (var existingBalance in existingBalances)
                     {
                         if (!providedBalances.ContainsKey(existingBalance.CurrencyCode))
                         {
                             _logger.LogInformation($"EDIT: Removing {existingBalance.CurrencyCode} balance");
-                            _context.CustomerBalances.Remove(existingBalance);
+                            if (existingBalance.Balance != 0)
+                            {
+                                await _centralFinancialService.AdjustCustomerBalanceAsync(
+                                    customerId: customer.Id,
+                                    currencyCode: existingBalance.CurrencyCode,
+                                    adjustmentAmount: -existingBalance.Balance, // Set to zero
+                                    reason: "Balance removed during customer edit",
+                                    performedBy: performedBy
+                                );
+                            }
                         }
                     }
 
-                    // Add or update provided balances
+                    // Add or update provided balances using centralized service
                     foreach (var balance in providedBalances)
                     {
                         var code = balance.Key?.Trim().ToUpperInvariant();
-                        var amount = balance.Value; // Preserve original value (including negative)
+                        var targetAmount = balance.Value; // Target balance
                         
                         if (string.IsNullOrWhiteSpace(code) || code.Length != 3)
                         {
@@ -664,25 +692,23 @@ namespace ForexExchange.Controllers
                         }
 
                         var existingBalance = existingBalances.FirstOrDefault(b => b.CurrencyCode == code);
-                        if (existingBalance == null)
+                        var currentAmount = existingBalance?.Balance ?? 0;
+                        var adjustmentAmount = targetAmount - currentAmount;
+
+                        if (adjustmentAmount != 0)
                         {
-                            _logger.LogInformation($"EDIT: Adding new {code} = {amount}");
-                            _context.CustomerBalances.Add(new CustomerBalance
-                            {
-                                CustomerId = customer.Id,
-                                CurrencyCode = code,
-                                Balance = amount,
-                                LastUpdated = DateTime.Now,
-                                Notes = "بروزرسانی موجودی در زمان ویرایش مشتری"
-                            });
+                            _logger.LogInformation($"EDIT: Adjusting {code} from {currentAmount} to {targetAmount} (adjustment: {adjustmentAmount})");
+                            await _centralFinancialService.AdjustCustomerBalanceAsync(
+                                customerId: customer.Id,
+                                currencyCode: code,
+                                adjustmentAmount: adjustmentAmount,
+                                reason: "Balance updated during customer edit",
+                                performedBy: performedBy
+                            );
                         }
                         else
                         {
-                            _logger.LogInformation($"EDIT: Updating {code} from {existingBalance.Balance} to {amount}");
-                            existingBalance.Balance = amount;
-                            existingBalance.LastUpdated = DateTime.Now;
-                            existingBalance.Notes = "Balance updated during customer edit";
-                            _context.CustomerBalances.Update(existingBalance);
+                            _logger.LogInformation($"EDIT: No change needed for {code} (already {targetAmount})");
                         }
                     }
 

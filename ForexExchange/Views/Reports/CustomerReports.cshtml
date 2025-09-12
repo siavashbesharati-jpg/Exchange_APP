@@ -63,95 +63,12 @@
         </div>
     </div>
 
-    <!-- Tabs -->
+    <!-- Content -->
     <div class="row">
         <div class="col-12">
-            <ul class="nav nav-tabs nav-fill mb-4" id="reportTabs">
-                <li class="nav-item">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#timeline-tab">
-                        <i class="fas fa-chart-line me-1"></i>تاریخچه مالی
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#orders-tab">
-                        <i class="fas fa-exchange-alt me-1"></i>معاملات مشتریان
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#documents-tab">
-                        <i class="fas fa-file-invoice me-1"></i>اسناد حسابداری
-                    </button>
-                </li>
-            </ul>
 
-            <div class="tab-content">
-                <!-- Financial Timeline Tab - FIRST AND ACTIVE -->
-                <div class="tab-pane fade show active" id="timeline-tab">
-                    <!-- Summary Cards -->
-                    <div class="row mb-4" id="timelineSummaryCards" style="display: none;">
-                        <div class="col-md-3">
-                            <div class="card bg-gradient-primary text-white shadow">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="card-title">کل تراکنش‌ها</h6>
-                                            <h4 class="mb-0" id="timelineTotalTransactions">-</h4>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="fas fa-exchange-alt fa-2x opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-gradient-success text-white shadow">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="card-title">سفارشات</h6>
-                                            <h4 class="mb-0" id="timelineOrderCount">-</h4>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="fas fa-shopping-cart fa-2x opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-gradient-info text-white shadow">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="card-title">اسناد مالی</h6>
-                                            <h4 class="mb-0" id="timelineDocumentCount">-</h4>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="fas fa-file-invoice fa-2x opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-gradient-warning text-white shadow">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="card-title">ارزهای درگیر</h6>
-                                            <h4 class="mb-0" id="timelineCurrencyCount">-</h4>
-                                        </div>
-                                        <div class="align-self-center">
-                                            <i class="fas fa-coins fa-2x opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- New Simplified Timeline Table -->
+            <!-- Financial Timeline Content -->
+            <!-- New Simplified Timeline Table -->
                     <div class="card shadow-sm border-3">
                         <div class="card-header bg-gradient-primary text-white">
                             <div class="d-flex justify-content-between align-items-center">
@@ -227,81 +144,12 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Customer Orders Tab -->
-                <div class="tab-pane fade" id="orders-tab">
-                    <div class="card shadow-sm border-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>معاملات مشتریان</h5>
-                            <button class="btn btn-success btn-sm" onclick="exportData('orders')">
-                                <i class="fas fa-file-excel me-1"></i>Excel
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-dark">
-                                        <tr class="text-center">
-                                            <th>مشتری</th>
-                                            <th> دریافت کرده ایم </th>
-                                            <th>مقدار</th>
-                                            <th> پرداخت کرده ایم </th>
-                                            <th>مقدار</th>
-                                            <th>تاریخ</th>
-                                            <th>وضعیت</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="ordersTableBody">
-                                        <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- Pagination -->
-                            <nav id="ordersPagination" class="mt-3"></nav>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Account Documents Tab -->
-                <div class="tab-pane fade" id="documents-tab">
-                    <div class="card shadow-sm border-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>اسناد حسابداری</h5>
-                            <button class="btn btn-success btn-sm" onclick="exportData('documents')">
-                                <i class="fas fa-file-excel me-1"></i>Excel
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-dark">
-                                        <tr class="text-center">
-                                            <th>شماره سند</th>
-                                            <th>مشتری</th>
-                                            <th>نوع</th>
-                                            <th>مبلغ</th>
-                                            <th>ارز</th>
-                                            <th>تاریخ</th>
-                                            <th>توضیحات</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="documentsTableBody">
-                                        <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- Pagination -->
-                            <nav id="documentsPagination" class="mt-3"></nav>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
 
 <script>
-let currentPage = { orders: 1, documents: 1, timeline: 1 };
+let currentPage = { timeline: 1 };
 let pageSize = 10;
 let currentTimeline = null;
 
@@ -314,14 +162,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize empty tables
     showEmptyState();
-    
-    // Tab change event
-    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function(e) {
-            const target = e.target.getAttribute('data-bs-target');
-            loadDataForActiveTab();
-        });
-    });
     
     // Customer filter change event
     document.getElementById('customerFilter').addEventListener('change', function() {
@@ -405,21 +245,11 @@ function loadData() {
 }
 
 function loadDataForActiveTab() {
-    const activeTab = document.querySelector('.nav-link.active');
-    if (!activeTab) return;
-    
-    const target = activeTab.getAttribute('data-bs-target');
-    if (target === '#timeline-tab' || !target) loadCustomerTimeline();
-    else if (target === '#orders-tab') loadOrders();
-    else if (target === '#documents-tab') loadDocuments();
+    loadCustomerTimeline();
 }
 
 function showEmptyState() {
-    // Show empty state for remaining tables
-    document.getElementById('ordersTableBody').innerHTML = 
-        '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
-    document.getElementById('documentsTableBody').innerHTML = 
-        '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+    // Show empty state for timeline
     document.getElementById('timelineTableBody').innerHTML = 
         '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-user-plus fa-2x mb-2"></i><br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید</td></tr>';
 }
@@ -427,147 +257,6 @@ function showEmptyState() {
 function clearDate(inputId) {
     document.getElementById(inputId).value = '';
     loadDataForActiveTab();
-}
-
-function loadOrders(page = 1) {
-    const customerId = document.getElementById('customerFilter').value;
-    if (!customerId) {
-        document.getElementById('ordersTableBody').innerHTML = 
-            '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
-        document.getElementById('ordersPagination').innerHTML = '';
-        return;
-    }
-
-    currentPage.orders = page;
-    const tbody = document.getElementById('ordersTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
-    
-    const params = new URLSearchParams({
-        fromDate: document.getElementById('fromDate').value,
-        toDate: document.getElementById('toDate').value,
-        currency: document.getElementById('currencyFilter').value,
-        customer: customerId,
-        page: page,
-        pageSize: pageSize
-    });
-    
-    fetch(`@Url.Action("GetCustomerOrders", "Reports")?${params}`)
-        .then(response => response.json())
-        .then(data => {
-            tbody.innerHTML = '';
-            
-            if (data.success && data.data && data.data.length > 0) {
-                data.data.forEach(order => {
-                    const statusClass = order.status === 'Completed' ? 'success' : 
-                                      order.status === 'Pending' ? 'warning' : 'secondary';
-                    const statusText = order.status === 'Completed' ? 'تکمیل شده' :
-                                     order.status === 'Pending' ? 'در انتظار' : 'لغو شده';
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="text-center">
-                            <a href="@Url.Action("Details", "Customers")/${order.customerId}" class="text-decoration-none fw-bold">
-                                ${order.customerName}
-                            </a>
-                        </td>
-                        <td class="text-center"><span class="badge bg-primary">${order.fromCurrency}</span></td>
-                        <td class="text-center ltr-direction">+${formatCurrency(order.fromAmount, order.fromCurrency)}</td>
-                        <td class="text-center"><span class="badge bg-success">${order.toCurrency}</span></td>
-                        <td class="text-center ltr-direction">-${formatCurrency(order.toAmount, order.toCurrency)}</td>
-                        <td class="text-center">
-                            <a href="@Url.Action("Details", "Orders")/${order.id}" class="text-decoration-none">
-                                ${formatDate(order.createdAt)}
-                            </a>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-${statusClass}">${statusText}</span>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                updatePagination('ordersPagination', data.totalPages, page, loadOrders);
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-search me-2"></i>گزارشی با فیلترهای انتخاب شده یافت نشد</td></tr>';
-                document.getElementById('ordersPagination').innerHTML = '';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading orders:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">خطا در بارگذاری اطلاعات</td></tr>';
-        });
-}
-
-function loadDocuments(page = 1) {
-    const customerId = document.getElementById('customerFilter').value;
-    if (!customerId) {
-        document.getElementById('documentsTableBody').innerHTML = 
-            '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
-        document.getElementById('documentsPagination').innerHTML = '';
-        return;
-    }
-
-    currentPage.documents = page;
-    const tbody = document.getElementById('documentsTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
-    
-    const params = new URLSearchParams({
-        fromDate: document.getElementById('fromDate').value,
-        toDate: document.getElementById('toDate').value,
-        currency: document.getElementById('currencyFilter').value,
-        customer: customerId,
-        page: page,
-        pageSize: pageSize
-    });
-    
-    fetch(`@Url.Action("GetCustomerDocuments", "Reports")?${params}`)
-        .then(response => response.json())
-        .then(data => {
-            tbody.innerHTML = '';
-            
-            if (data.success && data.data && data.data.length > 0) {
-                data.data.forEach(doc => {
-                    const typeText = doc.type === 'Receipt' ? 'رسید' :
-                                   doc.type === 'Payment' ? 'پرداخت' : 'سایر';
-                    const typeClass = doc.type === 'Receipt' ? 'success' : 'info';
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="text-center">
-                            <a href="@Url.Action("Details", "AccountingDocuments")/${doc.id}" class="text-decoration-none fw-bold">
-                                #${doc.documentNumber}
-                            </a>
-                        </td>
-                        <td class="text-center">
-                            <a href="@Url.Action("Details", "Customers")/${doc.customerId}" class="text-decoration-none">
-                                ${doc.customerName}
-                            </a>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-${typeClass}">${typeText}</span>
-                        </td>
-                        <td class="text-center ltr-direction fw-bold">
-                            ${doc.amount >= 0 ? '+' : ''}${formatCurrency(doc.amount, doc.currencyCode)}
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-primary">${doc.currencyCode}</span>
-                        </td>
-                        <td class="text-center">${formatDate(doc.createdAt)}</td>
-                        <td class="text-center text-muted">${doc.description || '-'}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                updatePagination('documentsPagination', data.totalPages, page, loadDocuments);
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-search me-2"></i>گزارشی با فیلترهای انتخاب شده یافت نشد</td></tr>';
-                document.getElementById('documentsPagination').innerHTML = '';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading documents:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">خطا در بارگذاری اطلاعات</td></tr>';
-        });
 }
 
 function updatePagination(containerId, totalPages, currentPageNum, loadFunction) {
@@ -599,22 +288,8 @@ function updatePagination(containerId, totalPages, currentPageNum, loadFunction)
     container.innerHTML = pagination;
 }
 
-function exportData(type) {
-    const customerId = document.getElementById('customerFilter').value;
-    if (!customerId) {
-        alert('لطفاً ابتدا مشتری را انتخاب کنید');
-        return;
-    }
-
-    const params = new URLSearchParams({
-        type: type,
-        fromDate: document.getElementById('fromDate').value,
-        toDate: document.getElementById('toDate').value,
-        currency: document.getElementById('currencyFilter').value,
-        customer: customerId
-    });
-    
-    window.location.href = `@Url.Action("ExportCustomerReports", "Reports")?${params}`;
+function exportData() {
+    exportTimelineData();
 }
 
 function formatCurrency(amount, currencyCode) {
@@ -659,7 +334,6 @@ function loadCustomerTimeline() {
         if (response.success) {
             currentTimeline = response.data;
             renderBankStyleTimeline(response.data);
-            updateTimelineSummaryCards(response.data);
             updateCustomerInfo(response.data);
         } else {
             showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
@@ -713,11 +387,11 @@ function renderBankStyleTimeline(timeline) {
         const initialBalance = timeline.initialBalances[currency] || 0;
         timelineHtml += `
             <tr class="table-light">
-                <td class="text-center">موجودی اولیه</td>
+                <td class="text-center">  </td>
                 <td class="text-center"><span class="badge bg-secondary">موجودی اولیه</span></td>
                 <td class="text-center">${currency}</td>
                 <td class="text-center ltr-direction">-</td>
-                <td class="text-center ltr-direction fw-bold">${initialBalance >= 0 ? '+' : ''}${formatCurrency(initialBalance, currency)}</td>
+                <td class="text-center ltr-direction fw-bold">${formatCurrency(initialBalance, currency)}</td>
             </tr>
         `;
 
@@ -740,8 +414,8 @@ function renderBankStyleTimeline(timeline) {
                         </a>
                     </td>
                     <td class="text-center">${currency}</td>
-                    <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${transaction.amount >= 0 ? '+' : ''}${formatCurrency(transaction.amount, currency)}</td>
-                    <td class="text-center ltr-direction fw-bold">${transaction.runningBalance >= 0 ? '+' : ''}${formatCurrency(transaction.runningBalance, currency)}</td>
+                    <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(transaction.amount, currency)}</td>
+                    <td class="text-center ltr-direction fw-bold">${formatCurrency(transaction.runningBalance, currency)}</td>
                 </tr>
             `;
         });
@@ -751,11 +425,11 @@ function renderBankStyleTimeline(timeline) {
         const netChange = timeline.netChanges[currency] || 0;
         timelineHtml += `
             <tr class="table-warning">
-                <td class="text-center">موجودی نهایی</td>
+                <td class="text-center"> </td>
                 <td class="text-center"><span class="badge bg-warning text-dark">موجودی نهایی</span></td>
                 <td class="text-center">${currency}</td>
                 <td class="text-center  fw-bold ">-</td>
-                <td class="text-center ltr-direction fw-bold">${finalBalance >= 0 ? '+' : ''}${formatCurrency(finalBalance, currency)}</td>
+                <td class="text-center ltr-direction fw-bold">${formatCurrency(finalBalance, currency)}</td>
             </tr>
         `;
 
@@ -765,13 +439,6 @@ function renderBankStyleTimeline(timeline) {
     
     tbody.innerHTML = timelineHtml;
     renderBalanceSummary(timeline.finalBalances);
-}
-
-function updateTimelineSummaryCards(timeline) {
-    document.getElementById('timelineTotalTransactions').textContent = timeline.totalTransactions.toLocaleString();
-    document.getElementById('timelineOrderCount').textContent = timeline.orderCount.toLocaleString();
-    document.getElementById('timelineDocumentCount').textContent = timeline.documentCount.toLocaleString();
-    document.getElementById('timelineCurrencyCount').textContent = timeline.currenciesInvolved.length;
 }
 
 function updateCustomerInfo(timeline) {
@@ -807,7 +474,7 @@ function renderBalanceSummary(balances) {
                             <span class="badge bg-primary mb-1">${currency}</span>
                         </div>
                         <h6 class="mb-0 text-${colorClass} text-center ltr-direction">
-                            ${isPositive ? '+' : ''}${formatCurrency(amount, currency)}
+                            ${formatCurrency(amount, currency)}
                         </h6>
                         <small class="text-muted d-block text-center">${isPositive ? 'اعتبار' : 'بدهی'}</small>
                     </div>
@@ -891,13 +558,11 @@ function showTimelineError(message) {
 }
 
 function showTimelineSections() {
-    document.getElementById('timelineSummaryCards').style.display = 'flex';
     document.getElementById('customerInfoHeader').style.display = 'block';
     document.getElementById('balanceSummarySection').style.display = 'block';
 }
 
 function hideTimelineSections() {
-    document.getElementById('timelineSummaryCards').style.display = 'none';
     document.getElementById('customerInfoHeader').style.display = 'none';
     document.getElementById('balanceSummarySection').style.display = 'none';
 }
@@ -1092,7 +757,6 @@ a:not(.btn):not(.page-link):hover {
 
 .table-light td {
     background-color: #f8f9fa !important;
-    font-style: italic;
 }
 
 .table-warning td {
@@ -1135,8 +799,7 @@ a:not(.btn):not(.page-link):hover {
 /* Print styles for timeline */
 @@media print {
     .timeline-tab .card-header,
-    .timeline-tab .btn,
-    #timelineSummaryCards {
+    .timeline-tab .btn {
         display: none !important;
     }
     

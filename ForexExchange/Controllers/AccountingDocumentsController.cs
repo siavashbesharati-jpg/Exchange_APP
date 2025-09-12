@@ -19,6 +19,7 @@ namespace ForexExchange.Controllers
         private readonly AdminNotificationService _adminNotificationService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INotificationHub _notificationHub;
+        private readonly ICentralFinancialService _centralFinancialService;
 
         public AccountingDocumentsController(
             ForexDbContext context,
@@ -27,7 +28,8 @@ namespace ForexExchange.Controllers
             IOcrService ocrService,
             AdminNotificationService adminNotificationService,
             UserManager<ApplicationUser> userManager,
-            INotificationHub notificationHub)
+            INotificationHub notificationHub,
+            ICentralFinancialService centralFinancialService)
         {
             _context = context;
             _customerBalanceService = customerBalanceService;
@@ -36,6 +38,7 @@ namespace ForexExchange.Controllers
             _adminNotificationService = adminNotificationService;
             _userManager = userManager;
             _notificationHub = notificationHub;
+            _centralFinancialService = centralFinancialService;
         }
 
         // GET: AccountingDocuments
@@ -428,9 +431,8 @@ namespace ForexExchange.Controllers
                             accountingDocument.VerifiedAt = DateTime.Now;
                             accountingDocument.VerifiedBy = User.Identity?.Name ?? "System";
 
-                            // Update balances (only customer and bank account balances)
-                            await _customerBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
-                            await _bankAccountBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
+                            // Update balances through centralized service (includes history recording)
+                            await _centralFinancialService.ProcessAccountingDocumentAsync(accountingDocument);
                             // Note: Currency pools are NOT updated on document verification
                             // Currency pools are only affected by actual currency trading operations
                         }
@@ -529,9 +531,8 @@ namespace ForexExchange.Controllers
                     accountingDocument.VerifiedAt = DateTime.Now;
                     accountingDocument.VerifiedBy = User.Identity?.Name ?? "System";
 
-                    // Update balances (only customer and bank account balances)
-                    await _customerBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
-                    await _bankAccountBalanceService.ProcessAccountingDocumentAsync(accountingDocument);
+                    // Update balances through centralized service (includes history recording)
+                    await _centralFinancialService.ProcessAccountingDocumentAsync(accountingDocument);
                  
                     _context.Update(accountingDocument);
                     await _context.SaveChangesAsync();

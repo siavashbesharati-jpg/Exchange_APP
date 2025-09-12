@@ -341,47 +341,80 @@ namespace ForexExchange.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Get or create currency pool
+                // First, try to get active pool
                 var pool = await _context.CurrencyPools
                     .FirstOrDefaultAsync(cp => cp.CurrencyCode == currencyCode && cp.IsActive);
 
                 if (pool == null)
                 {
-                    // Get currency information to create pool
-                    var currency = await _context.Currencies
-                        .FirstOrDefaultAsync(c => c.Code == currencyCode && c.IsActive);
+                    // If no active pool, check if there's an inactive pool we can reactivate
+                    var inactivePool = await _context.CurrencyPools
+                        .FirstOrDefaultAsync(cp => cp.CurrencyCode == currencyCode && !cp.IsActive);
 
-                    if (currency == null)
+                    if (inactivePool != null)
                     {
-                        throw new InvalidOperationException($"Currency not found: {currencyCode}");
+                        // Reactivate existing pool
+                        _logger.LogInformation($"Reactivating inactive currency pool for {currencyCode}");
+                        inactivePool.IsActive = true;
+                        inactivePool.LastUpdated = DateTime.UtcNow;
+                        inactivePool.Notes = $"Reactivated by CentralFinancialService - {performedBy}";
+                        pool = inactivePool;
                     }
-
-                    // Don't create pools for base currency (IRR) - just log and skip
-                    if (currency.IsBaseCurrency)
+                    else
                     {
-                        _logger.LogInformation($"Skipping currency pool operation for base currency: {currencyCode}");
-                        await transaction.CommitAsync();
-                        return;
+                        // Get currency information to create new pool
+                        var currency = await _context.Currencies
+                            .FirstOrDefaultAsync(c => c.Code == currencyCode && c.IsActive);
+
+                        if (currency == null)
+                        {
+                            throw new InvalidOperationException($"Currency not found: {currencyCode}");
+                        }
+
+                        // Don't create pools for base currency (IRR) - just log and skip
+                        if (currency.IsBaseCurrency)
+                        {
+                            _logger.LogInformation($"Skipping currency pool operation for base currency: {currencyCode}");
+                            await transaction.CommitAsync();
+                            return;
+                        }
+
+                        // Check if pool already exists by CurrencyId to avoid UNIQUE constraint violation
+                        var existingPool = await _context.CurrencyPools
+                            .FirstOrDefaultAsync(cp => cp.CurrencyId == currency.Id);
+
+                        if (existingPool != null)
+                        {
+                            // Pool exists but might have wrong currency code - fix it and activate
+                            _logger.LogWarning($"Found existing pool for Currency ID {currency.Id}, updating currency code and activating");
+                            existingPool.CurrencyCode = currencyCode;
+                            existingPool.IsActive = true;
+                            existingPool.LastUpdated = DateTime.UtcNow;
+                            existingPool.Notes = $"Updated and activated by CentralFinancialService - {performedBy}";
+                            pool = existingPool;
+                        }
+                        else
+                        {
+                            // Auto-create missing currency pool
+                            _logger.LogWarning($"Currency pool not found for {currencyCode}, creating automatically");
+                            pool = new CurrencyPool
+                            {
+                                CurrencyId = currency.Id,
+                                CurrencyCode = currencyCode,
+                                Balance = 100000, // Default starting balance
+                                TotalBought = 0,
+                                TotalSold = 0,
+                                ActiveBuyOrderCount = 0,
+                                ActiveSellOrderCount = 0,
+                                RiskLevel = PoolRiskLevel.Low,
+                                IsActive = true,
+                                LastUpdated = DateTime.UtcNow,
+                                Notes = $"Auto-created by CentralFinancialService - {performedBy}"
+                            };
+                            _context.CurrencyPools.Add(pool);
+                            await _context.SaveChangesAsync(); // Save the new pool first
+                        }
                     }
-
-                    // Auto-create missing currency pool
-                    _logger.LogWarning($"Currency pool not found for {currencyCode}, creating automatically");
-                    pool = new CurrencyPool
-                    {
-                        CurrencyId = currency.Id,
-                        CurrencyCode = currencyCode,
-                        Balance = 100000, // Default starting balance
-                        TotalBought = 0,
-                        TotalSold = 0,
-                        ActiveBuyOrderCount = 0,
-                        ActiveSellOrderCount = 0,
-                        RiskLevel = PoolRiskLevel.Low,
-                        IsActive = true,
-                        LastUpdated = DateTime.UtcNow,
-                        Notes = $"Auto-created by CentralFinancialService"
-                    };
-                    _context.CurrencyPools.Add(pool);
-                    await _context.SaveChangesAsync(); // Save the new pool first
                 }
 
                 var previousBalance = pool.Balance;

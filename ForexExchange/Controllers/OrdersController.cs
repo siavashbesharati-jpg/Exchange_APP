@@ -19,6 +19,7 @@ namespace ForexExchange.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICustomerBalanceService _customerBalanceService;
         private readonly INotificationHub _notificationHub;
+        private readonly ICentralFinancialService _centralFinancialService;
 
         public OrdersController(
             ForexDbContext context,
@@ -27,7 +28,8 @@ namespace ForexExchange.Controllers
             AdminActivityService adminActivityService,
             UserManager<ApplicationUser> userManager,
             ICustomerBalanceService customerBalanceService,
-            INotificationHub notificationHub)
+            INotificationHub notificationHub,
+            ICentralFinancialService centralFinancialService)
         {
             _context = context;
             _logger = logger;
@@ -36,6 +38,7 @@ namespace ForexExchange.Controllers
             _userManager = userManager;
             _customerBalanceService = customerBalanceService;
             _notificationHub = notificationHub;
+            _centralFinancialService = centralFinancialService;
         }
 
 
@@ -394,7 +397,7 @@ namespace ForexExchange.Controllers
 
                 // Update customer balances for the order
                 _logger.LogInformation("About to call ProcessOrderCreationAsync for Order {OrderId}", order.Id);
-                await _customerBalanceService.ProcessOrderCreationAsync(order);
+                await _centralFinancialService.ProcessOrderCreationAsync(order);
                 _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", order.Id);
 
                 // Log admin activity and send notifications

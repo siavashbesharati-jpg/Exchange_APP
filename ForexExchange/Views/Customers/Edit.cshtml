@@ -144,6 +144,10 @@
         (function() {
             const currencyOptions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrencyOptions ?? new object[0]));
             
+            // Debug logging
+            console.log('Currency options loaded:', currencyOptions);
+            console.log('Number of currencies:', currencyOptions ? currencyOptions.length : 0);
+            
             const addBtn = document.getElementById('add-balance');
             const rowsContainer = document.getElementById('balance-rows');
             const template = document.getElementById('balance-row-template');
@@ -158,6 +162,9 @@
             }
 
             function buildOptions(selectEl, selectedCode) {
+                console.log('Building options for select element, selectedCode:', selectedCode);
+                console.log('Available currency options:', currencyOptions);
+                
                 // Clear and add placeholder
                 selectEl.innerHTML = '';
                 const ph = document.createElement('option');
@@ -166,14 +173,18 @@
                 ph.disabled = true;
                 ph.selected = !selectedCode;
                 selectEl.appendChild(ph);
+                
                 // Add options
                 (currencyOptions || []).forEach(o => {
+                    console.log('Adding currency option:', o);
                     const opt = document.createElement('option');
                     opt.value = o.Code;
                     opt.textContent = `${o.PersianName} (${o.Code})`;
                     if (selectedCode && selectedCode.toUpperCase() === o.Code) opt.selected = true;
                     selectEl.appendChild(opt);
                 });
+                
+                console.log('Select element now has', selectEl.options.length, 'options');
             }
 
             function isDuplicateCode(selectEl) {

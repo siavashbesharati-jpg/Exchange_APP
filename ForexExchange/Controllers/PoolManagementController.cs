@@ -13,17 +13,20 @@ namespace ForexExchange.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly AdminActivityService _adminActivityService;
         private readonly ILogger<PoolManagementController> _logger;
+        private readonly ICentralFinancialService _centralFinancialService;
 
         public PoolManagementController(
             ICurrencyPoolService poolService,
             UserManager<ApplicationUser> userManager,
             AdminActivityService adminActivityService,
-            ILogger<PoolManagementController> logger)
+            ILogger<PoolManagementController> logger,
+            ICentralFinancialService centralFinancialService)
         {
             _poolService = poolService;
             _userManager = userManager;
             _adminActivityService = adminActivityService;
             _logger = logger;
+            _centralFinancialService = centralFinancialService;
         }
 
         /// <summary>
@@ -63,41 +66,51 @@ namespace ForexExchange.Controllers
                 }
 
                 var oldBalance = pool.Balance;
+                var currencyCode = pool.Currency?.Code;
                 
-                // Calculate the difference
-                var difference = newBalance - oldBalance;
+                if (string.IsNullOrEmpty(currencyCode))
+                {
+                    return Json(new { success = false, message = "کد ارز صندوق نامعتبر است" });
+                }
                 
-                // Update pool balance directly
-                pool.Balance = newBalance;
-                pool.LastUpdated = DateTime.Now;
+                // Calculate the adjustment amount
+                var adjustmentAmount = newBalance - oldBalance;
                 
-                // Save changes
-                var updatedPool = await _poolService.UpdatePoolDirectAsync(pool);
+                // Get current user for history recording
+                var currentUser = await _userManager.GetUserAsync(User);
+                var performedBy = currentUser?.UserName ?? "Unknown";
+                
+                // Use centralized service for balance update with history recording
+                await _centralFinancialService.AdjustCurrencyPoolAsync(
+                    currencyCode: currencyCode,
+                    adjustmentAmount: adjustmentAmount,
+                    reason: reason ?? "Manual pool balance adjustment by admin",
+                    performedBy: performedBy
+                );
 
                 // Log admin activity
-                var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser != null)
                 {
                     await _adminActivityService.LogPoolBalanceChangeAsync(
                         poolId,
-                        pool.Currency?.Code ?? "Unknown",
+                        currencyCode,
                         oldBalance,
                         newBalance,
-                        difference,
+                        adjustmentAmount,
                         reason ?? "Manual adjustment by admin",
                         currentUser.Id,
-                        currentUser.UserName ?? "Unknown"
+                        performedBy
                     );
                 }
 
-                _logger.LogInformation($"Pool balance updated: {pool.Currency?.Code} from {oldBalance:N0} to {newBalance:N0} by {currentUser?.UserName}");
+                _logger.LogInformation($"Pool balance updated: {currencyCode} from {oldBalance:N0} to {newBalance:N0} by {performedBy}");
 
                 return Json(new { 
                     success = true, 
                     message = $"موجودی {pool.Currency?.PersianName} با موفقیت به {newBalance:N0} بروزرسانی شد",
                     newBalance = newBalance,
-                    difference = difference,
-                    lastUpdated = pool.LastUpdated.ToString("yyyy/MM/dd HH:mm:ss")
+                    difference = adjustmentAmount,
+                    lastUpdated = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")
                 });
             }
             catch (Exception ex)
