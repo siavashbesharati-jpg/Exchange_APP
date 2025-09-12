@@ -1,0 +1,549 @@
+@{
+    ViewData["Title"] = "گزارشات مدیریتی";
+}
+
+<div class="container-fluid">
+    <!-- Header with Back Button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h2><i class="fas fa-user-shield text-dark me-2"></i>گزارشات مدیریتی</h2>
+                    <p class="text-muted">فعالیت‌های مدیریتی، دسترسی‌ها و گزارشات امنیتی سیستم</p>
+                </div>
+                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-1"></i>بازگشت به فهرست گزارشات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-filter me-2"></i>فیلترهای گزارش</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">از تاریخ</label>
+                            <input type="date" class="form-control" id="fromDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">تا تاریخ</label>
+                            <input type="date" class="form-control" id="toDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">نوع فعالیت</label>
+                            <select class="form-select" id="activityType">
+                                <option value="">همه فعالیت‌ها</option>
+                                <option value="login">ورود کاربران</option>
+                                <option value="admin">فعالیت‌های مدیریتی</option>
+                                <option value="system">تغییرات سیستم</option>
+                                <option value="security">رویدادهای امنیتی</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-dark w-100" onclick="loadAdminReports()">
+                                <i class="fas fa-search me-1"></i>جستجو
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-users text-primary mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-primary" id="totalUsers">-</h3>
+                    <p class="text-muted mb-0">کاربران فعال</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-clock text-info mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-info" id="todayLogins">-</h3>
+                    <p class="text-muted mb-0">ورود امروز</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-cog text-warning mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-warning" id="adminActions">-</h3>
+                    <p class="text-muted mb-0">عملیات مدیریتی</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-shield-alt text-danger mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-danger" id="securityEvents">-</h3>
+                    <p class="text-muted mb-0">رویدادهای امنیتی</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>لاگ فعالیت‌های سیستم</h5>
+                    <button class="btn btn-success btn-sm" onclick="exportActivityLog()">
+                        <i class="fas fa-file-excel me-1"></i>خروجی Excel
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="activityTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>زمان</th>
+                                    <th>کاربر</th>
+                                    <th>نوع فعالیت</th>
+                                    <th>شرح</th>
+                                    <th>IP Address</th>
+                                    <th>وضعیت</th>
+                                    <th>جزئیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="spinner-border text-dark" role="status">
+                                            <span class="visually-hidden">در حال بارگذاری...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">در حال بارگذاری اطلاعات...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Analysis -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>آمار ورود کاربران</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userLoginChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>فعالیت‌های مدیریتی</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="adminActivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security and System Status -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>وضعیت امنیتی</h5>
+                </div>
+                <div class="card-body">
+                    <div id="securityStatus">
+                        <!-- Security status content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-server me-2"></i>وضعیت سیستم</h5>
+                </div>
+                <div class="card-body">
+                    <div id="systemStatus">
+                        <!-- System status content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let userLoginChart, adminActivityChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const lastWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+    
+    document.getElementById('fromDate').value = lastWeek.toISOString().split('T')[0];
+    document.getElementById('toDate').value = today.toISOString().split('T')[0];
+    
+    loadAdminReports();
+});
+
+function loadAdminReports() {
+    loadAdminStats();
+    loadActivityTable();
+    loadAdminCharts();
+    loadSecurityStatus();
+    loadSystemStatus();
+}
+
+function loadAdminStats() {
+    // Show loading state
+    document.getElementById('totalUsers').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('todayLogins').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('adminActions').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('securityEvents').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const url = `@Url.Action("GetAdminData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+
+            const stats = data.stats;
+            document.getElementById('totalUsers').textContent = formatNumber(stats.totalUsers);
+            document.getElementById('todayLogins').textContent = formatNumber(stats.todayLogins);
+            document.getElementById('adminActions').textContent = formatNumber(stats.adminActions);
+            document.getElementById('securityEvents').textContent = formatNumber(stats.securityEvents);
+        })
+        .catch(error => {
+            console.error('Error loading admin stats:', error);
+            document.getElementById('totalUsers').textContent = 'خطا';
+            document.getElementById('todayLogins').textContent = 'خطا';
+            document.getElementById('adminActions').textContent = 'خطا';
+            document.getElementById('securityEvents').textContent = 'خطا';
+        });
+}
+
+function loadActivityTable() {
+    const tbody = document.getElementById('activityTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="7" class="text-center py-5">
+                <div class="spinner-border text-dark" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <p class="mt-2 text-muted">در حال بارگذاری فعالیت‌های سیستم...</p>
+            </td>
+        </tr>
+    `;
+
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const url = `@Url.Action("GetAdminData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            ${data.error}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            if (data.activities && data.activities.length > 0) {
+                data.activities.forEach(activity => {
+                    const activityTime = new Date(activity.time);
+                    const timeStr = activityTime.toLocaleTimeString('fa-IR');
+                    const dateStr = activityTime.toLocaleDateString('fa-IR');
+                    const statusClass = activity.status === 'موفق' ? 'success' : 'danger';
+                    const typeClass = activity.type === 'امنیتی' ? 'danger' : 
+                                     activity.type === 'مدیریتی' ? 'warning' : 
+                                     activity.type === 'سیستم' ? 'info' : 'primary';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div>
+                                <strong>${timeStr}</strong>
+                                <br><small class="text-muted">${dateStr}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-secondary text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                    ${activity.user.charAt(0)}
+                                </div>
+                                <span>${activity.user}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-${typeClass}">${activity.type}</span>
+                        </td>
+                        <td>${activity.description}</td>
+                        <td>
+                            <code class="small">${activity.ip}</code>
+                        </td>
+                        <td>
+                            <span class="badge bg-${statusClass}">${activity.status}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewActivityDetails('${activity.time}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            هیچ فعالیتی در این بازه زمانی یافت نشد
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading activity table:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        خطا در بارگذاری اطلاعات
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function loadAdminCharts() {
+    // User Login Chart
+    const ctx1 = document.getElementById('userLoginChart').getContext('2d');
+    if (userLoginChart) {
+        userLoginChart.destroy();
+    }
+    
+    userLoginChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
+            datasets: [{
+                label: 'تعداد ورود',
+                data: [5, 8, 12, 6, 15, 10, 8],
+                backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Admin Activity Chart
+    const ctx2 = document.getElementById('adminActivityChart').getContext('2d');
+    if (adminActivityChart) {
+        adminActivityChart.destroy();
+    }
+    
+    adminActivityChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
+            datasets: [
+                {
+                    label: 'فعالیت‌های مدیریتی',
+                    data: [3, 5, 2, 8, 4, 6, 3],
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'رویدادهای امنیتی',
+                    data: [1, 0, 1, 2, 1, 0, 1],
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function loadSecurityStatus() {
+    const securityDiv = document.getElementById('securityStatus');
+    securityDiv.innerHTML = `
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-shield-alt text-success me-2"></i>
+                        <span>سطح امنیت: <strong>بالا</strong></span>
+                    </div>
+                    <span class="badge bg-success">فعال</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="text-center p-2 bg-light rounded">
+                    <i class="fas fa-lock text-info mb-1"></i>
+                    <div><small>تلاش‌های ورود ناموفق</small></div>
+                    <strong class="text-info">2</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="text-center p-2 bg-light rounded">
+                    <i class="fas fa-user-check text-success mb-1"></i>
+                    <div><small>جلسات فعال</small></div>
+                    <strong class="text-success">8</strong>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <h6>آخرین رویدادهای امنیتی:</h6>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span><i class="fas fa-exclamation-triangle text-warning me-1"></i>تلاش ورود ناموفق</span>
+                    <small class="text-muted">2 ساعت پیش</small>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span><i class="fas fa-shield-alt text-success me-1"></i>احراز هویت موفق</span>
+                    <small class="text-muted">5 ساعت پیش</small>
+                </li>
+            </ul>
+        </div>
+    `;
+}
+
+function loadSystemStatus() {
+    const systemDiv = document.getElementById('systemStatus');
+    systemDiv.innerHTML = `
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="text-center p-2 bg-light rounded">
+                    <i class="fas fa-database text-primary mb-1"></i>
+                    <div><small>دیتابیس</small></div>
+                    <strong class="text-success">آنلاین</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="text-center p-2 bg-light rounded">
+                    <i class="fas fa-server text-info mb-1"></i>
+                    <div><small>سرور</small></div>
+                    <strong class="text-success">فعال</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="text-center p-2 bg-light rounded">
+                    <i class="fas fa-memory text-warning mb-1"></i>
+                    <div><small>حافظه</small></div>
+                    <strong class="text-warning">68%</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="text-center p-2 bg-light rounded">
+                    <i class="fas fa-hdd text-success mb-1"></i>
+                    <div><small>فضای دیسک</small></div>
+                    <strong class="text-success">42%</strong>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <h6>وضعیت سیستم:</h6>
+            <div class="progress mb-2">
+                <div class="progress-bar bg-success" style="width: 95%">عملکرد: 95%</div>
+            </div>
+            <small class="text-muted">آخرین بروزرسانی: ${new Date().toLocaleString('fa-IR')}</small>
+        </div>
+    `;
+}
+
+function viewActivityDetails(timestamp) {
+    alert('مشاهده جزئیات فعالیت در زمان: ' + timestamp);
+}
+
+function exportActivityLog() {
+    window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=admin';
+}
+
+function formatNumber(num) {
+    if (num === 0) return '0';
+    return num.toLocaleString('fa-IR');
+}
+</script>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.card {
+    border-radius: 10px;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.progress {
+    height: 10px;
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.5rem 0;
+}
+</style>

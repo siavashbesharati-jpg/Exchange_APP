@@ -1,0 +1,405 @@
+@{
+    ViewData["Title"] = "گزارشات اسناد حسابداری";
+}
+
+<div class="container-fluid">
+    <!-- Header with Back Button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h2><i class="fas fa-file-invoice text-warning me-2"></i>گزارشات اسناد حسابداری</h2>
+                    <p class="text-muted">تحلیل اسناد حسابداری، رسیدها و گزارشات مالی تفصیلی</p>
+                </div>
+                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-1"></i>بازگشت به فهرست گزارشات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-filter me-2"></i>فیلترهای جستجو</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">از تاریخ</label>
+                            <input type="date" class="form-control" id="fromDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">تا تاریخ</label>
+                            <input type="date" class="form-control" id="toDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">نوع سند</label>
+                            <select class="form-select" id="documentType">
+                                <option value="">همه</option>
+                                <option value="accounting">اسناد حسابداری</option>
+                                <option value="receipt">رسیدها</option>
+                                <option value="payment">پرداخت‌ها</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-warning w-100" onclick="loadDocumentReports()">
+                                <i class="fas fa-search me-1"></i>جستجو
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-file-alt text-warning mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-warning" id="totalDocuments">-</h3>
+                    <p class="text-muted mb-0">تعداد کل اسناد</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-receipt text-success mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-success" id="totalReceipts">-</h3>
+                    <p class="text-muted mb-0">تعداد رسیدها</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-money-bill text-info mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-info" id="totalAmount">-</h3>
+                    <p class="text-muted mb-0">مجموع مبالغ</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-calendar-check text-primary mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-primary" id="todayDocuments">-</h3>
+                    <p class="text-muted mb-0">اسناد امروز</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>جدول تفصیلی اسناد</h5>
+                    <button class="btn btn-success btn-sm" onclick="exportDocumentData()">
+                        <i class="fas fa-file-excel me-1"></i>خروجی Excel
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="documentsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>شناسه</th>
+                                    <th>تاریخ</th>
+                                    <th>نوع سند</th>
+                                    <th>مشتری</th>
+                                    <th>مبلغ</th>
+                                    <th>شرح</th>
+                                    <th>وضعیت</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documentsTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div class="spinner-border text-warning" role="status">
+                                            <span class="visually-hidden">در حال بارگذاری...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">در حال بارگذاری اطلاعات...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>توزیع انواع اسناد</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="documentTypesChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>روند ایجاد اسناد</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="documentTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let documentTypesChart, documentTrendChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    
+    document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
+    document.getElementById('toDate').value = today.toISOString().split('T')[0];
+    
+    loadDocumentReports();
+});
+
+function loadDocumentReports() {
+    loadDocumentStats();
+    loadDocumentsTable();
+    loadDocumentCharts();
+}
+
+function loadDocumentStats() {
+    // Show loading state
+    document.getElementById('totalDocuments').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('totalReceipts').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('totalAmount').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('todayDocuments').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+
+            const stats = data.stats;
+            document.getElementById('totalDocuments').textContent = formatNumber(stats.totalDocuments);
+            document.getElementById('totalReceipts').textContent = formatNumber(stats.totalReceipts);
+            document.getElementById('totalAmount').textContent = formatNumber(stats.totalAmount);
+            document.getElementById('todayDocuments').textContent = formatNumber(stats.todayDocuments);
+        })
+        .catch(error => {
+            console.error('Error loading document stats:', error);
+            document.getElementById('totalDocuments').textContent = 'خطا';
+            document.getElementById('totalReceipts').textContent = 'خطا';
+            document.getElementById('totalAmount').textContent = 'خطا';
+            document.getElementById('todayDocuments').textContent = 'خطا';
+        });
+}
+
+function loadDocumentsTable() {
+    const tbody = document.getElementById('documentsTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="8" class="text-center py-5">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <p class="mt-2 text-muted">در حال بارگذاری اطلاعات اسناد...</p>
+            </td>
+        </tr>
+    `;
+
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            ${data.error}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            if (data.documents && data.documents.length > 0) {
+                data.documents.forEach(doc => {
+                    const docDate = new Date(doc.date).toLocaleDateString('fa-IR');
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>DOC${doc.id.toString().padStart(3, '0')}</td>
+                        <td>${docDate}</td>
+                        <td><span class="badge bg-warning">${doc.type}</span></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-warning text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                    ${doc.customerName.charAt(0)}
+                                </div>
+                                ${doc.customerName}
+                            </div>
+                        </td>
+                        <td>${formatNumber(doc.amount)}</td>
+                        <td>${doc.description}</td>
+                        <td>
+                            <span class="badge bg-success">
+                                ${doc.status}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewDocumentDetails(${doc.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            هیچ سندی در این بازه زمانی یافت نشد
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading documents table:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        خطا در بارگذاری اطلاعات
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function loadDocumentCharts() {
+    // Document Types Chart
+    const ctx1 = document.getElementById('documentTypesChart').getContext('2d');
+    if (documentTypesChart) {
+        documentTypesChart.destroy();
+    }
+    
+    documentTypesChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: ['رسید دریافت', 'رسید پرداخت', 'سند حسابداری', 'سایر'],
+            datasets: [{
+                data: [40, 30, 25, 5],
+                backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Document Trend Chart
+    const ctx2 = document.getElementById('documentTrendChart').getContext('2d');
+    if (documentTrendChart) {
+        documentTrendChart.destroy();
+    }
+    
+    documentTrendChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
+            datasets: [{
+                label: 'تعداد اسناد',
+                data: [8, 12, 6, 15, 10, 18, 14],
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function viewDocumentDetails(docId) {
+    alert('مشاهده جزئیات سند: ' + docId);
+}
+
+function exportDocumentData() {
+    window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=documents';
+}
+
+function formatNumber(num) {
+    if (num === 0) return '0';
+    return num.toLocaleString('fa-IR');
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fa-IR');
+}
+</script>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.card {
+    border-radius: 10px;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>

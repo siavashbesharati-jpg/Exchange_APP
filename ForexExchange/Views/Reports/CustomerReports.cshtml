@@ -1,0 +1,411 @@
+@{
+    ViewData["Title"] = "گزارشات مشتریان";
+}
+
+<div class="container-fluid">
+    <!-- Header with Back Button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h2><i class="fas fa-users text-primary me-2"></i>گزارشات مشتریان</h2>
+                    <p class="text-muted">تحلیل جامع اطلاعات مشتریان، تراز حساب‌ها و عملکرد</p>
+                </div>
+                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-1"></i>بازگشت به فهرست گزارشات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-filter me-2"></i>فیلترهای جستجو</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">از تاریخ</label>
+                            <input type="date" class="form-control" id="fromDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">تا تاریخ</label>
+                            <input type="date" class="form-control" id="toDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">وضعیت مشتری</label>
+                            <select class="form-select" id="customerStatus">
+                                <option value="">همه</option>
+                                <option value="active">فعال</option>
+                                <option value="inactive">غیرفعال</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-primary w-100" onclick="loadCustomerReports()">
+                                <i class="fas fa-search me-1"></i>جستجو
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-users text-primary mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-primary" id="totalCustomers">-</h3>
+                    <p class="text-muted mb-0">تعداد کل مشتریان</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-user-check text-success mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-success" id="activeCustomers">-</h3>
+                    <p class="text-muted mb-0">مشتریان فعال</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-chart-line text-info mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-info" id="avgTransactions">-</h3>
+                    <p class="text-muted mb-0">میانگین تراکنش</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-wallet text-warning mb-2" style="font-size: 2rem;"></i>
+                    <h3 class="text-warning" id="totalBalance">-</h3>
+                    <p class="text-muted mb-0">مجموع تراز</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Reports Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>جدول تفصیلی مشتریان</h5>
+                    <button class="btn btn-success btn-sm" onclick="exportCustomerData()">
+                        <i class="fas fa-file-excel me-1"></i>خروجی Excel
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="customersTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>شناسه</th>
+                                    <th>نام و نام خانوادگی</th>
+                                    <th>شماره تماس</th>
+                                    <th>تعداد معاملات</th>
+                                    <th>تراز کل</th>
+                                    <th>آخرین فعالیت</th>
+                                    <th>وضعیت</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">در حال بارگذاری...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">در حال بارگذاری اطلاعات...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>توزیع مشتریان بر اساس وضعیت</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="customerStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>تعداد معاملات مشتریان برتر</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="topCustomersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let customerStatusChart, topCustomersChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    
+    document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
+    document.getElementById('toDate').value = today.toISOString().split('T')[0];
+    
+    loadCustomerReports();
+});
+
+function loadCustomerReports() {
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const customerStatus = document.getElementById('customerStatus').value;
+    
+    // Load stats
+    loadCustomerStats();
+    
+    // Load table data
+    loadCustomersTable();
+    
+    // Load charts
+    loadCustomerCharts();
+}
+
+function loadCustomerStats() {
+    // Show loading state
+    document.getElementById('totalCustomers').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('activeCustomers').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('avgTransactions').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('totalBalance').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+
+    fetch('@Url.Action("GetCustomersData", "Reports")')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+
+            const stats = data.stats;
+            document.getElementById('totalCustomers').textContent = formatNumber(stats.totalCustomers);
+            document.getElementById('activeCustomers').textContent = formatNumber(stats.totalCustomers); // All returned are active
+            document.getElementById('avgTransactions').textContent = formatNumber(stats.activeToday);
+            document.getElementById('totalBalance').textContent = formatNumber(stats.totalBalance);
+        })
+        .catch(error => {
+            console.error('Error loading customer stats:', error);
+            document.getElementById('totalCustomers').textContent = 'خطا';
+            document.getElementById('activeCustomers').textContent = 'خطا';
+            document.getElementById('avgTransactions').textContent = 'خطا';
+            document.getElementById('totalBalance').textContent = 'خطا';
+        });
+}
+
+function loadCustomersTable() {
+    const tbody = document.getElementById('customersTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="8" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <p class="mt-2 text-muted">در حال بارگذاری اطلاعات مشتریان...</p>
+            </td>
+        </tr>
+    `;
+    
+    fetch('@Url.Action("GetCustomersData", "Reports")')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            ${data.error}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            if (data.customers && data.customers.length > 0) {
+                data.customers.forEach(customer => {
+                    const joinDate = new Date(customer.createdAt).toLocaleDateString('fa-IR');
+                    const balanceDisplay = customer.balances.length > 0 
+                        ? customer.balances.map(b => `${formatNumber(b.amount)} ${b.currencyCode}`).join('<br>')
+                        : 'بدون موجودی';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${customer.id}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                    ${customer.fullName.charAt(0)}
+                                </div>
+                                <div>
+                                    <strong>${customer.fullName}</strong>
+                                    <br><small class="text-muted">${customer.phoneNumber}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${customer.email || 'ندارد'}</td>
+                        <td>${joinDate}</td>
+                        <td>
+                            <small>${balanceDisplay}</small>
+                        </td>
+                        <td>${formatNumber(customer.totalBalanceIRR)}</td>
+                        <td>
+                            <span class="badge ${customer.isActive ? 'bg-success' : 'bg-secondary'}">
+                                ${customer.isActive ? 'فعال' : 'غیرفعال'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewCustomerDetails(${customer.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            هیچ مشتری یافت نشد
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading customers table:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        خطا در بارگذاری اطلاعات
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function loadCustomerCharts() {
+    // Customer Status Chart
+    const ctx1 = document.getElementById('customerStatusChart').getContext('2d');
+    if (customerStatusChart) {
+        customerStatusChart.destroy();
+    }
+    
+    customerStatusChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: ['مشتریان فعال', 'مشتریان غیرفعال'],
+            datasets: [{
+                data: [75, 25], // Sample data - replace with actual
+                backgroundColor: ['#28a745', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Top Customers Chart
+    const ctx2 = document.getElementById('topCustomersChart').getContext('2d');
+    if (topCustomersChart) {
+        topCustomersChart.destroy();
+    }
+    
+    topCustomersChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: ['احمد رضایی', 'فاطمه محمدی', 'علی حسینی', 'مریم کریمی', 'حسن صادقی'],
+            datasets: [{
+                label: 'تعداد معاملات',
+                data: [45, 38, 32, 28, 25], // Sample data
+                backgroundColor: '#007bff',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function viewCustomerDetails(customerId) {
+    window.location.href = `@Url.Action("Details", "Customers")/${customerId}`;
+}
+
+function exportCustomerData() {
+    window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=customers';
+}
+
+function formatNumber(num) {
+    if (num === 0) return '0';
+    return num.toLocaleString('fa-IR');
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fa-IR');
+}
+</script>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.card {
+    border-radius: 10px;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>

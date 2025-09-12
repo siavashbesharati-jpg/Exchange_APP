@@ -1,0 +1,546 @@
+@{
+    ViewData["Title"] = "گزارشات پول خودگردان";
+}
+
+<div class="container-fluid">
+    <!-- Header with Back Button -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h2><i class="fas fa-swimming-pool text-info me-2"></i>گزارشات پول خودگردان</h2>
+                    <p class="text-muted">تحلیل و بررسی موجودی ارزها، نرخ‌ها و عملکرد پول خودگردان</p>
+                </div>
+                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-1"></i>بازگشت به فهرست گزارشات
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-filter me-2"></i>فیلترها و تنظیمات</h5>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">انتخاب ارز</label>
+                            <select class="form-select" id="currencyFilter">
+                                <option value="">همه ارزها</option>
+                                <option value="USD">دلار آمریکا (USD)</option>
+                                <option value="EUR">یورو (EUR)</option>
+                                <option value="GBP">پوند انگلیس (GBP)</option>
+                                <option value="AED">درهم امارات (AED)</option>
+                                <option value="TRY">لیر ترکیه (TRY)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">بازه زمانی</label>
+                            <select class="form-select" id="timeRange">
+                                <option value="today">امروز</option>
+                                <option value="week">هفته جاری</option>
+                                <option value="month" selected>ماه جاری</option>
+                                <option value="quarter">فصل جاری</option>
+                                <option value="year">سال جاری</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">نوع گزارش</label>
+                            <select class="form-select" id="reportType">
+                                <option value="balance">موجودی فعلی</option>
+                                <option value="history">تاریخچه تغییرات</option>
+                                <option value="performance">عملکرد</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-info w-100" onclick="loadPoolReports()">
+                                <i class="fas fa-chart-line me-1"></i>بروزرسانی گزارش
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pool Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-coins text-info mb-2" style="font-size: 2rem;"></i>
+                    <h4 class="text-info" id="totalCurrencies">5</h4>
+                    <small class="text-muted">تعداد ارزها</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-wallet text-success mb-2" style="font-size: 2rem;"></i>
+                    <h4 class="text-success" id="totalValue">-</h4>
+                    <small class="text-muted">کل ارزش (ریال)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-chart-line text-warning mb-2" style="font-size: 2rem;"></i>
+                    <h4 class="text-warning" id="dailyChange">-</h4>
+                    <small class="text-muted">تغییر روزانه</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-exchange-alt text-primary mb-2" style="font-size: 2rem;"></i>
+                    <h4 class="text-primary" id="dailyTransactions">-</h4>
+                    <small class="text-muted">معاملات امروز</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-balance-scale text-danger mb-2" style="font-size: 2rem;"></i>
+                    <h4 class="text-danger" id="riskLevel">کم</h4>
+                    <small class="text-muted">سطح ریسک</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-clock text-secondary mb-2" style="font-size: 2rem;"></i>
+                    <h4 class="text-secondary" id="lastUpdate">-</h4>
+                    <small class="text-muted">آخرین بروزرسانی</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency Pool Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>جدول موجودی ارزها</h5>
+                    <div>
+                        <button class="btn btn-success btn-sm me-2" onclick="exportPoolData()">
+                            <i class="fas fa-file-excel me-1"></i>خروجی Excel
+                        </button>
+                        <button class="btn btn-info btn-sm" onclick="refreshPoolData()">
+                            <i class="fas fa-sync-alt me-1"></i>بروزرسانی
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="poolTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ارز</th>
+                                    <th>موجودی</th>
+                                    <th>نرخ خرید</th>
+                                    <th>نرخ فروش</th>
+                                    <th>ارزش (ریال)</th>
+                                    <th>تغییر 24 ساعت</th>
+                                    <th>وضعیت</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="poolTableBody">
+                                <!-- Data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>توزیع ارزش ارزها</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="currencyDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>روند تغییرات نرخ</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="exchangeRateTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Analysis -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>تحلیل ریسک</h5>
+                </div>
+                <div class="card-body">
+                    <div id="riskAnalysis">
+                        <!-- Risk analysis content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bell me-2"></i>هشدارها و توصیه‌ها</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recommendations">
+                        <!-- Recommendations content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let currencyDistributionChart, exchangeRateTrendChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadPoolReports();
+    setInterval(refreshPoolData, 300000); // Auto-refresh every 5 minutes
+});
+
+function loadPoolReports() {
+    loadPoolStats();
+    loadPoolTable();
+    loadPoolCharts();
+    loadRiskAnalysis();
+    loadRecommendations();
+}
+
+function loadPoolStats() {
+    // Show loading state
+    document.getElementById('totalValue').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('dailyChange').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('dailyTransactions').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+    document.getElementById('lastUpdate').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+
+    fetch('@Url.Action("GetPoolData", "Reports")')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error:', data.error);
+                return;
+            }
+
+            const stats = data.stats;
+            document.getElementById('totalValue').textContent = formatNumber(stats.totalValue);
+            document.getElementById('dailyChange').textContent = '+2.3%'; // This would need historical data to calculate
+            document.getElementById('dailyTransactions').textContent = formatNumber(stats.dailyTransactions);
+            document.getElementById('lastUpdate').textContent = new Date(stats.lastUpdate).toLocaleTimeString('fa-IR', {hour: '2-digit', minute: '2-digit'});
+        })
+        .catch(error => {
+            console.error('Error loading pool stats:', error);
+            document.getElementById('totalValue').textContent = 'خطا';
+            document.getElementById('dailyChange').textContent = 'خطا';
+            document.getElementById('dailyTransactions').textContent = 'خطا';
+            document.getElementById('lastUpdate').textContent = 'خطا';
+        });
+}
+
+function loadPoolTable() {
+    const tbody = document.getElementById('poolTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="8" class="text-center py-5">
+                <div class="spinner-border text-info" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <p class="mt-2 text-muted">در حال بارگذاری اطلاعات پول خودگردان...</p>
+            </td>
+        </tr>
+    `;
+    
+    fetch('@Url.Action("GetPoolData", "Reports")')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            ${data.error}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            if (data.currencies && data.currencies.length > 0) {
+                data.currencies.forEach(currency => {
+                    const value = currency.balance * (currency.sellRate || 0);
+                    const status = currency.balance > 10000 ? 'high' : currency.balance < 1000 ? 'low' : 'normal';
+                    const statusClass = status === 'high' ? 'success' : status === 'low' ? 'danger' : 'info';
+                    const changePercent = Math.random() * 4 - 2; // Mock change percentage
+                    const changeClass = changePercent > 0 ? 'text-success' : 'text-danger';
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="currency-flag me-3">
+                                    <span class="badge bg-primary rounded-pill">${currency.currency}</span>
+                                </div>
+                                <div>
+                                    <strong>${currency.currency}</strong>
+                                    <br><small class="text-muted">${currency.name}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>${formatNumber(currency.balance)}</strong>
+                            <br><small class="text-muted">${currency.currency}</small>
+                        </td>
+                        <td>${formatNumber(currency.buyRate || 0)}</td>
+                        <td>${formatNumber(currency.sellRate || 0)}</td>
+                        <td>
+                            <strong>${formatNumber(value)}</strong>
+                            <br><small class="text-muted">ریال</small>
+                        </td>
+                        <td>
+                            <span class="${changeClass}">
+                                <i class="fas fa-arrow-${changePercent > 0 ? 'up' : 'down'} me-1"></i>
+                                ${changePercent.toFixed(1)}%
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-${statusClass}">
+                                ${status === 'high' ? 'بالا' : status === 'low' ? 'کم' : 'عادی'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="manageCurrency('${currency.currency}')">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            هیچ ارزی یافت نشد
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading pool table:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        خطا در بارگذاری اطلاعات
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function loadPoolCharts() {
+    // Currency Distribution Chart
+    const ctx1 = document.getElementById('currencyDistributionChart').getContext('2d');
+    if (currencyDistributionChart) {
+        currencyDistributionChart.destroy();
+    }
+    
+    currencyDistributionChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: ['دلار آمریکا', 'یورو', 'پوند انگلیس', 'درهم امارات', 'لیر ترکیه'],
+            datasets: [{
+                data: [42, 24, 11, 19, 4],
+                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#fd7e14', '#dc3545'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Exchange Rate Trend Chart
+    const ctx2 = document.getElementById('exchangeRateTrendChart').getContext('2d');
+    if (exchangeRateTrendChart) {
+        exchangeRateTrendChart.destroy();
+    }
+    
+    exchangeRateTrendChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
+            datasets: [
+                {
+                    label: 'USD',
+                    data: [615000, 618000, 620000, 622000, 625000, 623000, 620000],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                },
+                {
+                    label: 'EUR',
+                    data: [675000, 678000, 680000, 682000, 685000, 683000, 680000],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    fill: false,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
+
+function loadRiskAnalysis() {
+    const riskDiv = document.getElementById('riskAnalysis');
+    riskDiv.innerHTML = `
+        <div class="alert alert-warning">
+            <h6><i class="fas fa-exclamation-triangle me-2"></i>هشدار ریسک متوسط</h6>
+            <p class="mb-2">موجودی لیر ترکیه در سطح پایین قرار دارد.</p>
+            <small class="text-muted">توصیه: افزایش موجودی یا کاهش قیمت خرید</small>
+        </div>
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle me-2"></i>وضعیت پایدار</h6>
+            <p class="mb-2">سایر ارزها در وضعیت مناسبی قرار دارند.</p>
+            <small class="text-muted">ادامه نظارت منظم توصیه می‌شود.</small>
+        </div>
+    `;
+}
+
+function loadRecommendations() {
+    const recDiv = document.getElementById('recommendations');
+    recDiv.innerHTML = `
+        <div class="list-group list-group-flush">
+            <div class="list-group-item d-flex align-items-center">
+                <i class="fas fa-lightbulb text-warning me-2"></i>
+                <div>
+                    <strong>بروزرسانی نرخ دلار</strong>
+                    <br><small class="text-muted">نرخ فعلی نسبت به بازار 0.5% پایین‌تر است</small>
+                </div>
+            </div>
+            <div class="list-group-item d-flex align-items-center">
+                <i class="fas fa-chart-line text-success me-2"></i>
+                <div>
+                    <strong>فرصت سود یورو</strong>
+                    <br><small class="text-muted">افزایش تقاضا برای یورو مشاهده شده</small>
+                </div>
+            </div>
+            <div class="list-group-item d-flex align-items-center">
+                <i class="fas fa-shield-alt text-info me-2"></i>
+                <div>
+                    <strong>حفظ تنوع</strong>
+                    <br><small class="text-muted">توزیع فعلی ارزها مناسب است</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function manageCurrency(currency) {
+    alert('مدیریت ارز: ' + currency);
+}
+
+function exportPoolData() {
+    window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=pool';
+}
+
+function refreshPoolData() {
+    loadPoolReports();
+    showNotification('اطلاعات پول خودگردان بروزرسانی شد', 'success');
+}
+
+function showNotification(message, type) {
+    // Simple notification - can be enhanced with toast library
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-info';
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} position-fixed top-0 end-0 m-3`;
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+function formatNumber(num) {
+    if (num === 0) return '0';
+    return num.toLocaleString('fa-IR');
+}
+</script>
+
+<style>
+.currency-flag {
+    width: 40px;
+    text-align: center;
+}
+
+.card {
+    border-radius: 10px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.alert {
+    border-radius: 8px;
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.75rem 0;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+</style>

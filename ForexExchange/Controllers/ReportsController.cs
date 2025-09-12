@@ -23,452 +23,316 @@ namespace ForexExchange.Controllers
             return View();
         }
 
-        // POST: Reports/GetQuickSummary
-        [HttpPost]
-        public async Task<IActionResult> GetQuickSummary(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
+        // GET: Reports/Comprehensive
+        public IActionResult Comprehensive()
+        {
+            return View();
+        }
+
+        // GET: Reports/CustomerReports
+        public IActionResult CustomerReports()
+        {
+            return View();
+        }
+
+        // GET: Reports/OrderReports
+        public IActionResult OrderReports()
+        {
+            return View();
+        }
+
+        // GET: Reports/DocumentReports
+        public IActionResult DocumentReports()
+        {
+            return View();
+        }
+
+        // GET: Reports/PoolReports
+        public IActionResult PoolReports()
+        {
+            return View();
+        }
+
+        // GET: Reports/AdminReports
+        public IActionResult AdminReports()
+        {
+            return View();
+        }
+
+        // API Methods for Real Data
+
+        // GET: Reports/GetCustomersData
+        [HttpGet]
+        public async Task<IActionResult> GetCustomersData()
         {
             try
             {
-                // Default to last 30 days if no dates provided
-                fromDate ??= DateTime.Now.AddDays(-30).Date;
-                toDate ??= DateTime.Now.Date.AddDays(1).AddTicks(-1);
+                var customers = await _context.Customers
+                    .Include(c => c.Balances)
+                    .Where(c => c.IsActive)
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        fullName = c.FullName,
+                        phoneNumber = c.PhoneNumber,
+                        email = c.Email,
+                        createdAt = c.CreatedAt,
+                        isActive = c.IsActive,
+                        balances = c.Balances.Select(b => new
+                        {
+                            currencyCode = b.CurrencyCode,
+                            currencyName = b.CurrencyCode,
+                            amount = b.Balance
+                        }).ToList(),
+                        totalBalanceIRR = c.Balances.Where(b => b.CurrencyCode == "IRR").Sum(b => b.Balance)
+                    })
+                    .OrderByDescending(c => c.createdAt)
+                    .ToListAsync();
 
-                // Get total orders
-                var ordersQuery = _context.Orders.AsQueryable();
-                
-                if (fromDate.HasValue && toDate.HasValue)
-                {
-                    ordersQuery = ordersQuery.Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
-                }
-                
-                if (customerId.HasValue)
-                {
-                    ordersQuery = ordersQuery.Where(o => o.CustomerId == customerId);
-                }
-
-                var totalOrders = await ordersQuery.CountAsync();
-
-                // Get total volume (approximation)
-                var totalVolume = await ordersQuery
-                    .SumAsync(o => o.Amount * o.Rate); // Fixed: Use Rate instead of ExchangeRate
-
-                // Get active customers count
-                var activeCustomers = await _context.Customers.CountAsync(c => c.IsActive);
-
-                // Get system balance (sum of all bank accounts)
-                var systemBalance = await _context.BankAccounts
-                    .SumAsync(ba => ba.AccountBalance);
+                var totalCustomers = customers.Count;
+                var activeToday = customers.Count(c => c.createdAt.Date == DateTime.Today);
+                var totalBalance = customers.Sum(c => c.totalBalanceIRR);
 
                 return Json(new
                 {
-                    totalOrders,
-                    totalVolume = (long)totalVolume,
-                    activeCustomers,
-                    systemBalance = (long)systemBalance
+                    customers,
+                    stats = new
+                    {
+                        totalCustomers,
+                        activeToday,
+                        totalBalance
+                    }
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting quick summary");
-                return Json(new { totalOrders = 0, totalVolume = 0, activeCustomers = 0, systemBalance = 0 });
+                _logger.LogError(ex, "Error getting customers data");
+                return Json(new { error = "خطا در دریافت اطلاعات مشتریان" });
             }
         }
 
-        // GET: Reports/TestOrders - Debug endpoint to check orders
+        // GET: Reports/GetOrdersData
         [HttpGet]
-        public async Task<IActionResult> TestOrders()
+        public async Task<IActionResult> GetOrdersData(DateTime? fromDate, DateTime? toDate)
         {
             try
             {
-                var totalOrders = await _context.Orders.CountAsync();
+                fromDate ??= DateTime.Today.AddDays(-30);
+                toDate ??= DateTime.Today.AddDays(1);
+
                 var orders = await _context.Orders
                     .Include(o => o.Customer)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
-                    .OrderByDescending(o => o.CreatedAt)
-                    .Take(10)
-                    .Select(o => new
-                    {
-                        Id = o.Id,
-                        CreatedAt = o.CreatedAt,
-                        CustomerId = o.CustomerId,
-                        CustomerName = o.Customer != null ? o.Customer.FullName : "NULL",
-                        Amount = o.Amount,
-                        Rate = o.Rate,
-                        FromCurrencyId = o.FromCurrencyId,
-                        FromCurrency = o.FromCurrency != null ? o.FromCurrency.Code : "NULL",
-                        ToCurrencyId = o.ToCurrencyId,
-                        ToCurrency = o.ToCurrency != null ? o.ToCurrency.Code : "NULL"
-                    })
-                    .ToListAsync();
-
-                return Json(new { totalOrders, orders });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { error = ex.Message, stackTrace = ex.StackTrace });
-            }
-        }
-
-        // POST: Reports/GetOrdersData
-        [HttpPost]
-        public async Task<IActionResult> GetOrdersData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
-        {
-            try
-            {
-                _logger.LogInformation("GetOrdersData called with fromDate: {FromDate}, toDate: {ToDate}", fromDate, toDate);
-                
-                // If no dates provided, get all orders (don't restrict by date)
-                if (!fromDate.HasValue && !toDate.HasValue)
-                {
-                    // Get all orders without date restriction
-                    fromDate = DateTime.MinValue;
-                    toDate = DateTime.MaxValue;
-                }
-                else
-                {
-                    // Default to last 30 days if only one date provided
-                    fromDate ??= DateTime.Now.AddDays(-30).Date;
-                    toDate ??= DateTime.Now.Date.AddDays(1).AddTicks(-1);
-                }
-
-                var query = _context.Orders
-                    .Include(o => o.Customer)
-                    .Include(o => o.FromCurrency)
-                    .Include(o => o.ToCurrency)
-                    .AsQueryable();
-
-                _logger.LogInformation("Total orders in database: {Count}", await _context.Orders.CountAsync());
-
-                // Apply filters
-                if (fromDate.HasValue && toDate.HasValue && fromDate != DateTime.MinValue)
-                {
-                    query = query.Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
-                    _logger.LogInformation("Applied date filter: {FromDate} to {ToDate}", fromDate, toDate);
-                }
-
-                if (customerId.HasValue)
-                {
-                    query = query.Where(o => o.CustomerId == customerId);
-                    _logger.LogInformation("Applied customer filter: {CustomerId}", customerId);
-                }
-
-                if (currencyId.HasValue)
-                {
-                    query = query.Where(o => o.FromCurrencyId == currencyId || o.ToCurrencyId == currencyId);
-                    _logger.LogInformation("Applied currency filter: {CurrencyId}", currencyId);
-                }
-
-                var ordersCount = await query.CountAsync();
-                _logger.LogInformation("Orders matching filters: {Count}", ordersCount);
-
-                var orders = await query
-                    .OrderByDescending(o => o.CreatedAt)
-                    .Take(1000) // Limit results
+                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
                     .Select(o => new
                     {
                         id = o.Id,
                         createdAt = o.CreatedAt,
-                        customerName = o.Customer != null ? o.Customer.FullName : "نامشخص",
-                        orderType = "تبدیل ارز",
-                        fromCurrency = o.FromCurrency != null ? o.FromCurrency.Code : "نامشخص",
+                        customerName = o.Customer.FullName,
+                        fromCurrency = o.FromCurrency.Code,
+                        toCurrency = o.ToCurrency.Code,
                         amount = o.Amount,
-                        toCurrency = o.ToCurrency != null ? o.ToCurrency.Code : "نامشخص",
-                        exchangeRate = o.Rate, // Fixed: Use Rate instead of ExchangeRate
-                        status = "فعال"
+                        rate = o.Rate,
+                        totalValue = o.TotalAmount,
+                        filledAmount = o.FilledAmount,
+                        status = o.FilledAmount >= o.Amount ? "تکمیل شده" : "در انتظار"
                     })
+                    .OrderByDescending(o => o.createdAt)
                     .ToListAsync();
 
-                _logger.LogInformation("Returning {Count} orders", orders.Count);
-                return Json(orders);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting orders data");
-                return Json(new List<object>());
-            }
-        }
-
-        // POST: Reports/GetBalancesData
-        [HttpPost]
-        public async Task<IActionResult> GetBalancesData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
-        {
-            try
-            {
-                var query = _context.CustomerBalances
-                    .Include(cb => cb.Customer)
-                    .AsQueryable();
-
-                // Apply filters
-                if (customerId.HasValue)
-                {
-                    query = query.Where(cb => cb.CustomerId == customerId);
-                }
-
-                if (!string.IsNullOrEmpty(currencyId?.ToString()))
-                {
-                    // Find currency code by ID first
-                    var currency = await _context.Currencies.FindAsync(currencyId);
-                    if (currency != null)
-                    {
-                        query = query.Where(cb => cb.CurrencyCode == currency.Code);
-                    }
-                }
-
-                var balances = await query
-                    .OrderBy(cb => cb.Customer.FullName)
-                    .Select(cb => new
-                    {
-                        customerId = cb.CustomerId,
-                        customerName = cb.Customer != null ? cb.Customer.FullName : "نامشخص",
-                        currencyCode = cb.CurrencyCode,
-                        balance = cb.Balance,
-                        lastUpdated = cb.LastUpdated
-                    })
-                    .ToListAsync();
-
-                return Json(balances);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting balances data");
-                return Json(new List<object>());
-            }
-        }
-
-        // POST: Reports/GetBankBalancesData
-        [HttpPost]
-        public async Task<IActionResult> GetBankBalancesData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
-        {
-            try
-            {
-                var query = _context.BankAccounts.AsQueryable();
-
-                // Apply filters
-                if (bankAccountId.HasValue)
-                {
-                    query = query.Where(ba => ba.Id == bankAccountId);
-                }
-
-                if (!string.IsNullOrEmpty(currencyId?.ToString()))
-                {
-                    // Find currency code by ID first
-                    var currency = await _context.Currencies.FindAsync(currencyId);
-                    if (currency != null)
-                    {
-                        query = query.Where(ba => ba.CurrencyCode == currency.Code);
-                    }
-                }
-
-                var bankBalances = await query
-                    .OrderBy(ba => ba.BankName)
-                    .Select(ba => new
-                    {
-                        id = ba.Id,
-                        bankName = ba.BankName,
-                        accountNumber = ba.AccountNumber,
-                        currencyCode = ba.CurrencyCode,
-                        balance = ba.AccountBalance,
-                        lastUpdated = ba.LastModified ?? ba.CreatedAt
-                    })
-                    .ToListAsync();
-
-                return Json(bankBalances);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting bank balances data");
-                return Json(new List<object>());
-            }
-        }
-
-        // POST: Reports/GetChartsData
-        [HttpPost]
-        public async Task<IActionResult> GetChartsData(DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus, string? reportType)
-        {
-            try
-            {
-                // Default to last 30 days if no dates provided
-                fromDate ??= DateTime.Now.AddDays(-30).Date;
-                toDate ??= DateTime.Now.Date.AddDays(1).AddTicks(-1);
-
-                // Currency volume data
-                var currencyVolume = await _context.Orders
-                    .Include(o => o.FromCurrency)
-                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
-                    .GroupBy(o => o.FromCurrency.Code)
-                    .Select(g => new { currency = g.Key, volume = g.Sum(o => o.Amount) })
-                    .ToListAsync();
-
-                // Daily trend data
-                var dailyTrend = await _context.Orders
-                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
-                    .GroupBy(o => o.CreatedAt.Date)
-                    .Select(g => new { date = g.Key, count = g.Count() })
-                    .OrderBy(x => x.date)
-                    .ToListAsync();
-
-                // Customer balance distribution
-                var customerBalanceDistribution = await _context.CustomerBalances
-                    .GroupBy(cb => cb.Balance > 0 ? "بستانکار" : cb.Balance < 0 ? "بدهکار" : "صفر")
-                    .Select(g => new { type = g.Key, count = g.Count() })
-                    .ToListAsync();
-
-                // Bank balance data
-                var bankBalances = await _context.BankAccounts
-                    .Select(ba => new { bank = ba.BankName, balance = ba.AccountBalance })
-                    .ToListAsync();
+                var totalOrders = orders.Count;
+                var totalVolume = orders.Sum(o => o.totalValue);
+                var completedOrders = orders.Count(o => o.filledAmount >= o.amount);
+                var pendingOrders = orders.Count(o => o.filledAmount < o.amount);
 
                 return Json(new
                 {
-                    currencyVolume = new
+                    orders,
+                    stats = new
                     {
-                        labels = currencyVolume.Select(cv => cv.currency).ToArray(),
-                        data = currencyVolume.Select(cv => cv.volume).ToArray()
-                    },
-                    dailyTrend = new
-                    {
-                        labels = dailyTrend.Select(dt => dt.date.ToString("MM/dd")).ToArray(),
-                        data = dailyTrend.Select(dt => dt.count).ToArray()
-                    },
-                    customerBalance = new
-                    {
-                        data = customerBalanceDistribution.Select(cbd => cbd.count).ToArray()
-                    },
-                    bankBalance = new
-                    {
-                        labels = bankBalances.Select(bb => bb.bank).ToArray(),
-                        data = bankBalances.Select(bb => (double)bb.balance / 1000000).ToArray() // Convert to millions
+                        totalOrders,
+                        totalVolume,
+                        completedOrders,
+                        pendingOrders,
+                        averageOrderValue = totalOrders > 0 ? totalVolume / totalOrders : 0
                     }
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting charts data");
-                return Json(new { });
+                _logger.LogError(ex, "Error getting orders data");
+                return Json(new { error = "خطا در دریافت اطلاعات سفارشات" });
             }
         }
 
-        // GET: Reports/ExportToExcel
-        public IActionResult ExportToExcel(string type, DateTime? fromDate, DateTime? toDate, int? customerId, int? currencyId, int? bankAccountId, string? orderStatus)
-        {
-            try
-            {
-                // Here you would implement Excel export functionality
-                // For now, return a simple CSV response
-                
-                var fileName = $"{type}_report_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-                var contentType = "text/csv";
-                
-                string csvContent = "";
-                
-                switch (type)
-                {
-                    case "orders":
-                        csvContent = "ID,Date,Customer,Type,From Currency,Amount,To Currency,Rate,Status\n";
-                        break;
-                    case "balances":
-                        csvContent = "Customer,Currency,Balance,Status,Last Updated\n";
-                        break;
-                    case "bank_balances":
-                        csvContent = "Bank,Account Number,Currency,Balance,Status,Last Updated\n";
-                        break;
-                }
-                
-                var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
-                return File(bytes, contentType, fileName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error exporting to Excel");
-                return BadRequest("خطا در تولید فایل Excel");
-            }
-        }
-
-        // GET: Reports/GetSystemBalance
+        // GET: Reports/GetDocumentsData
         [HttpGet]
-        public async Task<IActionResult> GetSystemBalance(string targetCurrency = "IRR")
+        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate)
         {
             try
             {
-                // Get all currency pools with their currencies
-                var currencyPools = await _context.CurrencyPools
-                    .Include(cp => cp.Currency)
-                    .Where(cp => cp.Balance != 0) // Only non-zero balances
+                fromDate ??= DateTime.Today.AddDays(-30);
+                toDate ??= DateTime.Today.AddDays(1);
+
+                var accountingDocs = await _context.AccountingDocuments
+                    .Include(ad => ad.PayerCustomer)
+                    .Include(ad => ad.ReceiverCustomer)
+                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate)
+                    .Select(ad => new
+                    {
+                        id = ad.Id,
+                        date = ad.DocumentDate,
+                        type = "سند حسابداری",
+                        customerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName : (ad.ReceiverCustomer != null ? ad.ReceiverCustomer.FullName : "نامشخص"),
+                        amount = ad.Amount,
+                        description = ad.Description,
+                        status = "تایید شده"
+                    })
                     .ToListAsync();
 
-                if (!currencyPools.Any())
+                // Skip receipts since Receipt model is empty
+                var allDocuments = accountingDocs.OrderByDescending(d => d.date).ToList();
+
+                var totalDocuments = allDocuments.Count;
+                var totalReceipts = 0; // No receipts available
+                var totalAmount = allDocuments.Sum(d => d.amount);
+                var todayDocuments = allDocuments.Count(d => d.date.Date == DateTime.Today);
+
+                return Json(new
                 {
-                    return Json(new { success = true, balance = 0m });
-                }
-
-                decimal totalBalance = 0m;
-
-                // Find the target currency
-                var targetCurrencyEntity = await _context.Currencies
-                    .FirstOrDefaultAsync(c => c.Code == targetCurrency);
-
-                if (targetCurrencyEntity == null)
-                {
-                    return Json(new { success = false, message = "Target currency not found" });
-                }
-
-                foreach (var pool in currencyPools)
-                {
-                    decimal convertedAmount = 0m;
-
-                    if (pool.Currency.Code == targetCurrency)
+                    documents = allDocuments,
+                    stats = new
                     {
-                        // Same currency, no conversion needed
-                        convertedAmount = pool.Balance;
+                        totalDocuments,
+                        totalReceipts,
+                        totalAmount,
+                        todayDocuments
                     }
-                    else
-                    {
-                        // Convert from pool currency to target currency
-                        var exchangeRate = await GetExchangeRate(pool.CurrencyId, targetCurrencyEntity.Id);
-                        if (exchangeRate.HasValue)
-                        {
-                            convertedAmount = pool.Balance * exchangeRate.Value;
-                        }
-                        else
-                        {
-                            // If no direct rate, try reverse rate
-                            var reverseRate = await GetExchangeRate(targetCurrencyEntity.Id, pool.CurrencyId);
-                            if (reverseRate.HasValue && reverseRate.Value > 0)
-                            {
-                                convertedAmount = pool.Balance / reverseRate.Value;
-                            }
-                            // If no rate found, skip this currency (logged but continues)
-                            else
-                            {
-                                _logger.LogWarning($"No exchange rate found between {pool.Currency.Code} and {targetCurrency}");
-                                continue;
-                            }
-                        }
-                    }
-
-                    totalBalance += convertedAmount;
-                }
-
-                return Json(new { success = true, balance = Math.Round(totalBalance, 2) });
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calculating system balance for currency: {Currency}", targetCurrency);
-                return Json(new { success = false, message = "خطا در محاسبه تراز سیستم" });
+                _logger.LogError(ex, "Error getting documents data");
+                return Json(new { error = "خطا در دریافت اطلاعات اسناد" });
             }
         }
 
-        // Helper method to get exchange rate between two currencies
-        private async Task<decimal?> GetExchangeRate(int fromCurrencyId, int toCurrencyId)
+        // GET: Reports/GetPoolData
+        [HttpGet]
+        public async Task<IActionResult> GetPoolData()
         {
-            var rate = await _context.ExchangeRates
-                .Where(er => er.FromCurrencyId == fromCurrencyId && er.ToCurrencyId == toCurrencyId)
-                .OrderByDescending(er => er.UpdatedAt)
-                .Select(er => er.Rate)
-                .FirstOrDefaultAsync();
+            try
+            {
+                var currencies = await _context.Currencies
+                    .Where(c => c.IsActive)
+                    .Select(c => new
+                    {
+                        currency = c.Code,
+                        name = c.Name,
+                        balance = _context.CustomerBalances
+                            .Where(cb => cb.CurrencyCode == c.Code)
+                            .Sum(cb => cb.Balance),
+                        buyRate = _context.ExchangeRates
+                            .Where(er => er.FromCurrencyId == c.Id || er.ToCurrencyId == c.Id)
+                            .OrderByDescending(er => er.UpdatedAt)
+                            .Select(er => er.AverageBuyRate)
+                            .FirstOrDefault(),
+                        sellRate = _context.ExchangeRates
+                            .Where(er => er.FromCurrencyId == c.Id || er.ToCurrencyId == c.Id)
+                            .OrderByDescending(er => er.UpdatedAt)
+                            .Select(er => er.AverageSellRate)
+                            .FirstOrDefault(),
+                        lastUpdate = _context.ExchangeRates
+                            .Where(er => er.FromCurrencyId == c.Id || er.ToCurrencyId == c.Id)
+                            .OrderByDescending(er => er.UpdatedAt)
+                            .Select(er => er.UpdatedAt)
+                            .FirstOrDefault()
+                    })
+                    .ToListAsync();
 
-            return rate == 0 ? null : rate;
+                var totalCurrencies = currencies.Count;
+                var totalValue = currencies.Sum(c => c.balance * (c.sellRate ?? 0));
+                var dailyTransactions = await _context.Orders
+                    .Where(o => o.CreatedAt.Date == DateTime.Today)
+                    .CountAsync();
+
+                return Json(new
+                {
+                    currencies,
+                    stats = new
+                    {
+                        totalCurrencies,
+                        totalValue,
+                        dailyTransactions,
+                        lastUpdate = DateTime.Now
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pool data");
+                return Json(new { error = "خطا در دریافت اطلاعات پول" });
+            }
+        }
+
+        // GET: Reports/GetAdminData
+        [HttpGet]
+        public async Task<IActionResult> GetAdminData(DateTime? fromDate, DateTime? toDate)
+        {
+            try
+            {
+                fromDate ??= DateTime.Today.AddDays(-7);
+                toDate ??= DateTime.Today.AddDays(1);
+
+                var activities = new List<object>();
+
+                // Get recent orders as admin activities
+                var recentOrders = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
+                    .Take(50)
+                    .Select(o => new
+                    {
+                        time = o.CreatedAt,
+                        user = o.Customer.FullName,
+                        type = "معامله",
+                        description = $"ایجاد سفارش {o.FromCurrency.Code} به {o.ToCurrency.Code}",
+                        ip = "192.168.1.100", // You might want to store this in your model
+                        status = o.FilledAmount >= o.Amount ? "موفق" : "در انتظار"
+                    })
+                    .ToListAsync();
+
+                activities.AddRange(recentOrders);
+
+                var totalUsers = await _context.Customers.CountAsync(c => c.IsActive);
+                var todayLogins = await _context.Orders
+                    .Where(o => o.CreatedAt.Date == DateTime.Today)
+                    .Select(o => o.CustomerId)
+                    .Distinct()
+                    .CountAsync();
+                var adminActions = recentOrders.Count;
+                var securityEvents = 0; // You might want to add a security log table
+
+                return Json(new
+                {
+                    activities,
+                    stats = new
+                    {
+                        totalUsers,
+                        todayLogins,
+                        adminActions,
+                        securityEvents
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting admin data");
+                return Json(new { error = "خطا در دریافت اطلاعات مدیریت" });
+            }
         }
     }
 }
