@@ -17,6 +17,7 @@ namespace ForexExchange.Services
         private readonly ILogger<DataSeedService> _logger;
         private readonly IWebScrapingService _webScrapingService;
         private readonly IRateCalculationService _rateCalc;
+        private readonly ICentralFinancialService _centralFinancialService;
 
         public DataSeedService(
             UserManager<ApplicationUser> userManager,
@@ -24,7 +25,8 @@ namespace ForexExchange.Services
             ForexDbContext context,
             ILogger<DataSeedService> logger,
             IWebScrapingService webScrapingService,
-            IRateCalculationService rateCalculationService)
+            IRateCalculationService rateCalculationService,
+            ICentralFinancialService centralFinancialService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -32,6 +34,7 @@ namespace ForexExchange.Services
             _logger = logger;
             _webScrapingService = webScrapingService;
             _rateCalc = rateCalculationService;
+            _centralFinancialService = centralFinancialService;
         }
 
         public async Task SeedDataAsync()
@@ -51,16 +54,19 @@ namespace ForexExchange.Services
 
                 await CreateSystemCustomerAsync();
 
-                // Seed 50 test customers
+                // Seed 5-10 test customers (as requested by user)
                 await SeedTestCustomersAsync();
 
-                // Initialize customer balances
+                // Initialize currency pools first (required for financial operations)
+                await SeedCurrencyPoolsAsync();
+
+                // Initialize customer balances using CentralFinancialService (with complete audit trail)
                 await SeedCustomerBalancesAsync();
 
-                // Seed orders for customers (and update balances)
+                // Seed 20-30 orders per customer using CentralFinancialService (dual-currency impact + history)
                 await SeedCustomerOrdersAsync();
 
-                // Seed accounting documents for customers (and update balances)
+                // Seed 20-30 accounting documents per customer using CentralFinancialService (proper balance updates + history)
                 await SeedCustomerAccountingDocumentsAsync();
 
                 _logger.LogInformation("Data seeding completed successfully");
@@ -345,7 +351,7 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Seed 50 test customers
+        /// Seed 5-10 test customers (as requested by user)
         /// </summary>
         private async Task SeedTestCustomersAsync()
         {
@@ -356,7 +362,7 @@ namespace ForexExchange.Services
                     .Where(c => !c.IsSystem)
                     .CountAsync();
 
-                if (existingCustomerCount >= 50)
+                if (existingCustomerCount >= 5)
                 {
                     _logger.LogInformation($"{existingCustomerCount} customers already exist, skipping customer seeding");
                     return;
@@ -369,7 +375,11 @@ namespace ForexExchange.Services
                 var customers = new List<Customer>();
                 var now = DateTime.Now;
 
-                for (int i = 1; i <= 50; i++)
+                // Create 5-10 customers (random number)
+                var customerCount = random.Next(5, 11);
+                _logger.LogInformation($"Creating {customerCount} test customers using CentralFinancialService");
+
+                for (int i = 1; i <= customerCount; i++)
                 {
                     var firstName = persianFirstNames[random.Next(persianFirstNames.Length)];
                     var lastName = persianLastNames[random.Next(persianLastNames.Length)];
@@ -392,17 +402,69 @@ namespace ForexExchange.Services
                 _context.Customers.AddRange(customers);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Successfully created {customers.Count} test customers");
+                _logger.LogInformation($"Created {customerCount} test customers successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to seed test customers");
+                _logger.LogError(ex, "Error occurred while seeding test customers");
                 throw;
             }
         }
 
         /// <summary>
-        /// Seed 50-60 orders for each customer
+        /// Initialize currency pools with starting balances
+        /// </summary>
+        private async Task SeedCurrencyPoolsAsync()
+        {
+            try
+            {
+                var existingPools = await _context.CurrencyPools.CountAsync();
+                if (existingPools > 0)
+                {
+                    _logger.LogInformation($"{existingPools} currency pools already exist, skipping pool seeding");
+                    return;
+                }
+
+                var currencies = await _context.Currencies
+                    .Where(c => c.IsActive && !c.IsBaseCurrency) // Don't create pool for base currency (IRR)
+                    .ToListAsync();
+
+                var random = new Random();
+                var pools = new List<CurrencyPool>();
+
+                foreach (var currency in currencies)
+                {
+                    var pool = new CurrencyPool
+                    {
+                        CurrencyId = currency.Id,
+                        CurrencyCode = currency.Code,
+                        Balance = random.Next(50000, 200000), // Starting balance 50K-200K
+                        TotalBought = 0,
+                        TotalSold = 0,
+                        ActiveBuyOrderCount = 0,
+                        ActiveSellOrderCount = 0,
+                        RiskLevel = PoolRiskLevel.Low,
+                        IsActive = true,
+                        LastUpdated = DateTime.UtcNow,
+                        Notes = $"Initial pool created by DataSeedService for {currency.Name}"
+                    };
+                    pools.Add(pool);
+                }
+
+                _context.CurrencyPools.AddRange(pools);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Created {pools.Count} currency pools successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while seeding currency pools");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Seed 20-30 orders per customer using CentralFinancialService
         /// </summary>
         private async Task SeedCustomerOrdersAsync()
         {
@@ -410,7 +472,7 @@ namespace ForexExchange.Services
             {
                 // Check if orders already exist
                 var existingOrderCount = await _context.Orders.CountAsync();
-                if (existingOrderCount > 100)
+                if (existingOrderCount > 50)
                 {
                     _logger.LogInformation($"{existingOrderCount} orders already exist, skipping order seeding");
                     return;
@@ -418,6 +480,7 @@ namespace ForexExchange.Services
 
                 var customers = await _context.Customers
                     .Where(c => !c.IsSystem)
+                    .Include(c => c.Orders) // Include existing orders
                     .ToListAsync();
 
                 var currencies = await _context.Currencies
@@ -429,12 +492,14 @@ namespace ForexExchange.Services
                     .ToListAsync();
 
                 var random = new Random();
-                var orders = new List<Order>();
                 var now = DateTime.Now;
+                var totalOrdersCreated = 0;
+
+                _logger.LogInformation($"Creating 20-30 orders per customer using CentralFinancialService");
 
                 foreach (var customer in customers)
                 {
-                    var orderCount = random.Next(50, 61); // 50-60 orders per customer
+                    var orderCount = random.Next(20, 31); // 20-30 orders per customer
 
                     for (int i = 0; i < orderCount; i++)
                     {
@@ -447,51 +512,46 @@ namespace ForexExchange.Services
                             toCurrency = currencies[random.Next(currencies.Count)];
                         }
 
-                        var amount = (decimal)(random.NextDouble() * 10000 + 100); // Random amount between 100-10100
+                        var amount = (decimal)(random.NextDouble() * 5000 + 100); // Random amount between 100-5100
 
-                        // Find exchange rate
+                        // Find exchange rate or calculate reasonable rate
                         var rate = exchangeRates.FirstOrDefault(er => 
                             er.FromCurrencyId == fromCurrency.Id && er.ToCurrencyId == toCurrency.Id);
                         
-                        var totalAmount = rate != null ? amount * rate.Rate : amount * 1.1m;
+                        var exchangeRate = rate?.Rate ?? (decimal)(random.NextDouble() * 2 + 0.5); // Random rate if not found
+                        var totalAmount = amount * exchangeRate;
 
-                        var isCompleted = random.NextDouble() > 0.3; // 70% completion rate
-                        var filledAmount = isCompleted ? Math.Round(amount, 2) : Math.Round(amount * (decimal)random.NextDouble(), 2);
-
+                        // Create order entity
                         var order = new Order
                         {
                             CustomerId = customer.Id,
                             FromCurrencyId = fromCurrency.Id,
                             ToCurrencyId = toCurrency.Id,
-                            Amount = Math.Round(amount, 2),
-                            Rate = rate?.Rate ?? 1.1m,
-                            TotalAmount = Math.Round(totalAmount, 2),
-                            FilledAmount = filledAmount,
-                            CreatedAt = now.AddDays(-random.Next(1, 365)) // Random date within last year
+                            FromCurrency = fromCurrency,
+                            ToCurrency = toCurrency,
+                            FromAmount = Math.Round(amount, 2),
+                            Rate = exchangeRate,
+                            ToAmount = Math.Round(totalAmount, 2),
+                            CreatedAt = now.AddDays(-random.Next(1, 365)), // Random date within last year
+                            Notes = $"Test order created by DataSeedService"
                         };
 
-                        orders.Add(order);
+                        // Save order first
+                        _context.Orders.Add(order);
+                        await _context.SaveChangesAsync();
 
-                        // Update balances for completed orders
-                        if (isCompleted && filledAmount > 0)
-                        {
-                            // Deduct from source currency
-                            await UpdateCustomerBalanceAsync(customer.Id, fromCurrency.Code, -filledAmount, order.CreatedAt);
-                            
-                            // Add to target currency
-                            var receivedAmount = Math.Round(filledAmount * order.Rate, 2);
-                            await UpdateCustomerBalanceAsync(customer.Id, toCurrency.Code, receivedAmount, order.CreatedAt);
-                        }
+                        // Process order creation using CentralFinancialService for dual-currency impact
+                        await _centralFinancialService.ProcessOrderCreationAsync(order, "DataSeedService");
+
+                        totalOrdersCreated++;
+
+                      
                     }
+
+                    _logger.LogInformation($"Created {orderCount} orders for customer {customer.FullName}");
                 }
 
-                // Add all orders to context first
-                _context.Orders.AddRange(orders);
-                
-                // Save all changes (orders and balance updates) together
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Successfully created {orders.Count} orders for customers");
+                _logger.LogInformation($"Successfully created {totalOrdersCreated} total orders using CentralFinancialService");
             }
             catch (Exception ex)
             {
@@ -501,7 +561,7 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Seed 50-60 accounting documents for each customer
+        /// Seed 20-30 accounting documents per customer using CentralFinancialService
         /// </summary>
         private async Task SeedCustomerAccountingDocumentsAsync()
         {
@@ -509,7 +569,7 @@ namespace ForexExchange.Services
             {
                 // Check if documents already exist
                 var existingDocCount = await _context.AccountingDocuments.CountAsync();
-                if (existingDocCount > 100)
+                if (existingDocCount > 50)
                 {
                     _logger.LogInformation($"{existingDocCount} accounting documents already exist, skipping document seeding");
                     return;
@@ -526,8 +586,8 @@ namespace ForexExchange.Services
                 }
 
                 var random = new Random();
-                var documents = new List<AccountingDocument>();
                 var now = DateTime.Now;
+                var totalDocumentsCreated = 0;
 
                 var descriptions = new[] { 
                     "واریز نقدی", "برداشت نقدی", "تبدیل ارز", "کارمزد معامله", 
@@ -535,61 +595,67 @@ namespace ForexExchange.Services
                     "انتقال وجه", "دریافت حواله", "پرداخت حواله", "سود سپرده"
                 };
 
+                _logger.LogInformation($"Creating 20-30 accounting documents per customer using CentralFinancialService");
+
                 foreach (var customer in customers)
                 {
-                    var docCount = random.Next(50, 61); // 50-60 documents per customer
+                    var docCount = random.Next(20, 31); // 20-30 documents per customer
 
                     for (int i = 0; i < docCount; i++)
                     {
                         var currency = currencies[random.Next(currencies.Count)];
-                        var amount = (decimal)(random.NextDouble() * 5000 + 50); // Random amount between 50-5050
+                        var amount = (decimal)(random.NextDouble() * 3000 + 50); // Random amount between 50-3050
                         var isPayment = random.NextDouble() > 0.5; // 50% payments, 50% receipts
+                        var description = descriptions[random.Next(descriptions.Length)];
 
-                        var isVerified = random.NextDouble() > 0.1; // 90% verified
-
+                        // Create accounting document entity
                         var document = new AccountingDocument
                         {
-                            Type = (DocumentType)random.Next(0, 3), // Cash, BankStatement, or Havala
-                            PayerType = isPayment ? PayerType.Customer : PayerType.System,
-                            PayerCustomerId = isPayment ? customer.Id : systemCustomer.Id,
-                            ReceiverType = isPayment ? ReceiverType.System : ReceiverType.Customer,
-                            ReceiverCustomerId = isPayment ? systemCustomer.Id : customer.Id,
+                            Type = random.NextDouble() > 0.5 ? DocumentType.Cash : DocumentType.Havala,
+                            Title = description,
+                            Description = $"Test document created by DataSeedService - {description}",
                             Amount = Math.Round(amount, 2),
                             CurrencyCode = currency.Code,
-                            Description = descriptions[random.Next(descriptions.Length)],
                             DocumentDate = now.AddDays(-random.Next(1, 365)), // Random date within last year
-                            CreatedAt = now.AddDays(-random.Next(1, 365)),
-                            IsVerified = isVerified,
-                            VerifiedAt = isVerified ? now.AddDays(-random.Next(1, 300)) : null,
-                            VerifiedBy = isVerified ? "System" : null
+                            CreatedAt = DateTime.UtcNow,
+                            IsVerified = true, // Auto-verify for testing
+                            VerifiedAt = DateTime.UtcNow,
+                            VerifiedBy = "DataSeedService",
+                            Notes = "Generated by DataSeedService for testing",
+                            ReferenceNumber = $"REF{DateTime.UtcNow.Ticks}{random.Next(1000, 9999)}"
                         };
 
-                        documents.Add(document);
-
-                        // Update customer balance for verified documents
-                        if (isVerified)
+                        // Set payer and receiver based on transaction type
+                        if (isPayment)
                         {
-                            if (isPayment)
-                            {
-                                // Customer is paying - deduct from balance
-                                await UpdateCustomerBalanceAsync(customer.Id, currency.Code, -document.Amount, document.DocumentDate);
-                            }
-                            else
-                            {
-                                // Customer is receiving - add to balance
-                                await UpdateCustomerBalanceAsync(customer.Id, currency.Code, document.Amount, document.DocumentDate);
-                            }
+                            // Customer pays to system
+                            document.PayerCustomerId = customer.Id;
+                            document.PayerType = PayerType.Customer;
+                            document.ReceiverCustomerId = systemCustomer.Id;
+                            document.ReceiverType = ReceiverType.Customer; // System customer is still a Customer type
                         }
+                        else
+                        {
+                            // System pays to customer  
+                            document.PayerCustomerId = systemCustomer.Id;
+                            document.PayerType = PayerType.Customer; // System customer is still a Customer type
+                            document.ReceiverCustomerId = customer.Id;
+                            document.ReceiverType = ReceiverType.Customer;
+                        }
+
+                        // Save document first
+                        _context.AccountingDocuments.Add(document);
+                        await _context.SaveChangesAsync();
+
+                        // Process document using CentralFinancialService for proper balance updates
+                        await _centralFinancialService.ProcessAccountingDocumentAsync(document, "DataSeedService");
+
+                        totalDocumentsCreated++;
                     }
+
+                    _logger.LogInformation($"Created {docCount} accounting documents for customer {customer.FullName}");
                 }
 
-                // Add all documents to context first
-                _context.AccountingDocuments.AddRange(documents);
-                
-                // Save all changes (documents and balance updates) together
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Successfully created {documents.Count} accounting documents for customers");
             }
             catch (Exception ex)
             {
@@ -599,7 +665,7 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Initialize customer balances with random amounts
+        /// Initialize customer balances using CentralFinancialService for proper audit trail
         /// </summary>
         private async Task SeedCustomerBalancesAsync()
         {
@@ -622,8 +688,9 @@ namespace ForexExchange.Services
                     .ToListAsync();
 
                 var random = new Random();
-                var balances = new List<CustomerBalance>();
-                var now = DateTime.Now;
+                var totalBalancesCreated = 0;
+
+                _logger.LogInformation($"Creating initial customer balances using CentralFinancialService");
 
                 foreach (var customer in customers)
                 {
@@ -633,24 +700,24 @@ namespace ForexExchange.Services
 
                     foreach (var currency in selectedCurrencies)
                     {
-                        var amount = (decimal)(random.NextDouble() * 50000 + 1000); // Random amount between 1000-51000
+                        var amount = (decimal)(random.NextDouble() * 30000 + 1000); // Random amount between 1000-31000
 
-                        var balance = new CustomerBalance
-                        {
-                            CustomerId = customer.Id,
-                            CurrencyCode = currency.Code,
-                            Balance = Math.Round(amount, 2),
-                            LastUpdated = now.AddDays(-random.Next(1, 30)) // Updated within last month
-                        };
+                        // Use CentralFinancialService to create initial balance with audit trail
+                        await _centralFinancialService.AdjustCustomerBalanceAsync(
+                            customerId: customer.Id,
+                            currencyCode: currency.Code,
+                            adjustmentAmount: Math.Round(amount, 2),
+                            reason: $"Initial balance created by DataSeedService for {currency.Name}",
+                            performedBy: "DataSeedService"
+                        );
 
-                        balances.Add(balance);
+                        totalBalancesCreated++;
                     }
+
+                    _logger.LogInformation($"Created initial balances for customer {customer.FullName}");
                 }
 
-                _context.CustomerBalances.AddRange(balances);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Successfully created {balances.Count} customer balances");
+                _logger.LogInformation($"Successfully created {totalBalancesCreated} initial customer balances using CentralFinancialService");
             }
             catch (Exception ex)
             {
@@ -658,35 +725,6 @@ namespace ForexExchange.Services
                 throw;
             }
         }
-
-        /// <summary>
-        /// Helper method to update customer balance
-        /// </summary>
-        private async Task UpdateCustomerBalanceAsync(int customerId, string currencyCode, decimal amount, DateTime transactionDate)
-        {
-            var balance = await _context.CustomerBalances
-                .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
-
-            if (balance == null)
-            {
-                // Create new balance if doesn't exist
-                balance = new CustomerBalance
-                {
-                    CustomerId = customerId,
-                    CurrencyCode = currencyCode,
-                    Balance = amount,
-                    LastUpdated = transactionDate
-                };
-                _context.CustomerBalances.Add(balance);
-            }
-            else
-            {
-                // Update existing balance
-                balance.Balance += amount;
-                balance.LastUpdated = transactionDate;
-            }
-        }
-
     }
 }
 

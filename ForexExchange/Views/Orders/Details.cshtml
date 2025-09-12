@@ -95,8 +95,8 @@
                 
             </div>
             <div class="row mt-2">
-                        <div class="col-md-6"><strong> دریافت می کنیم  :</strong> @Model.Amount.FormatCurrency(Model.FromCurrency?.Code) @Model.FromCurrency?.Code
-                        <div class="col-md-6"><strong> پرداخت می کنیم    :</strong> @Model.TotalAmount.FormatCurrency(Model.ToCurrency?.Code) @Model.ToCurrency?.Code</div>
+                        <div class="col-md-6"><strong> دریافت می کنیم  :</strong> @Model.FromAmount.FormatCurrency(Model.FromCurrency?.Code) @Model.FromCurrency?.Code
+                        <div class="col-md-6"><strong> پرداخت می کنیم    :</strong> @Model.ToAmount.FormatCurrency(Model.ToCurrency?.Code) @Model.ToCurrency?.Code</div>
                 </div>
             </div>
         </div>
@@ -148,15 +148,10 @@
                                         <i class="fas fa-arrow-right mx-1"></i>
                                         <strong>@availableOrder.ToCurrency?.Code</strong>
                                     </td>
-                                    <td>@availableOrder.Amount.FormatCurrency(availableOrder.FromCurrency?.Code) @availableOrder.FromCurrency?.Code</td>
+                                    <td>@availableOrder.FromAmount.FormatCurrency(availableOrder.FromCurrency?.Code) @availableOrder.FromCurrency?.Code</td>
                                     <td>@availableOrder.Rate.FormatCurrency(availableOrder.ToCurrency?.Code == "IRR" ? "IRR" : availableOrder.ToCurrency?.Code)</td>
                                     <td>
-                                        @{
-                                            var remaining = availableOrder.Amount - availableOrder.FilledAmount;
-                                        }
-                                        <strong>@remaining.FormatCurrency(availableOrder.FromCurrency?.Code)</strong> @availableOrder.FromCurrency?.Code
-                                        <br>
-                                        <small class="text-muted">از @availableOrder.Amount.FormatCurrency(availableOrder.FromCurrency?.Code)</small>
+                                        <strong>@availableOrder.FromAmount.FormatCurrency(availableOrder.FromCurrency?.Code)</strong> @availableOrder.FromCurrency?.Code
                                     </td>
                                     <td>
                                         <small>@availableOrder.CreatedAt.ToString("yyyy/MM/dd")</small>

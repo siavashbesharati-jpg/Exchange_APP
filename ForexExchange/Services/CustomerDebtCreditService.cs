@@ -135,8 +135,8 @@ namespace ForexExchange.Services
                 }
                 */
                 // For now, use order amounts directly
-                fromAmount = order.Amount;
-                toAmount = order.TotalAmount;
+                fromAmount = order.FromAmount;
+                toAmount = order.ToAmount;
 
                 // Update balances
                 // Customer owes the FromCurrency (debt)

@@ -63,13 +63,13 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-2">
-                                    <strong>مبلغ:</strong> @(Model.FromCurrency?.Code == "IRR" ? Model.Amount.ToString("N0") : Model.Amount.ToString("N2"))
+                                    <strong>مبلغ:</strong> @(Model.FromCurrency?.Code == "IRR" ? Model.FromAmount.ToString("N0") : Model.FromAmount.ToString("N2"))
                                 </div>
                                 <div class="mb-2">
                                     <strong>نرخ:</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.Rate.ToString("N0") : Model.Rate.ToString("N2"))
                                 </div>
                                 <div class="mb-2">
-                                    <strong>مجموع:</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.TotalAmount.ToString("N0") : Model.TotalAmount.ToString("N2"))
+                                    <strong>مجموع:</strong> @(Model.ToCurrency?.Code == "IRR" ? Model.ToAmount.ToString("N0") : Model.ToAmount.ToString("N2"))
                                 </div>
                             </div>
                         </div>
@@ -111,7 +111,7 @@
                                         </div>
                                         <div class="mb-2">
                                             <strong>مجموع:</strong>
-                                            <span id="reverseTotal">@(Model.ToCurrency?.Code == "IRR" ? Model.TotalAmount.ToString("N0") : Model.TotalAmount.ToString("N4"))</span>
+                                            <span id="reverseTotal">@(Model.ToCurrency?.Code == "IRR" ? Model.ToAmount.ToString("N0") : Model.ToAmount.ToString("N4"))</span>
                                         </div>
                                     </div>
                                 </div>
@@ -175,7 +175,7 @@
         // Update total when rate changes
         document.getElementById('reverseRate').addEventListener('input', function () {
             const rate = parseFloat(this.value) || 0;
-            const amount = @Model.Amount;
+            const amount = @Model.FromAmount;
             const total = amount * rate;
             document.getElementById('reverseTotal').textContent = total.toLocaleString('fa-IR', { maximumFractionDigits: 2 });
             document.getElementById('hiddenReverseRate').value = rate;

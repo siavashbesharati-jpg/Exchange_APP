@@ -29,7 +29,7 @@ namespace ForexExchange.Models
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Amount - مقدار")]
-        public decimal Amount { get; set; }
+        public decimal FromAmount { get; set; }
         
         [Required]
         [Column(TypeName = "decimal(18,4)")]
@@ -39,11 +39,7 @@ namespace ForexExchange.Models
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         [Display(Name = "Total Amount - مقدار کل")]
-        public decimal TotalAmount { get; set; }
-        
-        [Column(TypeName = "decimal(18,2)")]
-        [Display(Name = "Filled Amount - مقدار پر شده")]
-        public decimal FilledAmount { get; set; }
+        public decimal ToAmount { get; set; }
         
         [Display(Name = "Created At - تاریخ ایجاد")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;

@@ -1,4 +1,4 @@
-@model ForexExchange.Models.Order
+@* @model ForexExchange.Models.Order
 
 @{
     ViewData["Title"] = "ویرایش معامله";
@@ -150,9 +150,8 @@
                         </div>
 
                         <!-- Hidden fields for calculated values -->
-                        <input type="hidden" asp-for="TotalAmount" id="hiddenTotalAmount" />
+                        <input type="hidden" asp-for="ToAmount" id="hiddenTotalAmount" />
                         <input type="hidden" asp-for="Rate" id="hiddenRate" />
-                        <input type="hidden" asp-for="FilledAmount" />
                         
                     </form>
                 </div>
@@ -652,4 +651,4 @@
             return formatCurrency(num, fromCurrencyCode);
         }
     </script>
-}
+} *@

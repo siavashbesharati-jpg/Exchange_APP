@@ -220,13 +220,13 @@
                                                     </td>
                                                     <td>
                                                         <div class="d-flex flex-column">
-                                                            <span class="fw-bold">@(order.FromCurrency?.Code == "IRR" ? order.Amount.ToString("N0") : order.Amount.ToString("N2"))</span>
+                                                            <span class="fw-bold">@(order.FromCurrency?.Code == "IRR" ? order.FromAmount.ToString("N0") : order.FromAmount.ToString("N2"))</span>
                                                             <small class="text-muted">@order.FromCurrency?.Code</small>
                                                         </div>
                                                     </td>
                                                     <td>
                                                         <div class="d-flex flex-column">
-                                                            <span class="fw-bold">@((order.Amount * order.Rate).ToString(order.ToCurrency?.Code == "IRR" ? "N0" : "N2"))</span>
+                                                            <span class="fw-bold">@((order.FromAmount * order.Rate).ToString(order.ToCurrency?.Code == "IRR" ? "N0" : "N2"))</span>
                                                             <small class="text-muted">@order.ToCurrency?.Code</small>
                                                         </div>
                                                     </td>

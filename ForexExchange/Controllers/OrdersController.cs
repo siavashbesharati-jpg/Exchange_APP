@@ -153,10 +153,10 @@ namespace ForexExchange.Controllers
             switch (sortOrder)
             {
                 case "Amount":
-                    orders = orders.OrderBy(o => o.Amount).ToList();
+                    orders = orders.OrderBy(o => o.FromAmount).ToList();
                     break;
                 case "amount_desc":
-                    orders = orders.OrderByDescending(o => o.Amount).ToList();
+                    orders = orders.OrderByDescending(o => o.FromAmount).ToList();
                     break;
                 case "Rate":
                     orders = orders.OrderBy(o => o.Rate).ToList();
@@ -247,7 +247,7 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Create(Order order)
         {
             // Debug: Log received order data first
-            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, Amount: {order.Amount}, ManualRate: {order.Rate}");
+            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, Amount: {order.FromAmount}, ManualRate: {order.Rate}");
 
             // Remove Customer navigation property from validation as we only need CustomerId
             ModelState.Remove("Customer");
@@ -381,10 +381,8 @@ namespace ForexExchange.Controllers
 
                 // Calculate total and set order properties
                 order.Rate = finalExchangeRate;
-                var totalValue = order.Amount * order.Rate;
-                order.TotalAmount = totalValue;
-
-                order.FilledAmount = 0;
+                var totalValue = order.FromAmount * order.Rate;
+                order.ToAmount = totalValue;
 
                 _context.Add(order);
                 await _context.SaveChangesAsync();
@@ -411,9 +409,9 @@ namespace ForexExchange.Controllers
 
                 // Update currency pools
                 // Add to FromCurrency pool (reduce available currency)
-                await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.Amount, PoolTransactionType.Buy, order.Rate);
+                await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.FromAmount, PoolTransactionType.Buy, order.Rate);
                 // Add to ToCurrency pool (increase available currency)
-                await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
+                await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.FromAmount * order.Rate, PoolTransactionType.Sell, order.Rate);
 
                 // Update order counts for both currencies
                 await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
@@ -507,9 +505,9 @@ namespace ForexExchange.Controllers
                         }
 
                         // Recompute totals on server for integrity
-                        var totalValue = order.Amount * order.Rate;
+                        var totalValue = order.FromAmount * order.Rate;
 
-                        order.TotalAmount = totalValue;
+                        order.ToAmount = totalValue;
                         order.UpdatedAt = DateTime.Now;                    _context.Update(order);
                     await _context.SaveChangesAsync();
 
@@ -609,11 +607,10 @@ namespace ForexExchange.Controllers
                         CustomerId = originalOrder.CustomerId,
                         FromCurrencyId = originalOrder.ToCurrencyId,     // Reverse currencies: IRR
                         ToCurrencyId = originalOrder.FromCurrencyId,     // USD
-                        Amount = originalOrder.TotalAmount,              // Total from original order: 10,300,000 IRR
+                        FromAmount = originalOrder.ToAmount,              // Total from original order: 10,300,000 IRR
                         Rate = reverseRate,                              // User-input rate: 104,000
                         CreatedAt = DateTime.Now,
-                        FilledAmount = originalOrder.TotalAmount / reverseRate,  // Correct calculation: 10,300,000 / 104,000 = 99
-                        TotalAmount = originalOrder.TotalAmount / reverseRate   // Same as FilledAmount: 99
+                        ToAmount = originalOrder.ToAmount / reverseRate   // Correct calculation: 10,300,000 / 104,000 = 99
                     };
 
 
@@ -622,8 +619,8 @@ namespace ForexExchange.Controllers
                     await _context.SaveChangesAsync();
 
                     // Update currency pools for the new reverse order
-                    await _poolService.UpdatePoolAsync(reverseOrder.FromCurrencyId, reverseOrder.Amount, PoolTransactionType.Buy, reverseOrder.Rate);
-                    await _poolService.UpdatePoolAsync(reverseOrder.ToCurrencyId, reverseOrder.TotalAmount, PoolTransactionType.Sell, reverseOrder.Rate);
+                    await _poolService.UpdatePoolAsync(reverseOrder.FromCurrencyId, reverseOrder.FromAmount, PoolTransactionType.Buy, reverseOrder.Rate);
+                    await _poolService.UpdatePoolAsync(reverseOrder.ToCurrencyId, reverseOrder.ToAmount, PoolTransactionType.Sell, reverseOrder.Rate);
 
                     // Update order counts
                     await _poolService.UpdateOrderCountsAsync(reverseOrder.FromCurrencyId);
@@ -660,258 +657,9 @@ namespace ForexExchange.Controllers
             }
         }
 
-        // POST: Orders/Match/5 - Show available orders for manual matching
-        // Note: Disabled per user request - UI buttons removed but logic kept
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Match(int id)
-        {
-            // UI matching disabled - redirect to details
-            TempData["InfoMessage"] = "عملیات مچ کردن دستی از رابط کاربری غیرفعال شده است.";
-            return RedirectToAction(nameof(Details), new { id });
-            
-            /*
-            var order = await _context.Orders
-                .Include(o => o.Customer)
-                .FirstOrDefaultAsync(o => o.Id == id);
+        
 
-            if (order == null || order.Status != OrderStatus.Open || order.Amount <= order.FilledAmount)
-            {
-                TempData["ErrorMessage"] = "معامله موجود نیست یا قابل مچ کردن نمی‌باشد.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            // Just redirect to Details page where available orders are already shown
-            TempData["InfoMessage"] = "لیست معاملهات قابل مچ نمایش داده شده است. لطفاً معامله مورد نظر را انتخاب کنید.";
-            return RedirectToAction(nameof(Details), new { id });
-            */
-        }
-
-        // POST: Orders/MatchOrders - Match two specific orders manually
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MatchOrders(int primaryOrderId, int matchingOrderId)
-        {
-            var primaryOrder = await _context.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.FromCurrency)
-                .Include(o => o.ToCurrency)
-                .FirstOrDefaultAsync(o => o.Id == primaryOrderId);
-
-            var matchingOrder = await _context.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.FromCurrency)
-                .Include(o => o.ToCurrency)
-                .FirstOrDefaultAsync(o => o.Id == matchingOrderId);
-
-            if (primaryOrder == null || matchingOrder == null)
-            {
-                TempData["ErrorMessage"] = "یک یا هر دو معامله یافت نشد.";
-                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
-            }
-
-            if (primaryOrder.Amount <= primaryOrder.FilledAmount)
-            {
-                TempData["ErrorMessage"] = "معامله اصلی قابل مچ کردن نیست.";
-                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
-            }
-
-            if (matchingOrder.Amount <= matchingOrder.FilledAmount)
-            {
-                TempData["ErrorMessage"] = "معامله مقابل قابل مچ کردن نیست.";
-                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
-            }
-
-            // Validate that orders are complementary
-            bool isValidPair = (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId &&
-                               primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId) ||
-                              (primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId &&
-                               primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId);
-
-            if (!isValidPair)
-            {
-                TempData["ErrorMessage"] = "این دو معامله قابل مچ کردن با هم نیستند.";
-                return RedirectToAction(nameof(Details), new { id = primaryOrderId });
-            }
-
-            // Calculate match amount (minimum of remaining amounts)
-            decimal primaryRemaining = primaryOrder.Amount - primaryOrder.FilledAmount;
-            decimal matchingRemaining = matchingOrder.Amount - matchingOrder.FilledAmount;
-            decimal matchAmount = Math.Min(primaryRemaining, matchingRemaining);
-
-            // Determine direction: who is buyer/seller
-            int buyOrderId, sellOrderId, buyerCustomerId, sellerCustomerId;
-            ForexExchange.Models.Order buyOrder, sellOrder;
-
-            if (primaryOrder.FromCurrencyId == matchingOrder.ToCurrencyId &&
-                primaryOrder.ToCurrencyId == matchingOrder.FromCurrencyId)
-            {
-                // primaryOrder is selling, matchingOrder is buying
-                buyOrderId = matchingOrder.Id;
-                sellOrderId = primaryOrder.Id;
-                buyerCustomerId = matchingOrder.CustomerId;
-                sellerCustomerId = primaryOrder.CustomerId;
-                buyOrder = matchingOrder;
-                sellOrder = primaryOrder;
-            }
-            else
-            {
-                // primaryOrder is buying, matchingOrder is selling
-                buyOrderId = primaryOrder.Id;
-                sellOrderId = matchingOrder.Id;
-                buyerCustomerId = primaryOrder.CustomerId;
-                sellerCustomerId = matchingOrder.CustomerId;
-                buyOrder = primaryOrder;
-                sellOrder = matchingOrder;
-            }
-
-            // Use the best rate (lowest for buyer, highest for seller)
-            decimal transactionRate = Math.Min(primaryOrder.Rate, matchingOrder.Rate);
-
-            // Create transaction
-            // TODO: Replace with AccountingDocument-based tracking for new architecture
-            /*
-            var transaction = new Transaction
-            {
-                BuyOrderId = buyOrderId,
-                SellOrderId = sellOrderId,
-                BuyerCustomerId = buyerCustomerId,
-                SellerCustomerId = sellerCustomerId,
-                FromCurrencyId = sellOrder.FromCurrencyId,
-                ToCurrencyId = sellOrder.ToCurrencyId,
-                FromCurrency = sellOrder.FromCurrency,
-                ToCurrency = sellOrder.ToCurrency,
-                Amount = matchAmount,
-                Rate = transactionRate,
-                TotalAmount = matchAmount * transactionRate,
-                Status = TransactionStatus.Pending,
-                CreatedAt = DateTime.Now
-            };
-
-            // TODO: Replace with CustomerBalanceService for direct balance updates
-            // _context.Transactions.Add(transaction);
-            */
-
-            // Update order statuses and filled amounts
-            primaryOrder.FilledAmount += matchAmount;
-            matchingOrder.FilledAmount += matchAmount;
-
-            primaryOrder.UpdatedAt = DateTime.Now;
-            matchingOrder.UpdatedAt = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-
-            // Update currency pools when orders are matched/completed
-            if (primaryOrder.FilledAmount >= primaryOrder.Amount)
-            {
-                // When an order is completed, we need to reverse the initial pool allocation
-                // and then apply the actual transaction amounts
-                await _poolService.UpdatePoolAsync(primaryOrder.FromCurrencyId, -primaryOrder.Amount, PoolTransactionType.Sell, primaryOrder.Rate);
-                await _poolService.UpdatePoolAsync(primaryOrder.ToCurrencyId, -(primaryOrder.Amount * primaryOrder.Rate), PoolTransactionType.Buy, primaryOrder.Rate);
-                
-                // Apply the actual completed transaction
-                await _poolService.UpdatePoolAsync(primaryOrder.FromCurrencyId, -matchAmount, PoolTransactionType.Buy, transactionRate);
-                await _poolService.UpdatePoolAsync(primaryOrder.ToCurrencyId, matchAmount * transactionRate, PoolTransactionType.Sell, transactionRate);
-            }
-
-            if (matchingOrder.FilledAmount >= matchingOrder.Amount)
-            {
-                // When an order is completed, we need to reverse the initial pool allocation
-                // and then apply the actual transaction amounts
-                await _poolService.UpdatePoolAsync(matchingOrder.FromCurrencyId, -matchingOrder.Amount, PoolTransactionType.Sell, matchingOrder.Rate);
-                await _poolService.UpdatePoolAsync(matchingOrder.ToCurrencyId, -(matchingOrder.Amount * matchingOrder.Rate), PoolTransactionType.Buy, matchingOrder.Rate);
-                
-                // Apply the actual completed transaction
-                await _poolService.UpdatePoolAsync(matchingOrder.FromCurrencyId, -matchAmount, PoolTransactionType.Buy, transactionRate);
-                await _poolService.UpdatePoolAsync(matchingOrder.ToCurrencyId, matchAmount * transactionRate, PoolTransactionType.Sell, transactionRate);
-            }
-
-            // Update order counts for all affected currencies
-            await _poolService.UpdateOrderCountsAsync(primaryOrder.FromCurrencyId);
-            await _poolService.UpdateOrderCountsAsync(primaryOrder.ToCurrencyId);
-            await _poolService.UpdateOrderCountsAsync(matchingOrder.FromCurrencyId);
-            await _poolService.UpdateOrderCountsAsync(matchingOrder.ToCurrencyId);
-
-            // Update average rates for both currency pairs
-            await UpdateAverageRatesForPairAsync(primaryOrder.FromCurrencyId, primaryOrder.ToCurrencyId);
-            await UpdateAverageRatesForPairAsync(matchingOrder.FromCurrencyId, matchingOrder.ToCurrencyId);
-
-            _logger.LogInformation($"Manually matched Order {primaryOrder.Id} with Order {matchingOrder.Id}: {matchAmount} units at rate {transactionRate}");
-
-            TempData["SuccessMessage"] = $"معاملهات با موفقیت مچ شدند. تراکنش ایجاد شد.";
-            return RedirectToAction(nameof(Details), new { id = primaryOrderId });
-        }
-
-        // POST: Orders/CompleteOrder - Manually complete an order
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CompleteOrder(int id)
-        {
-            var order = await _context.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.FromCurrency)
-                .Include(o => o.ToCurrency)
-                .FirstOrDefaultAsync(o => o.Id == id);
-
-            if (order == null)
-            {
-                TempData["ErrorMessage"] = "معامله یافت نشد.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            using (var transaction = await _context.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    // Mark order as completed
-                    order.FilledAmount = order.Amount; // Mark as fully filled
-                    order.UpdatedAt = DateTime.Now;
-                    _context.Update(order);
-
-                    // Update currency pools
-                    // Reverse the initial allocation
-                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, -order.Amount, PoolTransactionType.Sell, order.Rate);
-                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, -(order.Amount * order.Rate), PoolTransactionType.Buy, order.Rate);
-
-                    // Apply the actual completed transaction to pools
-                    // When order completes: we lose FromCurrency and gain ToCurrency
-                    await _poolService.UpdatePoolAsync(order.FromCurrencyId, -order.Amount, PoolTransactionType.Buy, order.Rate);
-                    await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.Amount * order.Rate, PoolTransactionType.Sell, order.Rate);
-
-                    // Update order counts
-                    await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
-                    await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
-
-                    // Update average rates for this currency pair
-                    await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    // Log admin activity
-                    var currentUser = await _userManager.GetUserAsync(User);
-                    if (currentUser != null)
-                    {
-                        // Note: LogOrderCompletedAsync method needs to be added to AdminActivityService
-                        // await _adminActivityService.LogOrderCompletedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                        await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCompleted, currentUser.Id);
-                    }
-
-                    _logger.LogInformation($"Order {id} manually completed by admin. From: {order.Amount} {order.FromCurrency?.Code}, To: {order.Amount * order.Rate} {order.ToCurrency?.Code}");
-
-                    TempData["SuccessMessage"] = $"معامله با موفقیت تکمیل شد. {order.Amount:N2} {order.FromCurrency?.Code} به {(order.Amount * order.Rate):N2} {order.ToCurrency?.Code} تبدیل شد.";
-                    return RedirectToAction(nameof(Details), new { id });
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, $"Error manually completing order {id}");
-                    TempData["ErrorMessage"] = "خطا در تکمیل دستی معامله.";
-                    return RedirectToAction(nameof(Details), new { id });
-                }
-            }
-        }
-
+      
         private bool OrderExists(int id)
         {
             return _context.Orders.Any(e => e.Id == id);
@@ -1129,7 +877,7 @@ namespace ForexExchange.Controllers
         private List<Order> FindOptimalMatchingCombination(List<Order> availableOrders, decimal targetAmount)
         {
             // Sort by size descending (largest first)
-            var sortedBySize = availableOrders.OrderByDescending(o => o.Amount - o.FilledAmount).ToList();
+            var sortedBySize = availableOrders.OrderByDescending(o => o.FromAmount).ToList();
 
             // Greedy algorithm: take largest orders that fit without exceeding target
             var selectedOrders = new List<Order>();
@@ -1137,7 +885,7 @@ namespace ForexExchange.Controllers
 
             foreach (var order in sortedBySize)
             {
-                var availableAmount = order.Amount - order.FilledAmount;
+                var availableAmount = order.FromAmount;
 
                 // If adding this order would exceed target, skip it
                 if (currentSum + availableAmount > targetAmount)
@@ -1182,8 +930,8 @@ namespace ForexExchange.Controllers
             if (buyOrders.Any())
             {
                 // Weighted average buy rate
-                var totalBuyVolume = buyOrders.Sum(o => o.Amount);
-                var weightedBuyRate = buyOrders.Sum(o => o.Amount * o.Rate) / totalBuyVolume;
+                var totalBuyVolume = buyOrders.Sum(o => o.FromAmount);
+                var weightedBuyRate = buyOrders.Sum(o => o.FromAmount * o.Rate) / totalBuyVolume;
                 exchangeRate.AverageBuyRate = weightedBuyRate;
                 exchangeRate.TotalBuyVolume = totalBuyVolume;
             }
@@ -1202,8 +950,8 @@ namespace ForexExchange.Controllers
             if (sellOrders.Any())
             {
                 // Weighted average sell rate
-                var totalSellVolume = sellOrders.Sum(o => o.Amount);
-                var weightedSellRate = sellOrders.Sum(o => o.Amount * o.Rate) / totalSellVolume;
+                var totalSellVolume = sellOrders.Sum(o => o.FromAmount);
+                var weightedSellRate = sellOrders.Sum(o => o.FromAmount * o.Rate) / totalSellVolume;
                 exchangeRate.AverageSellRate = weightedSellRate;
                 exchangeRate.TotalSellVolume = totalSellVolume;
             }

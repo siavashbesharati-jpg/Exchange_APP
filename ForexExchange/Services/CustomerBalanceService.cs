@@ -118,7 +118,7 @@ namespace ForexExchange.Services
             _logger.LogInformation("Starting ProcessOrderCreationAsync for Order {OrderId}, Customer {CustomerId}", 
                 order.Id, order.CustomerId);
             _logger.LogInformation("Order details: Amount={Amount}, Rate={Rate}, TotalAmount={TotalAmount}, FromCurrency={FromCurrency}, ToCurrency={ToCurrency}", 
-                order.Amount, order.Rate, order.TotalAmount, order.FromCurrency?.Code ?? "NULL", order.ToCurrency?.Code ?? "NULL");
+                order.FromAmount, order.Rate, order.ToAmount, order.FromCurrency?.Code ?? "NULL", order.ToCurrency?.Code ?? "NULL");
 
             if (order.FromCurrency == null || order.ToCurrency == null)
             {
@@ -131,16 +131,16 @@ namespace ForexExchange.Services
             await UpdateCustomerBalanceAsync(
                 order.CustomerId, 
                 order.FromCurrency.Code, 
-                -order.Amount, 
-                $"Order #{order.Id} - Pay {order.Amount} {order.FromCurrency.Code}"
+                -order.FromAmount, 
+                $"Order #{order.Id} - Pay {order.FromAmount} {order.FromCurrency.Code}"
             );
 
             // Customer receives ToCurrency amount (positive balance)
             await UpdateCustomerBalanceAsync(
                 order.CustomerId, 
                 order.ToCurrency.Code, 
-                order.TotalAmount, 
-                $"Order #{order.Id} - Receive {order.TotalAmount} {order.ToCurrency.Code}"
+                order.ToAmount, 
+                $"Order #{order.Id} - Receive {order.ToAmount} {order.ToCurrency.Code}"
             );
 
             _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId} for customer {CustomerId}", 
@@ -153,14 +153,14 @@ namespace ForexExchange.Services
             await UpdateCustomerBalanceAsync(
                 oldOrder.CustomerId, 
                 oldOrder.FromCurrency.Code, 
-                oldOrder.Amount, 
+                oldOrder.FromAmount, 
                 $"Reverse Order #{oldOrder.Id} edit"
             );
 
             await UpdateCustomerBalanceAsync(
                 oldOrder.CustomerId, 
                 oldOrder.ToCurrency.Code, 
-                -oldOrder.TotalAmount, 
+                -oldOrder.ToAmount, 
                 $"Reverse Order #{oldOrder.Id} edit"
             );
 

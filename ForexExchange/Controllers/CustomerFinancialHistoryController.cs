@@ -1,0 +1,166 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using ForexExchange.Models;
+using ForexExchange.Services;
+
+namespace ForexExchange.Controllers
+{
+    [Authorize]
+    public class CustomerFinancialHistoryController : Controller
+    {
+        private readonly CustomerFinancialHistoryService _historyService;
+        private readonly ForexDbContext _context;
+        private readonly ILogger<CustomerFinancialHistoryController> _logger;
+
+        public CustomerFinancialHistoryController(
+            CustomerFinancialHistoryService historyService,
+            ForexDbContext context,
+            ILogger<CustomerFinancialHistoryController> logger)
+        {
+            _historyService = historyService;
+            _context = context;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Customer Financial History main page
+        /// </summary>
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        /// <summary>
+        /// Get complete customer financial timeline
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            try
+            {
+                if (customerId <= 0)
+                    return BadRequest("Invalid customer ID");
+
+                var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate);
+                return Json(new { success = true, data = timeline });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting customer timeline for customer {CustomerId}", customerId);
+                return Json(new { success = false, message = "خطا در دریافت تاریخچه مالی مشتری" });
+            }
+        }
+
+        /// <summary>
+        /// Get balance snapshot at specific date
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetBalanceSnapshot(int customerId, DateTime asOfDate)
+        {
+            try
+            {
+                if (customerId <= 0)
+                    return BadRequest("Invalid customer ID");
+
+                var snapshot = await _historyService.GetBalanceSnapshotAsync(customerId, asOfDate);
+                return Json(new { success = true, data = snapshot });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting balance snapshot for customer {CustomerId}", customerId);
+                return Json(new { success = false, message = "خطا در دریافت وضعیت موجودی" });
+            }
+        }
+
+        /// <summary>
+        /// Get customer transaction statistics
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerStats(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            try
+            {
+                if (customerId <= 0)
+                    return BadRequest("Invalid customer ID");
+
+                var stats = await _historyService.GetCustomerStatsAsync(customerId, fromDate, toDate);
+                return Json(new { success = true, data = stats });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting customer stats for customer {CustomerId}", customerId);
+                return Json(new { success = false, message = "خطا در دریافت آمار مشتری" });
+            }
+        }
+
+        /// <summary>
+        /// Get currency-specific transaction summary
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCurrencyTransactionSummary(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            try
+            {
+                if (customerId <= 0)
+                    return BadRequest("Invalid customer ID");
+
+                var summary = await _historyService.GetCurrencyTransactionSummaryAsync(customerId, fromDate, toDate);
+                return Json(new { success = true, data = summary });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting currency summary for customer {CustomerId}", customerId);
+                return Json(new { success = false, message = "خطا در دریافت خلاصه ارزی" });
+            }
+        }
+
+        /// <summary>
+        /// Customer Financial Timeline View
+        /// </summary>
+        public async Task<IActionResult> Timeline(int id)
+        {
+            try
+            {
+                var customer = await _context.Customers.FindAsync(id);
+                if (customer == null)
+                    return NotFound();
+
+                return View(customer);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading timeline view for customer {CustomerId}", id);
+                return RedirectToAction("Index", "Customers");
+            }
+        }
+
+        /// <summary>
+        /// Export customer financial timeline to Excel
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ExportTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            try
+            {
+                var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate);
+                
+                // Create Excel export logic here
+                // For now, return JSON for testing
+                return Json(new { 
+                    success = true, 
+                    message = "Export functionality will be implemented",
+                    data = new { 
+                        customerName = timeline.CustomerName,
+                        transactionCount = timeline.TotalTransactions,
+                        dateRange = $"{timeline.FromDate:yyyy-MM-dd} to {timeline.ToDate:yyyy-MM-dd}"
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting timeline for customer {CustomerId}", customerId);
+                return Json(new { success = false, message = "خطا در صادرات فایل" });
+            }
+        }
+    }
+}

@@ -125,11 +125,11 @@ namespace ForexExchange.Controllers
                     FromCurrency = g.Key.FromCurrency,
                     ToCurrency = g.Key.ToCurrency,
                     TotalTransactions = g.Count(),
-                    TotalAmount = g.Sum(o => o.Amount),
+                    TotalAmount = g.Sum(o => o.FromAmount),
                     AverageRate = g.Average(o => o.Rate),
                     MinRate = g.Min(o => o.Rate),
                     MaxRate = g.Max(o => o.Rate),
-                    TotalValueInTargetCurrency = g.Sum(o => o.TotalAmount)
+                    TotalValueInTargetCurrency = g.Sum(o => o.ToAmount)
                 })
                 .OrderByDescending(c => c.TotalValueInTargetCurrency)
                 .ToList();
@@ -143,7 +143,7 @@ namespace ForexExchange.Controllers
                     Year = g.Key.Year,
                     Month = g.Key.Month,
                     TransactionCount = g.Count(),
-                    TotalVolume = g.Sum(o => o.TotalAmount)
+                    TotalVolume = g.Sum(o => o.ToAmount)
                 })
                 .OrderBy(m => m.Year).ThenBy(m => m.Month)
                 .ToList();
@@ -174,7 +174,7 @@ namespace ForexExchange.Controllers
             var totalOrders = await _context.Orders.CountAsync(o => o.CustomerId == customerId);
             var totalVolume = await _context.Orders
                 .Where(o => o.CustomerId == customerId)
-                .SumAsync(o => o.TotalAmount);
+                .SumAsync(o => o.ToAmount);
             var totalDocuments = await _context.AccountingDocuments.CountAsync(a => a.PayerCustomerId == customerId || a.ReceiverCustomerId == customerId);
             var verifiedDocuments = await _context.AccountingDocuments
                 .CountAsync(a => (a.PayerCustomerId == customerId || a.ReceiverCustomerId == customerId) && a.IsVerified);

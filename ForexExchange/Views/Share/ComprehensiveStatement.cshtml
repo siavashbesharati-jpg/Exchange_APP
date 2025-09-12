@@ -565,7 +565,7 @@
                                     <td>#@order.Id</td>
                                     <td>@order.FromCurrency?.Code</td>
                                     <td>@order.ToCurrency?.Code</td>
-                                    <td>@order.Amount.FormatCurrency(order.FromCurrency?.Code)</td>
+                                    <td>@order.FromAmount.FormatCurrency(order.FromCurrency?.Code)</td>
                                     <td>@order.Rate.FormatCurrency(order.ToCurrency?.Code)</td>
                                     <td>@order.CreatedAt.ToString("yy/MM/dd")</td>
                                 </tr>
@@ -616,9 +616,7 @@
                                             case ForexExchange.Models.DocumentType.Cash:
                                                 <span>نقدی</span>
                                                 break;
-                                            case ForexExchange.Models.DocumentType.BankStatement:
-                                                <span>بانکی</span>
-                                                break;
+                                 
                                             case ForexExchange.Models.DocumentType.Havala:
                                                 <span>حواله</span>
                                                 break;

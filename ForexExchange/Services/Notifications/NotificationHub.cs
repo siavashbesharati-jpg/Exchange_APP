@@ -208,7 +208,7 @@ namespace ForexExchange.Services.Notifications
 
             var message = eventType switch
             {
-                NotificationEventType.OrderCreated => $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.Amount:N0} {fromCurrency?.Symbol} → {order.TotalAmount:N0} {toCurrency?.Symbol}",
+                NotificationEventType.OrderCreated => $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}",
                 NotificationEventType.OrderUpdated when !string.IsNullOrEmpty(oldStatus) && !string.IsNullOrEmpty(newStatus) => $"سفارش #{order.Id} ({customer?.FullName}): {oldStatus} → {newStatus}",
                 NotificationEventType.OrderCompleted => $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"} با موفقیت تکمیل شد",
                 NotificationEventType.OrderCancelled => $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"} لغو شد",
@@ -236,8 +236,8 @@ namespace ForexExchange.Services.Notifications
                         ["customerName"] = customer?.FullName ?? "نامعلوم",
                         ["fromCurrencyId"] = order.FromCurrencyId,
                         ["toCurrencyId"] = order.ToCurrencyId,
-                        ["amount"] = order.Amount,
-                        ["totalAmount"] = order.TotalAmount,
+                        ["amount"] = order.FromAmount,
+                        ["totalAmount"] = order.ToAmount,
                         ["rate"] = order.Rate
                     }
                 },
@@ -245,8 +245,8 @@ namespace ForexExchange.Services.Notifications
                 {
                     ["orderId"] = order.Id,
                     ["customerId"] = order.CustomerId,
-                    ["amount"] = order.Amount,
-                    ["totalAmount"] = order.TotalAmount,
+                    ["amount"] = order.FromAmount,
+                    ["totalAmount"] = order.ToAmount,
                     ["fromCurrency"] = fromCurrency?.Symbol ?? "",
                     ["toCurrency"] = toCurrency?.Symbol ?? "",
                     ["oldStatus"] = oldStatus ?? "",

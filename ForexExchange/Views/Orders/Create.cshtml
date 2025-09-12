@@ -95,10 +95,10 @@
                             </div>
 
                             <div class="col-md-4" style="display: none;">
-                                <label asp-for="Amount" class="form-label">مقدار  (ارز دریافتی)</label>
-                                <input asp-for="Amount" type="number" class="form-control" step="0.01"
+                                <label asp-for="FromAmount" class="form-label">مقدار  (ارز دریافتی)</label>
+                                <input asp-for="FromAmount" type="number" class="form-control" step="0.01"
                                     id="amountInput" required />
-                                <span asp-validation-for="Amount" class="text-danger"></span>
+                                <span asp-validation-for="FromAmount" class="text-danger"></span>
                             </div>
                         </div>
 
@@ -155,9 +155,8 @@
                         </div>
 
                         <!-- Hidden fields for calculated values -->
-                        <input type="hidden" asp-for="TotalAmount" id="hiddenTotalAmount" value="0" />
+                        <input type="hidden" asp-for="ToAmount" id="hiddenTotalAmount" value="0" />
                         <input type="hidden" asp-for="Rate" id="hiddenRate" value="0" />
-                        <input type="hidden" asp-for="FilledAmount" value="0" />
                     </form>
                 </div>
             </div>

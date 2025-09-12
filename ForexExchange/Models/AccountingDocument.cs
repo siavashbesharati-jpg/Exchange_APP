@@ -7,11 +7,8 @@ namespace ForexExchange.Models
     {
         [Display(Name = "نقدی")]
         Cash = 0,
-        [Display(Name = "رسید بانکی ")]
-
-        BankStatement = 1,
         [Display(Name = " حواله  ")]
-        Havala = 2
+        Havala = 1
     }
 
     public enum PayerType

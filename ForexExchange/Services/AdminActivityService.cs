@@ -83,9 +83,9 @@ namespace ForexExchange.Services
                 CustomerId = order.CustomerId,
                 FromCurrencyId = order.FromCurrencyId,
                 ToCurrencyId = order.ToCurrencyId,
-                Amount = order.Amount,
+                Amount = order.FromAmount,
                 Rate = order.Rate,
-                TotalAmount = order.TotalAmount
+                TotalAmount = order.ToAmount
             };
 
             await LogActivityAsync(

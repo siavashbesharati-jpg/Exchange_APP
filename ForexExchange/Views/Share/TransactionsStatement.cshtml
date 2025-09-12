@@ -349,7 +349,7 @@
                         <div class="overview-label">ماه‌های فعالیت</div>
                     </div>
                     <div class="overview-item">
-                        <div class="overview-number">@string.Format("{0:N0}", Model.Orders.Sum(o => o.TotalAmount))</div>
+                        <div class="overview-number">@string.Format("{0:N0}", Model.Orders.Sum(o => o.ToAmount))</div>
                         <div class="overview-label">کل حجم معاملات</div>
                     </div>
                 </div>
@@ -404,9 +404,9 @@
                                         <td>@order.CreatedAt.ToPersianDateTextify()</td>
                                         <td>@order.CurrencyPair</td>
                                         <td>@order.FromCurrency.Code</td>
-                                        <td>@string.Format("{0:N2}", order.Amount)</td>
+                                        <td>@string.Format("{0:N2}", order.FromAmount)</td>
                                         <td>@order.ToCurrency.Code</td>
-                                        <td>@string.Format("{0:N2}", order.TotalAmount)</td>
+                                        <td>@string.Format("{0:N2}", order.ToAmount)</td>
                                         <td>@string.Format("{0:N4}", order.Rate)</td>
                                     </tr>
                                 }

@@ -124,7 +124,7 @@ namespace ForexExchange.Services
                     customerId = order.CustomerId,
                     customerName = order.Customer?.FullName,
                     action = action,
-                    amount = order.Amount,
+                    amount = order.FromAmount,
                     fromCurrency = order.FromCurrency?.Code,
                     toCurrency = order.ToCurrency?.Code,
                     timestamp = DateTime.Now
@@ -337,7 +337,7 @@ namespace ForexExchange.Services
 
             return action switch
             {
-                "created" => $"معامله جدید ثبت شد\n\n{customerName}\n{order.Amount:N0} {fromCurrency} → {toCurrency}",
+                "created" => $"معامله جدید ثبت شد\n\n{customerName}\n{order.FromAmount:N0} {fromCurrency} → {toCurrency}",
                 "updated" => $"معامله #{order.Id} بروزرسانی شد\n\n{customerName}",
                 "cancelled" => $"معامله #{order.Id} لغو شد\n\n{customerName}",
                 "completed" => $"معامله #{order.Id} تکمیل شد\n\n{customerName}",

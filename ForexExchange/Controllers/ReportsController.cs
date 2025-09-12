@@ -132,19 +132,18 @@ namespace ForexExchange.Controllers
                         customerName = o.Customer.FullName,
                         fromCurrency = o.FromCurrency.Code,
                         toCurrency = o.ToCurrency.Code,
-                        amount = o.Amount,
+                        amount = o.FromAmount,
                         rate = o.Rate,
-                        totalValue = o.TotalAmount,
-                        filledAmount = o.FilledAmount,
-                        status = o.FilledAmount >= o.Amount ? "تکمیل شده" : "در انتظار"
+                        totalValue = o.ToAmount,
+                        status = "تکمیل شده" // All orders are complete since FilledAmount is removed
                     })
                     .OrderByDescending(o => o.createdAt)
                     .ToListAsync();
 
                 var totalOrders = orders.Count;
                 var totalVolume = orders.Sum(o => o.totalValue);
-                var completedOrders = orders.Count(o => o.filledAmount >= o.amount);
-                var pendingOrders = orders.Count(o => o.filledAmount < o.amount);
+                var completedOrders = orders.Count; // All orders are completed since FilledAmount is removed
+                var pendingOrders = 0; // No pending orders since FilledAmount is removed
 
                 return Json(new
                 {
@@ -301,7 +300,7 @@ namespace ForexExchange.Controllers
                         type = "معامله",
                         description = $"ایجاد سفارش {o.FromCurrency.Code} به {o.ToCurrency.Code}",
                         ip = "192.168.1.100", // You might want to store this in your model
-                        status = o.FilledAmount >= o.Amount ? "موفق" : "در انتظار"
+                        status = "موفق" // All orders are successful since FilledAmount is removed
                     })
                     .ToListAsync();
 
@@ -452,11 +451,11 @@ namespace ForexExchange.Controllers
                         customerId = o.CustomerId,
                         customerName = o.Customer.FullName,
                         fromCurrency = o.FromCurrency.Code,
-                        fromAmount = o.Amount,
+                        fromAmount = o.FromAmount,
                         toCurrency = o.ToCurrency.Code,
-                        toAmount = o.TotalAmount,
+                        toAmount = o.ToAmount,
                         createdAt = o.CreatedAt,
-                        status = o.FilledAmount >= o.Amount ? "Completed" : "Pending"
+                        status = "Completed" // All orders are completed since FilledAmount is removed
                     })
                     .OrderByDescending(x => x.createdAt)
                     .ToListAsync();

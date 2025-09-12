@@ -72,6 +72,10 @@ builder.Services.AddScoped<AdminNotificationService>();
 builder.Services.AddScoped<ICustomerBalanceService, CustomerBalanceService>();
 builder.Services.AddScoped<IBankAccountBalanceService, BankAccountBalanceService>();
 builder.Services.AddScoped<IShareableLinkService, ShareableLinkService>();
+// Customer financial history service
+builder.Services.AddScoped<CustomerFinancialHistoryService>();
+// Central Financial Service - Event Sourcing with Complete Audit Trail
+builder.Services.AddScoped<ICentralFinancialService, CentralFinancialService>();
 // Push notification services
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IVapidService, VapidService>();

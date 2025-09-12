@@ -244,11 +244,11 @@ namespace ForexExchange.Controllers
                     FromCurrency = g.Key.FromCurrency,
                     ToCurrency = g.Key.ToCurrency,
                     TotalTransactions = g.Count(),
-                    TotalAmount = g.Sum(o => o.Amount),
+                    TotalAmount = g.Sum(o => o.FromAmount),
                     AverageRate = g.Average(o => o.Rate),
                     MinRate = g.Min(o => o.Rate),
                     MaxRate = g.Max(o => o.Rate),
-                    TotalValueInTargetCurrency = g.Sum(o => o.Amount * o.Rate)
+                    TotalValueInTargetCurrency = g.Sum(o => o.FromAmount * o.Rate)
                 })
                 .ToList();
 
@@ -260,7 +260,7 @@ namespace ForexExchange.Controllers
                     Year = g.Key.Year,
                     Month = g.Key.Month,
                     TransactionCount = g.Count(),
-                    TotalVolume = g.Sum(o => o.Amount * o.Rate) // Assuming this is total value
+                    TotalVolume = g.Sum(o => o.FromAmount * o.Rate) // Assuming this is total value
                 })
                 .OrderByDescending(s => s.Year)
                 .ThenByDescending(s => s.Month)

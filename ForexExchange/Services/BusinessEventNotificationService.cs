@@ -66,7 +66,7 @@ namespace ForexExchange.Services
                 var toCurrency = await _context.Currencies.FindAsync(order.ToCurrencyId);
 
                 var title = "🔔 سفارش جدید ثبت شد";
-                var body = $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.Amount:N0} {fromCurrency?.Symbol} → {order.TotalAmount:N0} {toCurrency?.Symbol}";
+                var body = $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}";
 
                 var payload = JsonSerializer.Serialize(new
                 {

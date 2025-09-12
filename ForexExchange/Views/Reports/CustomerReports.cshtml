@@ -68,8 +68,8 @@
         <div class="col-12">
             <ul class="nav nav-tabs nav-fill mb-4" id="reportTabs">
                 <li class="nav-item">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#balances-tab">
-                        <i class="fas fa-wallet me-1"></i>موجودی مشتریان
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#timeline-tab">
+                        <i class="fas fa-chart-line me-1"></i>تاریخچه مالی
                     </button>
                 </li>
                 <li class="nav-item">
@@ -85,33 +85,145 @@
             </ul>
 
             <div class="tab-content">
-                <!-- Customer Balances Tab -->
-                <div class="tab-pane fade show active" id="balances-tab">
-                    <div class="card shadow-sm border-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>موجودی مشتریان</h5>
-                            <button class="btn btn-success btn-sm" onclick="exportData('balances')">
-                                <i class="fas fa-file-excel me-1"></i>Excel
-                            </button>
+                <!-- Financial Timeline Tab - FIRST AND ACTIVE -->
+                <div class="tab-pane fade show active" id="timeline-tab">
+                    <!-- Summary Cards -->
+                    <div class="row mb-4" id="timelineSummaryCards" style="display: none;">
+                        <div class="col-md-3">
+                            <div class="card bg-gradient-primary text-white shadow">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">کل تراکنش‌ها</h6>
+                                            <h4 class="mb-0" id="timelineTotalTransactions">-</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-exchange-alt fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
+                        <div class="col-md-3">
+                            <div class="card bg-gradient-success text-white shadow">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">سفارشات</h6>
+                                            <h4 class="mb-0" id="timelineOrderCount">-</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-shopping-cart fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-gradient-info text-white shadow">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">اسناد مالی</h6>
+                                            <h4 class="mb-0" id="timelineDocumentCount">-</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-file-invoice fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-gradient-warning text-white shadow">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">ارزهای درگیر</h6>
+                                            <h4 class="mb-0" id="timelineCurrencyCount">-</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-coins fa-2x opacity-75"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New Simplified Timeline Table -->
+                    <div class="card shadow-sm border-3">
+                        <div class="card-header bg-gradient-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-history me-2"></i>
+                                    تاریخچه مالی مشتری
+                                </h5>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-light btn-sm" onclick="exportTimelineData()">
+                                        <i class="fas fa-file-excel me-1"></i>صادرات Excel
+                                    </button>
+                                    <button class="btn btn-outline-light btn-sm" onclick="printTimeline()">
+                                        <i class="fas fa-print me-1"></i>چاپ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Customer Info Header -->
+                            <div id="customerInfoHeader" class="bg-light p-3 border-bottom" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-1">اطلاعات مشتری</h6>
+                                        <p class="mb-0" id="customerInfoText">-</p>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <h6 class="mb-1">بازه زمانی گزارش</h6>
+                                        <p class="mb-0" id="reportPeriodText">-</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Balance Summary -->
+                            <div id="balanceSummarySection" class="p-3 border-bottom bg-light" style="display: none;">
+                                <h6 class="mb-3 text-center">
+                                    <i class="fas fa-wallet text-primary me-2"></i>
+                                    موجودی‌های فعلی
+                                </h6>
+                                <div id="balanceSummaryContent" class="row">
+                                    <!-- Balance cards will be inserted here -->
+                                </div>
+                            </div>
+
+                            <!-- New Simplified Timeline Table -->
                             <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>مشتری</th>
-                                            <th>ارز</th>
-                                            <th>موجودی</th>
-                                            <th>آخرین تراکنش</th>
+                                <table class="table table-hover mb-0" id="timelineTable">
+                                    <thead class="table-dark sticky-top">
+                                        <tr class="text-center">
+                                            <th width="15%">تاریخ</th>
+                                            <th width="20%">نوع</th>
+                                            <th width="15%">ارز</th>
+                                            <th width="20%">مقدار</th>
+                                            <th width="20%">موجودی</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="balancesTableBody">
-                                        <tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>
+                                    <tbody id="timelineTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-5 text-muted">
+                                                <i class="fas fa-user-plus fa-2x mb-2"></i>
+                                                <br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <!-- Pagination -->
-                            <nav id="balancesPagination" class="mt-3"></nav>
+
+                            <!-- Timeline Pagination -->
+                            <div class="p-3 border-top bg-light">
+                                <nav id="timelinePagination" class="d-flex justify-content-center">
+                                    <!-- Pagination will be inserted here -->
+                                </nav>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -189,8 +301,9 @@
 </div>
 
 <script>
-let currentPage = { balances: 1, orders: 1, documents: 1 };
+let currentPage = { orders: 1, documents: 1, timeline: 1 };
 let pageSize = 10;
+let currentTimeline = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Load currencies for filter
@@ -296,86 +409,24 @@ function loadDataForActiveTab() {
     if (!activeTab) return;
     
     const target = activeTab.getAttribute('data-bs-target');
-    if (target === '#balances-tab' || !target) loadBalances();
+    if (target === '#timeline-tab' || !target) loadCustomerTimeline();
     else if (target === '#orders-tab') loadOrders();
     else if (target === '#documents-tab') loadDocuments();
 }
 
 function showEmptyState() {
-    // Show empty state for all tables
-    document.getElementById('balancesTableBody').innerHTML = 
-        '<tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+    // Show empty state for remaining tables
     document.getElementById('ordersTableBody').innerHTML = 
         '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
     document.getElementById('documentsTableBody').innerHTML = 
         '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+    document.getElementById('timelineTableBody').innerHTML = 
+        '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-user-plus fa-2x mb-2"></i><br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید</td></tr>';
 }
 
 function clearDate(inputId) {
     document.getElementById(inputId).value = '';
     loadDataForActiveTab();
-}
-
-function loadBalances(page = 1) {
-    const customerId = document.getElementById('customerFilter').value;
-    if (!customerId) {
-        document.getElementById('balancesTableBody').innerHTML = 
-            '<tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
-        document.getElementById('balancesPagination').innerHTML = '';
-        return;
-    }
-
-    currentPage.balances = page;
-    const tbody = document.getElementById('balancesTableBody');
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
-    
-    const params = new URLSearchParams({
-        fromDate: document.getElementById('fromDate').value,
-        toDate: document.getElementById('toDate').value,
-        currency: document.getElementById('currencyFilter').value,
-        customer: customerId,
-        page: page,
-        pageSize: pageSize
-    });
-    
-    fetch(`@Url.Action("GetCustomerBalances", "Reports")?${params}`)
-        .then(response => response.json())
-        .then(data => {
-            tbody.innerHTML = '';
-            
-            if (data.success && data.data && data.data.length > 0) {
-                data.data.forEach(balance => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>
-                            <a href="@Url.Action("Details", "Customers")/${balance.customerId}" class="text-decoration-none fw-bold">
-                                ${balance.customerName}
-                            </a>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary">${balance.currencyCode}</span>
-                        </td>
-                        <td class="fw-bold text-end">
-                            ${formatCurrency(balance.amount, balance.currencyCode)}
-                        </td>
-                        <td>
-                            ${formatDate(balance.lastUpdated)}
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-                
-                // Update pagination
-                updatePagination('balancesPagination', data.totalPages, page, loadBalances);
-            } else {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-search me-2"></i>گزارشی با فیلترهای انتخاب شده یافت نشد</td></tr>';
-                document.getElementById('balancesPagination').innerHTML = '';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading balances:', error);
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">خطا در بارگذاری اطلاعات</td></tr>';
-        });
 }
 
 function loadOrders(page = 1) {
@@ -581,6 +632,338 @@ function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('fa-IR');
 }
+
+// ========== FINANCIAL TIMELINE FUNCTIONS (BANK STYLE) ==========
+
+function loadCustomerTimeline() {
+    const customerId = document.getElementById('customerFilter').value;
+    if (!customerId) {
+        showTimelineEmptyState();
+        hideTimelineSections();
+        return;
+    }
+
+    const fromDate = document.getElementById('fromDate').value || null;
+    const toDate = document.getElementById('toDate').value || null;
+    
+    // Show loading state
+    showTimelineLoading();
+    showTimelineSections();
+    
+    $.get('@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")', {
+        customerId: customerId,
+        fromDate: fromDate,
+        toDate: toDate
+    })
+    .done(function(response) {
+        if (response.success) {
+            currentTimeline = response.data;
+            renderBankStyleTimeline(response.data);
+            updateTimelineSummaryCards(response.data);
+            updateCustomerInfo(response.data);
+        } else {
+            showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
+        }
+    })
+    .fail(function() {
+        showTimelineError('خطا در ارتباط با سرور');
+    });
+}
+
+function renderBankStyleTimeline(timeline) {
+    const tbody = document.getElementById('timelineTableBody');
+    
+    if (!timeline.transactions || timeline.transactions.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center py-5 text-muted">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <br>تراکنشی در بازه زمانی انتخاب شده یافت نشد
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let timelineHtml = '';
+    
+    // Group transactions by currency for bank-style presentation
+    const currencyGroups = {};
+    timeline.transactions.forEach(transaction => {
+        if (!currencyGroups[transaction.currencyCode]) {
+            currencyGroups[transaction.currencyCode] = [];
+        }
+        currencyGroups[transaction.currencyCode].push(transaction);
+    });
+
+    // Render each currency group
+    Object.entries(currencyGroups).forEach(([currency, transactions]) => {
+        // Currency header row
+        timelineHtml += `
+            <tr class="table-info">
+                <td colspan="5" class="fw-bold text-center">
+                    <i class="fas fa-coins me-2"></i>
+                    تراکنش‌های ${currency}
+                    <small class="ms-2">(${transactions.length} تراکنش)</small>
+                </td>
+            </tr>
+        `;
+
+        // Add initial balance row
+        const initialBalance = timeline.initialBalances[currency] || 0;
+        timelineHtml += `
+            <tr class="table-light">
+                <td class="text-muted">موجودی اولیه</td>
+                <td><span class="badge bg-secondary">موجودی اولیه</span></td>
+                <td>${currency}</td>
+                <td class="text-end fw-bold">-</td>
+                <td class="text-end fw-bold">${formatCurrency(initialBalance, currency)}</td>
+            </tr>
+        `;
+
+        // Add transaction rows
+        transactions.forEach(transaction => {
+            // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4
+            const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
+            const typeText = isOrderTransaction ? 'معامله' : 'سند';
+            const transactionId = transaction.referenceId || transaction.id;
+            const clickHandler = isOrderTransaction ? 
+                `onclick="goToOrderDetail(${transactionId})"` : 
+                `onclick="goToDocumentDetail(${transactionId})"`;
+            
+            timelineHtml += `
+                <tr class="transaction-row" style="cursor: pointer;" ${clickHandler}>
+                    <td>${formatDate(transaction.transactionDate)}</td>
+                    <td>
+                        <a href="#" class="text-decoration-none">
+                            ${typeText} #${transactionId}
+                        </a>
+                    </td>
+                    <td>${currency}</td>
+                    <td class="text-end ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(Math.abs(transaction.amount), currency)}</td>
+                    <td class="text-end fw-bold">${formatCurrency(transaction.runningBalance, currency)}</td>
+                </tr>
+            `;
+        });
+
+        // Add final balance row
+        const finalBalance = timeline.finalBalances[currency] || 0;
+        const netChange = timeline.netChanges[currency] || 0;
+        timelineHtml += `
+            <tr class="table-warning">
+                <td class="text-muted">موجودی نهایی</td>
+                <td><span class="badge bg-warning text-dark">موجودی نهایی</span></td>
+                <td>${currency}</td>
+                <td class="text-end fw-bold ${netChange >= 0 ? 'text-success' : 'text-danger'}">
+                    ${netChange >= 0 ? '+' : ''}${formatCurrency(netChange, currency)}
+                </td>
+                <td class="text-end fw-bold">${formatCurrency(finalBalance, currency)}</td>
+            </tr>
+        `;
+
+        // Add spacing row
+        timelineHtml += `<tr><td colspan="5" style="height: 15px; border: none;"></td></tr>`;
+    });
+    
+    tbody.innerHTML = timelineHtml;
+    renderBalanceSummary(timeline.finalBalances);
+}
+
+function updateTimelineSummaryCards(timeline) {
+    document.getElementById('timelineTotalTransactions').textContent = timeline.totalTransactions.toLocaleString();
+    document.getElementById('timelineOrderCount').textContent = timeline.orderCount.toLocaleString();
+    document.getElementById('timelineDocumentCount').textContent = timeline.documentCount.toLocaleString();
+    document.getElementById('timelineCurrencyCount').textContent = timeline.currenciesInvolved.length;
+}
+
+function updateCustomerInfo(timeline) {
+    document.getElementById('customerInfoText').textContent = timeline.customerName;
+    const fromDate = timeline.fromDate ? new Date(timeline.fromDate).toLocaleDateString('fa-IR') : 'ابتدای زمان';
+    const toDate = timeline.toDate ? new Date(timeline.toDate).toLocaleDateString('fa-IR') : 'انتهای زمان';
+    document.getElementById('reportPeriodText').textContent = `${fromDate} تا ${toDate}`;
+}
+
+function renderBalanceSummary(balances) {
+    const container = document.getElementById('balanceSummaryContent');
+    
+    if (!balances || Object.keys(balances).length === 0) {
+        container.innerHTML = '<div class="col-12 text-center text-muted">موجودی‌ای یافت نشد</div>';
+        return;
+    }
+    
+    let balanceHtml = '';
+    Object.entries(balances).forEach(([currency, amount]) => {
+        const isPositive = amount >= 0;
+        const colorClass = isPositive ? 'success' : 'danger';
+        const iconClass = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        balanceHtml += `
+            <div class="col-md-3 mb-2">
+                <div class="d-flex align-items-center p-2 bg-white rounded shadow-sm">
+                    <div class="me-2">
+                        <i class="fas ${iconClass} text-${colorClass}"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-${colorClass}">${formatCurrency(amount, currency)}</h6>
+                        <small class="text-muted">${isPositive ? 'اعتبار' : 'بدهی'}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = balanceHtml;
+}
+
+function getTransactionTypeIcon(type) {
+    const icons = {
+        0: 'fas fa-balance-scale',     // InitialBalance
+        1: 'fas fa-arrow-down',        // OrderSell
+        2: 'fas fa-arrow-up',          // OrderBuy
+        3: 'fas fa-plus-circle',       // DocumentCredit
+        4: 'fas fa-minus-circle',      // DocumentDebit
+        5: 'fas fa-edit'               // ManualAdjustment
+    };
+    return icons[type] || 'fas fa-exchange-alt';
+}
+
+function getTransactionTypeText(type) {
+    const texts = {
+        0: 'موجودی اولیه',
+        1: 'فروش ارز',
+        2: 'خرید ارز',
+        3: 'واریز',
+        4: 'برداشت',
+        5: 'تعدیل'
+    };
+    return texts[type] || 'تراکنش';
+}
+
+function getTransactionBadgeClass(type) {
+    const classes = {
+        0: 'bg-secondary',    // InitialBalance
+        1: 'bg-danger',       // OrderSell
+        2: 'bg-success',      // OrderBuy
+        3: 'bg-success',      // DocumentCredit
+        4: 'bg-danger',       // DocumentDebit
+        5: 'bg-warning'       // ManualAdjustment
+    };
+    return classes[type] || 'bg-primary';
+}
+
+function showTimelineEmptyState() {
+    document.getElementById('timelineTableBody').innerHTML = `
+        <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+                <i class="fas fa-user-plus fa-2x mb-2"></i>
+                <br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید
+            </td>
+        </tr>
+    `;
+}
+
+function showTimelineLoading() {
+    document.getElementById('timelineTableBody').innerHTML = `
+        <tr>
+            <td colspan="7" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <br><br>در حال بارگذاری تاریخچه مالی...
+            </td>
+        </tr>
+    `;
+}
+
+function showTimelineError(message) {
+    document.getElementById('timelineTableBody').innerHTML = `
+        <tr>
+            <td colspan="7" class="text-center py-5 text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <br>${message}
+            </td>
+        </tr>
+    `;
+}
+
+function showTimelineSections() {
+    document.getElementById('timelineSummaryCards').style.display = 'flex';
+    document.getElementById('customerInfoHeader').style.display = 'block';
+    document.getElementById('balanceSummarySection').style.display = 'block';
+}
+
+function hideTimelineSections() {
+    document.getElementById('timelineSummaryCards').style.display = 'none';
+    document.getElementById('customerInfoHeader').style.display = 'none';
+    document.getElementById('balanceSummarySection').style.display = 'none';
+}
+
+function exportTimelineData() {
+    const customerId = document.getElementById('customerFilter').value;
+    if (!customerId) {
+        alert('لطفاً ابتدا مشتری را انتخاب کنید');
+        return;
+    }
+
+    const fromDate = document.getElementById('fromDate').value || null;
+    const toDate = document.getElementById('toDate').value || null;
+    
+    const params = new URLSearchParams({
+        customerId: customerId,
+        fromDate: fromDate,
+        toDate: toDate
+    });
+    
+    // For now, show success message - Excel export can be implemented later
+    alert('صادرات تاریخچه مالی به فرمت Excel در ادامه پیاده‌سازی خواهد شد');
+}
+
+function printTimeline() {
+    if (!currentTimeline) {
+        alert('ابتدا تاریخچه مالی را بارگذاری کنید');
+        return;
+    }
+    
+    // Create print-friendly version
+    const printWindow = window.open('', '_blank');
+    const customerName = currentTimeline.customerName;
+    
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>تاریخچه مالی - ${customerName}</title>
+            <style>
+                body { font-family: Arial, sans-serif; direction: rtl; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+                th { background-color: #f5f5f5; }
+                .text-center { text-align: center; }
+                .fw-bold { font-weight: bold; }
+                @@media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <h2 class="text-center">تاریخچه مالی مشتری</h2>
+            <h3 class="text-center">${customerName}</h3>
+            ${document.getElementById('timelineTable').outerHTML}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+
+// Navigation functions for clickable rows
+function goToOrderDetail(orderId) {
+    window.open(`/Orders/Details/${orderId}`, '_blank');
+}
+
+function goToDocumentDetail(documentId) {
+    window.open(`/AccountingDocuments/Details/${documentId}`, '_blank');
+}
 </script>
 
 <style>
@@ -678,6 +1061,78 @@ a:not(.btn):not(.page-link):hover {
     .nav-tabs .nav-link {
         font-size: 0.875rem;
         padding: 0.5rem 0.75rem;
+    }
+}
+
+/* Timeline Bank Style Enhancements */
+.transaction-row:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.table-info td {
+    background-color: #d1ecf1 !important;
+    border-color: #b8daff !important;
+}
+
+.table-light td {
+    background-color: #f8f9fa !important;
+    font-style: italic;
+}
+
+.table-warning td {
+    background-color: #fff3cd !important;
+    border-color: #ffeaa7 !important;
+    font-weight: 500;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%) !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(87deg, #2dce89 0, #2dcecc 100%) !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(87deg, #11cdef 0, #1171ef 100%) !important;
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(87deg, #fb6340 0, #fbb140 100%) !important;
+}
+
+#timelineTable thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #343a40 !important;
+}
+
+.timeline-summary-card {
+    transition: transform 0.2s ease;
+}
+
+.timeline-summary-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Print styles for timeline */
+@@media print {
+    .timeline-tab .card-header,
+    .timeline-tab .btn,
+    #timelineSummaryCards {
+        display: none !important;
+    }
+    
+    .timeline-tab .table {
+        font-size: 12px;
+    }
+    
+    .timeline-tab .table th,
+    .timeline-tab .table td {
+        padding: 4px;
+        border: 1px solid #000;
     }
 }
 </style>

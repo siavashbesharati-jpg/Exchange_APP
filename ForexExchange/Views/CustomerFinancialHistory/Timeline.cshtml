@@ -1,0 +1,486 @@
+@model ForexExchange.Models.Customer
+@{
+    ViewData["Title"] = $"تاریخچه مالی - {Model.FullName}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-1">
+                                <i class="fas fa-chart-line text-primary me-2"></i>
+                                تاریخچه مالی کامل
+                            </h4>
+                            <p class="text-muted mb-0">
+                                مشتری: <strong>@Model.FullName</strong> | 
+                                کد: <strong>@Model.Id</strong>
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="exportTimeline()">
+                                <i class="fas fa-file-excel me-1"></i>
+                                صادرات Excel
+                            </button>
+                            <a href="@Url.Action("Details", "Customers", new { id = Model.Id })" class="btn btn-outline-secondary">
+                                <i class="fas fa-user me-1"></i>
+                                برگشت به پروفایل
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form id="dateFilterForm" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="fromDate" class="form-label">از تاریخ</label>
+                            <input type="date" id="fromDate" name="fromDate" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="toDate" class="form-label">تا تاریخ</label>
+                            <input type="date" id="toDate" name="toDate" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter me-1"></i>
+                                فیلتر
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                                <i class="fas fa-times me-1"></i>
+                                پاک کردن
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-info w-100" onclick="loadStats()">
+                                <i class="fas fa-chart-bar me-1"></i>
+                                آمار
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4" id="summaryCards">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">کل تراکنش‌ها</h6>
+                            <h4 class="mb-0" id="totalTransactions">-</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exchange-alt fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">سفارشات</h6>
+                            <h4 class="mb-0" id="orderCount">-</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-shopping-cart fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">اسناد مالی</h6>
+                            <h4 class="mb-0" id="documentCount">-</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-invoice fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">ارزهای درگیر</h6>
+                            <h4 class="mb-0" id="currencyCount">-</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-coins fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-wallet text-success me-2"></i>
+                        موجودی‌های فعلی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="currentBalances" class="row">
+                        <div class="col-12 text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">در حال بارگذاری...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Timeline -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history text-primary me-2"></i>
+                        تاریخچه تراکنش‌ها
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="showRunningBalance" checked>
+                            <label class="form-check-label" for="showRunningBalance">
+                                نمایش موجودی جاری
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="timelineContainer">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">در حال بارگذاری...</span>
+                            </div>
+                            <p class="mt-2 text-muted">در حال بارگذاری تاریخچه تراکنش‌ها...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const customerId = @Model.Id;
+let currentTimeline = null;
+
+$(document).ready(function() {
+    loadTimeline();
+    
+    $('#dateFilterForm').on('submit', function(e) {
+        e.preventDefault();
+        loadTimeline();
+    });
+    
+    $('#showRunningBalance').on('change', function() {
+        if (currentTimeline) {
+            renderTimeline(currentTimeline);
+        }
+    });
+});
+
+function loadTimeline() {
+    const fromDate = $('#fromDate').val() || null;
+    const toDate = $('#toDate').val() || null;
+    
+    $.get('@Url.Action("GetCustomerTimeline")', {
+        customerId: customerId,
+        fromDate: fromDate,
+        toDate: toDate
+    })
+    .done(function(response) {
+        if (response.success) {
+            currentTimeline = response.data;
+            renderTimeline(response.data);
+            updateSummaryCards(response.data);
+            renderCurrentBalances(response.data.finalBalances);
+        } else {
+            showError('خطا در بارگذاری تاریخچه: ' + response.message);
+        }
+    })
+    .fail(function() {
+        showError('خطا در ارتباط با سرور');
+    });
+}
+
+function renderTimeline(timeline) {
+    const container = $('#timelineContainer');
+    const showRunningBalance = $('#showRunningBalance').is(':checked');
+    
+    if (!timeline.transactions || timeline.transactions.length === 0) {
+        container.html(`
+            <div class="text-center py-5">
+                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">تراکنشی در بازه زمانی انتخاب شده یافت نشد</h5>
+            </div>
+        `);
+        return;
+    }
+    
+    let timelineHtml = '<div class="timeline">';
+    
+    timeline.transactions.forEach((transaction, index) => {
+        const isCredit = transaction.amount > 0;
+        const typeIcon = getTransactionIcon(transaction.type);
+        const typeColor = getTransactionColor(transaction.type);
+        const amountClass = isCredit ? 'text-success' : 'text-danger';
+        const amountPrefix = isCredit ? '+' : '';
+        
+        timelineHtml += `
+            <div class="timeline-item">
+                <div class="timeline-marker bg-${typeColor}">
+                    <i class="${typeIcon}"></i>
+                </div>
+                <div class="timeline-content">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6 class="card-title mb-1">${transaction.description}</h6>
+                                    <p class="text-muted small mb-0">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        ${new Date(transaction.transactionDate).toLocaleDateString('fa-IR')}
+                                        ${transaction.notes ? ' | ' + transaction.notes : ''}
+                                    </p>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="d-flex flex-column align-items-end">
+                                        <span class="h5 mb-1 ${amountClass}">
+                                            ${amountPrefix}${Math.abs(transaction.amount).toLocaleString()} ${transaction.currencyCode}
+                                        </span>
+                                        ${showRunningBalance ? `
+                                            <small class="text-muted">
+                                                موجودی: ${transaction.runningBalance.toLocaleString()} ${transaction.currencyCode}
+                                            </small>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            ${transaction.fromCurrency && transaction.toCurrency ? `
+                                <div class="mt-2 pt-2 border-top">
+                                    <small class="text-muted">
+                                        <i class="fas fa-exchange-alt me-1"></i>
+                                        ${transaction.fromCurrency} → ${transaction.toCurrency} 
+                                        (نرخ: ${transaction.exchangeRate})
+                                    </small>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    timelineHtml += '</div>';
+    container.html(timelineHtml);
+}
+
+function updateSummaryCards(timeline) {
+    $('#totalTransactions').text(timeline.totalTransactions.toLocaleString());
+    $('#orderCount').text(timeline.orderCount.toLocaleString());
+    $('#documentCount').text(timeline.documentCount.toLocaleString());
+    $('#currencyCount').text(timeline.currenciesInvolved.length);
+}
+
+function renderCurrentBalances(balances) {
+    const container = $('#currentBalances');
+    
+    if (!balances || Object.keys(balances).length === 0) {
+        container.html(`
+            <div class="col-12 text-center">
+                <p class="text-muted">موجودی‌ای یافت نشد</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let balanceHtml = '';
+    Object.entries(balances).forEach(([currency, amount]) => {
+        const isPositive = amount >= 0;
+        const colorClass = isPositive ? 'text-success' : 'text-danger';
+        const iconClass = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        balanceHtml += `
+            <div class="col-md-3 mb-3">
+                <div class="d-flex align-items-center p-3 bg-light rounded">
+                    <div class="me-3">
+                        <i class="fas ${iconClass} ${colorClass} fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 ${colorClass}">${amount.toLocaleString()} ${currency}</h6>
+                        <small class="text-muted">${isPositive ? 'اعتبار' : 'بدهی'}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.html(balanceHtml);
+}
+
+function getTransactionIcon(type) {
+    const icons = {
+        0: 'fas fa-balance-scale',     // InitialBalance
+        1: 'fas fa-arrow-down',        // OrderSell
+        2: 'fas fa-arrow-up',          // OrderBuy
+        3: 'fas fa-plus-circle',       // DocumentCredit
+        4: 'fas fa-minus-circle',      // DocumentDebit
+        5: 'fas fa-edit'               // ManualAdjustment
+    };
+    return icons[type] || 'fas fa-exchange-alt';
+}
+
+function getTransactionColor(type) {
+    const colors = {
+        0: 'secondary',    // InitialBalance
+        1: 'danger',       // OrderSell
+        2: 'success',      // OrderBuy
+        3: 'success',      // DocumentCredit
+        4: 'danger',       // DocumentDebit
+        5: 'warning'       // ManualAdjustment
+    };
+    return colors[type] || 'primary';
+}
+
+function clearFilters() {
+    $('#fromDate').val('');
+    $('#toDate').val('');
+    loadTimeline();
+}
+
+function loadStats() {
+    const fromDate = $('#fromDate').val() || null;
+    const toDate = $('#toDate').val() || null;
+    
+    $.get('@Url.Action("GetCustomerStats")', {
+        customerId: customerId,
+        fromDate: fromDate,
+        toDate: toDate
+    })
+    .done(function(response) {
+        if (response.success) {
+            showStatsModal(response.data);
+        } else {
+            showError('خطا در بارگذاری آمار: ' + response.message);
+        }
+    })
+    .fail(function() {
+        showError('خطا در ارتباط با سرور');
+    });
+}
+
+function showStatsModal(stats) {
+    // Create and show detailed statistics modal
+    // This would be implemented with more detailed stats visualization
+    alert('آمار تفصیلی در ادامه پیاده‌سازی خواهد شد');
+}
+
+function exportTimeline() {
+    const fromDate = $('#fromDate').val() || null;
+    const toDate = $('#toDate').val() || null;
+    
+    $.get('@Url.Action("ExportTimeline")', {
+        customerId: customerId,
+        fromDate: fromDate,
+        toDate: toDate
+    })
+    .done(function(response) {
+        if (response.success) {
+            // Handle Excel download
+            showSuccess('صادرات فایل در ادامه پیاده‌سازی خواهد شد');
+        } else {
+            showError('خطا در صادرات: ' + response.message);
+        }
+    })
+    .fail(function() {
+        showError('خطا در ارتباط با سرور');
+    });
+}
+
+function showError(message) {
+    toastr.error(message);
+}
+
+function showSuccess(message) {
+    toastr.success(message);
+}
+</script>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 50px;
+    margin-bottom: 30px;
+}
+
+.timeline-item:not(:last-child):before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 40px;
+    height: calc(100% + 10px);
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-content {
+    flex: 1;
+}
+</style>
+}

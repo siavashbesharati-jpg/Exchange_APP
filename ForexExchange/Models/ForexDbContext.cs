@@ -32,6 +32,11 @@ namespace ForexExchange.Models
         public DbSet<PushNotificationLog> PushNotificationLogs { get; set; }
         public DbSet<VapidConfiguration> VapidConfigurations { get; set; }
         
+        // NEW: History Tables for Event Sourcing - Zero Logic Change
+        public DbSet<CustomerBalanceHistory> CustomerBalanceHistory { get; set; }
+        public DbSet<CurrencyPoolHistory> CurrencyPoolHistory { get; set; }
+        public DbSet<BankAccountBalanceHistory> BankAccountBalanceHistory { get; set; }
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -184,10 +189,9 @@ namespace ForexExchange.Models
                       .WithMany(e => e.Orders)
                       .HasForeignKey(e => e.CustomerId)
                       .OnDelete(DeleteBehavior.Restrict);
-                entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.FromAmount).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.Rate).HasColumnType("decimal(18,4)");
-                entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
-                entity.Property(e => e.FilledAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.ToAmount).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.Notes).HasMaxLength(500);
             // Map currency relationships
             entity.HasOne(e => e.FromCurrency)
@@ -426,6 +430,85 @@ namespace ForexExchange.Models
                 entity.HasIndex(e => e.ApplicationId).IsUnique();
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.CreatedAt);
+            });
+
+            // =============================================================
+            // NEW: History Tables Configurations - Event Sourcing Pattern
+            // =============================================================
+
+            // CustomerBalanceHistory configurations
+            modelBuilder.Entity<CustomerBalanceHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.TransactionType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.BalanceBefore).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.TransactionAmount).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.BalanceAfter).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.CreatedBy).HasMaxLength(100);
+                
+                // Indexes for optimal performance
+                entity.HasIndex(e => new { e.CustomerId, e.CurrencyCode, e.TransactionDate, e.Id })
+                      .HasDatabaseName("IX_CustomerBalanceHistory_Customer_Currency_Latest");
+                entity.HasIndex(e => new { e.TransactionType, e.ReferenceId })
+                      .HasDatabaseName("IX_CustomerBalanceHistory_Reference");
+                entity.HasIndex(e => e.TransactionDate)
+                      .HasDatabaseName("IX_CustomerBalanceHistory_Date");
+
+                // Foreign key to Customer
+                entity.HasOne(e => e.Customer)
+                      .WithMany()
+                      .HasForeignKey(e => e.CustomerId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // CurrencyPoolHistory configurations
+            modelBuilder.Entity<CurrencyPoolHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CurrencyCode).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.TransactionType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.BalanceBefore).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.TransactionAmount).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.BalanceAfter).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.PoolTransactionType).HasMaxLength(10);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.CreatedBy).HasMaxLength(100);
+                
+                // Indexes for optimal performance
+                entity.HasIndex(e => new { e.CurrencyCode, e.TransactionDate, e.Id })
+                      .HasDatabaseName("IX_CurrencyPoolHistory_Currency_Latest");
+                entity.HasIndex(e => new { e.TransactionType, e.ReferenceId })
+                      .HasDatabaseName("IX_CurrencyPoolHistory_Reference");
+                entity.HasIndex(e => e.TransactionDate)
+                      .HasDatabaseName("IX_CurrencyPoolHistory_Date");
+            });
+
+            // BankAccountBalanceHistory configurations
+            modelBuilder.Entity<BankAccountBalanceHistory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.TransactionType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.BalanceBefore).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.TransactionAmount).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.BalanceAfter).HasColumnType("decimal(18,4)");
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.CreatedBy).HasMaxLength(100);
+                
+                // Indexes for optimal performance
+                entity.HasIndex(e => new { e.BankAccountId, e.TransactionDate, e.Id })
+                      .HasDatabaseName("IX_BankAccountBalanceHistory_Account_Latest");
+                entity.HasIndex(e => new { e.TransactionType, e.ReferenceId })
+                      .HasDatabaseName("IX_BankAccountBalanceHistory_Reference");
+                entity.HasIndex(e => e.TransactionDate)
+                      .HasDatabaseName("IX_BankAccountBalanceHistory_Date");
+
+                // Foreign key to BankAccount
+                entity.HasOne(e => e.BankAccount)
+                      .WithMany()
+                      .HasForeignKey(e => e.BankAccountId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Seed currencies

@@ -67,7 +67,6 @@
                                 <select asp-for="Type" class="form-select" required>
                                     <option value="">انتخاب کنید...</option>
                                     <option value="@ForexExchange.Models.DocumentType.Cash">نقدی</option>
-                                    <option value="@ForexExchange.Models.DocumentType.BankStatement">رسید بانکی</option>
                                     <option value="@ForexExchange.Models.DocumentType.Havala">حواله</option>
                                 </select>
                                 <span asp-validation-for="Type" class="text-danger"></span>
