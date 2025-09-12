@@ -23,16 +23,26 @@
                     <div class="row g-3">
                         <div class="col-md-2">
                             <label class="form-label">از تاریخ</label>
-                            <input type="date" class="form-control" id="fromDate">
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="fromDate">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('fromDate')" title="پاک کردن">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">تا تاریخ</label>
-                            <input type="date" class="form-control" id="toDate">
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="toDate">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('toDate')" title="پاک کردن">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">مشتری</label>
+                            <label class="form-label">مشتری <span class="text-danger">*</span></label>
                             <select class="form-select" id="customerFilter">
-                                <option value="">همه مشتریان</option>
+                                <option value="">انتخاب مشتری</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -96,7 +106,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="balancesTableBody">
-                                        <tr><td colspan="4" class="text-center py-4">در حال بارگذاری...</td></tr>
+                                        <tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -121,16 +131,16 @@
                                     <thead class="table-dark">
                                         <tr>
                                             <th>مشتری</th>
-                                            <th>ارز مبدا</th>
+                                            <th> دریافت کرده ایم </th>
                                             <th>مقدار</th>
-                                            <th>ارز مقصد</th>
+                                            <th> پرداخت کرده ایم </th>
                                             <th>مقدار</th>
                                             <th>تاریخ</th>
                                             <th>وضعیت</th>
                                         </tr>
                                     </thead>
                                     <tbody id="ordersTableBody">
-                                        <tr><td colspan="7" class="text-center py-4">در حال بارگذاری...</td></tr>
+                                        <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -164,7 +174,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="documentsTableBody">
-                                        <tr><td colspan="7" class="text-center py-4">در حال بارگذاری...</td></tr>
+                                        <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -183,65 +193,138 @@ let currentPage = { balances: 1, orders: 1, documents: 1 };
 let pageSize = 10;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Set default dates (last 30 days)
-    const today = new Date();
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-    
-    document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
-    document.getElementById('toDate').value = today.toISOString().split('T')[0];
-    
     // Load currencies for filter
     loadCurrencies();
     
     // Load customers for filter
     loadCustomers();
     
-    // Load initial data
-    loadData();
+    // Initialize empty tables
+    showEmptyState();
     
     // Tab change event
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
         tab.addEventListener('shown.bs.tab', function(e) {
             const target = e.target.getAttribute('data-bs-target');
-            if (target === '#orders-tab') loadOrders();
-            else if (target === '#documents-tab') loadDocuments();
+            loadDataForActiveTab();
         });
+    });
+    
+    // Customer filter change event
+    document.getElementById('customerFilter').addEventListener('change', function() {
+        loadDataForActiveTab();
+    });
+    
+    // Date filter change event
+    document.getElementById('fromDate').addEventListener('change', function() {
+        loadDataForActiveTab();
+    });
+    document.getElementById('toDate').addEventListener('change', function() {
+        loadDataForActiveTab();
+    });
+    
+    // Currency filter change event
+    document.getElementById('currencyFilter').addEventListener('change', function() {
+        loadDataForActiveTab();
     });
 });
 
+
 function loadCurrencies() {
+    console.log('Loading currencies...');
     fetch('@Url.Action("GetCurrencies", "Api")')
-        .then(response => response.json())
+        .then(response => {
+            console.log('Currency response status:', response.status);
+            return response.json();
+        })
         .then(currencies => {
+            console.log('Currency data received:', currencies);
             const select = document.getElementById('currencyFilter');
             select.innerHTML = '<option value="">همه ارزها</option>';
-            currencies.forEach(currency => {
-                select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
-            });
+            
+            if (Array.isArray(currencies)) {
+                console.log('Number of currencies:', currencies.length);
+                currencies.forEach(currency => {
+                    select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
+                });
+            } else {
+                console.log('Invalid currency data structure');
+            }
         })
-        .catch(error => console.error('Error loading currencies:', error));
+        .catch(error => {
+            console.error('Error loading currencies:', error);
+            const select = document.getElementById('currencyFilter');
+            select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+        });
 }
 
 function loadCustomers() {
+    console.log('Loading customers...');
     fetch('@Url.Action("GetCustomersData", "Reports")')
-        .then(response => response.json())
+        .then(response => {
+            console.log('Customer response status:', response.status);
+            return response.json();
+        })
         .then(data => {
-            if (data.customers) {
-                const select = document.getElementById('customerFilter');
-                select.innerHTML = '<option value="">همه مشتریان</option>';
+            console.log('Customer data received:', data);
+            const select = document.getElementById('customerFilter');
+            select.innerHTML = '<option value="">انتخاب مشتری</option>';
+            
+            // The API returns customers directly in the data.customers array
+            if (data.customers && Array.isArray(data.customers)) {
+                console.log('Number of customers:', data.customers.length);
                 data.customers.forEach(customer => {
                     select.innerHTML += `<option value="${customer.id}">${customer.fullName}</option>`;
                 });
+            } else {
+                console.log('No customers found or invalid data structure');
             }
         })
-        .catch(error => console.error('Error loading customers:', error));
+        .catch(error => {
+            console.error('Error loading customers:', error);
+            const select = document.getElementById('customerFilter');
+            select.innerHTML = '<option value="">خطا در بارگذاری مشتریان</option>';
+        });
 }
 
 function loadData() {
-    loadBalances();
+    loadDataForActiveTab();
+}
+
+function loadDataForActiveTab() {
+    const activeTab = document.querySelector('.nav-link.active');
+    if (!activeTab) return;
+    
+    const target = activeTab.getAttribute('data-bs-target');
+    if (target === '#balances-tab' || !target) loadBalances();
+    else if (target === '#orders-tab') loadOrders();
+    else if (target === '#documents-tab') loadDocuments();
+}
+
+function showEmptyState() {
+    // Show empty state for all tables
+    document.getElementById('balancesTableBody').innerHTML = 
+        '<tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+    document.getElementById('ordersTableBody').innerHTML = 
+        '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+    document.getElementById('documentsTableBody').innerHTML = 
+        '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+}
+
+function clearDate(inputId) {
+    document.getElementById(inputId).value = '';
+    loadDataForActiveTab();
 }
 
 function loadBalances(page = 1) {
+    const customerId = document.getElementById('customerFilter').value;
+    if (!customerId) {
+        document.getElementById('balancesTableBody').innerHTML = 
+            '<tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+        document.getElementById('balancesPagination').innerHTML = '';
+        return;
+    }
+
     currentPage.balances = page;
     const tbody = document.getElementById('balancesTableBody');
     tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
@@ -250,7 +333,7 @@ function loadBalances(page = 1) {
         fromDate: document.getElementById('fromDate').value,
         toDate: document.getElementById('toDate').value,
         currency: document.getElementById('currencyFilter').value,
-        customer: document.getElementById('customerFilter').value,
+        customer: customerId,
         page: page,
         pageSize: pageSize
     });
@@ -285,7 +368,8 @@ function loadBalances(page = 1) {
                 // Update pagination
                 updatePagination('balancesPagination', data.totalPages, page, loadBalances);
             } else {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">موجودی یافت نشد</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-search me-2"></i>گزارشی با فیلترهای انتخاب شده یافت نشد</td></tr>';
+                document.getElementById('balancesPagination').innerHTML = '';
             }
         })
         .catch(error => {
@@ -295,6 +379,14 @@ function loadBalances(page = 1) {
 }
 
 function loadOrders(page = 1) {
+    const customerId = document.getElementById('customerFilter').value;
+    if (!customerId) {
+        document.getElementById('ordersTableBody').innerHTML = 
+            '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+        document.getElementById('ordersPagination').innerHTML = '';
+        return;
+    }
+
     currentPage.orders = page;
     const tbody = document.getElementById('ordersTableBody');
     tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
@@ -303,7 +395,7 @@ function loadOrders(page = 1) {
         fromDate: document.getElementById('fromDate').value,
         toDate: document.getElementById('toDate').value,
         currency: document.getElementById('currencyFilter').value,
-        customer: document.getElementById('customerFilter').value,
+        customer: customerId,
         page: page,
         pageSize: pageSize
     });
@@ -345,7 +437,8 @@ function loadOrders(page = 1) {
                 
                 updatePagination('ordersPagination', data.totalPages, page, loadOrders);
             } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">معامله‌ای یافت نشد</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-search me-2"></i>گزارشی با فیلترهای انتخاب شده یافت نشد</td></tr>';
+                document.getElementById('ordersPagination').innerHTML = '';
             }
         })
         .catch(error => {
@@ -355,6 +448,14 @@ function loadOrders(page = 1) {
 }
 
 function loadDocuments(page = 1) {
+    const customerId = document.getElementById('customerFilter').value;
+    if (!customerId) {
+        document.getElementById('documentsTableBody').innerHTML = 
+            '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-user-plus me-2"></i>لطفا برای دریافت گزارش یک مشتری را انتخاب کنید</td></tr>';
+        document.getElementById('documentsPagination').innerHTML = '';
+        return;
+    }
+
     currentPage.documents = page;
     const tbody = document.getElementById('documentsTableBody');
     tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
@@ -363,7 +464,7 @@ function loadDocuments(page = 1) {
         fromDate: document.getElementById('fromDate').value,
         toDate: document.getElementById('toDate').value,
         currency: document.getElementById('currencyFilter').value,
-        customer: document.getElementById('customerFilter').value,
+        customer: customerId,
         page: page,
         pageSize: pageSize
     });
@@ -408,7 +509,8 @@ function loadDocuments(page = 1) {
                 
                 updatePagination('documentsPagination', data.totalPages, page, loadDocuments);
             } else {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">سندی یافت نشد</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-search me-2"></i>گزارشی با فیلترهای انتخاب شده یافت نشد</td></tr>';
+                document.getElementById('documentsPagination').innerHTML = '';
             }
         })
         .catch(error => {
@@ -447,12 +549,18 @@ function updatePagination(containerId, totalPages, currentPageNum, loadFunction)
 }
 
 function exportData(type) {
+    const customerId = document.getElementById('customerFilter').value;
+    if (!customerId) {
+        alert('لطفاً ابتدا مشتری را انتخاب کنید');
+        return;
+    }
+
     const params = new URLSearchParams({
         type: type,
         fromDate: document.getElementById('fromDate').value,
         toDate: document.getElementById('toDate').value,
         currency: document.getElementById('currencyFilter').value,
-        customer: document.getElementById('customerFilter').value
+        customer: customerId
     });
     
     window.location.href = `@Url.Action("ExportCustomerReports", "Reports")?${params}`;

@@ -69,7 +69,7 @@ namespace ForexExchange.Controllers
             {
                 var customers = await _context.Customers
                     .Include(c => c.Balances)
-                    .Where(c => c.IsActive)
+                    .Where(c => c.IsActive && !c.IsSystem )
                     .Select(c => new
                     {
                         id = c.Id,
@@ -343,21 +343,32 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                fromDate ??= DateTime.Today.AddDays(-30);
-                toDate ??= DateTime.Today.AddDays(1);
+                // Require customer selection - no data without customer filter
+                if (string.IsNullOrEmpty(customer) || !int.TryParse(customer, out int customerId))
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        data = new object[0],
+                        totalPages = 0,
+                        currentPage = page,
+                        totalCount = 0
+                    });
+                }
 
                 var query = _context.CustomerBalances
                     .Include(cb => cb.Customer)
-                    .Where(cb => cb.Customer.CreatedAt >= fromDate && cb.Customer.CreatedAt <= toDate);
+                    .Where(cb => cb.CustomerId == customerId);
+
+                // Apply date filter if provided (filter by customer creation date)
+                if (fromDate.HasValue && toDate.HasValue)
+                {
+                    query = query.Where(cb => cb.Customer.CreatedAt >= fromDate && cb.Customer.CreatedAt <= toDate);
+                }
 
                 if (!string.IsNullOrEmpty(currency))
                 {
                     query = query.Where(cb => cb.CurrencyCode == currency);
-                }
-
-                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
-                {
-                    query = query.Where(cb => cb.CustomerId == customerId);
                 }
 
                 var totalCount = await query.CountAsync();
@@ -399,23 +410,34 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                fromDate ??= DateTime.Today.AddDays(-30);
-                toDate ??= DateTime.Today.AddDays(1);
+                // Require customer selection - no data without customer filter
+                if (string.IsNullOrEmpty(customer) || !int.TryParse(customer, out int customerId))
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        data = new object[0],
+                        totalPages = 0,
+                        currentPage = page,
+                        totalCount = 0
+                    });
+                }
 
                 var query = _context.Orders
                     .Include(o => o.Customer)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
-                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+                    .Where(o => o.CustomerId == customerId);
+
+                // Apply date filter if provided (filter by order creation date)
+                if (fromDate.HasValue && toDate.HasValue)
+                {
+                    query = query.Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+                }
 
                 if (!string.IsNullOrEmpty(currency))
                 {
                     query = query.Where(o => o.FromCurrency.Code == currency || o.ToCurrency.Code == currency);
-                }
-
-                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
-                {
-                    query = query.Where(o => o.CustomerId == customerId);
                 }
 
                 var totalCount = await query.CountAsync();
@@ -461,22 +483,33 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                fromDate ??= DateTime.Today.AddDays(-30);
-                toDate ??= DateTime.Today.AddDays(1);
+                // Require customer selection - no data without customer filter
+                if (string.IsNullOrEmpty(customer) || !int.TryParse(customer, out int customerId))
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        data = new object[0],
+                        totalPages = 0,
+                        currentPage = page,
+                        totalCount = 0
+                    });
+                }
 
                 var query = _context.AccountingDocuments
                     .Include(ad => ad.PayerCustomer)
                     .Include(ad => ad.ReceiverCustomer)
-                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate);
+                    .Where(ad => ad.PayerCustomerId == customerId || ad.ReceiverCustomerId == customerId);
+
+                // Apply date filter if provided (filter by document creation date)
+                if (fromDate.HasValue && toDate.HasValue)
+                {
+                    query = query.Where(ad => ad.CreatedAt >= fromDate && ad.CreatedAt <= toDate);
+                }
 
                 if (!string.IsNullOrEmpty(currency))
                 {
                     query = query.Where(ad => ad.CurrencyCode == currency);
-                }
-
-                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
-                {
-                    query = query.Where(ad => ad.PayerCustomerId == customerId || ad.ReceiverCustomerId == customerId);
                 }
 
                 var totalCount = await query.CountAsync();
