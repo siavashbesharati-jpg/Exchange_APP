@@ -6,8 +6,7 @@
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <h2><i class="fas fa-chart-line text-primary me-2"></i>مرکز گزارشات</h2>
-            <p class="text-muted">انتخاب نوع گزارش مورد نظر برای مشاهده تحلیل‌های تفصیلی</p>
+            <h2><i class="fas fa-chart-line text-primary me-2"></i>گزارشات</h2>
         </div>
     </div>
 
@@ -17,26 +16,11 @@
         <!-- Customer Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('customer')">
-                <div class="card-body text-center p-4">
-                    <div class="report-icon mb-3">
+                <div class="card-body text-center p-3">
+                    <div class="report-icon mb-2">
                         <i class="fas fa-users text-primary"></i>
                     </div>
                     <h5 class="card-title fw-bold">گزارشات مشتریان</h5>
-                    <p class="card-text text-muted">
-                        تحلیل اطلاعات مشتریان، تراز حساب‌ها، تراکنش‌ها و عملکرد مشتریان
-                    </p>
-                    <div class="report-items">
-                        <small class="text-muted">
-                            <i class="fas fa-check-circle me-1"></i>لیست مشتریان فعال<br>
-                            <i class="fas fa-check-circle me-1"></i>تراز مشتریان<br>
-                            <i class="fas fa-check-circle me-1"></i>تحلیل عملکرد
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>مشاهده گزارشات
-                    </span>
                 </div>
             </div>
         </div>
@@ -44,26 +28,11 @@
         <!-- Order Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('order')">
-                <div class="card-body text-center p-4">
-                    <div class="report-icon mb-3">
+                <div class="card-body text-center p-3">
+                    <div class="report-icon mb-2">
                         <i class="fas fa-exchange-alt text-success"></i>
                     </div>
                     <h5 class="card-title fw-bold">گزارشات معاملات</h5>
-                    <p class="card-text text-muted">
-                        بررسی معاملات انجام شده، حجم تراکنش‌ها و آمارهای تبدیل ارز
-                    </p>
-                    <div class="report-items">
-                        <small class="text-muted">
-                            <i class="fas fa-check-circle me-1"></i>لیست معاملات<br>
-                            <i class="fas fa-check-circle me-1"></i>حجم تراکنش‌ها<br>
-                            <i class="fas fa-check-circle me-1"></i>تحلیل نرخ‌ها
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>مشاهده گزارشات
-                    </span>
                 </div>
             </div>
         </div>
@@ -71,26 +40,11 @@
         <!-- Account Document Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('document')">
-                <div class="card-body text-center p-4">
-                    <div class="report-icon mb-3">
+                <div class="card-body text-center p-3">
+                    <div class="report-icon mb-2">
                         <i class="fas fa-file-invoice text-warning"></i>
                     </div>
-                    <h5 class="card-title fw-bold">گزارشات اسناد حسابداری</h5>
-                    <p class="card-text text-muted">
-                        مشاهده اسناد حسابداری، رسیدها و گزارشات مالی تفصیلی
-                    </p>
-                    <div class="report-items">
-                        <small class="text-muted">
-                            <i class="fas fa-check-circle me-1"></i>اسناد حسابداری<br>
-                            <i class="fas fa-check-circle me-1"></i>رسیدهای مالی<br>
-                            <i class="fas fa-check-circle me-1"></i>تحلیل اسناد
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-outline-warning btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>مشاهده گزارشات
-                    </span>
+                    <h5 class="card-title fw-bold">اسناد حسابداری</h5>
                 </div>
             </div>
         </div>
@@ -98,26 +52,11 @@
         <!-- Currency Pool Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('pool')">
-                <div class="card-body text-center p-4">
-                    <div class="report-icon mb-3">
+                <div class="card-body text-center p-3">
+                    <div class="report-icon mb-2">
                         <i class="fas fa-coins text-info"></i>
                     </div>
-                    <h5 class="card-title fw-bold">گزارشات تراز ارزها</h5>
-                    <p class="card-text text-muted">
-                        تحلیل تراز ارزهای مختلف، ذخایر و توزیع دارایی‌ها
-                    </p>
-                    <div class="report-items">
-                        <small class="text-muted">
-                            <i class="fas fa-check-circle me-1"></i>تراز ارزها<br>
-                            <i class="fas fa-check-circle me-1"></i>توزیع دارایی<br>
-                            <i class="fas fa-check-circle me-1"></i>تحلیل ذخایر
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-outline-info btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>مشاهده گزارشات
-                    </span>
+                    <h5 class="card-title fw-bold">تراز ارزها</h5>
                 </div>
             </div>
         </div>
@@ -125,26 +64,11 @@
         <!-- Admin Activity Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('admin')">
-                <div class="card-body text-center p-4">
-                    <div class="report-icon mb-3">
+                <div class="card-body text-center p-3">
+                    <div class="report-icon mb-2">
                         <i class="fas fa-user-shield text-danger"></i>
                     </div>
-                    <h5 class="card-title fw-bold">گزارشات فعالیت مدیریت</h5>
-                    <p class="card-text text-muted">
-                        بررسی فعالیت‌های مدیریتی، تغییرات سیستم و عملیات حساس
-                    </p>
-                    <div class="report-items">
-                        <small class="text-muted">
-                            <i class="fas fa-check-circle me-1"></i>فعالیت مدیران<br>
-                            <i class="fas fa-check-circle me-1"></i>تغییرات سیستم<br>
-                            <i class="fas fa-check-circle me-1"></i>گزارش امنیتی
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-outline-danger btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>مشاهده گزارشات
-                    </span>
+                    <h5 class="card-title fw-bold">فعالیت مدیریت</h5>
                 </div>
             </div>
         </div>
@@ -152,26 +76,11 @@
         <!-- Comprehensive Report -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0 comprehensive-card" onclick="navigateToReport('comprehensive')">
-                <div class="card-body text-center p-4">
-                    <div class="report-icon mb-3">
-                        <i class="fas fa-chart-pie text-purple"></i>
+                <div class="card-body text-center p-3">
+                    <div class="report-icon mb-2">
+                        <i class="fas fa-chart-pie text-white"></i>
                     </div>
                     <h5 class="card-title fw-bold">گزارش جامع</h5>
-                    <p class="card-text text-muted">
-                        داشبورد کامل با تمام آمارها، نمودارها و تحلیل‌های مالی در یک صفحه
-                    </p>
-                    <div class="report-items">
-                        <small class="text-muted">
-                            <i class="fas fa-check-circle me-1"></i>تمام آمارها<br>
-                            <i class="fas fa-check-circle me-1"></i>نمودارهای تحلیلی<br>
-                            <i class="fas fa-check-circle me-1"></i>گزارش کامل
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 text-center">
-                    <span class="btn btn-purple btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i>مشاهده داشبورد
-                    </span>
                 </div>
             </div>
         </div>
@@ -185,16 +94,16 @@
     cursor: pointer;
     border-radius: 15px;
     overflow: hidden;
+    min-height: 120px;
 }
 
 .report-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
 }
 
 .report-icon i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    font-size: 2.5rem;
 }
 
 .comprehensive-card {
@@ -202,44 +111,22 @@
     color: white;
 }
 
-.comprehensive-card .card-text,
-.comprehensive-card .report-items small {
-    color: rgba(255,255,255,0.9);
-}
-
-.btn-purple {
-    background-color: #6f42c1;
-    border-color: #6f42c1;
+.comprehensive-card .card-title {
     color: white;
-}
-
-.btn-purple:hover {
-    background-color: #5a2d91;
-    border-color: #5a2d91;
-    color: white;
-}
-
-.text-purple {
-    color: #6f42c1 !important;
-}
-
-.report-items {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0,0,0,0.1);
-}
-
-.comprehensive-card .report-items {
-    border-top: 1px solid rgba(255,255,255,0.2);
 }
 
 @@media (max-width: 768px) {
     .report-card {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
+        min-height: 100px;
     }
     
     .report-icon i {
-        font-size: 2.5rem;
+        font-size: 2rem;
+    }
+    
+    .card-title {
+        font-size: 1rem;
     }
 }
 </style>
