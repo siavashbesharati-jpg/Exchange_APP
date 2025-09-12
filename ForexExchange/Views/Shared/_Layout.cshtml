@@ -256,29 +256,40 @@
                 <div class="container-fluid">
                     <!-- Currency Pool Section -->
                     <div class="currency-pool-section p-2" id="currency-pool-section-admin" style="display: none;">
-                        <!-- Desktop version: Original row layout -->
-                        <div class="d-none d-md-block">
-                            <div class="row" id="currency-pool-row-admin">
-                                <!-- Currency pool data will be loaded here via AJAX -->
-                            </div>
-                        </div>
-                        
-                        <!-- Mobile version toggle button -->
-                        <div class="d-md-none text-center mb-2">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleMobilePoolDisplay()" style="padding: 2px 8px; font-size: 0.75rem;">
-                                <i class="fas fa-exchange-alt me-1"></i>تغییر نمایش
+                        <!-- Currency Pool Header with Minimize/Maximize Button -->
+                        <div class="currency-pool-header d-flex justify-content-between align-items-center mb-2">
+                            <span class="currency-pool-title text-muted small">موجودی استخرهای ارز</span>
+                            <button class="btn btn-sm btn-outline-secondary currency-pool-toggle" onclick="toggleCurrencyPool()" title="بستن/باز کردن استخر ارز">
+                                <i class="fas fa-chevron-up" id="currency-pool-toggle-icon"></i>
                             </button>
                         </div>
                         
-                        <!-- Mobile version: Option 1 - 3 columns per row -->
-                        <div class="d-md-none d-none" id="currency-pool-mobile-rows">
-                            <!-- Mobile rows will be populated here -->
-                        </div>
-                        
-                        <!-- Mobile version: Option 2 - Horizontal scrollable (default) -->
-                        <div class="d-md-none currency-pool-mobile-scroll" id="currency-pool-mobile-scroll">
-                            <div class="d-flex">
-                                <!-- Mobile scroll items will be populated here -->
+                        <!-- Currency Pool Content (collapsible) -->
+                        <div class="currency-pool-content" id="currency-pool-content">
+                            <!-- Desktop version: Original row layout -->
+                            <div class="d-none d-md-block">
+                                <div class="row" id="currency-pool-row-admin">
+                                    <!-- Currency pool data will be loaded here via AJAX -->
+                                </div>
+                            </div>
+                            
+                            <!-- Mobile version toggle button -->
+                            <div class="d-md-none text-center mb-2">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="toggleMobilePoolDisplay()" style="padding: 2px 8px; font-size: 0.75rem;">
+                                    <i class="fas fa-exchange-alt me-1"></i>تغییر نمایش
+                                </button>
+                            </div>
+                            
+                            <!-- Mobile version: Option 1 - 3 columns per row -->
+                            <div class="d-md-none d-none" id="currency-pool-mobile-rows">
+                                <!-- Mobile rows will be populated here -->
+                            </div>
+                            
+                            <!-- Mobile version: Option 2 - Horizontal scrollable (default) -->
+                            <div class="d-md-none currency-pool-mobile-scroll" id="currency-pool-mobile-scroll">
+                                <div class="d-flex">
+                                    <!-- Mobile scroll items will be populated here -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -443,6 +454,8 @@
     <script>
         $(document).ready(function () {
             loadCurrencyPoolData();
+            // Initialize pool state after a short delay to ensure DOM is ready
+            setTimeout(initializeCurrencyPoolState, 100);
         });
 
         function loadCurrencyPoolData() {
@@ -757,6 +770,70 @@
                 // Switch to rows mode
                 scrollContainer.addClass('d-none');
                 rowsContainer.removeClass('d-none');
+            }
+        }
+
+        // Currency Pool Toggle Functionality
+        let isPoolMinimized = false;
+
+        function toggleCurrencyPool() {
+            const poolSection = $('#currency-pool-section-admin');
+            const poolContent = $('#currency-pool-content');
+            const toggleBtn = $('.currency-pool-toggle');
+            const toggleIcon = $('#currency-pool-toggle-icon');
+
+            if (isPoolMinimized) {
+                // Maximize (show) the pool
+                poolSection.removeClass('minimizing').addClass('maximizing');
+                poolContent.removeClass('collapsed');
+                toggleBtn.removeClass('collapsed');
+                toggleIcon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+                
+                // Update state
+                isPoolMinimized = false;
+                
+                // Store preference
+                localStorage.setItem('currencyPoolMinimized', 'false');
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    poolSection.removeClass('maximizing');
+                }, 400);
+                
+            } else {
+                // Minimize (hide) the pool
+                poolSection.removeClass('maximizing').addClass('minimizing');
+                poolContent.addClass('collapsed');
+                toggleBtn.addClass('collapsed');
+                toggleIcon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                
+                // Update state
+                isPoolMinimized = true;
+                
+                // Store preference
+                localStorage.setItem('currencyPoolMinimized', 'true');
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    poolSection.removeClass('minimizing');
+                }, 400);
+            }
+        }
+
+        // Initialize pool state from localStorage
+        function initializeCurrencyPoolState() {
+            const isMinimized = localStorage.getItem('currencyPoolMinimized') === 'true';
+            
+            if (isMinimized) {
+                const poolContent = $('#currency-pool-content');
+                const toggleBtn = $('.currency-pool-toggle');
+                const toggleIcon = $('#currency-pool-toggle-icon');
+                
+                // Set initial minimized state without animation
+                poolContent.addClass('collapsed');
+                toggleBtn.addClass('collapsed');
+                toggleIcon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+                isPoolMinimized = true;
             }
         }
     </script>
