@@ -334,5 +334,212 @@ namespace ForexExchange.Controllers
                 return Json(new { error = "خطا در دریافت اطلاعات مدیریت" });
             }
         }
+
+        // New API Methods for Customer Reports Page
+
+        // GET: Reports/GetCustomerBalances
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerBalances(DateTime? fromDate, DateTime? toDate, string currency, string customer, int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                fromDate ??= DateTime.Today.AddDays(-30);
+                toDate ??= DateTime.Today.AddDays(1);
+
+                var query = _context.CustomerBalances
+                    .Include(cb => cb.Customer)
+                    .Where(cb => cb.Customer.CreatedAt >= fromDate && cb.Customer.CreatedAt <= toDate);
+
+                if (!string.IsNullOrEmpty(currency))
+                {
+                    query = query.Where(cb => cb.CurrencyCode == currency);
+                }
+
+                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
+                {
+                    query = query.Where(cb => cb.CustomerId == customerId);
+                }
+
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                var data = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(cb => new
+                    {
+                        customerId = cb.CustomerId,
+                        customerName = cb.Customer.FullName,
+                        currencyCode = cb.CurrencyCode,
+                        amount = cb.Balance,
+                        lastUpdated = cb.LastUpdated
+                    })
+                    .OrderByDescending(x => x.lastUpdated)
+                    .ToListAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    data = data,
+                    totalPages = totalPages,
+                    currentPage = page,
+                    totalCount = totalCount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting customer balances");
+                return Json(new { success = false, error = "خطا در دریافت موجودی مشتریان" });
+            }
+        }
+
+        // GET: Reports/GetCustomerOrders
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerOrders(DateTime? fromDate, DateTime? toDate, string currency, string customer, int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                fromDate ??= DateTime.Today.AddDays(-30);
+                toDate ??= DateTime.Today.AddDays(1);
+
+                var query = _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+
+                if (!string.IsNullOrEmpty(currency))
+                {
+                    query = query.Where(o => o.FromCurrency.Code == currency || o.ToCurrency.Code == currency);
+                }
+
+                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
+                {
+                    query = query.Where(o => o.CustomerId == customerId);
+                }
+
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                var data = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(o => new
+                    {
+                        id = o.Id,
+                        customerId = o.CustomerId,
+                        customerName = o.Customer.FullName,
+                        fromCurrency = o.FromCurrency.Code,
+                        fromAmount = o.Amount,
+                        toCurrency = o.ToCurrency.Code,
+                        toAmount = o.TotalAmount,
+                        createdAt = o.CreatedAt,
+                        status = o.FilledAmount >= o.Amount ? "Completed" : "Pending"
+                    })
+                    .OrderByDescending(x => x.createdAt)
+                    .ToListAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    data = data,
+                    totalPages = totalPages,
+                    currentPage = page,
+                    totalCount = totalCount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting customer orders");
+                return Json(new { success = false, error = "خطا در دریافت معاملات مشتریان" });
+            }
+        }
+
+        // GET: Reports/GetCustomerDocuments
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerDocuments(DateTime? fromDate, DateTime? toDate, string currency, string customer, int page = 1, int pageSize = 10)
+        {
+            try
+            {
+                fromDate ??= DateTime.Today.AddDays(-30);
+                toDate ??= DateTime.Today.AddDays(1);
+
+                var query = _context.AccountingDocuments
+                    .Include(ad => ad.PayerCustomer)
+                    .Include(ad => ad.ReceiverCustomer)
+                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate);
+
+                if (!string.IsNullOrEmpty(currency))
+                {
+                    query = query.Where(ad => ad.CurrencyCode == currency);
+                }
+
+                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
+                {
+                    query = query.Where(ad => ad.PayerCustomerId == customerId || ad.ReceiverCustomerId == customerId);
+                }
+
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                var data = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(ad => new
+                    {
+                        id = ad.Id,
+                        documentNumber = ad.Id.ToString(),
+                        customerId = ad.PayerCustomerId ?? ad.ReceiverCustomerId,
+                        customerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName : 
+                                     (ad.ReceiverCustomer != null ? ad.ReceiverCustomer.FullName : "نامشخص"),
+                        type = ad.PayerCustomerId != null ? "Payment" : "Receipt",
+                        amount = ad.Amount,
+                        currencyCode = ad.CurrencyCode ?? "IRR",
+                        createdAt = ad.DocumentDate,
+                        description = ad.Description
+                    })
+                    .OrderByDescending(x => x.createdAt)
+                    .ToListAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    data = data,
+                    totalPages = totalPages,
+                    currentPage = page,
+                    totalCount = totalCount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting customer documents");
+                return Json(new { success = false, error = "خطا در دریافت اسناد حسابداری" });
+            }
+        }
+
+        // GET: Reports/ExportCustomerReports
+        [HttpGet]
+        public IActionResult ExportCustomerReports(string type, DateTime? fromDate, DateTime? toDate, string currency)
+        {
+            try
+            {
+                fromDate ??= DateTime.Today.AddDays(-30);
+                toDate ??= DateTime.Today.AddDays(1);
+
+                // For now, just redirect to a placeholder or return a message
+                // You can implement actual Excel export using EPPlus or similar library
+                
+                return Json(new { 
+                    success = true, 
+                    message = "قابلیت صدور فایل Excel در حال توسعه است",
+                    downloadUrl = "#" 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting customer reports");
+                return Json(new { success = false, error = "خطا در صدور گزارش" });
+            }
+        }
     }
 }
