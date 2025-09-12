@@ -48,26 +48,30 @@ namespace ForexExchange.Services
                 await CreateAdminUserAsync();
 
                 await CreatCurencies(); // usd ,toman , AED,OMR,EURO,LiRA
+                
+                 // Initialize currency pools first (required for financial operations)
+                await SeedCurrencyPoolsAsync();
 
                 // Seed exchange rates first
                 await SeedExchangeRatesAsync();
 
                 await CreateSystemCustomerAsync();
 
-                // Seed 5-10 test customers (as requested by user)
-                await SeedTestCustomersAsync();
+                // Create bank accounts for system customer (one per currency)
+                await SeedSystemBankAccountsAsync();
 
-                // Initialize currency pools first (required for financial operations)
-                await SeedCurrencyPoolsAsync();
+                // // Seed 5-10 test customers (as requested by user)
+                // await SeedTestCustomersAsync();
 
-                // Initialize customer balances using CentralFinancialService (with complete audit trail)
-                await SeedCustomerBalancesAsync();
 
-                // Seed 20-30 orders per customer using CentralFinancialService (dual-currency impact + history)
-                await SeedCustomerOrdersAsync();
+                // // Initialize customer balances using CentralFinancialService (with complete audit trail)
+                // await SeedCustomerBalancesAsync();
 
-                // Seed 20-30 accounting documents per customer using CentralFinancialService (proper balance updates + history)
-                await SeedCustomerAccountingDocumentsAsync();
+                // // Seed 20-30 orders per customer using CentralFinancialService (dual-currency impact + history)
+                // await SeedCustomerOrdersAsync();
+
+                // // Seed 20-30 accounting documents per customer using CentralFinancialService (proper balance updates + history)
+                // await SeedCustomerAccountingDocumentsAsync();
 
                 _logger.LogInformation("Data seeding completed successfully");
             }
@@ -230,7 +234,80 @@ namespace ForexExchange.Services
             }
         }
 
+        /// <summary>
+        /// Create bank accounts for system customer - one per active currency
+        /// ایجاد حساب‌های بانکی برای مشتری سیستم - یکی برای هر ارز فعال
+        /// </summary>
+        private async Task SeedSystemBankAccountsAsync()
+        {
+            try
+            {
+                var systemCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.IsSystem);
+                if (systemCustomer == null)
+                {
+                    _logger.LogError("System customer not found for bank account seeding");
+                    return;
+                }
 
+                // Check if system bank accounts already exist
+                var existingSystemBankAccounts = await _context.BankAccounts
+                    .Where(ba => ba.CustomerId == systemCustomer.Id)
+                    .CountAsync();
+
+                if (existingSystemBankAccounts > 0)
+                {
+                    _logger.LogInformation($"{existingSystemBankAccounts} system bank accounts already exist, skipping bank account seeding");
+                    return;
+                }
+
+                var currencies = await _context.Currencies
+                    .Where(c => c.IsActive)
+                    .ToListAsync();
+
+                var random = new Random();
+                var bankNames = new[] { "بانک ملی", "بانک صادرات", "بانک تجارت", "بانک کشاورزی", "بانک پارسیان", "بانک پاسارگاد" };
+                var totalAccountsCreated = 0;
+
+                _logger.LogInformation($"Creating system bank accounts for {currencies.Count} active currencies");
+
+                foreach (var currency in currencies)
+                {
+                    var bankName = bankNames[random.Next(bankNames.Length)];
+                    var accountNumber = $"SYS{currency.Code}{random.Next(100000, 999999)}";
+                    var iban = $"IR{random.Next(10, 99)}{random.Next(1000, 9999)}{random.Next(100000000, 999999999)}";
+                    var initialBalance = (decimal)(random.NextDouble() * 500000 + 100000); // Random balance 100K-600K
+
+                    var bankAccount = new BankAccount
+                    {
+                        CustomerId = systemCustomer.Id,
+                        BankName = bankName,
+                        AccountNumber = accountNumber,
+                        AccountHolderName = $"سیستم صرافی - {currency.Name}",
+                        IBAN = iban,
+                        Branch = "شعبه مرکزی",
+                        CurrencyCode = currency.Code,
+                        IsActive = true,
+                        IsDefault = currency.IsBaseCurrency, // Make base currency account default
+                        AccountBalance = Math.Round(initialBalance, 2),
+                        CreatedAt = DateTime.Now,
+                        Notes = $"حساب سیستم برای ارز {currency.Name} - ایجاد شده توسط DataSeedService"
+                    };
+
+                    _context.BankAccounts.Add(bankAccount);
+                    totalAccountsCreated++;
+
+                    _logger.LogInformation($"Created system bank account for {currency.Code}: {accountNumber} with balance {initialBalance:N2}");
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Successfully created {totalAccountsCreated} system bank accounts");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to seed system bank accounts");
+                throw;
+            }
+        }
 
         private async Task SeedExchangeRatesAsync()
         {
@@ -371,7 +448,7 @@ namespace ForexExchange.Services
                 var random = new Random();
                 var persianFirstNames = new[] { "علی", "محمد", "حسن", "حسین", "احمد", "مهدی", "رضا", "امیر", "سعید", "محسن", "فاطمه", "زهرا", "مریم", "آیدا", "نرگس", "پریسا", "سارا", "نازنین", "مینا", "شیما" };
                 var persianLastNames = new[] { "احمدی", "محمدی", "حسینی", "رضایی", "موسوی", "کریمی", "حسنی", "صادقی", "مرادی", "علوی", "قاسمی", "بابایی", "نوری", "صالحی", "طاهری", "کاظمی", "جعفری", "رحیمی", "فروغی", "کامرانی" };
-                
+
                 var customers = new List<Customer>();
                 var now = DateTime.Now;
 
@@ -383,7 +460,7 @@ namespace ForexExchange.Services
                 {
                     var firstName = persianFirstNames[random.Next(persianFirstNames.Length)];
                     var lastName = persianLastNames[random.Next(persianLastNames.Length)];
-                    
+
                     var customer = new Customer
                     {
                         FullName = $"{firstName} {lastName}",
@@ -505,7 +582,7 @@ namespace ForexExchange.Services
                     {
                         var fromCurrency = currencies[random.Next(currencies.Count)];
                         var toCurrency = currencies[random.Next(currencies.Count)];
-                        
+
                         // Make sure from and to currencies are different
                         while (toCurrency.Id == fromCurrency.Id)
                         {
@@ -515,9 +592,9 @@ namespace ForexExchange.Services
                         var amount = (decimal)(random.NextDouble() * 5000 + 100); // Random amount between 100-5100
 
                         // Find exchange rate or calculate reasonable rate
-                        var rate = exchangeRates.FirstOrDefault(er => 
+                        var rate = exchangeRates.FirstOrDefault(er =>
                             er.FromCurrencyId == fromCurrency.Id && er.ToCurrencyId == toCurrency.Id);
-                        
+
                         var exchangeRate = rate?.Rate ?? (decimal)(random.NextDouble() * 2 + 0.5); // Random rate if not found
                         var totalAmount = amount * exchangeRate;
 
@@ -545,7 +622,7 @@ namespace ForexExchange.Services
 
                         totalOrdersCreated++;
 
-                      
+
                     }
 
                     _logger.LogInformation($"Created {orderCount} orders for customer {customer.FullName}");
@@ -585,12 +662,17 @@ namespace ForexExchange.Services
                     return;
                 }
 
+                // Load system bank accounts (one per currency)
+                var systemBankAccounts = await _context.BankAccounts
+                    .Where(ba => ba.CustomerId == systemCustomer.Id && ba.IsActive)
+                    .ToListAsync();
+
                 var random = new Random();
                 var now = DateTime.Now;
                 var totalDocumentsCreated = 0;
 
-                var descriptions = new[] { 
-                    "واریز نقدی", "برداشت نقدی", "تبدیل ارز", "کارمزد معامله", 
+                var descriptions = new[] {
+                    "واریز نقدی", "برداشت نقدی", "تبدیل ارز", "کارمزد معامله",
                     "واریز بانکی", "برداشت بانکی", "تسویه حساب", "پرداخت کمیسیون",
                     "انتقال وجه", "دریافت حواله", "پرداخت حواله", "سود سپرده"
                 };
@@ -643,6 +725,28 @@ namespace ForexExchange.Services
                             document.ReceiverType = ReceiverType.Customer;
                         }
 
+                        // Assign system bank account based on transaction currency and direction
+                        var systemBankAccount = systemBankAccounts.FirstOrDefault(ba => ba.CurrencyCode == currency.Code);
+                        if (systemBankAccount != null)
+                        {
+                            if (isPayment)
+                            {
+                                // Customer pays to system - system receives to bank account
+                                document.ReceiverBankAccountId = systemBankAccount.Id;
+                                _logger.LogDebug($"Assigned system bank account {systemBankAccount.AccountNumber} ({currency.Code}) as receiver for document {document.ReferenceNumber}");
+                            }
+                            else
+                            {
+                                // System pays to customer - system pays from bank account
+                                document.PayerBankAccountId = systemBankAccount.Id;
+                                _logger.LogDebug($"Assigned system bank account {systemBankAccount.AccountNumber} ({currency.Code}) as payer for document {document.ReferenceNumber}");
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"No system bank account found for currency {currency.Code} - document {document.ReferenceNumber} will not have bank account assignment");
+                        }
+
                         // Save document first
                         _context.AccountingDocuments.Add(document);
                         await _context.SaveChangesAsync();
@@ -655,6 +759,9 @@ namespace ForexExchange.Services
 
                     _logger.LogInformation($"Created {docCount} accounting documents for customer {customer.FullName}");
                 }
+
+                _logger.LogInformation($"Successfully created {totalDocumentsCreated} total accounting documents using CentralFinancialService");
+                _logger.LogInformation($"System bank accounts used: {systemBankAccounts.Count} accounts covering currencies: {string.Join(", ", systemBankAccounts.Select(ba => ba.CurrencyCode))}");
 
             }
             catch (Exception ex)

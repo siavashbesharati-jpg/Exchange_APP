@@ -241,7 +241,7 @@
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead class="table-dark">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th>مشتری</th>
                                             <th> دریافت کرده ایم </th>
                                             <th>مقدار</th>
@@ -275,7 +275,7 @@
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead class="table-dark">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th>شماره سند</th>
                                             <th>مشتری</th>
                                             <th>نوع</th>
@@ -465,21 +465,21 @@ function loadOrders(page = 1) {
                     
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>
+                        <td class="text-center">
                             <a href="@Url.Action("Details", "Customers")/${order.customerId}" class="text-decoration-none fw-bold">
                                 ${order.customerName}
                             </a>
                         </td>
-                        <td><span class="badge bg-primary">${order.fromCurrency}</span></td>
-                        <td class="text-end">${formatCurrency(order.fromAmount, order.fromCurrency)}</td>
-                        <td><span class="badge bg-success">${order.toCurrency}</span></td>
-                        <td class="text-end">${formatCurrency(order.toAmount, order.toCurrency)}</td>
-                        <td>
+                        <td class="text-center"><span class="badge bg-primary">${order.fromCurrency}</span></td>
+                        <td class="text-center ltr-direction">+${formatCurrency(order.fromAmount, order.fromCurrency)}</td>
+                        <td class="text-center"><span class="badge bg-success">${order.toCurrency}</span></td>
+                        <td class="text-center ltr-direction">-${formatCurrency(order.toAmount, order.toCurrency)}</td>
+                        <td class="text-center">
                             <a href="@Url.Action("Details", "Orders")/${order.id}" class="text-decoration-none">
                                 ${formatDate(order.createdAt)}
                             </a>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span class="badge bg-${statusClass}">${statusText}</span>
                         </td>
                     `;
@@ -533,27 +533,27 @@ function loadDocuments(page = 1) {
                     
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>
+                        <td class="text-center">
                             <a href="@Url.Action("Details", "AccountingDocuments")/${doc.id}" class="text-decoration-none fw-bold">
                                 #${doc.documentNumber}
                             </a>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <a href="@Url.Action("Details", "Customers")/${doc.customerId}" class="text-decoration-none">
                                 ${doc.customerName}
                             </a>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span class="badge bg-${typeClass}">${typeText}</span>
                         </td>
-                        <td class="text-end fw-bold">
-                            ${formatCurrency(doc.amount, doc.currencyCode)}
+                        <td class="text-center ltr-direction fw-bold">
+                            ${doc.amount >= 0 ? '+' : ''}${formatCurrency(doc.amount, doc.currencyCode)}
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span class="badge bg-primary">${doc.currencyCode}</span>
                         </td>
-                        <td>${formatDate(doc.createdAt)}</td>
-                        <td class="text-muted">${doc.description || '-'}</td>
+                        <td class="text-center">${formatDate(doc.createdAt)}</td>
+                        <td class="text-center text-muted">${doc.description || '-'}</td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -619,7 +619,7 @@ function exportData(type) {
 
 function formatCurrency(amount, currencyCode) {
     if (currencyCode === 'IRR') {
-        return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
+        return new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
     }
     return new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 2,
@@ -713,11 +713,11 @@ function renderBankStyleTimeline(timeline) {
         const initialBalance = timeline.initialBalances[currency] || 0;
         timelineHtml += `
             <tr class="table-light">
-                <td class="text-muted">موجودی اولیه</td>
-                <td><span class="badge bg-secondary">موجودی اولیه</span></td>
-                <td>${currency}</td>
-                <td class="text-end fw-bold">-</td>
-                <td class="text-end fw-bold">${formatCurrency(initialBalance, currency)}</td>
+                <td class="text-center">موجودی اولیه</td>
+                <td class="text-center"><span class="badge bg-secondary">موجودی اولیه</span></td>
+                <td class="text-center">${currency}</td>
+                <td class="text-center ltr-direction">-</td>
+                <td class="text-center ltr-direction fw-bold">${initialBalance >= 0 ? '+' : ''}${formatCurrency(initialBalance, currency)}</td>
             </tr>
         `;
 
@@ -733,15 +733,15 @@ function renderBankStyleTimeline(timeline) {
             
             timelineHtml += `
                 <tr class="transaction-row" style="cursor: pointer;" ${clickHandler}>
-                    <td>${formatDate(transaction.transactionDate)}</td>
-                    <td>
+                    <td class="text-center">${formatDate(transaction.transactionDate)}</td>
+                    <td class="text-center">
                         <a href="#" class="text-decoration-none">
                             ${typeText} #${transactionId}
                         </a>
                     </td>
-                    <td>${currency}</td>
-                    <td class="text-end ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(Math.abs(transaction.amount), currency)}</td>
-                    <td class="text-end fw-bold">${formatCurrency(transaction.runningBalance, currency)}</td>
+                    <td class="text-center">${currency}</td>
+                    <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${transaction.amount >= 0 ? '+' : ''}${formatCurrency(transaction.amount, currency)}</td>
+                    <td class="text-center ltr-direction fw-bold">${transaction.runningBalance >= 0 ? '+' : ''}${formatCurrency(transaction.runningBalance, currency)}</td>
                 </tr>
             `;
         });
@@ -751,13 +751,11 @@ function renderBankStyleTimeline(timeline) {
         const netChange = timeline.netChanges[currency] || 0;
         timelineHtml += `
             <tr class="table-warning">
-                <td class="text-muted">موجودی نهایی</td>
-                <td><span class="badge bg-warning text-dark">موجودی نهایی</span></td>
-                <td>${currency}</td>
-                <td class="text-end fw-bold ${netChange >= 0 ? 'text-success' : 'text-danger'}">
-                    ${netChange >= 0 ? '+' : ''}${formatCurrency(netChange, currency)}
-                </td>
-                <td class="text-end fw-bold">${formatCurrency(finalBalance, currency)}</td>
+                <td class="text-center">موجودی نهایی</td>
+                <td class="text-center"><span class="badge bg-warning text-dark">موجودی نهایی</span></td>
+                <td class="text-center">${currency}</td>
+                <td class="text-center  fw-bold ">-</td>
+                <td class="text-center ltr-direction fw-bold">${finalBalance >= 0 ? '+' : ''}${formatCurrency(finalBalance, currency)}</td>
             </tr>
         `;
 
@@ -796,6 +794,7 @@ function renderBalanceSummary(balances) {
         const isPositive = amount >= 0;
         const colorClass = isPositive ? 'success' : 'danger';
         const iconClass = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+        const sign = isPositive ? '+' : '-';
         
         balanceHtml += `
             <div class="col-md-3 mb-2">
@@ -803,9 +802,14 @@ function renderBalanceSummary(balances) {
                     <div class="me-2">
                         <i class="fas ${iconClass} text-${colorClass}"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0 text-${colorClass}">${formatCurrency(amount, currency)}</h6>
-                        <small class="text-muted">${isPositive ? 'اعتبار' : 'بدهی'}</small>
+                    <div class="flex-grow-1">
+                        <div class="text-center">
+                            <span class="badge bg-primary mb-1">${currency}</span>
+                        </div>
+                        <h6 class="mb-0 text-${colorClass} text-center ltr-direction">
+                            ${isPositive ? '+' : ''}${formatCurrency(amount, currency)}
+                        </h6>
+                        <small class="text-muted d-block text-center">${isPositive ? 'اعتبار' : 'بدهی'}</small>
                     </div>
                 </div>
             </div>
@@ -995,6 +999,12 @@ function goToDocumentDetail(documentId) {
     color: white;
 }
 
+/* Center align all table content by default */
+.table td, .table th {
+    text-align: center;
+    vertical-align: middle;
+}
+
 .badge {
     font-size: 0.75rem;
     padding: 0.375em 0.75em;
@@ -1029,6 +1039,11 @@ function goToDocumentDetail(documentId) {
 /* Currency styling consistency */
 .text-end {
     text-align: left !important;
+}
+
+/* LTR direction for numbers */
+.ltr-direction {
+    direction: ltr;
 }
 
 /* RTL adjustments */

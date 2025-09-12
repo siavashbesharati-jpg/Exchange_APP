@@ -347,7 +347,41 @@ namespace ForexExchange.Services
 
                 if (pool == null)
                 {
-                    throw new InvalidOperationException($"Currency pool not found for currency: {currencyCode}");
+                    // Get currency information to create pool
+                    var currency = await _context.Currencies
+                        .FirstOrDefaultAsync(c => c.Code == currencyCode && c.IsActive);
+
+                    if (currency == null)
+                    {
+                        throw new InvalidOperationException($"Currency not found: {currencyCode}");
+                    }
+
+                    // Don't create pools for base currency (IRR) - just log and skip
+                    if (currency.IsBaseCurrency)
+                    {
+                        _logger.LogInformation($"Skipping currency pool operation for base currency: {currencyCode}");
+                        await transaction.CommitAsync();
+                        return;
+                    }
+
+                    // Auto-create missing currency pool
+                    _logger.LogWarning($"Currency pool not found for {currencyCode}, creating automatically");
+                    pool = new CurrencyPool
+                    {
+                        CurrencyId = currency.Id,
+                        CurrencyCode = currencyCode,
+                        Balance = 100000, // Default starting balance
+                        TotalBought = 0,
+                        TotalSold = 0,
+                        ActiveBuyOrderCount = 0,
+                        ActiveSellOrderCount = 0,
+                        RiskLevel = PoolRiskLevel.Low,
+                        IsActive = true,
+                        LastUpdated = DateTime.UtcNow,
+                        Notes = $"Auto-created by CentralFinancialService"
+                    };
+                    _context.CurrencyPools.Add(pool);
+                    await _context.SaveChangesAsync(); // Save the new pool first
                 }
 
                 var previousBalance = pool.Balance;
