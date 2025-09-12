@@ -255,16 +255,16 @@
             <div class="fixed-bottom bg-light border-top shadow-lg" style="border-top: 3px solid #00000014 !important;">
                 <div class="container-fluid">
                     <!-- Currency Pool Section -->
-                    <div class="currency-pool-section p-2" id="currency-pool-section-admin" style="display: none;">
-                        <!-- Currency Pool Header with Minimize/Maximize Button -->
-                        <div class="currency-pool-header d-flex justify-content-end align-items-center mb-2">
-                            <button class="btn btn-sm btn-outline-secondary currency-pool-toggle" onclick="toggleCurrencyPool()" title="بستن/باز کردن استخر ارز">
-                                <i class="fas fa-chevron-down" id="currency-pool-toggle-icon"></i>
-                            </button>
-                        </div>
+                    <div class="currency-pool-section p-2 position-relative" id="currency-pool-section-admin" style="display: none;">
+                        <!-- Toggle button positioned absolutely - OUTSIDE collapsible content -->
+                        <button class="btn btn-sm btn-outline-secondary currency-pool-toggle position-absolute" onclick="toggleCurrencyPool()" 
+                                title="بستن/باز کردن استخر ارز" style="top: -8px; right: 8px; z-index: 10; padding: 4px 8px;">
+                            <i class="fas fa-chevron-down" id="currency-pool-toggle-icon"></i>
+                        </button>
                         
                         <!-- Currency Pool Content (collapsible) -->
                         <div class="currency-pool-content" id="currency-pool-content">
+                            
                             <!-- Desktop version: Original row layout -->
                             <div class="d-none d-md-block">
                                 <div class="row" id="currency-pool-row-admin">
@@ -464,10 +464,15 @@
                 success: function (response) {
                     if (response.success && response.pools && response.pools.length > 0) {
                         displayCurrencyPools(response.pools);
+                    } else {
+                        // Show currency pool section even with no data
+                        displayEmptyCurrencyPools();
                     }
                 },
                 error: function (xhr, status, error) {
                     console.error('Error loading currency pool data:', error);
+                    // Show currency pool section even on error
+                    displayEmptyCurrencyPools();
                 }
             });
         }
@@ -745,6 +750,27 @@
             $('#currency-pool-row-admin').html(desktopPoolsHtml);
             $('#currency-pool-mobile-scroll .d-flex').html(mobileScrollHtml);
             $('#currency-pool-mobile-rows').html(mobileRowsHtml);
+            $('#currency-pool-section-admin').show();
+        }
+
+        function displayEmptyCurrencyPools() {
+            // Clear all containers
+            $('#currency-pool-row-admin').empty();
+            $('#currency-pool-mobile-rows').empty();
+            $('#currency-pool-mobile-scroll .d-flex').empty();
+
+            // Show a message for empty pools
+            const emptyMessage = `
+                <div class="col-12 text-center text-muted py-2">
+                    <small>هیچ استخر ارزی تعریف نشده است</small>
+                </div>
+            `;
+            
+            $('#currency-pool-row-admin').html(emptyMessage);
+            $('#currency-pool-mobile-rows').html('<div class="text-center text-muted py-2"><small>هیچ استخر ارزی تعریف نشده است</small></div>');
+            $('#currency-pool-mobile-scroll .d-flex').html('<div class="text-center text-muted py-2 w-100"><small>هیچ استخر ارزی تعریف نشده است</small></div>');
+            
+            // Always show the currency pool section
             $('#currency-pool-section-admin').show();
         }
 

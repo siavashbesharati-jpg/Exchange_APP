@@ -40,6 +40,13 @@ body {
     transition: all 0.3s ease;
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     border-bottom: 1px solid #dee2e6 !important;
+    min-height: 20px; /* Ensure minimum height for toggle button visibility */
+    padding: 0.5rem !important; /* Keep padding for toggle button space */
+}
+
+.currency-pool-section.minimizing {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
 }
 
 .currency-pool-item {
@@ -113,10 +120,12 @@ body {
 .currency-pool-toggle {
     transition: all 0.3s ease-in-out;
     border: none !important;
-    background: transparent !important;
+    background: rgba(255, 255, 255, 0.9) !important;
     color: #6c757d !important;
     padding: 2px 6px !important;
     font-size: 0.7rem !important;
+    border-radius: 3px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 .currency-pool-toggle:hover {
