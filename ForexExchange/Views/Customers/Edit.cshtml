@@ -116,6 +116,11 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script>
+        // Disable Select2 on this page specifically
+        window.disableSelect2 = true;
+    </script>
+    
+    <script>
         // Show confirmation before saving
         document.querySelector('form').addEventListener('submit', function(e) {
             if (!confirm('آیا از ذخیره تغییرات اطمینان دارید؟')) {
@@ -151,15 +156,6 @@
             const addBtn = document.getElementById('add-balance');
             const rowsContainer = document.getElementById('balance-rows');
             const template = document.getElementById('balance-row-template');
-            
-            const formElement = document.getElementById('customer-edit-form');
-            if (!formElement) {
-                return;
-            }
-            
-            if (!template || !rowsContainer || !addBtn) {
-                return;
-            }
 
             function buildOptions(selectEl, selectedCode) {
                 console.log('Building options for select element, selectedCode:', selectedCode);
@@ -238,7 +234,12 @@
             Object.keys(initialData).forEach(k => addRow(k, initialData[k]));
 
             // On submit, convert to hidden inputs
-            document.getElementById('customer-edit-form').addEventListener('submit', function(e) {
+            const targetForm = document.getElementById('customer-edit-form');
+            if (!targetForm) {
+                return;
+            }
+            
+            targetForm.addEventListener('submit', function(e) {
                 // Remove existing hidden fields
                 this.querySelectorAll('input[type="hidden"][data-gen="ib"]').forEach(x => x.remove());
                 
