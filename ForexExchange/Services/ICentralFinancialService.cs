@@ -57,14 +57,14 @@ namespace ForexExchange.Services
         /// Increases currency pool balance (buying from customer)
         /// Preserves exact logic from existing pool management
         /// </summary>
-        Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, string transactionType, 
+        Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
             string reason, string performedBy = "System");
         
         /// <summary>
         /// Decreases currency pool balance (selling to customer)
         /// Preserves exact logic from existing pool management
         /// </summary>
-        Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, string transactionType, 
+        Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
             string reason, string performedBy = "System");
         
         /// <summary>
@@ -91,7 +91,7 @@ namespace ForexExchange.Services
         /// Processes bank account transaction from accounting document
         /// Preserves exact logic from existing bank account processing
         /// </summary>
-        Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, string transactionType, 
+        Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType, 
             int? relatedDocumentId, string reason, string performedBy = "System");
         
         /// <summary>

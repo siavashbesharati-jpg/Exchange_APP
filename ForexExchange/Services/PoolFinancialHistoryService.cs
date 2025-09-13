@@ -85,13 +85,13 @@ namespace ForexExchange.Services
                     {
                         Date = record.TransactionDate.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
                         Time = record.TransactionDate.ToString("HH:mm", CultureInfo.InvariantCulture),
-                        TransactionType = record.TransactionType,
+                        TransactionType = record.TransactionType.ToString(),
                         Description = record.Description ?? GetTransactionDescription(record),
                         CurrencyCode = record.CurrencyCode,
                         Amount = record.TransactionAmount,
                         Balance = record.BalanceAfter,
                         ReferenceId = record.ReferenceId,
-                        CanNavigate = record.TransactionType == "Order" && record.ReferenceId.HasValue
+                        CanNavigate = record.TransactionType == CurrencyPoolTransactionType.Order && record.ReferenceId.HasValue
                     };
 
                     timelineItems.Add(item);
@@ -113,8 +113,8 @@ namespace ForexExchange.Services
         {
             return record.TransactionType switch
             {
-                "Order" => $"سفارش شماره {record.ReferenceId}",
-                "ManualEdit" => "ویرایش دستی موجودی",
+                CurrencyPoolTransactionType.Order => $"سفارش شماره {record.ReferenceId}",
+                CurrencyPoolTransactionType.ManualEdit => "ویرایش دستی موجودی",
                 _ => "تراکنش نامشخص"
             };
         }

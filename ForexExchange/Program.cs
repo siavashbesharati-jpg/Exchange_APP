@@ -74,6 +74,10 @@ builder.Services.AddScoped<IBankAccountBalanceService, BankAccountBalanceService
 builder.Services.AddScoped<IShareableLinkService, ShareableLinkService>();
 // Customer financial history service
 builder.Services.AddScoped<CustomerFinancialHistoryService>();
+// Pool financial history service
+builder.Services.AddScoped<PoolFinancialHistoryService>();
+// Bank account financial history service
+builder.Services.AddScoped<BankAccountFinancialHistoryService>();
 // Central Financial Service - Event Sourcing with Complete Audit Trail
 builder.Services.AddScoped<ICentralFinancialService, CentralFinancialService>();
 // Push notification services

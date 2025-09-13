@@ -4,6 +4,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ForexExchange.Models
 {
     /// <summary>
+    /// Currency Pool Transaction Type Enum
+    /// نوع تراکنش صندوق ارزی
+    /// </summary>
+    public enum CurrencyPoolTransactionType
+    {
+        [Display(Name = "Order - معامله")]
+        Order = 1,
+        
+        [Display(Name = "ManualEdit - ویرایش دستی")]
+        ManualEdit = 2
+    }
+
+    /// <summary>
     /// Currency Pool Balance History - Event Sourcing for Pool Balances
     /// تاریخچه موجودی صندوق ارزی - منبع رویدادها برای موجودی صندوق
     /// 
@@ -22,9 +35,8 @@ namespace ForexExchange.Models
         public string CurrencyCode { get; set; } = string.Empty;
 
         [Required]
-        [StringLength(50)]
         [Display(Name = "Transaction Type - نوع تراکنش")]
-        public string TransactionType { get; set; } = string.Empty; // 'Order', 'ManualEdit'
+        public CurrencyPoolTransactionType TransactionType { get; set; } = CurrencyPoolTransactionType.Order;
 
         [Display(Name = "Reference ID - شناسه مرجع")]
         public int? ReferenceId { get; set; } // OrderId

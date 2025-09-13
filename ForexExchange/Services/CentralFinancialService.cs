@@ -69,7 +69,7 @@ namespace ForexExchange.Services
             await IncreaseCurrencyPoolAsync(
                 currencyCode: order.FromCurrency.Code,
                 amount: order.FromAmount,
-                transactionType: "Order_Buy",
+                transactionType: CurrencyPoolTransactionType.Order,
                 reason: $"Bought from customer via Order {order.Id}",
                 performedBy: performedBy
             );
@@ -78,7 +78,7 @@ namespace ForexExchange.Services
             await DecreaseCurrencyPoolAsync(
                 currencyCode: order.ToCurrency.Code,
                 amount: order.ToAmount,
-                transactionType: "Order_Sell",
+                transactionType: CurrencyPoolTransactionType.Order,
                 reason: $"Sold to customer via Order {order.Id}",
                 performedBy: performedBy
             );
@@ -123,7 +123,7 @@ namespace ForexExchange.Services
                 await ProcessBankAccountTransactionAsync(
                     bankAccountId: document.PayerBankAccountId.Value,
                     amount: -document.Amount, // Negative for payer account
-                    transactionType: "Document_Debit",
+                    transactionType: BankAccountTransactionType.Document,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy
@@ -135,7 +135,7 @@ namespace ForexExchange.Services
                 await ProcessBankAccountTransactionAsync(
                     bankAccountId: document.ReceiverBankAccountId.Value,
                     amount: document.Amount, // Positive for receiver account
-                    transactionType: "Document_Credit",
+                    transactionType: BankAccountTransactionType.Document,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy
@@ -181,7 +181,7 @@ namespace ForexExchange.Services
                 .ToListAsync();
         }
 
-        public async Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, string transactionType, 
+        public async Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
             string reason, string performedBy = "System")
         {
             await UpdateCurrencyPoolAsync(
@@ -193,7 +193,7 @@ namespace ForexExchange.Services
             );
         }
 
-        public async Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, string transactionType, 
+        public async Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
             string reason, string performedBy = "System")
         {
             await UpdateCurrencyPoolAsync(
@@ -211,7 +211,7 @@ namespace ForexExchange.Services
             await UpdateCurrencyPoolAsync(
                 currencyCode: currencyCode,
                 amount: adjustmentAmount,
-                transactionType: "Manual_Adjustment",
+                transactionType: CurrencyPoolTransactionType.ManualEdit,
                 reason: reason,
                 performedBy: performedBy
             );
@@ -236,7 +236,7 @@ namespace ForexExchange.Services
                 .ToListAsync();
         }
 
-        public async Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, string transactionType, 
+        public async Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType, 
             int? relatedDocumentId, string reason, string performedBy = "System")
         {
             await UpdateBankAccountBalanceAsync(
@@ -255,7 +255,7 @@ namespace ForexExchange.Services
             await UpdateBankAccountBalanceAsync(
                 bankAccountId: bankAccountId,
                 amount: adjustmentAmount,
-                transactionType: "Manual_Adjustment",
+                transactionType: BankAccountTransactionType.ManualEdit,
                 relatedDocumentId: null,
                 reason: reason,
                 performedBy: performedBy
@@ -335,7 +335,7 @@ namespace ForexExchange.Services
             }
         }
 
-        private async Task UpdateCurrencyPoolAsync(string currencyCode, decimal amount, string transactionType,
+        private async Task UpdateCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
             string reason, string performedBy = "System")
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -471,7 +471,7 @@ namespace ForexExchange.Services
             }
         }
 
-        private async Task UpdateBankAccountBalanceAsync(int bankAccountId, decimal amount, string transactionType,
+        private async Task UpdateBankAccountBalanceAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
             int? relatedDocumentId, string reason, string performedBy = "System")
         {
             using var transaction = await _context.Database.BeginTransactionAsync();

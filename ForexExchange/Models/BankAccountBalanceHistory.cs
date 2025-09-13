@@ -4,6 +4,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ForexExchange.Models
 {
     /// <summary>
+    /// Bank Account Transaction Type Enum
+    /// نوع تراکنش حساب بانکی
+    /// </summary>
+    public enum BankAccountTransactionType
+    {
+        [Display(Name = "Document - سند حسابداری")]
+        Document = 1,
+        
+        [Display(Name = "ManualEdit - ویرایش دستی")]
+        ManualEdit = 2
+    }
+
+    /// <summary>
     /// Bank Account Balance History - Event Sourcing for Bank Account Balances
     /// تاریخچه موجودی حساب بانکی - منبع رویدادها برای موجودی حساب‌های بانکی
     /// 
@@ -21,9 +34,8 @@ namespace ForexExchange.Models
         public int BankAccountId { get; set; }
 
         [Required]
-        [StringLength(50)]
         [Display(Name = "Transaction Type - نوع تراکنش")]
-        public string TransactionType { get; set; } = string.Empty; // 'Document', 'ManualEdit'
+        public BankAccountTransactionType TransactionType { get; set; } = BankAccountTransactionType.Document;
 
         [Display(Name = "Reference ID - شناسه مرجع")]
         public int? ReferenceId { get; set; } // DocumentId

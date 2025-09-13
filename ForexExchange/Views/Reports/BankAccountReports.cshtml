@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "گزارشات پول ارزها";
+    ViewData["Title"] = "گزارشات حساب‌های بانکی";
 }
 
 <div class="container-fluid">
@@ -8,8 +8,8 @@
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h2><i class="fas fa-coins text-info me-2"></i>گزارشات پول ارزها</h2>
-                    <p class="text-muted">تاریخچه و تحلیل تراکنش‌های پول ارزها</p>
+                    <h2><i class="fas fa-university text-success me-2"></i>گزارشات حساب‌های بانکی</h2>
+                    <p class="text-muted">تاریخچه و تحلیل تراکنش‌های حساب‌های بانکی</p>
                 </div>
                 <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-right me-1"></i>بازگشت به فهرست گزارشات
@@ -26,9 +26,9 @@
                     <h5 class="card-title"><i class="fas fa-filter me-2"></i>فیلترها</h5>
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="form-label">انتخاب ارز</label>
-                            <select class="form-select" id="currencySelect">
-                                <option value="">همه ارزها</option>
+                            <label class="form-label">انتخاب حساب بانکی</label>
+                            <select class="form-select" id="bankAccountSelect">
+                                <option value="">همه حساب‌ها</option>
                                 <!-- Options will be loaded dynamically -->
                             </select>
                         </div>
@@ -42,7 +42,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-info w-100" onclick="loadPoolTimeline()">
+                            <button class="btn btn-success w-100" onclick="loadBankAccountTimeline()">
                                 <i class="fas fa-search me-1"></i>جستجو
                             </button>
                         </div>
@@ -111,7 +111,7 @@
     background: #28a745;
 }
 
-.timeline-item.order:before {
+.timeline-item.document:before {
     background: #007bff;
 }
 
@@ -201,33 +201,33 @@
 let timelineData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadCurrencies();
-    loadPoolTimeline();
+    loadBankAccounts();
+    loadBankAccountTimeline();
 });
 
-async function loadCurrencies() {
+async function loadBankAccounts() {
     try {
-        const response = await fetch('@Url.Action("GetPoolCurrencies", "Reports")');
+        const response = await fetch('@Url.Action("GetBankAccounts", "Reports")');
         const data = await response.json();
         
         if (data.success) {
-            const select = document.getElementById('currencySelect');
-            select.innerHTML = '<option value="">همه ارزها</option>';
+            const select = document.getElementById('bankAccountSelect');
+            select.innerHTML = '<option value="">همه حساب‌ها</option>';
             
-            data.currencies.forEach(currency => {
+            data.bankAccounts.forEach(account => {
                 const option = document.createElement('option');
-                option.value = currency.code;
-                option.textContent = `${currency.name} (${currency.code})`;
+                option.value = account.id;
+                option.textContent = `${account.name} - ${account.bankName}`;
                 select.appendChild(option);
             });
         }
     } catch (error) {
-        console.error('Error loading currencies:', error);
+        console.error('Error loading bank accounts:', error);
     }
 }
 
-async function loadPoolTimeline() {
-    const currencyCode = document.getElementById('currencySelect').value;
+async function loadBankAccountTimeline() {
+    const bankAccountId = document.getElementById('bankAccountSelect').value;
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
     
@@ -235,11 +235,11 @@ async function loadPoolTimeline() {
     
     try {
         const params = new URLSearchParams();
-        if (currencyCode) params.append('currencyCode', currencyCode);
+        if (bankAccountId) params.append('bankAccountId', bankAccountId);
         if (fromDate) params.append('fromDate', fromDate);
         if (toDate) params.append('toDate', toDate);
         
-        const response = await fetch(`@Url.Action("GetPoolTimeline", "Reports")?${params}`);
+        const response = await fetch(`@Url.Action("GetBankAccountTimeline", "Reports")?${params}`);
         const data = await response.json();
         
         if (data.success) {
@@ -250,7 +250,7 @@ async function loadPoolTimeline() {
             showError('خطا در بارگذاری اطلاعات: ' + (data.error || 'نامشخص'));
         }
     } catch (error) {
-        console.error('Error loading pool timeline:', error);
+        console.error('Error loading bank account timeline:', error);
         showError('خطا در ارتباط با سرور');
     }
 }
@@ -263,7 +263,7 @@ function renderTimeline(timeline) {
             <div class="text-center p-5">
                 <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
                 <h5 class="text-muted">هیچ تراکنشی یافت نشد</h5>
-                <p class="text-muted">برای این ارز و بازه زمانی انتخابی تراکنشی وجود ندارد.</p>
+                <p class="text-muted">برای این حساب بانکی و بازه زمانی انتخابی تراکنشی وجود ندارد.</p>
             </div>
         `;
         return;
@@ -295,7 +295,7 @@ function renderTimeline(timeline) {
                         <strong>${item.date}</strong> - <span class="text-muted">${item.time}</span>
                     </div>
                     <div class="text-end">
-                        <span class="badge bg-secondary">${item.currencyCode}</span>
+                        <span class="badge bg-secondary">${item.bankAccountName}</span>
                     </div>
                 </div>
                 <div class="timeline-item-content">
@@ -305,12 +305,12 @@ function renderTimeline(timeline) {
                         </div>
                         <div class="col-md-3 text-center">
                             <span class="${amountClass}">
-                                ${amountSign}${formatNumber(Math.abs(item.amount))} ${item.currencyCode}
+                                ${amountSign}${formatNumber(Math.abs(item.amount))} ریال
                             </span>
                         </div>
                         <div class="col-md-3 text-end">
                             <span class="balance-display">
-                                ${formatNumber(item.balance)} ${item.currencyCode}
+                                ${formatNumber(item.balance)} ریال
                             </span>
                         </div>
                     </div>
@@ -331,15 +331,15 @@ function renderSummaryCards(summary) {
     }
     
     let balanceCards = '';
-    if (summary.currencyBalances) {
-        Object.entries(summary.currencyBalances).forEach(([currency, balance]) => {
+    if (summary.accountBalances) {
+        Object.entries(summary.accountBalances).forEach(([accountId, accountData]) => {
             balanceCards += `
                 <div class="col-md-3">
                     <div class="card text-center h-100 border-0 shadow-sm summary-card">
                         <div class="card-body">
-                            <i class="fas fa-coins text-info mb-2" style="font-size: 2rem;"></i>
-                            <h4 class="text-info">${formatNumber(balance)}</h4>
-                            <small class="text-muted">موجودی ${currency}</small>
+                            <i class="fas fa-university text-success mb-2" style="font-size: 2rem;"></i>
+                            <h4 class="text-success">${formatNumber(accountData.Balance)}</h4>
+                            <small class="text-muted">${accountData.Name}</small>
                         </div>
                     </div>
                 </div>
@@ -371,15 +371,15 @@ function renderSummaryCards(summary) {
 }
 
 function navigateToTransaction(type, referenceId) {
-    if (type === 'Order') {
-        window.open(`@Url.Action("Details", "Orders")/${referenceId}`, '_blank');
+    if (type === 'Document') {
+        window.open(`@Url.Action("Details", "AccountingDocuments")/${referenceId}`, '_blank');
     }
 }
 
 function showLoading() {
     document.getElementById('timelineContainer').innerHTML = `
         <div class="loading-container">
-            <div class="spinner-border loading-spinner text-info" role="status">
+            <div class="spinner-border loading-spinner text-success" role="status">
                 <span class="visually-hidden">در حال بارگذاری...</span>
             </div>
             <p class="mt-3 text-muted">در حال بارگذاری تاریخچه مالی...</p>
@@ -388,7 +388,7 @@ function showLoading() {
     
     document.getElementById('summaryCards').innerHTML = `
         <div class="col-12 text-center">
-            <div class="spinner-border text-info" role="status"></div>
+            <div class="spinner-border text-success" role="status"></div>
         </div>
     `;
 }
@@ -399,7 +399,7 @@ function showError(message) {
             <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
             <h5 class="text-danger">خطا در بارگذاری</h5>
             <p class="text-muted">${message}</p>
-            <button class="btn btn-outline-info" onclick="loadPoolTimeline()">
+            <button class="btn btn-outline-success" onclick="loadBankAccountTimeline()">
                 <i class="fas fa-redo me-1"></i>تلاش مجدد
             </button>
         </div>
@@ -412,13 +412,13 @@ function exportToExcel() {
         return;
     }
     
-    const currencyCode = document.getElementById('currencySelect').value;
+    const bankAccountId = document.getElementById('bankAccountSelect').value;
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
     
     const params = new URLSearchParams();
-    params.append('type', 'pool');
-    if (currencyCode) params.append('currencyCode', currencyCode);
+    params.append('type', 'bankaccount');
+    if (bankAccountId) params.append('bankAccountId', bankAccountId);
     if (fromDate) params.append('fromDate', fromDate);
     if (toDate) params.append('toDate', toDate);
     
@@ -426,7 +426,7 @@ function exportToExcel() {
 }
 
 function refreshTimeline() {
-    loadPoolTimeline();
+    loadBankAccountTimeline();
     showNotification('تاریخچه مالی بروزرسانی شد', 'success');
 }
 

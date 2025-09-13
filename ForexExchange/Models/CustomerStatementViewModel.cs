@@ -14,6 +14,7 @@ namespace ForexExchange.Models
         {
             Documents = new List<AccountingDocument>();
             Balances = new List<CustomerBalance>();
+            Customer = new();
         }
     }
 }

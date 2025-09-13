@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Services;
 
 namespace ForexExchange.Controllers
 {
@@ -10,11 +11,22 @@ namespace ForexExchange.Controllers
     {
         private readonly ForexDbContext _context;
         private readonly ILogger<ReportsController> _logger;
+        private readonly CustomerFinancialHistoryService _customerHistoryService;
+        private readonly PoolFinancialHistoryService _poolHistoryService;
+        private readonly BankAccountFinancialHistoryService _bankAccountHistoryService;
 
-        public ReportsController(ForexDbContext context, ILogger<ReportsController> logger)
+        public ReportsController(
+            ForexDbContext context, 
+            ILogger<ReportsController> logger,
+            CustomerFinancialHistoryService customerHistoryService,
+            PoolFinancialHistoryService poolHistoryService,
+            BankAccountFinancialHistoryService bankAccountHistoryService)
         {
             _context = context;
             _logger = logger;
+            _customerHistoryService = customerHistoryService;
+            _poolHistoryService = poolHistoryService;
+            _bankAccountHistoryService = bankAccountHistoryService;
         }
 
         // GET: Reports
@@ -49,6 +61,12 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/PoolReports
         public IActionResult PoolReports()
+        {
+            return View();
+        }
+
+        // GET: Reports/BankAccountReports
+        public IActionResult BankAccountReports()
         {
             return View();
         }
@@ -571,6 +589,108 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error exporting customer reports");
                 return Json(new { success = false, error = "خطا در صدور گزارش" });
+            }
+        }
+
+        // Pool Reports API Methods
+
+        // GET: Reports/GetPoolTimeline
+        [HttpGet]
+        public async Task<IActionResult> GetPoolTimeline(string? currencyCode = null, string? fromDate = null, string? toDate = null)
+        {
+            try
+            {
+                DateTime? fromDateTime = null;
+                DateTime? toDateTime = null;
+
+                if (!string.IsNullOrEmpty(fromDate) && DateTime.TryParse(fromDate, out var parsedFromDate))
+                {
+                    fromDateTime = parsedFromDate;
+                }
+
+                if (!string.IsNullOrEmpty(toDate) && DateTime.TryParse(toDate, out var parsedToDate))
+                {
+                    toDateTime = parsedToDate;
+                }
+
+                var timeline = await _poolHistoryService.GetPoolTimelineAsync(currencyCode, fromDateTime, toDateTime);
+                var summary = await _poolHistoryService.GetPoolSummaryAsync(currencyCode);
+
+                return Json(new { success = true, timeline, summary });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading pool timeline for currency: {CurrencyCode}", currencyCode);
+                return Json(new { success = false, error = "خطا در بارگذاری تاریخچه پول" });
+            }
+        }
+
+        // GET: Reports/GetPoolCurrencies
+        [HttpGet]
+        public async Task<IActionResult> GetPoolCurrencies()
+        {
+            try
+            {
+                var currencies = await _context.Currencies
+                    .OrderBy(c => c.Code)
+                    .Select(c => new { code = c.Code, name = c.Name })
+                    .ToListAsync();
+
+                return Json(new { success = true, currencies });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading pool currencies");
+                return Json(new { success = false, error = "خطا در بارگذاری ارزها" });
+            }
+        }
+
+        // Bank Account Reports API Methods
+
+        // GET: Reports/GetBankAccountTimeline
+        [HttpGet]
+        public async Task<IActionResult> GetBankAccountTimeline(int? bankAccountId = null, string? fromDate = null, string? toDate = null)
+        {
+            try
+            {
+                DateTime? fromDateTime = null;
+                DateTime? toDateTime = null;
+
+                if (!string.IsNullOrEmpty(fromDate) && DateTime.TryParse(fromDate, out var parsedFromDate))
+                {
+                    fromDateTime = parsedFromDate;
+                }
+
+                if (!string.IsNullOrEmpty(toDate) && DateTime.TryParse(toDate, out var parsedToDate))
+                {
+                    toDateTime = parsedToDate;
+                }
+
+                var timeline = await _bankAccountHistoryService.GetBankAccountTimelineAsync(bankAccountId, fromDateTime, toDateTime);
+                var summary = await _bankAccountHistoryService.GetBankAccountSummaryAsync(bankAccountId);
+
+                return Json(new { success = true, timeline, summary });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading bank account timeline for account: {BankAccountId}", bankAccountId);
+                return Json(new { success = false, error = "خطا در بارگذاری تاریخچه حساب بانکی" });
+            }
+        }
+
+        // GET: Reports/GetBankAccounts
+        [HttpGet]
+        public async Task<IActionResult> GetBankAccounts()
+        {
+            try
+            {
+                var bankAccounts = await _bankAccountHistoryService.GetBankAccountOptionsAsync();
+                return Json(new { success = true, bankAccounts });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading bank accounts");
+                return Json(new { success = false, error = "خطا در بارگذاری حساب‌های بانکی" });
             }
         }
     }
