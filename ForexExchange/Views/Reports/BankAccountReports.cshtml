@@ -28,7 +28,7 @@
                         <div class="col-md-3">
                             <label class="form-label">انتخاب حساب بانکی</label>
                             <select class="form-select" id="bankAccountSelect">
-                                <option value="">همه حساب‌ها</option>
+                                <option value="">انتخاب حساب بانکی</option>
                                 <!-- Options will be loaded dynamically -->
                             </select>
                         </div>
@@ -202,7 +202,7 @@ let timelineData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     loadBankAccounts();
-    loadBankAccountTimeline();
+    clearTimeline(); // Show message to select bank account
 });
 
 async function loadBankAccounts() {
@@ -212,12 +212,12 @@ async function loadBankAccounts() {
         
         if (data.success) {
             const select = document.getElementById('bankAccountSelect');
-            select.innerHTML = '<option value="">همه حساب‌ها</option>';
+            select.innerHTML = '<option value="">انتخاب حساب بانکی</option>';
             
             data.bankAccounts.forEach(account => {
                 const option = document.createElement('option');
                 option.value = account.id;
-                option.textContent = `${account.name} - ${account.bankName}`;
+                option.textContent = account.name;
                 select.appendChild(option);
             });
         }
@@ -231,11 +231,18 @@ async function loadBankAccountTimeline() {
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
     
+    // Only load data when a bank account is selected
+    if (!bankAccountId) {
+        clearTimeline();
+        clearSummaryCards();
+        return;
+    }
+    
     showLoading();
     
     try {
         const params = new URLSearchParams();
-        if (bankAccountId) params.append('bankAccountId', bankAccountId);
+        params.append('bankAccountId', bankAccountId);
         if (fromDate) params.append('fromDate', fromDate);
         if (toDate) params.append('toDate', toDate);
         
@@ -305,12 +312,12 @@ function renderTimeline(timeline) {
                         </div>
                         <div class="col-md-3 text-center">
                             <span class="${amountClass}">
-                                ${amountSign}${formatNumber(Math.abs(item.amount))} ریال
+                                ${amountSign}${formatNumber(Math.abs(item.amount))}
                             </span>
                         </div>
                         <div class="col-md-3 text-end">
                             <span class="balance-display">
-                                ${formatNumber(item.balance)} ریال
+                                ${formatNumber(item.balance)}
                             </span>
                         </div>
                     </div>
@@ -330,16 +337,22 @@ function renderSummaryCards(summary) {
         return;
     }
     
+    console.log('Summary data:', summary); // Debug line
+    
     let balanceCards = '';
     if (summary.accountBalances) {
+        console.log('Account balances:', summary.accountBalances); // Debug line
         Object.entries(summary.accountBalances).forEach(([accountId, accountData]) => {
+            console.log('Account data:', accountData); // Debug line
+            const balance = accountData.Balance || accountData.balance || 0;
+            const name = accountData.Name || accountData.name || 'نامشخص';
             balanceCards += `
                 <div class="col-md-3">
                     <div class="card text-center h-100 border-0 shadow-sm summary-card">
                         <div class="card-body">
                             <i class="fas fa-university text-success mb-2" style="font-size: 2rem;"></i>
-                            <h4 class="text-success">${formatNumber(accountData.Balance)}</h4>
-                            <small class="text-muted">${accountData.Name}</small>
+                            <h4 class="text-success">${formatNumber(balance)}</h4>
+                            <small class="text-muted">${name}</small>
                         </div>
                     </div>
                 </div>
@@ -430,7 +443,24 @@ function refreshTimeline() {
     showNotification('تاریخچه مالی بروزرسانی شد', 'success');
 }
 
+function clearTimeline() {
+    const container = document.getElementById('timelineContainer');
+    container.innerHTML = `
+        <div class="text-center p-5">
+            <i class="fas fa-university fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">انتخاب حساب بانکی</h5>
+            <p class="text-muted">لطفاً حساب بانکی مورد نظر را از فهرست بالا انتخاب کنید.</p>
+        </div>
+    `;
+}
+
+function clearSummaryCards() {
+    const container = document.getElementById('summaryCards');
+    container.innerHTML = '';
+}
+
 function formatNumber(num) {
+    if (num == null || num === undefined || isNaN(num)) return '0';
     if (num === 0) return '0';
     return num.toLocaleString('fa-IR', { maximumFractionDigits: 2 });
 }

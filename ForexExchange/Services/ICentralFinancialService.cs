@@ -58,14 +58,14 @@ namespace ForexExchange.Services
         /// Preserves exact logic from existing pool management
         /// </summary>
         Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
-            string reason, string performedBy = "System");
+            string reason, string performedBy = "System", int? referenceId = null);
         
         /// <summary>
         /// Decreases currency pool balance (selling to customer)
         /// Preserves exact logic from existing pool management
         /// </summary>
         Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
-            string reason, string performedBy = "System");
+            string reason, string performedBy = "System", int? referenceId = null);
         
         /// <summary>
         /// Manually adjusts currency pool balance with audit trail

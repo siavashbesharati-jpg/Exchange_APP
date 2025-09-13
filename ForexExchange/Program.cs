@@ -14,6 +14,7 @@ builder.Services.AddControllersWithViews()
     {
         options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
         options.SerializerSettings.DateFormatString = "yyyy-MM-dd HH:mm:ss";
+        options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
     });
 
 // Add Entity Framework

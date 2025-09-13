@@ -38,6 +38,60 @@ namespace ForexExchange.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> FixPoolHistoryReferenceIds()
+        {
+            try
+            {
+                // Find CurrencyPoolHistory records with TransactionType = Order but ReferenceId = null
+                var brokenRecords = await _context.CurrencyPoolHistory
+                    .Where(h => h.TransactionType == CurrencyPoolTransactionType.Order && h.ReferenceId == null)
+                    .ToListAsync();
+
+                if (!brokenRecords.Any())
+                {
+                    return Json(new { success = true, message = "All Order records already have ReferenceId set", fixedCount = 0 });
+                }
+
+                // Try to match them with orders based on description
+                int fixedCount = 0;
+                foreach (var record in brokenRecords)
+                {
+                    // Extract order ID from description like "Bought from customer via Order 123"
+                    if (!string.IsNullOrEmpty(record.Description))
+                    {
+                        var match = System.Text.RegularExpressions.Regex.Match(record.Description, @"Order (\d+)");
+                        if (match.Success && int.TryParse(match.Groups[1].Value, out int orderId))
+                        {
+                            // Verify the order exists
+                            var orderExists = await _context.Orders.AnyAsync(o => o.Id == orderId);
+                            if (orderExists)
+                            {
+                                record.ReferenceId = orderId;
+                                fixedCount++;
+                            }
+                        }
+                    }
+                }
+
+                if (fixedCount > 0)
+                {
+                    await _context.SaveChangesAsync();
+                }
+
+                return Json(new { 
+                    success = true, 
+                    message = $"Fixed {fixedCount} CurrencyPoolHistory records",
+                    totalBrokenRecords = brokenRecords.Count,
+                    fixedCount = fixedCount
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpPost]
         public IActionResult CreateBackup()
         {
             try
@@ -72,6 +126,38 @@ namespace ForexExchange.Controllers
             {
                 TempData["Error"] = $"خطا در ایجاد پشتیبان: {ex.Message}";
                 return Json(new { success = false, error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> TestPoolHistory()
+        {
+            try
+            {
+                var historyCount = await _context.CurrencyPoolHistory.CountAsync();
+                var orderTransactions = await _context.CurrencyPoolHistory
+                    .Where(h => h.TransactionType == CurrencyPoolTransactionType.Order)
+                    .Take(10)
+                    .Select(h => new {
+                        h.Id,
+                        h.CurrencyCode,
+                        h.TransactionType,
+                        h.ReferenceId,
+                        h.TransactionAmount,
+                        h.Description,
+                        h.TransactionDate
+                    })
+                    .ToListAsync();
+
+                return Json(new { 
+                    totalHistoryRecords = historyCount,
+                    orderTransactions = orderTransactions,
+                    orderCount = orderTransactions.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
             }
         }
 

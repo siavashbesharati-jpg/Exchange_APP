@@ -71,7 +71,8 @@ namespace ForexExchange.Services
                 amount: order.FromAmount,
                 transactionType: CurrencyPoolTransactionType.Order,
                 reason: $"Bought from customer via Order {order.Id}",
-                performedBy: performedBy
+                performedBy: performedBy,
+                referenceId: order.Id
             );
 
             // When customer buys ToCurrency from us, our pool decreases
@@ -80,7 +81,8 @@ namespace ForexExchange.Services
                 amount: order.ToAmount,
                 transactionType: CurrencyPoolTransactionType.Order,
                 reason: $"Sold to customer via Order {order.Id}",
-                performedBy: performedBy
+                performedBy: performedBy,
+                referenceId: order.Id
             );
 
             _logger.LogInformation($"Order {order.Id} processing completed - dual currency impact recorded");
@@ -182,26 +184,28 @@ namespace ForexExchange.Services
         }
 
         public async Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
-            string reason, string performedBy = "System")
+            string reason, string performedBy = "System", int? referenceId = null)
         {
             await UpdateCurrencyPoolAsync(
                 currencyCode: currencyCode,
                 amount: Math.Abs(amount), // Ensure positive for increase
                 transactionType: transactionType,
                 reason: reason,
-                performedBy: performedBy
+                performedBy: performedBy,
+                referenceId: referenceId
             );
         }
 
         public async Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
-            string reason, string performedBy = "System")
+            string reason, string performedBy = "System", int? referenceId = null)
         {
             await UpdateCurrencyPoolAsync(
                 currencyCode: currencyCode,
                 amount: -Math.Abs(amount), // Ensure negative for decrease
                 transactionType: transactionType,
                 reason: reason,
-                performedBy: performedBy
+                performedBy: performedBy,
+                referenceId: referenceId
             );
         }
 
@@ -213,7 +217,8 @@ namespace ForexExchange.Services
                 amount: adjustmentAmount,
                 transactionType: CurrencyPoolTransactionType.ManualEdit,
                 reason: reason,
-                performedBy: performedBy
+                performedBy: performedBy,
+                referenceId: null // Manual adjustments don't have reference IDs
             );
         }
 
@@ -336,7 +341,7 @@ namespace ForexExchange.Services
         }
 
         private async Task UpdateCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
-            string reason, string performedBy = "System")
+            string reason, string performedBy = "System", int? referenceId = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -428,7 +433,7 @@ namespace ForexExchange.Services
                     TransactionAmount = amount,
                     BalanceAfter = newBalance,
                     TransactionType = transactionType,
-                    ReferenceId = null, // Can be added later for order/document references
+                    ReferenceId = referenceId, // Now properly set for orders and documents
                     Description = reason,
                     TransactionDate = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,

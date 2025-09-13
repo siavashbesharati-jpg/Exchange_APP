@@ -28,7 +28,7 @@
                         <div class="col-md-3">
                             <label class="form-label">انتخاب ارز</label>
                             <select class="form-select" id="currencySelect">
-                                <option value="">همه ارزها</option>
+                                <option value="">انتخاب ارز</option>
                                 <!-- Options will be loaded dynamically -->
                             </select>
                         </div>
@@ -157,13 +157,20 @@
 
 .transaction-link {
     cursor: pointer;
+    color: #007bff;
     text-decoration: none;
-    transition: color 0.2s;
+    transition: all 0.2s;
+    font-weight: 500;
+    border-bottom: 1px dotted #007bff;
 }
 
 .transaction-link:hover {
     color: #0056b3;
-    text-decoration: underline;
+    text-decoration: none;
+    border-bottom: 1px solid #0056b3;
+    background-color: rgba(0, 123, 255, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
 }
 
 .transaction-badge {
@@ -202,7 +209,7 @@ let timelineData = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     loadCurrencies();
-    loadPoolTimeline();
+    clearTimeline(); // Show message to select currency
 });
 
 async function loadCurrencies() {
@@ -212,7 +219,7 @@ async function loadCurrencies() {
         
         if (data.success) {
             const select = document.getElementById('currencySelect');
-            select.innerHTML = '<option value="">همه ارزها</option>';
+            select.innerHTML = '<option value="">انتخاب ارز</option>';
             
             data.currencies.forEach(currency => {
                 const option = document.createElement('option');
@@ -231,16 +238,29 @@ async function loadPoolTimeline() {
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
     
+    // Only load data when a currency is selected
+    if (!currencyCode) {
+        clearTimeline();
+        clearSummaryCards();
+        return;
+    }
+    
     showLoading();
     
     try {
         const params = new URLSearchParams();
-        if (currencyCode) params.append('currencyCode', currencyCode);
+        params.append('currencyCode', currencyCode);
         if (fromDate) params.append('fromDate', fromDate);
         if (toDate) params.append('toDate', toDate);
         
         const response = await fetch(`@Url.Action("GetPoolTimeline", "Reports")?${params}`);
         const data = await response.json();
+        
+        console.log('Pool Timeline API Response:', data);
+        if (data.timeline && data.timeline.length > 0) {
+            console.log('First timeline item:', data.timeline[0]);
+            console.log('Timeline items with canNavigate:', data.timeline.filter(item => item.canNavigate));
+        }
         
         if (data.success) {
             timelineData = data.timeline;
@@ -280,8 +300,8 @@ function renderTimeline(timeline) {
         let transactionElement;
         if (item.canNavigate && item.referenceId) {
             transactionElement = `
-                <a href="#" class="transaction-link" onclick="navigateToTransaction('${item.transactionType}', ${item.referenceId})">
-                    ${item.description}
+                <a href="#" class="transaction-link" onclick="navigateToTransaction('${item.transactionType}', ${item.referenceId})" title="کلیک کنید تا جزئیات سفارش را مشاهده کنید">
+                    <i class="fas fa-external-link-alt me-1"></i>${item.description}
                 </a>
             `;
         } else {
@@ -372,7 +392,19 @@ function renderSummaryCards(summary) {
 
 function navigateToTransaction(type, referenceId) {
     if (type === 'Order') {
-        window.open(`@Url.Action("Details", "Orders")/${referenceId}`, '_blank');
+        // Show a brief loading indication
+        showNotification('در حال باز کردن جزئیات سفارش...', 'info');
+        
+        // Open order details in new tab
+        const url = `@Url.Action("Details", "Orders")/${referenceId}`;
+        const newWindow = window.open(url, '_blank');
+        
+        // Focus on the new window if popup blocker didn't block it
+        if (newWindow) {
+            newWindow.focus();
+        } else {
+            showNotification('پاپ آپ مسدود شد. لطفاً اجازه نمایش پاپ آپ را بدهید.', 'warning');
+        }
     }
 }
 
@@ -430,18 +462,38 @@ function refreshTimeline() {
     showNotification('تاریخچه مالی بروزرسانی شد', 'success');
 }
 
+function clearTimeline() {
+    const container = document.getElementById('timelineContainer');
+    container.innerHTML = `
+        <div class="text-center p-5">
+            <i class="fas fa-coins fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">انتخاب ارز</h5>
+            <p class="text-muted">لطفاً ارز مورد نظر را از فهرست بالا انتخاب کنید.</p>
+        </div>
+    `;
+}
+
+function clearSummaryCards() {
+    const container = document.getElementById('summaryCards');
+    container.innerHTML = '';
+}
+
 function formatNumber(num) {
     if (num === 0) return '0';
     return num.toLocaleString('fa-IR', { maximumFractionDigits: 2 });
 }
 
 function showNotification(message, type) {
-    const alertClass = type === 'success' ? 'alert-success' : 'alert-info';
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'warning' ? 'alert-warning' : 'alert-info';
+    const iconClass = type === 'success' ? 'fa-check-circle' : 
+                     type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    
     const notification = document.createElement('div');
     notification.className = `alert ${alertClass} position-fixed top-0 end-0 m-3`;
     notification.style.zIndex = '9999';
     notification.innerHTML = `
-        <i class="fas fa-check-circle me-2"></i>${message}
+        <i class="fas ${iconClass} me-2"></i>${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     document.body.appendChild(notification);

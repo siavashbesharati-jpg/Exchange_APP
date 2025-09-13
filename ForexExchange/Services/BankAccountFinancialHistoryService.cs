@@ -73,7 +73,7 @@ namespace ForexExchange.Services
                     TransactionType = "Initial",
                     Description = "موجودی اولیه",
                     BankAccountId = firstRecord.BankAccountId,
-                    BankAccountName = firstRecord.BankAccount?.BankName ?? "نامشخص",
+                    BankAccountName = GetCleanBankAccountName(firstRecord.BankAccount),
                     Amount = 0,
                     Balance = firstRecord.BalanceBefore,
                     ReferenceId = null,
@@ -90,7 +90,7 @@ namespace ForexExchange.Services
                         TransactionType = record.TransactionType.ToString(),
                         Description = record.Description ?? GetTransactionDescription(record),
                         BankAccountId = record.BankAccountId,
-                        BankAccountName = record.BankAccount?.BankName ?? "نامشخص",
+                        BankAccountName = GetCleanBankAccountName(record.BankAccount),
                         Amount = record.TransactionAmount,
                         Balance = record.BalanceAfter,
                         ReferenceId = record.ReferenceId,
@@ -123,6 +123,21 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
+        /// Get clean bank account name without "سیستم صرافی"
+        /// دریافت نام تمیز حساب بانکی بدون "سیستم صرافی"
+        /// </summary>
+        private string GetCleanBankAccountName(BankAccount? bankAccount)
+        {
+            if (bankAccount == null) return "نامشخص";
+            
+            var accountName = bankAccount.AccountHolderName == "سیستم صرافی" 
+                ? bankAccount.BankName 
+                : bankAccount.AccountHolderName;
+                
+            return (accountName ?? "نامشخص") + " (" + bankAccount.CurrencyCode + ")";
+        }
+
+        /// <summary>
         /// Get bank account summary statistics
         /// دریافت آمار خلاصه حساب بانکی
         /// </summary>
@@ -149,7 +164,7 @@ namespace ForexExchange.Services
                     .Select(g => new
                     {
                         BankAccountId = g.Key,
-                        BankAccountName = g.First().BankAccount!.AccountNumber,
+                        BankAccountName = g.First().BankAccount!.AccountHolderName + " - " + g.First().BankAccount!.BankName,
                         Balance = g.OrderByDescending(h => h.TransactionDate)
                                   .ThenByDescending(h => h.Id)
                                   .First().BalanceAfter
@@ -182,11 +197,13 @@ namespace ForexExchange.Services
             try
             {
                 var bankAccounts = await _context.BankAccounts
+                    .Where(ba => ba.IsActive) // Only active accounts
                     .OrderBy(ba => ba.BankName)
+                    .ThenBy(ba => ba.AccountHolderName)
                     .Select(ba => new BankAccountOption
                     {
                         Id = ba.Id,
-                        Name = ba.AccountNumber,
+                        Name = (ba.AccountHolderName != "سیستم صرافی" ? ba.AccountHolderName : ba.BankName) + " (" + ba.CurrencyCode + ")",
                         BankName = ba.BankName ?? "نامشخص"
                     })
                     .ToListAsync();
