@@ -395,7 +395,7 @@ namespace ForexExchange.Controllers
                 await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
                 await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
 
-                // Update customer balances for the order
+                // Update customer balances and currency pools for the order
                 _logger.LogInformation("About to call ProcessOrderCreationAsync for Order {OrderId}", order.Id);
                 await _centralFinancialService.ProcessOrderCreationAsync(order);
                 _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", order.Id);
@@ -410,13 +410,7 @@ namespace ForexExchange.Controllers
                     await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCreated, currentUser.Id);
                 }
 
-                // Update currency pools
-                // Add to FromCurrency pool (reduce available currency)
-                await _poolService.UpdatePoolAsync(order.FromCurrencyId, order.FromAmount, PoolTransactionType.Buy, order.Rate);
-                // Add to ToCurrency pool (increase available currency)
-                await _poolService.UpdatePoolAsync(order.ToCurrencyId, order.FromAmount * order.Rate, PoolTransactionType.Sell, order.Rate);
-
-                // Update order counts for both currencies
+                // Update order counts for both currencies (not handled by CentralFinancialService)
                 await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
                 await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
 

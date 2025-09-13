@@ -6,7 +6,7 @@ namespace ForexExchange.Services
 {
     /// <summary>
     /// Pool Financial History Service - Database-driven timeline for Currency Pool transactions
-    /// سرویس تاریخچه مالی پول - جدول زمانی مبتنی بر پایگاه داده برای تراکنش‌های پول ارزها
+    /// سرویس تاریخچه مالی پول - جدول زمانی مبتنی بر پایگاه داده برای تراکنش‌های صندوق ها
     /// 
     /// Uses CurrencyPoolHistory table as the single source of truth
     /// از جدول CurrencyPoolHistory به عنوان منبع واحد حقیقت استفاده می‌کند
@@ -22,7 +22,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Gets currency pool financial timeline from CurrencyPoolHistory table
-        /// دریافت جدول زمانی مالی پول ارز از جدول CurrencyPoolHistory
+        /// دریافت جدول زمانی مالی صندوق  از جدول CurrencyPoolHistory
         /// </summary>
         public async Task<List<PoolTimelineItem>> GetPoolTimelineAsync(
             string? currencyCode = null,

@@ -437,19 +437,6 @@ function renderBankStyleTimeline(timeline) {
             `;
         });
 
-        // Add final balance row
-        const finalBalance = timeline.finalBalances[currency] || 0;
-        const netChange = timeline.netChanges[currency] || 0;
-        timelineHtml += `
-            <tr class="table-warning">
-                <td class="text-center"> </td>
-                <td class="text-center"><span class="badge bg-warning text-dark">موجودی نهایی</span></td>
-                <td class="text-center">${currency}</td>
-                <td class="text-center  fw-bold ">-</td>
-                <td class="text-center ltr-direction fw-bold">${formatCurrency(finalBalance, currency)}</td>
-            </tr>
-        `;
-
         // Add spacing row
         timelineHtml += `<tr><td colspan="5" style="height: 15px; border: none;"></td></tr>`;
     });
