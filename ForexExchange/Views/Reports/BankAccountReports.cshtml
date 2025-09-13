@@ -281,7 +281,6 @@ function renderTimeline(timeline) {
     timeline.forEach(item => {
         const amountClass = item.amount > 0 ? 'amount-positive' : 
                           item.amount < 0 ? 'amount-negative' : 'amount-zero';
-        const amountSign = item.amount > 0 ? '+' : '';
         const typeClass = item.transactionType.toLowerCase();
         
         let transactionElement;
@@ -311,12 +310,12 @@ function renderTimeline(timeline) {
                             ${transactionElement}
                         </div>
                         <div class="col-md-3 text-center">
-                            <span class="${amountClass}">
-                                ${amountSign}${formatNumber(Math.abs(item.amount))}
+                            <span class="${amountClass}" dir="ltr">
+                                ${formatNumber(item.amount)}
                             </span>
                         </div>
                         <div class="col-md-3 text-end">
-                            <span class="balance-display">
+                            <span class="balance-display" dir="ltr">
                                 ${formatNumber(item.balance)}
                             </span>
                         </div>
@@ -351,7 +350,7 @@ function renderSummaryCards(summary) {
                     <div class="card text-center h-100 border-0 shadow-sm summary-card">
                         <div class="card-body">
                             <i class="fas fa-university text-success mb-2" style="font-size: 2rem;"></i>
-                            <h4 class="text-success">${formatNumber(balance)}</h4>
+                            <h4 class="text-success" dir="ltr">${formatNumber(balance)}</h4>
                             <small class="text-muted">${name}</small>
                         </div>
                     </div>
@@ -462,7 +461,7 @@ function clearSummaryCards() {
 function formatNumber(num) {
     if (num == null || num === undefined || isNaN(num)) return '0';
     if (num === 0) return '0';
-    return num.toLocaleString('fa-IR', { maximumFractionDigits: 2 });
+    return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
 function showNotification(message, type) {

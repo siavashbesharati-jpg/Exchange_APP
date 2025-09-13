@@ -228,6 +228,12 @@
         .currency-pool-mobile-item .currency-pool-balance {
             font-size: 0.75rem !important;
             font-weight: 600;
+            direction: ltr !important;
+        }
+
+        /* Ensure all currency pool balance elements use LTR direction */
+        .currency-pool-balance {
+            direction: ltr !important;
         }
     </style>
     @RenderSection("Styles", required: false)
@@ -776,7 +782,7 @@
 
         function formatNumber(num) {
             if (num === 0) return '0';
-            return num.toLocaleString('fa-IR', {
+            return num.toLocaleString('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2
             });
