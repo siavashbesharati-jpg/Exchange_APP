@@ -92,13 +92,13 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Processing accounting document ID: {document.Id}");
 
-            // PRESERVE EXACT LOGIC: Process customer impact
+            // CORRECTED LOGIC: Process customer impact
             if (document.PayerCustomerId.HasValue)
             {
                 await UpdateCustomerBalanceAsync(
                     customerId: document.PayerCustomerId.Value,
                     currencyCode: document.CurrencyCode,
-                    amount: -document.Amount, // Negative for payer
+                    amount: document.Amount, // Positive for payer (they paid/deposited)
                     transactionType: CustomerBalanceTransactionType.AccountingDocument,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
@@ -111,7 +111,7 @@ namespace ForexExchange.Services
                 await UpdateCustomerBalanceAsync(
                     customerId: document.ReceiverCustomerId.Value,
                     currencyCode: document.CurrencyCode,
-                    amount: document.Amount, // Positive for receiver
+                    amount: -document.Amount, // Negative for receiver (they received/withdrew)
                     transactionType: CustomerBalanceTransactionType.AccountingDocument,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
@@ -602,7 +602,7 @@ namespace ForexExchange.Services
                         Type = "Document",
                         Description = $"سند {document.Id}: {document.Title} (پرداخت)",
                         CurrencyCode = document.CurrencyCode,
-                        Amount = -document.Amount, // Negative for payer
+                        Amount = document.Amount, // Positive for payer (they paid/deposited)
                         DocumentId = document.Id,
                         Notes = document.Notes
                     });
@@ -616,7 +616,7 @@ namespace ForexExchange.Services
                         Type = "Document",
                         Description = $"سند {document.Id}: {document.Title} (دریافت)",
                         CurrencyCode = document.CurrencyCode,
-                        Amount = document.Amount, // Positive for receiver
+                        Amount = -document.Amount, // Negative for receiver (they received/withdrew)
                         DocumentId = document.Id,
                         Notes = document.Notes
                     });
@@ -896,35 +896,64 @@ namespace ForexExchange.Services
                 decimal netAdjustment = totalBought - totalSold;
                 _logger.LogInformation($"IRR Summary: Bought={totalBought}, Sold={totalSold}, Net Adjustment={netAdjustment}");
 
-                // Update the existing pool balance directly
+                // Update the existing pool balance and create history for each order
                 if (netAdjustment != 0)
                 {
-                    decimal oldBalance = irrPool.Balance;
-                    irrPool.Balance += netAdjustment;
+                    decimal runningBalance = irrPool.Balance;
+                    
+                    // Create individual history records for each IRR order
+                    foreach (var order in irrOrders)
+                    {
+                        decimal orderAdjustment = 0;
+                        string orderDescription = "";
+
+                        if (order.FromCurrency.Code == "IRR")
+                        {
+                            // Customer sold IRR to us, our IRR pool increases
+                            orderAdjustment = order.FromAmount;
+                            orderDescription = $"Order {order.Id}: Bought {order.FromAmount:N0} IRR from customer (to {order.ToCurrency.Code})";
+                        }
+                        else if (order.ToCurrency.Code == "IRR")
+                        {
+                            // Customer bought IRR from us, our IRR pool decreases
+                            orderAdjustment = -order.ToAmount;
+                            orderDescription = $"Order {order.Id}: Sold {order.ToAmount:N0} IRR to customer (from {order.FromCurrency.Code})";
+                        }
+
+                        if (orderAdjustment != 0)
+                        {
+                            var orderHistoryRecord = new CurrencyPoolHistory
+                            {
+                                CurrencyCode = "IRR",
+                                BalanceBefore = runningBalance,
+                                TransactionAmount = orderAdjustment,
+                                BalanceAfter = runningBalance + orderAdjustment,
+                                TransactionType = CurrencyPoolTransactionType.Order,
+                                ReferenceId = order.Id,
+                                Description = orderDescription,
+                                TransactionDate = order.CreatedAt, // Use original order date
+                                CreatedAt = DateTime.UtcNow,
+                                CreatedBy = "IRR Pool Recalculation System"
+                            };
+
+                            _context.CurrencyPoolHistory.Add(orderHistoryRecord);
+                            runningBalance += orderAdjustment;
+                            
+                            _logger.LogInformation($"Created history: {orderDescription}, Balance: {orderHistoryRecord.BalanceBefore} -> {orderHistoryRecord.BalanceAfter}");
+                        }
+                    }
+
+                    // Update the pool with final values
+                    irrPool.Balance = runningBalance;
                     irrPool.TotalBought += totalBought;
                     irrPool.TotalSold += totalSold;
                     irrPool.LastUpdated = DateTime.UtcNow;
                     irrPool.Notes = $"Recalculated from {irrOrders.Count} historical orders - adjusted by {netAdjustment}";
 
-                    // Create a history record for this adjustment
-                    var historyRecord = new CurrencyPoolHistory
-                    {
-                        CurrencyCode = "IRR",
-                        BalanceBefore = oldBalance,
-                        TransactionAmount = netAdjustment,
-                        BalanceAfter = irrPool.Balance,
-                        TransactionType = CurrencyPoolTransactionType.ManualEdit,
-                        ReferenceId = null,
-                        Description = $"Historical orders recalculation: {irrOrders.Count} orders processed",
-                        TransactionDate = DateTime.UtcNow,
-                        CreatedAt = DateTime.UtcNow,
-                        CreatedBy = "IRR Pool Recalculation System"
-                    };
-
-                    _context.CurrencyPoolHistory.Add(historyRecord);
                     await _context.SaveChangesAsync();
 
-                    _logger.LogInformation($"IRR pool updated: Old Balance={oldBalance}, Net Adjustment={netAdjustment}, New Balance={irrPool.Balance}");
+                    _logger.LogInformation($"IRR pool updated: Final Balance={irrPool.Balance}, Total Bought={totalBought}, Total Sold={totalSold}");
+                    _logger.LogInformation($"Created {irrOrders.Count} individual history records for IRR orders");
                 }
                 else
                 {
