@@ -142,7 +142,7 @@
 
         // Initial balances - dynamic rows and prefill
         (function() {
-            const currencyOptions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrencyOptions ?? new object[0]));
+            const currencyOptions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrencyOptions ?? new object[0]));
             
             // Debug logging
             console.log('Currency options loaded:', currencyOptions);
@@ -234,7 +234,7 @@
             addBtn.addEventListener('click', function() { addRow(); });
 
             // Prefill from model
-            const initialData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.InitialBalances ?? new Dictionary<string, decimal>()));
+            const initialData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.InitialBalances ?? new Dictionary<string, decimal>()));
             Object.keys(initialData).forEach(k => addRow(k, initialData[k]));
 
             // On submit, convert to hidden inputs

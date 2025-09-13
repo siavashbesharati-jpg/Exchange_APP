@@ -123,7 +123,7 @@
 
         // Initial balances dynamic rows -> bind to hidden inputs for dictionary
         (function() {
-            const currencyOptions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrencyOptions ?? new object[0]));
+            const currencyOptions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrencyOptions ?? new object[0]));
             
             const addBtn = document.getElementById('add-balance');
             const rowsContainer = document.getElementById('balance-rows');
