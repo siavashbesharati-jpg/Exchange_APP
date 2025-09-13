@@ -26,7 +26,7 @@ namespace ForexExchange.Services
             // Get from current balance table for performance
             var balance = await _context.CustomerBalances
                 .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
-            
+
             return balance?.Balance ?? 0;
         }
 
@@ -147,7 +147,7 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Document {document.Id} processing completed");
         }
 
-        public async Task AdjustCustomerBalanceAsync(int customerId, string currencyCode, decimal adjustmentAmount, 
+        public async Task AdjustCustomerBalanceAsync(int customerId, string currencyCode, decimal adjustmentAmount,
             string reason, string performedBy)
         {
             await UpdateCustomerBalanceAsync(
@@ -170,7 +170,7 @@ namespace ForexExchange.Services
         {
             var pool = await _context.CurrencyPools
                 .FirstOrDefaultAsync(cp => cp.CurrencyCode == currencyCode && cp.IsActive);
-            
+
             return pool?.Balance ?? 0;
         }
 
@@ -183,7 +183,7 @@ namespace ForexExchange.Services
                 .ToListAsync();
         }
 
-        public async Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
+        public async Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
             string reason, string performedBy = "System", int? referenceId = null)
         {
             await UpdateCurrencyPoolAsync(
@@ -196,7 +196,7 @@ namespace ForexExchange.Services
             );
         }
 
-        public async Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
+        public async Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
             string reason, string performedBy = "System", int? referenceId = null)
         {
             await UpdateCurrencyPoolAsync(
@@ -209,7 +209,7 @@ namespace ForexExchange.Services
             );
         }
 
-        public async Task AdjustCurrencyPoolAsync(string currencyCode, decimal adjustmentAmount, 
+        public async Task AdjustCurrencyPoolAsync(string currencyCode, decimal adjustmentAmount,
             string reason, string performedBy)
         {
             await UpdateCurrencyPoolAsync(
@@ -230,7 +230,7 @@ namespace ForexExchange.Services
         {
             var balance = await _context.BankAccountBalances
                 .FirstOrDefaultAsync(bab => bab.BankAccountId == bankAccountId);
-            
+
             return balance?.Balance ?? 0;
         }
 
@@ -241,7 +241,7 @@ namespace ForexExchange.Services
                 .ToListAsync();
         }
 
-        public async Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType, 
+        public async Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
             int? relatedDocumentId, string reason, string performedBy = "System")
         {
             await UpdateBankAccountBalanceAsync(
@@ -254,7 +254,7 @@ namespace ForexExchange.Services
             );
         }
 
-        public async Task AdjustBankAccountBalanceAsync(int bankAccountId, decimal adjustmentAmount, 
+        public async Task AdjustBankAccountBalanceAsync(int bankAccountId, decimal adjustmentAmount,
             string reason, string performedBy)
         {
             await UpdateBankAccountBalanceAsync(
@@ -272,7 +272,7 @@ namespace ForexExchange.Services
         #region Core Update Methods - PRESERVE EXACT CALCULATION LOGIC
 
         private async Task UpdateCustomerBalanceAsync(int customerId, string currencyCode, decimal amount,
-            CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null, 
+            CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null,
             string? reason = null, string performedBy = "System")
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -352,73 +352,51 @@ namespace ForexExchange.Services
 
                 if (pool == null)
                 {
-                    // If no active pool, check if there's an inactive pool we can reactivate
-                    var inactivePool = await _context.CurrencyPools
-                        .FirstOrDefaultAsync(cp => cp.CurrencyCode == currencyCode && !cp.IsActive);
+                    // Get currency information first
+                    var currency = await _context.Currencies
+                        .FirstOrDefaultAsync(c => c.Code == currencyCode && c.IsActive);
 
-                    if (inactivePool != null)
+                    if (currency == null)
                     {
-                        // Reactivate existing pool
-                        _logger.LogInformation($"Reactivating inactive currency pool for {currencyCode}");
-                        inactivePool.IsActive = true;
-                        inactivePool.LastUpdated = DateTime.UtcNow;
-                        inactivePool.Notes = $"Reactivated by CentralFinancialService - {performedBy}";
-                        pool = inactivePool;
+                        throw new InvalidOperationException($"Currency not found: {currencyCode}");
+                    }
+
+
+
+                    // Check if ANY pool exists for this currency (active or inactive)
+                    var existingPool = await _context.CurrencyPools
+                        .FirstOrDefaultAsync(cp => cp.CurrencyId == currency.Id);
+
+                    if (existingPool != null)
+                    {
+                        // Pool exists - fix it and activate regardless of current state
+                        _logger.LogWarning($"Found existing pool for Currency ID {currency.Id} (Code: {existingPool.CurrencyCode}, Active: {existingPool.IsActive}), updating and activating");
+                        existingPool.CurrencyCode = currencyCode;
+                        existingPool.IsActive = true;
+                        existingPool.LastUpdated = DateTime.UtcNow;
+                        existingPool.Notes = $"Updated and activated by CentralFinancialService - {performedBy}";
+                        pool = existingPool;
                     }
                     else
                     {
-                        // Get currency information to create new pool
-                        var currency = await _context.Currencies
-                            .FirstOrDefaultAsync(c => c.Code == currencyCode && c.IsActive);
-
-                        if (currency == null)
+                        // Auto-create missing currency pool
+                        _logger.LogWarning($"Currency pool not found for {currencyCode}, creating automatically");
+                        pool = new CurrencyPool
                         {
-                            throw new InvalidOperationException($"Currency not found: {currencyCode}");
-                        }
-
-                        // Don't create pools for base currency (IRR) - just log and skip
-                        if (currency.IsBaseCurrency)
-                        {
-                            _logger.LogInformation($"Skipping currency pool operation for base currency: {currencyCode}");
-                            await transaction.CommitAsync();
-                            return;
-                        }
-
-                        // Check if pool already exists by CurrencyId to avoid UNIQUE constraint violation
-                        var existingPool = await _context.CurrencyPools
-                            .FirstOrDefaultAsync(cp => cp.CurrencyId == currency.Id);
-
-                        if (existingPool != null)
-                        {
-                            // Pool exists but might have wrong currency code - fix it and activate
-                            _logger.LogWarning($"Found existing pool for Currency ID {currency.Id}, updating currency code and activating");
-                            existingPool.CurrencyCode = currencyCode;
-                            existingPool.IsActive = true;
-                            existingPool.LastUpdated = DateTime.UtcNow;
-                            existingPool.Notes = $"Updated and activated by CentralFinancialService - {performedBy}";
-                            pool = existingPool;
-                        }
-                        else
-                        {
-                            // Auto-create missing currency pool
-                            _logger.LogWarning($"Currency pool not found for {currencyCode}, creating automatically");
-                            pool = new CurrencyPool
-                            {
-                                CurrencyId = currency.Id,
-                                CurrencyCode = currencyCode,
-                                Balance = 100000, // Default starting balance
-                                TotalBought = 0,
-                                TotalSold = 0,
-                                ActiveBuyOrderCount = 0,
-                                ActiveSellOrderCount = 0,
-                                RiskLevel = PoolRiskLevel.Low,
-                                IsActive = true,
-                                LastUpdated = DateTime.UtcNow,
-                                Notes = $"Auto-created by CentralFinancialService - {performedBy}"
-                            };
-                            _context.CurrencyPools.Add(pool);
-                            await _context.SaveChangesAsync(); // Save the new pool first
-                        }
+                            CurrencyId = currency.Id,
+                            CurrencyCode = currencyCode,
+                            Balance = 100000, // Default starting balance
+                            TotalBought = 0,
+                            TotalSold = 0,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            RiskLevel = PoolRiskLevel.Low,
+                            IsActive = true,
+                            LastUpdated = DateTime.UtcNow,
+                            Notes = $"Auto-created by CentralFinancialService - {performedBy}"
+                        };
+                        _context.CurrencyPools.Add(pool);
+                        await _context.SaveChangesAsync(); // Save the new pool first
                     }
                 }
 
@@ -544,7 +522,7 @@ namespace ForexExchange.Services
 
         #region Balance History and Audit
 
-        public async Task<CustomerFinancialHistoryDto> GetCustomerFinancialHistoryAsync(int customerId, 
+        public async Task<CustomerFinancialHistoryDto> GetCustomerFinancialHistoryAsync(int customerId,
             DateTime? fromDate = null, DateTime? toDate = null)
         {
             // PRESERVE EXACT LOGIC from CustomerFinancialHistoryService
@@ -567,7 +545,7 @@ namespace ForexExchange.Services
             var orders = await _context.Orders
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                .Where(o => o.CustomerId == customerId && 
+                .Where(o => o.CustomerId == customerId &&
                            o.CreatedAt >= actualFromDate && o.CreatedAt <= actualToDate)
                 .OrderBy(o => o.CreatedAt)
                 .ToListAsync();
@@ -657,7 +635,7 @@ namespace ForexExchange.Services
                 var transactionsForCurrency = transactions.Where(t => t.CurrencyCode == balance.CurrencyCode).ToList();
                 var totalTransactionAmount = transactionsForCurrency.Sum(t => t.Amount);
                 var initialBalance = balance.Balance - totalTransactionAmount;
-                
+
                 initialBalances[balance.CurrencyCode] = initialBalance;
                 currentBalances[balance.CurrencyCode] = initialBalance;
             }
@@ -669,7 +647,7 @@ namespace ForexExchange.Services
                 {
                     currentBalances[transaction.CurrencyCode] = 0;
                 }
-                
+
                 currentBalances[transaction.CurrencyCode] += transaction.Amount;
                 transaction.RunningBalance = currentBalances[transaction.CurrencyCode];
             }
@@ -683,7 +661,7 @@ namespace ForexExchange.Services
             };
         }
 
-        public async Task<List<CustomerBalanceHistory>> GetCustomerBalanceHistoryAsync(int customerId, 
+        public async Task<List<CustomerBalanceHistory>> GetCustomerBalanceHistoryAsync(int customerId,
             string currencyCode, DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.CustomerBalanceHistory
@@ -698,7 +676,7 @@ namespace ForexExchange.Services
             return await query.OrderBy(h => h.CreatedAt).ToListAsync();
         }
 
-        public async Task<List<CurrencyPoolHistory>> GetCurrencyPoolHistoryAsync(string currencyCode, 
+        public async Task<List<CurrencyPoolHistory>> GetCurrencyPoolHistoryAsync(string currencyCode,
             DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.CurrencyPoolHistory
@@ -713,7 +691,7 @@ namespace ForexExchange.Services
             return await query.OrderBy(h => h.CreatedAt).ToListAsync();
         }
 
-        public async Task<List<BankAccountBalanceHistory>> GetBankAccountHistoryAsync(int bankAccountId, 
+        public async Task<List<BankAccountBalanceHistory>> GetBankAccountHistoryAsync(int bankAccountId,
             DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.BankAccountBalanceHistory
@@ -853,10 +831,113 @@ namespace ForexExchange.Services
             return transactionType switch
             {
                 CustomerBalanceTransactionType.Order => "Order",
-                CustomerBalanceTransactionType.AccountingDocument => "Document", 
+                CustomerBalanceTransactionType.AccountingDocument => "Document",
                 CustomerBalanceTransactionType.Manual => "Manual",
                 _ => transactionType.ToString()
             };
+        }
+
+        /// <summary>
+        /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders
+        /// This method should be called once to fix missing IRR pool updates, then removed
+        /// </summary>
+        public async Task RecalculateIRRPoolFromOrdersAsync()
+        {
+            _logger.LogInformation("Starting IRR pool recalculation from existing orders");
+
+            try
+            {
+                var IRRCurrency = _context.Currencies.First(c => c.Code == "IRR");
+
+                // Find existing IRR pool ONLY
+                var irrPool = await _context.CurrencyPools
+                    .FirstOrDefaultAsync(cp => cp.CurrencyId == IRRCurrency.Id );
+
+
+                if (irrPool == null)
+                {
+                    _logger.LogWarning("IRR currency pool not found - cannot recalculate without existing pool");
+                    return;
+                }
+
+                _logger.LogInformation($"Found existing IRR pool: ID={irrPool.Id}, Current Balance={irrPool.Balance}, Active={irrPool.IsActive}");
+
+                // Get all orders involving IRR
+                var irrOrders = await _context.Orders
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .Where(o => o.FromCurrencyId == IRRCurrency.Id || o.ToCurrencyId == IRRCurrency.Id)
+                    .OrderBy(o => o.CreatedAt)
+                    .ToListAsync();
+
+                _logger.LogInformation($"Found {irrOrders.Count} orders involving IRR");
+
+                // Calculate what the IRR pool adjustment should be
+                decimal totalBought = 0; // IRR we bought from customers (pool increases)
+                decimal totalSold = 0;   // IRR we sold to customers (pool decreases)
+
+                foreach (var order in irrOrders)
+                {
+                    if (order.FromCurrency.Code == "IRR")
+                    {
+                        // Customer sold IRR to us, our IRR pool should increase
+                        totalBought += order.FromAmount;
+                        _logger.LogInformation($"Order {order.Id}: We bought {order.FromAmount} IRR from customer");
+                    }
+
+                    if (order.ToCurrency.Code == "IRR")
+                    {
+                        // Customer bought IRR from us, our IRR pool should decrease
+                        totalSold += order.ToAmount;
+                        _logger.LogInformation($"Order {order.Id}: We sold {order.ToAmount} IRR to customer");
+                    }
+                }
+
+                decimal netAdjustment = totalBought - totalSold;
+                _logger.LogInformation($"IRR Summary: Bought={totalBought}, Sold={totalSold}, Net Adjustment={netAdjustment}");
+
+                // Update the existing pool balance directly
+                if (netAdjustment != 0)
+                {
+                    decimal oldBalance = irrPool.Balance;
+                    irrPool.Balance += netAdjustment;
+                    irrPool.TotalBought += totalBought;
+                    irrPool.TotalSold += totalSold;
+                    irrPool.LastUpdated = DateTime.UtcNow;
+                    irrPool.Notes = $"Recalculated from {irrOrders.Count} historical orders - adjusted by {netAdjustment}";
+
+                    // Create a history record for this adjustment
+                    var historyRecord = new CurrencyPoolHistory
+                    {
+                        CurrencyCode = "IRR",
+                        BalanceBefore = oldBalance,
+                        TransactionAmount = netAdjustment,
+                        BalanceAfter = irrPool.Balance,
+                        TransactionType = CurrencyPoolTransactionType.ManualEdit,
+                        ReferenceId = null,
+                        Description = $"Historical orders recalculation: {irrOrders.Count} orders processed",
+                        TransactionDate = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "IRR Pool Recalculation System"
+                    };
+
+                    _context.CurrencyPoolHistory.Add(historyRecord);
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation($"IRR pool updated: Old Balance={oldBalance}, Net Adjustment={netAdjustment}, New Balance={irrPool.Balance}");
+                }
+                else
+                {
+                    _logger.LogInformation("No IRR pool adjustment needed - net adjustment is zero");
+                }
+
+                _logger.LogInformation("IRR pool recalculation completed successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during IRR pool recalculation");
+                throw;
+            }
         }
 
         #endregion

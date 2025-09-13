@@ -12,14 +12,16 @@ namespace ForexExchange.Controllers
     {
         private readonly ForexDbContext _context;
         private readonly IWebHostEnvironment _environment;
-
         private readonly ICurrencyPoolService _currencyPoolService;
+        private readonly ICentralFinancialService _centralFinancialService;
 
-        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment, ICurrencyPoolService currencyPoolService )
+        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment, 
+            ICurrencyPoolService currencyPoolService, ICentralFinancialService centralFinancialService)
         {
             _context = context;
             _environment = environment;
             _currencyPoolService = currencyPoolService;
+            _centralFinancialService = centralFinancialService;
         }
 
         public IActionResult Index()
@@ -382,6 +384,49 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = $"خطا در پاکسازی صندوق ها: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RecalculateIRRPool()
+        {
+            try
+            {
+                // First, let's check the current status
+                var irrPool = await _context.CurrencyPools
+                    .FirstOrDefaultAsync(cp => cp.CurrencyCode == "IRR");
+                
+                var irrOrders = await _context.Orders
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .Where(o => o.FromCurrency.Code == "IRR" || o.ToCurrency.Code == "IRR")
+                    .ToListAsync();
+
+                // Calculate expected IRR pool adjustment
+                decimal expectedAdjustment = 0;
+                foreach (var order in irrOrders)
+                {
+                    if (order.FromCurrency.Code == "IRR")
+                        expectedAdjustment += order.FromAmount;
+                    if (order.ToCurrency.Code == "IRR")
+                        expectedAdjustment -= order.ToAmount;
+                }
+
+                TempData["Info"] = $"Before: IRR Pool exists: {irrPool != null}, Balance: {irrPool?.Balance ?? 0}, IRR Orders: {irrOrders.Count}, Expected adjustment: {expectedAdjustment}";
+
+                await _centralFinancialService.RecalculateIRRPoolFromOrdersAsync();
+                
+                // Check after recalculation
+                var irrPoolAfter = await _context.CurrencyPools
+                    .FirstOrDefaultAsync(cp => cp.CurrencyCode == "IRR");
+                    
+                TempData["Success"] = $"موجودی صندوق IRR با موفقیت بازمحاسبه شد. موجودی نهایی: {irrPoolAfter?.Balance ?? 0}";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در بازمحاسبه صندوق IRR: {ex.Message}";
             }
 
             return RedirectToAction("Index");

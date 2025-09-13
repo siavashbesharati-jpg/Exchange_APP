@@ -163,6 +163,36 @@
                         </div>
                     </div>
 
+                    <hr>
+
+                    <!-- Maintenance Section -->
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-tools me-2"></i>
+                                        تعمیر و نگهداری
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        ابزارهای تعمیر و نگهداری برای رفع مشکلات خاص
+                                    </div>
+                                    
+                                    <form asp-action="RecalculateIRRPool" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید موجودی صندوق IRR را بازمحاسبه کنید؟')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-info w-100 mb-2">
+                                            <i class="fas fa-calculator me-2"></i>
+                                            بازمحاسبه صندوق IRR
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

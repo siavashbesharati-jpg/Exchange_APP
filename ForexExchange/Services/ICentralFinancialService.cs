@@ -141,6 +141,12 @@ namespace ForexExchange.Services
         /// </summary>
         Task RecalculateAllBalancesFromHistoryAsync();
 
+        /// <summary>
+        /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders
+        /// This method should be called once to fix missing IRR pool updates, then removed
+        /// </summary>
+        Task RecalculateIRRPoolFromOrdersAsync();
+
         #endregion
     }
 
