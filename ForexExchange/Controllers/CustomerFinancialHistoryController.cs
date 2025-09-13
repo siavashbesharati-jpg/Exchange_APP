@@ -34,14 +34,14 @@ namespace ForexExchange.Controllers
         /// Get complete customer financial timeline
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetCustomerTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
+        public async Task<IActionResult> GetCustomerTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null)
         {
             try
             {
                 if (customerId <= 0)
                     return BadRequest("Invalid customer ID");
 
-                var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate);
+                var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate, currencyCode);
                 return Json(new { success = true, data = timeline });
             }
             catch (Exception ex)
@@ -142,7 +142,7 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate);
+                var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate, null);
                 
                 // Create Excel export logic here
                 // For now, return JSON for testing

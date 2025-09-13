@@ -305,7 +305,7 @@ function formatCurrency(amount, currencyCode) {
 function formatDate(dateString) {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString('fa-IR');
+    return date.toLocaleDateString('en-GB'); // Georgian format: DD/MM/YYYY
 }
 
 // ========== FINANCIAL TIMELINE FUNCTIONS (BANK STYLE) ==========
@@ -320,6 +320,7 @@ function loadCustomerTimeline() {
 
     const fromDate = document.getElementById('fromDate').value || null;
     const toDate = document.getElementById('toDate').value || null;
+    const currencyCode = document.getElementById('currencyFilter').value || null;
     
     // Show loading state
     showTimelineLoading();
@@ -328,7 +329,8 @@ function loadCustomerTimeline() {
     $.get('@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")', {
         customerId: customerId,
         fromDate: fromDate,
-        toDate: toDate
+        toDate: toDate,
+        currencyCode: currencyCode
     })
     .done(function(response) {
         if (response.success) {
@@ -399,19 +401,34 @@ function renderBankStyleTimeline(timeline) {
         transactions.forEach(transaction => {
             // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4
             const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
-            const typeText = isOrderTransaction ? 'معامله' : 'سند';
-            const transactionId = transaction.referenceId || transaction.id;
-            const clickHandler = isOrderTransaction ? 
-                `onclick="goToOrderDetail(${transactionId})"` : 
-                `onclick="goToDocumentDetail(${transactionId})"`;
+            const isManualTransaction = !transaction.referenceId; // Manual transactions have no referenceId
+            
+            let typeText, transactionId, clickHandler, cursorStyle;
+            
+            if (isManualTransaction) {
+                // Manual transaction - no click handler
+                typeText = 'تعدیل دستی';
+                transactionId = '';
+                clickHandler = '';
+                cursorStyle = 'cursor: default;';
+            } else {
+                // Order or Document transaction - clickable
+                typeText = isOrderTransaction ? 'معامله' : 'سند';
+                transactionId = transaction.referenceId;
+                clickHandler = isOrderTransaction ? 
+                    `onclick="goToOrderDetail(${transactionId})"` : 
+                    `onclick="goToDocumentDetail(${transactionId})"`;
+                cursorStyle = 'cursor: pointer;';
+            }
             
             timelineHtml += `
-                <tr class="transaction-row" style="cursor: pointer;" ${clickHandler}>
+                <tr class="transaction-row" style="${cursorStyle}" ${clickHandler}>
                     <td class="text-center">${formatDate(transaction.transactionDate)}</td>
                     <td class="text-center">
-                        <a href="#" class="text-decoration-none">
-                            ${typeText} #${transactionId}
-                        </a>
+                        ${isManualTransaction ? 
+                            `<span class="badge bg-info">${typeText}</span>` :
+                            `<a href="#" class="text-decoration-none">${typeText} #${transactionId}</a>`
+                        }
                     </td>
                     <td class="text-center">${currency}</td>
                     <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(transaction.amount, currency)}</td>
@@ -443,8 +460,8 @@ function renderBankStyleTimeline(timeline) {
 
 function updateCustomerInfo(timeline) {
     document.getElementById('customerInfoText').textContent = timeline.customerName;
-    const fromDate = timeline.fromDate ? new Date(timeline.fromDate).toLocaleDateString('fa-IR') : 'ابتدای زمان';
-    const toDate = timeline.toDate ? new Date(timeline.toDate).toLocaleDateString('fa-IR') : 'انتهای زمان';
+    const fromDate = timeline.fromDate ? new Date(timeline.fromDate).toLocaleDateString('en-GB') : 'ابتدای زمان';
+    const toDate = timeline.toDate ? new Date(timeline.toDate).toLocaleDateString('en-GB') : 'انتهای زمان';
     document.getElementById('reportPeriodText').textContent = `${fromDate} تا ${toDate}`;
 }
 

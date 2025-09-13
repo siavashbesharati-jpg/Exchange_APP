@@ -4,6 +4,22 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ForexExchange.Models
 {
     /// <summary>
+    /// Customer Balance History Transaction Types
+    /// انواع تراکنش‌های تاریخچه موجودی مشتری
+    /// </summary>
+    public enum CustomerBalanceTransactionType
+    {
+        [Display(Name = "Order - سفارش")]
+        Order = 1,
+        
+        [Display(Name = "Accounting Document - سند حسابداری")]
+        AccountingDocument = 2,
+        
+        [Display(Name = "Manual - دستی")]
+        Manual = 3
+    }
+
+    /// <summary>
     /// Customer Balance History - Event Sourcing for Customer Balances
     /// تاریخچه موجودی مشتری - منبع رویدادها برای موجودی مشتریان
     /// 
@@ -26,12 +42,11 @@ namespace ForexExchange.Models
         public string CurrencyCode { get; set; } = string.Empty;
 
         [Required]
-        [StringLength(50)]
         [Display(Name = "Transaction Type - نوع تراکنش")]
-        public string TransactionType { get; set; } = string.Empty; // 'Order', 'Document', 'ManualEdit'
+        public CustomerBalanceTransactionType TransactionType { get; set; }
 
         [Display(Name = "Reference ID - شناسه مرجع")]
-        public int? ReferenceId { get; set; } // OrderId or DocumentId
+        public int? ReferenceId { get; set; } // OrderId or DocumentId (null for Manual transactions)
 
         [Required]
         [Column(TypeName = "decimal(18,4)")]

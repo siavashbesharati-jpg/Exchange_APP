@@ -47,7 +47,7 @@ namespace ForexExchange.Services
                 customerId: order.CustomerId,
                 currencyCode: order.FromCurrency.Code,
                 amount: -order.FromAmount, // Negative because customer pays this amount
-                transactionType: "Order_Payment",
+                transactionType: CustomerBalanceTransactionType.Order,
                 relatedOrderId: order.Id,
                 reason: $"Order {order.Id}: Payment in {order.FromCurrency.Code}",
                 performedBy: performedBy
@@ -58,7 +58,7 @@ namespace ForexExchange.Services
                 customerId: order.CustomerId,
                 currencyCode: order.ToCurrency.Code,
                 amount: order.ToAmount, // Positive because customer receives this amount
-                transactionType: "Order_Receipt",
+                transactionType: CustomerBalanceTransactionType.Order,
                 relatedOrderId: order.Id,
                 reason: $"Order {order.Id}: Receipt in {order.ToCurrency.Code}",
                 performedBy: performedBy
@@ -97,7 +97,7 @@ namespace ForexExchange.Services
                     customerId: document.PayerCustomerId.Value,
                     currencyCode: document.CurrencyCode,
                     amount: -document.Amount, // Negative for payer
-                    transactionType: "Document_Payment",
+                    transactionType: CustomerBalanceTransactionType.AccountingDocument,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy
@@ -110,7 +110,7 @@ namespace ForexExchange.Services
                     customerId: document.ReceiverCustomerId.Value,
                     currencyCode: document.CurrencyCode,
                     amount: document.Amount, // Positive for receiver
-                    transactionType: "Document_Receipt",
+                    transactionType: CustomerBalanceTransactionType.AccountingDocument,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy
@@ -152,7 +152,7 @@ namespace ForexExchange.Services
                 customerId: customerId,
                 currencyCode: currencyCode,
                 amount: adjustmentAmount,
-                transactionType: "Manual_Adjustment",
+                transactionType: CustomerBalanceTransactionType.Manual,
                 relatedOrderId: null,
                 relatedDocumentId: null,
                 reason: reason,
@@ -267,7 +267,7 @@ namespace ForexExchange.Services
         #region Core Update Methods - PRESERVE EXACT CALCULATION LOGIC
 
         private async Task UpdateCustomerBalanceAsync(int customerId, string currencyCode, decimal amount,
-            string transactionType, int? relatedOrderId = null, int? relatedDocumentId = null, 
+            CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null, 
             string? reason = null, string performedBy = "System")
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -303,7 +303,7 @@ namespace ForexExchange.Services
                     BalanceAfter = newBalance,
                     TransactionType = transactionType,
                     ReferenceId = relatedOrderId ?? relatedDocumentId,
-                    Description = reason ?? transactionType,
+                    Description = reason ?? GetTransactionTypeDescription(transactionType),
                     TransactionDate = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = performedBy
@@ -838,6 +838,20 @@ namespace ForexExchange.Services
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("Balance recalculation completed");
+        }
+
+        /// <summary>
+        /// Helper method to get description for transaction type
+        /// </summary>
+        private string GetTransactionTypeDescription(CustomerBalanceTransactionType transactionType)
+        {
+            return transactionType switch
+            {
+                CustomerBalanceTransactionType.Order => "Order",
+                CustomerBalanceTransactionType.AccountingDocument => "Document", 
+                CustomerBalanceTransactionType.Manual => "Manual",
+                _ => transactionType.ToString()
+            };
         }
 
         #endregion

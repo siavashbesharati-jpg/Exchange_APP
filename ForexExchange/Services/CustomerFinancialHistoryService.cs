@@ -22,8 +22,9 @@ namespace ForexExchange.Services
         /// <summary>
         /// Get complete financial timeline for a customer
         /// This reconstructs the entire history from Orders and AccountingDocuments
+        /// FIXED: Properly calculates initial balances when date filtering is applied
         /// </summary>
-        public async Task<CustomerFinancialTimeline> GetCustomerTimelineAsync(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
+        public async Task<CustomerFinancialTimeline> GetCustomerTimelineAsync(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null)
         {
             try
             {
@@ -31,8 +32,12 @@ namespace ForexExchange.Services
                 if (customer == null)
                     throw new ArgumentException($"Customer with ID {customerId} not found");
 
+                // Set default date range if not provided
+                var isDateFiltered = fromDate.HasValue || toDate.HasValue;
                 fromDate ??= DateTime.MinValue;
                 toDate ??= DateTime.MaxValue;
+
+                _logger.LogInformation($"Getting timeline for customer {customerId} from {fromDate} to {toDate}, DateFiltered: {isDateFiltered}");
 
                 var timeline = new CustomerFinancialTimeline
                 {
@@ -42,119 +47,59 @@ namespace ForexExchange.Services
                     ToDate = toDate.Value
                 };
 
-                // Step 1: Get all current balances as "virtual" initial balances
-                var currentBalances = await _context.CustomerBalances
-                    .Where(cb => cb.CustomerId == customerId)
-                    .ToDictionaryAsync(cb => cb.CurrencyCode, cb => cb.Balance);
+                // NEW APPROACH: Use CustomerBalanceHistory table directly
+                var historyQuery = _context.CustomerBalanceHistory
+                    .Where(h => h.CustomerId == customerId && 
+                               h.TransactionDate >= fromDate && 
+                               h.TransactionDate <= toDate);
 
-                // Step 2: Collect all transactions from Orders and Documents
-                var allTransactions = new List<CustomerTransactionHistory>();
+                // Apply currency filter if specified
+                if (!string.IsNullOrEmpty(currencyCode))
+                {
+                    historyQuery = historyQuery.Where(h => h.CurrencyCode == currencyCode);
+                }
 
-                // Add Order transactions
-                var orders = await _context.Orders
-                    .Include(o => o.FromCurrency)
-                    .Include(o => o.ToCurrency)
-                    .Where(o => o.CustomerId == customerId && 
-                               o.CreatedAt >= fromDate && 
-                               o.CreatedAt <= toDate)
-                    .OrderBy(o => o.CreatedAt)
+                var historyRecords = await historyQuery
+                    .OrderBy(h => h.TransactionDate)
+                    .ThenBy(h => h.Id)
                     .ToListAsync();
 
-                _logger.LogInformation($"Found {orders.Count} orders for customer {customerId} between {fromDate} and {toDate}");
+                _logger.LogInformation($"Found {historyRecords.Count} balance history records for customer {customerId}");
 
-                foreach (var order in orders)
+                // Convert history records to transaction history format
+                var allTransactions = historyRecords.Select(h => new CustomerTransactionHistory
                 {
-                    // Every order affects both currencies:
-                    // 1. Customer PAYS the source currency (Amount)
-                    // 2. Customer RECEIVES the target currency (TotalAmount)
+                    CustomerId = h.CustomerId,
+                    TransactionDate = h.TransactionDate,
+                    Type = GetTransactionTypeFromEnum(h.TransactionType),
+                    Description = h.Description ?? GetDefaultDescription(h.TransactionType, h.ReferenceId),
+                    CurrencyCode = h.CurrencyCode,
+                    Amount = h.TransactionAmount,
+                    RunningBalance = h.BalanceAfter, // Use BalanceAfter as running balance
+                    ReferenceId = h.ReferenceId, // Can be null for Manual transactions
+                    Notes = h.Description
+                }).ToList();
+
+                // Calculate initial balances from first record per currency
+                var initialBalances = new Dictionary<string, decimal>();
+                var currencyGroups = historyRecords.GroupBy(h => h.CurrencyCode);
+                
+                foreach (var group in currencyGroups)
+                {
+                    var firstRecord = group.First(); // First history record for this currency
                     
-                    // Payment transaction (deduct from source currency - what customer pays)
-                    allTransactions.Add(new CustomerTransactionHistory
-                    {
-                        CustomerId = customerId,
-                        TransactionDate = order.CreatedAt,
-                        Type = TransactionType.OrderSell,
-                        Description = $"پرداخت {order.FromAmount:N2} {order.FromCurrency.Code} - سفارش #{order.Id}",
-                        CurrencyCode = order.FromCurrency.Code,
-                        Amount = -order.FromAmount, // Negative because customer pays this
-                        ReferenceId = order.Id,
-                        FromCurrency = order.FromCurrency.Code,
-                        ToCurrency = order.ToCurrency.Code,
-                        ExchangeRate = order.Rate,
-                        Notes = $"Order #{order.Id} - Payment"
-                    });
-
-                    // Receipt transaction (add to target currency - what customer receives)
-                    allTransactions.Add(new CustomerTransactionHistory
-                    {
-                        CustomerId = customerId,
-                        TransactionDate = order.CreatedAt,
-                        Type = TransactionType.OrderBuy,
-                        Description = $"دریافت {order.ToAmount:N2} {order.ToCurrency.Code} - سفارش #{order.Id}",
-                        CurrencyCode = order.ToCurrency.Code,
-                        Amount = order.ToAmount, // Positive because customer receives this
-                        ReferenceId = order.Id,
-                        FromCurrency = order.FromCurrency.Code,
-                        ToCurrency = order.ToCurrency.Code,
-                        ExchangeRate = order.Rate,
-                        Notes = $"Order #{order.Id} - Receipt"
-                    });
+                    // ALWAYS use BalanceBefore from first record as initial balance
+                    initialBalances[firstRecord.CurrencyCode] = firstRecord.BalanceBefore;
                 }
 
-                // Add AccountingDocument transactions
-                var documents = await _context.AccountingDocuments
-                    .Include(d => d.PayerCustomer)
-                    .Include(d => d.ReceiverCustomer)
-                    .Where(d => (d.PayerCustomerId == customerId || d.ReceiverCustomerId == customerId) &&
-                               d.DocumentDate >= fromDate &&
-                               d.DocumentDate <= toDate &&
-                               d.IsVerified) // Only verified documents
-                    .OrderBy(d => d.DocumentDate)
-                    .ToListAsync();
-
-                foreach (var doc in documents)
-                {
-                    var isCustomerPayer = doc.PayerCustomerId == customerId;
-                    var amount = isCustomerPayer ? -doc.Amount : doc.Amount;
-                    var type = isCustomerPayer ? TransactionType.DocumentDebit : TransactionType.DocumentCredit;
-                    var description = isCustomerPayer ? 
-                        $"پرداخت {doc.Amount:N0} {doc.CurrencyCode} - {doc.Title}" :
-                        $"دریافت {doc.Amount:N0} {doc.CurrencyCode} - {doc.Title}";
-
-                    allTransactions.Add(new CustomerTransactionHistory
-                    {
-                        CustomerId = customerId,
-                        TransactionDate = doc.DocumentDate,
-                        Type = type,
-                        Description = description,
-                        CurrencyCode = doc.CurrencyCode,
-                        Amount = amount,
-                        ReferenceId = doc.Id,
-                        Notes = $"Document #{doc.Id} - {doc.Description}"
-                    });
-                }
-
-                // Step 3: Sort all transactions by date and calculate running balances
-                allTransactions = allTransactions.OrderBy(t => t.TransactionDate).ToList();
-
-                // Step 4: Calculate initial balances by working backwards from current balances
-                var initialBalances = await CalculateInitialBalancesAsync(customerId, allTransactions, currentBalances);
                 timeline.InitialBalances = initialBalances;
-
-                // Step 5: Calculate running balances for each transaction
-                var runningBalances = new Dictionary<string, decimal>(initialBalances);
-
-                foreach (var transaction in allTransactions)
-                {
-                    if (!runningBalances.ContainsKey(transaction.CurrencyCode))
-                        runningBalances[transaction.CurrencyCode] = 0;
-
-                    runningBalances[transaction.CurrencyCode] += transaction.Amount;
-                    transaction.RunningBalance = runningBalances[transaction.CurrencyCode];
-                }
-
                 timeline.Transactions = allTransactions;
-                timeline.FinalBalances = new Dictionary<string, decimal>(runningBalances);
+                
+                // Final balances are the last BalanceAfter for each currency
+                timeline.FinalBalances = currencyGroups.ToDictionary(
+                    g => g.Key,
+                    g => g.Last().BalanceAfter // Use BalanceAfter from last history record
+                );
 
                 // Calculate net changes
                 timeline.NetChanges = timeline.FinalBalances.ToDictionary(
@@ -172,11 +117,39 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
+        /// Helper method to convert enum transaction type to CustomerTransactionHistory enum
+        /// </summary>
+        private TransactionType GetTransactionTypeFromEnum(CustomerBalanceTransactionType transactionType)
+        {
+            return transactionType switch
+            {
+                CustomerBalanceTransactionType.Order => TransactionType.OrderBuy, // Default to buy, could be refined
+                CustomerBalanceTransactionType.AccountingDocument => TransactionType.DocumentCredit, // Default to credit, could be refined
+                CustomerBalanceTransactionType.Manual => TransactionType.DocumentCredit, // Manual adjustments treated as credits
+                _ => TransactionType.DocumentCredit
+            };
+        }
+
+        /// <summary>
+        /// Helper method to generate default description when none provided
+        /// </summary>
+        private string GetDefaultDescription(CustomerBalanceTransactionType transactionType, int? referenceId)
+        {
+            return transactionType switch
+            {
+                CustomerBalanceTransactionType.Order => $"سفارش #{referenceId}",
+                CustomerBalanceTransactionType.AccountingDocument => $"سند #{referenceId}",
+                CustomerBalanceTransactionType.Manual => "تعدیل دستی",
+                _ => "تراکنش"
+            };
+        }
+
+        /// <summary>
         /// Get balance snapshot at a specific date
         /// </summary>
         public async Task<CustomerBalanceSnapshot> GetBalanceSnapshotAsync(int customerId, DateTime asOfDate)
         {
-            var timeline = await GetCustomerTimelineAsync(customerId, DateTime.MinValue, asOfDate);
+            var timeline = await GetCustomerTimelineAsync(customerId, DateTime.MinValue, asOfDate, null);
             
             var snapshot = new CustomerBalanceSnapshot
             {
@@ -194,10 +167,80 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
+        /// GENIUS METHOD: Calculate balance as of a specific date
+        /// This calculates what the balance was at the end of the specified date
+        /// by summing all transactions up to and including that date
+        /// </summary>
+        private async Task<Dictionary<string, decimal>> CalculateBalanceAsOfDateAsync(int customerId, DateTime asOfDate)
+        {
+            var balances = new Dictionary<string, decimal>();
+
+            // Get all orders up to the specified date
+            var orders = await _context.Orders
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .Where(o => o.CustomerId == customerId && o.CreatedAt <= asOfDate)
+                .ToListAsync();
+
+            // Get all accounting documents up to the specified date
+            var documents = await _context.AccountingDocuments
+                .Where(d => (d.PayerCustomerId == customerId || d.ReceiverCustomerId == customerId) &&
+                           d.DocumentDate <= asOfDate &&
+                           d.IsVerified)
+                .ToListAsync();
+
+            _logger.LogInformation($"Found {orders.Count} orders and {documents.Count} documents up to {asOfDate:yyyy-MM-dd}");
+
+            // Process order transactions
+            foreach (var order in orders)
+            {
+                // Initialize currency balances if not exists
+                if (!balances.ContainsKey(order.FromCurrency.Code))
+                    balances[order.FromCurrency.Code] = 0;
+                if (!balances.ContainsKey(order.ToCurrency.Code))
+                    balances[order.ToCurrency.Code] = 0;
+
+                // Customer pays FromCurrency (decrease balance)
+                balances[order.FromCurrency.Code] -= order.FromAmount;
+                
+                // Customer receives ToCurrency (increase balance)
+                balances[order.ToCurrency.Code] += order.ToAmount;
+            }
+
+            // Process document transactions
+            foreach (var doc in documents)
+            {
+                if (!balances.ContainsKey(doc.CurrencyCode))
+                    balances[doc.CurrencyCode] = 0;
+
+                if (doc.PayerCustomerId == customerId)
+                {
+                    // Customer is payer (decrease balance)
+                    balances[doc.CurrencyCode] -= doc.Amount;
+                }
+                else if (doc.ReceiverCustomerId == customerId)
+                {
+                    // Customer is receiver (increase balance)
+                    balances[doc.CurrencyCode] += doc.Amount;
+                }
+            }
+
+            _logger.LogInformation($"Calculated balances as of {asOfDate:yyyy-MM-dd}: {string.Join(", ", balances.Select(kv => $"{kv.Key}={kv.Value:N2}"))}");
+
+            return balances;
+        }
+
+        /// <summary>
         /// Calculate what the initial balances must have been based on current balances and all transactions
         /// This works backwards from current state
+        /// DEPRECATED: This method is flawed for date-filtered timelines
         /// </summary>
-        private async Task<Dictionary<string, decimal>> CalculateInitialBalancesAsync(
+        /// <summary>
+        /// Calculate what the initial balances must have been based on current balances and all transactions
+        /// This works backwards from current state
+        /// DEPRECATED: This method is flawed for date-filtered timelines
+        /// </summary>
+        private Task<Dictionary<string, decimal>> CalculateInitialBalancesAsync(
             int customerId, 
             List<CustomerTransactionHistory> transactions, 
             Dictionary<string, decimal> currentBalances)
@@ -214,7 +257,7 @@ namespace ForexExchange.Services
                 initialBalances[transaction.CurrencyCode] -= transaction.Amount;
             }
 
-            return initialBalances;
+            return Task.FromResult(initialBalances);
         }
 
         /// <summary>
@@ -222,7 +265,7 @@ namespace ForexExchange.Services
         /// </summary>
         public async Task<Dictionary<string, object>> GetCustomerStatsAsync(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
         {
-            var timeline = await GetCustomerTimelineAsync(customerId, fromDate, toDate);
+            var timeline = await GetCustomerTimelineAsync(customerId, fromDate, toDate, null);
 
             var stats = new Dictionary<string, object>
             {
@@ -247,7 +290,7 @@ namespace ForexExchange.Services
         public async Task<Dictionary<string, CurrencyTransactionSummary>> GetCurrencyTransactionSummaryAsync(
             int customerId, DateTime? fromDate = null, DateTime? toDate = null)
         {
-            var timeline = await GetCustomerTimelineAsync(customerId, fromDate, toDate);
+            var timeline = await GetCustomerTimelineAsync(customerId, fromDate, toDate, null);
 
             var summary = timeline.Transactions
                 .GroupBy(t => t.CurrencyCode)

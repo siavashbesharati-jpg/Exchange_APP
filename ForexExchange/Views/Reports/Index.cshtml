@@ -11,76 +11,43 @@
     </div>
 
     <!-- Reports Cards Grid -->
-    <div class="row g-4">
+    <div class="row g-4 justify-content-center">
         
         <!-- Customer Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('customer')">
-                <div class="card-body text-center p-3">
-                    <div class="report-icon mb-2">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
                         <i class="fas fa-users text-primary"></i>
                     </div>
                     <h5 class="card-title fw-bold">گزارشات مشتریان</h5>
+                    <p class="text-muted small">تاریخچه مالی و تراکنش‌های مشتریان</p>
                 </div>
             </div>
         </div>
 
-        <!-- Order Reports -->
+        <!-- Bank Account Reports -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('order')">
-                <div class="card-body text-center p-3">
-                    <div class="report-icon mb-2">
-                        <i class="fas fa-exchange-alt text-success"></i>
+            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('bankaccount')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-university text-success"></i>
                     </div>
-                    <h5 class="card-title fw-bold">گزارشات معاملات</h5>
+                    <h5 class="card-title fw-bold">گزارشات حساب‌های بانکی</h5>
+                    <p class="text-muted small">تاریخچه و موجودی حساب‌های بانکی</p>
                 </div>
             </div>
         </div>
 
-        <!-- Account Document Reports -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('document')">
-                <div class="card-body text-center p-3">
-                    <div class="report-icon mb-2">
-                        <i class="fas fa-file-invoice text-warning"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">اسناد حسابداری</h5>
-                </div>
-            </div>
-        </div>
-
-        <!-- Currency Pool Reports -->
+        <!-- Pool Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('pool')">
-                <div class="card-body text-center p-3">
-                    <div class="report-icon mb-2">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
                         <i class="fas fa-coins text-info"></i>
                     </div>
-                    <h5 class="card-title fw-bold">تراز ارزها</h5>
-                </div>
-            </div>
-        </div>
-
-        <!-- Admin Activity Reports -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('admin')">
-                <div class="card-body text-center p-3">
-                    <div class="report-icon mb-2">
-                        <i class="fas fa-user-shield text-danger"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">فعالیت مدیریت</h5>
-                </div>
-            </div>
-        </div>
-
-        <!-- Comprehensive Report -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0 comprehensive-card" onclick="navigateToReport('comprehensive')">
-                <div class="card-body text-center p-3">
-                    <div class="report-icon mb-2">
-                        <i class="fas fa-chart-pie text-white"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">گزارش جامع</h5>
+                    <h5 class="card-title fw-bold">گزارشات پول ارزها</h5>
+                    <p class="text-muted small">تاریخچه و موجودی پول ارزها</p>
                 </div>
             </div>
         </div>
@@ -146,23 +113,14 @@ function navigateToReport(type) {
         case 'customer':
             url = '@Url.Action("CustomerReports", "Reports")';
             break;
-        case 'order':
-            url = '@Url.Action("OrderReports", "Reports")';
-            break;
-        case 'document':
-            url = '@Url.Action("DocumentReports", "Reports")';
+        case 'bankaccount':
+            url = '@Url.Action("BankAccountReports", "Reports")';
             break;
         case 'pool':
             url = '@Url.Action("PoolReports", "Reports")';
             break;
-        case 'admin':
-            url = '@Url.Action("AdminReports", "Reports")';
-            break;
-        case 'comprehensive':
-            url = '@Url.Action("Comprehensive", "Reports")';
-            break;
         default:
-            url = '@Url.Action("Comprehensive", "Reports")';
+            url = '@Url.Action("CustomerReports", "Reports")';
     }
     
     window.location.href = url;
