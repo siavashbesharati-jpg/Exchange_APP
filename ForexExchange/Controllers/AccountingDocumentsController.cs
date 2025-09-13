@@ -532,7 +532,8 @@ namespace ForexExchange.Controllers
                     accountingDocument.VerifiedBy = User.Identity?.Name ?? "System";
 
                     // Update balances through centralized service (includes history recording)
-                    await _centralFinancialService.ProcessAccountingDocumentAsync(accountingDocument);
+                    // This will now use the CORRECTED logic: Payer = +amount, Receiver = -amount
+                    await _centralFinancialService.ProcessAccountingDocumentAsync(accountingDocument, User.Identity?.Name ?? "System");
                  
                     _context.Update(accountingDocument);
                     await _context.SaveChangesAsync();
@@ -554,6 +555,109 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 TempData["ErrorMessage"] = $"خطا در تأیید سند: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: AccountingDocuments/ConfirmAll
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ConfirmAll()
+        {
+            try
+            {
+                var unverifiedDocuments = await _context.AccountingDocuments
+                    .Include(a => a.PayerCustomer)
+                    .Include(a => a.ReceiverCustomer)
+                    .Include(a => a.PayerBankAccount)
+                    .Include(a => a.ReceiverBankAccount)
+                    .Where(a => !a.IsVerified)
+                    .OrderBy(a => a.DocumentDate)
+                    .ToListAsync();
+
+                if (unverifiedDocuments.Count == 0)
+                {
+                    TempData["InfoMessage"] = "هیچ سند تایید نشده‌ای یافت نشد.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var confirmationLog = new List<string>();
+                var successCount = 0;
+                var errorCount = 0;
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                foreach (var document in unverifiedDocuments)
+                {
+                    try
+                    {
+                        // Validate bank account currency match
+                        bool hasError = false;
+                        
+                        if (document.PayerBankAccountId.HasValue && document.PayerBankAccount != null)
+                        {
+                            if (document.PayerBankAccount.CurrencyCode != document.CurrencyCode)
+                            {
+                                confirmationLog.Add($"❌ Document {document.Id}: Currency mismatch for payer bank account");
+                                errorCount++;
+                                hasError = true;
+                            }
+                        }
+
+                        if (document.ReceiverBankAccountId.HasValue && document.ReceiverBankAccount != null)
+                        {
+                            if (document.ReceiverBankAccount.CurrencyCode != document.CurrencyCode)
+                            {
+                                confirmationLog.Add($"❌ Document {document.Id}: Currency mismatch for receiver bank account");
+                                errorCount++;
+                                hasError = true;
+                            }
+                        }
+
+                        if (!hasError)
+                        {
+                            document.IsVerified = true;
+                            document.VerifiedAt = DateTime.Now;
+                            document.VerifiedBy = User.Identity?.Name ?? "System";
+
+                            // Update balances through centralized service with CORRECTED logic
+                            await _centralFinancialService.ProcessAccountingDocumentAsync(document, User.Identity?.Name ?? "System");
+                            
+                            _context.Update(document);
+                            
+                            confirmationLog.Add($"✅ Document {document.Id}: Confirmed successfully ({document.Amount:N2} {document.CurrencyCode})");
+                            confirmationLog.Add($"   - Payer: Customer {document.PayerCustomerId} gets +{document.Amount}");
+                            confirmationLog.Add($"   - Receiver: Customer {document.ReceiverCustomerId} gets -{document.Amount}");
+                            successCount++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        confirmationLog.Add($"❌ Document {document.Id}: Error - {ex.Message}");
+                        errorCount++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var summary = new[]
+                {
+                    $"✅ تعداد اسناد تایید شده: {successCount}",
+                    $"❌ تعداد اسناد با خطا: {errorCount}",
+                    $"📄 کل اسناد پردازش شده: {unverifiedDocuments.Count}",
+                    "",
+                    "✅ همه اسناد با منطق صحیح پردازش شدند: پرداخت کننده = +مبلغ، دریافت کننده = -مبلغ"
+                };
+
+                TempData["Success"] = string.Join("<br/>", summary);
+                TempData["ConfirmationLog"] = string.Join("\n", confirmationLog);
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"خطا در تایید همه اسناد: {ex.Message}";
             }
 
             return RedirectToAction(nameof(Index));

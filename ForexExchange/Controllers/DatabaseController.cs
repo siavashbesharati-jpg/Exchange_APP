@@ -390,6 +390,229 @@ namespace ForexExchange.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> DiagnoseAccountingDocuments()
+        {
+            try
+            {
+                var diagnostics = new List<string>();
+                
+                // Get all accounting documents
+                var allDocuments = await _context.AccountingDocuments
+                    .Include(d => d.PayerCustomer)
+                    .Include(d => d.ReceiverCustomer)
+                    .Where(d => d.IsVerified)
+                    .OrderBy(d => d.DocumentDate)
+                    .ToListAsync();
+
+                diagnostics.Add($"Total verified accounting documents: {allDocuments.Count}");
+
+                // Get all history records for accounting documents
+                var allHistoryRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument)
+                    .OrderBy(h => h.CreatedAt)
+                    .ToListAsync();
+
+                diagnostics.Add($"Total history records for accounting documents: {allHistoryRecords.Count}");
+
+                // Get current customer balances
+                var customerBalances = await _context.CustomerBalances
+                    .Include(cb => cb.Customer)
+                    .ToListAsync();
+
+                diagnostics.Add($"Total customer balances: {customerBalances.Count}");
+
+                // Show current balances
+                foreach (var balance in customerBalances.Take(10))
+                {
+                    diagnostics.Add($"Customer {balance.CustomerId}: {balance.Balance:F2} {balance.CurrencyCode}");
+                }
+
+                // Group by document ID
+                var historyByDocument = allHistoryRecords.GroupBy(h => h.ReferenceId).ToList();
+                diagnostics.Add($"Unique documents in history: {historyByDocument.Count}");
+
+                // Check for documents without history
+                var documentsWithoutHistory = allDocuments
+                    .Where(d => !allHistoryRecords.Any(h => h.ReferenceId == d.Id))
+                    .ToList();
+
+                diagnostics.Add($"Documents without history records: {documentsWithoutHistory.Count}");
+
+                // Check for history without documents  
+                var historyWithoutDocuments = allHistoryRecords
+                    .Where(h => h.ReferenceId.HasValue && !allDocuments.Any(d => d.Id == h.ReferenceId.Value))
+                    .ToList();
+
+                diagnostics.Add($"History records without corresponding documents: {historyWithoutDocuments.Count}");
+
+                // Check for correction records already applied
+                var correctionRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual && 
+                               h.CreatedBy != null && h.CreatedBy.Contains("Accounting Document Logic Correction"))
+                    .ToListAsync();
+
+                diagnostics.Add($"Existing correction records: {correctionRecords.Count}");
+
+                // Show recent history records
+                var recentHistory = await _context.CustomerBalanceHistory
+                    .OrderByDescending(h => h.CreatedAt)
+                    .Take(5)
+                    .ToListAsync();
+
+                diagnostics.Add("Recent 5 history records:");
+                foreach (var history in recentHistory)
+                {
+                    diagnostics.Add($"  Customer {history.CustomerId}: {history.TransactionAmount:F2} {history.CurrencyCode} ({history.TransactionType}) - Balance: {history.BalanceBefore:F2} -> {history.BalanceAfter:F2}");
+                }
+
+                TempData["DiagnosticInfo"] = string.Join("\n", diagnostics);
+                TempData["Success"] = "تشخیص کامل شد - نتایج در لاگ";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در تشخیص: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetAccountingDocumentVerification()
+        {
+            try
+            {
+                var resetLog = new List<string>();
+
+                // Step 1: Find all verified accounting documents (but keep them - just unverify them)
+                var verifiedDocuments = await _context.AccountingDocuments
+                    .Where(d => d.IsVerified)
+                    .ToListAsync();
+
+                resetLog.Add($"Found {verifiedDocuments.Count} verified accounting documents");
+
+                // Step 2: COMPLETELY RESET all customer balance history (Orders + Documents)
+                var allCustomerHistory = await _context.CustomerBalanceHistory.ToListAsync();
+                _context.CustomerBalanceHistory.RemoveRange(allCustomerHistory);
+                resetLog.Add($"Removed {allCustomerHistory.Count} customer balance history records");
+
+                // Step 3: RESET all customer balances to zero
+                var allCustomerBalances = await _context.CustomerBalances.ToListAsync();
+                foreach (var balance in allCustomerBalances)
+                {
+                    balance.Balance = 0;
+                    balance.LastUpdated = DateTime.UtcNow;
+                    balance.Notes = "Reset to zero - will be recalculated";
+                }
+                resetLog.Add($"Reset {allCustomerBalances.Count} customer balances to zero");
+
+                // Step 4: Reset bank account history and balances
+                var allBankHistory = await _context.BankAccountBalanceHistory.ToListAsync();
+                _context.BankAccountBalanceHistory.RemoveRange(allBankHistory);
+                resetLog.Add($"Removed {allBankHistory.Count} bank account balance history records");
+
+                var allBankBalances = await _context.BankAccountBalances.ToListAsync();
+                foreach (var balance in allBankBalances)
+                {
+                    balance.Balance = 0;
+                    balance.LastUpdated = DateTime.UtcNow;
+                }
+                resetLog.Add($"Reset {allBankBalances.Count} bank account balances to zero");
+
+                // Step 5: Set all accounting documents to unverified (but keep the documents)
+                foreach (var document in verifiedDocuments)
+                {
+                    document.IsVerified = false;
+                    document.VerifiedAt = null;
+                    document.VerifiedBy = null;
+                }
+                resetLog.Add($"Set {verifiedDocuments.Count} documents to unverified status");
+
+                await _context.SaveChangesAsync();
+
+                // Step 6: Recalculate chronologically - MIXED BY DATE (Orders + Documents together)
+                var allOrders = await _context.Orders
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .ToListAsync();
+
+                var allDocuments = await _context.AccountingDocuments
+                    .ToListAsync();
+
+                // Create a unified list of financial events sorted by date
+                var financialEvents = new List<(DateTime Date, string Type, object Item)>();
+                
+                // Add all orders with their creation date
+                foreach (var order in allOrders)
+                {
+                    financialEvents.Add((order.CreatedAt, "Order", order));
+                }
+                
+                // Add all documents with their document date
+                foreach (var document in allDocuments)
+                {
+                    financialEvents.Add((document.DocumentDate, "Document", document));
+                }
+
+                // Sort everything by date chronologically
+                var sortedEvents = financialEvents.OrderBy(e => e.Date).ToList();
+
+                resetLog.Add($"Recalculating chronologically by DATE: {sortedEvents.Count} total events ({allOrders.Count} orders + {allDocuments.Count} documents)");
+
+                // Process all events in pure chronological order
+                foreach (var eventItem in sortedEvents)
+                {
+                    if (eventItem.Type == "Order")
+                    {
+                        var order = (Order)eventItem.Item;
+                        await _centralFinancialService.ProcessOrderCreationAsync(order, "System - Reset Recalculation");
+                        resetLog.Add($"✅ {eventItem.Date:MM/dd HH:mm} | ORDER {order.Id}: {order.FromAmount} {order.FromCurrency.Code} -> {order.ToAmount} {order.ToCurrency.Code}");
+                    }
+                    else if (eventItem.Type == "Document")
+                    {
+                        var document = (AccountingDocument)eventItem.Item;
+                        
+                        // Mark as verified temporarily for processing
+                        document.IsVerified = true;
+                        document.VerifiedAt = document.DocumentDate;
+                        document.VerifiedBy = "System - Reset Recalculation";
+
+                        await _centralFinancialService.ProcessAccountingDocumentAsync(document, "System - Reset Recalculation");
+                        
+                        resetLog.Add($"✅ {eventItem.Date:MM/dd HH:mm} | DOCUMENT {document.Id}: {document.Amount:N2} {document.CurrencyCode}");
+                        resetLog.Add($"   - Payer: Customer {document.PayerCustomerId} gets +{document.Amount}");
+                        resetLog.Add($"   - Receiver: Customer {document.ReceiverCustomerId} gets -{document.Amount}");
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Step 7: Prepare summary
+                var summary = new[]
+                {
+                    $"🔄 سوابق مشتری حذف شده: {allCustomerHistory.Count}",
+                    $"🔄 سوابق بانک حذف شده: {allBankHistory.Count}",
+                    $"🔄 موجودی مشتریان صفر شده: {allCustomerBalances.Count}",
+                    $"🔄 موجودی بانک‌ها صفر شده: {allBankBalances.Count}",
+                    $"✅ سفارشات مجدداً محاسبه شده: {allOrders.Count}",
+                    $"✅ اسناد مجدداً محاسبه شده: {allDocuments.Count}",
+                    "",
+                    "✅ همه سوابق مالی با منطق صحیح و به ترتیب زمانی بازسازی شدند",
+                    "📅 ترتیب: اول سفارشات، سپس اسناد حسابداری",
+                    "🎯 منطق صحیح: پرداخت کننده = +مبلغ، دریافت کننده = -مبلغ"
+                };
+
+                TempData["Success"] = string.Join("<br/>", summary);
+                TempData["ResetLog"] = string.Join("\n", resetLog);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در بازنشانی اسناد حسابداری: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
         public async Task<IActionResult> RecalculateIRRPool()
         {
             try

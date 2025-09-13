@@ -19,11 +19,43 @@
 
                     @if (TempData["Success"] != null)
                     {
-                        <div class="alert alert-success">@TempData["Success"]</div>
+                        <div class="alert alert-success">@Html.Raw(TempData["Success"]?.ToString() ?? "")</div>
                     }
                     @if (TempData["Error"] != null)
                     {
                         <div class="alert alert-danger">@TempData["Error"]</div>
+                    }
+                    @if (TempData["Info"] != null)
+                    {
+                        <div class="alert alert-info">@TempData["Info"]</div>
+                    }
+                    @if (TempData["DiagnosticInfo"] != null)
+                    {
+                        <div class="alert alert-secondary">
+                            <h6>نتایج تشخیص:</h6>
+                            <pre style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">@TempData["DiagnosticInfo"]</pre>
+                        </div>
+                    }
+                    @if (TempData["CorrectionLog"] != null)
+                    {
+                        <div class="alert alert-warning">
+                            <h6>لاگ اصلاحات:</h6>
+                            <pre style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">@TempData["CorrectionLog"]</pre>
+                        </div>
+                    }
+                    @if (TempData["ResetLog"] != null)
+                    {
+                        <div class="alert alert-info">
+                            <h6>لاگ بازنشانی:</h6>
+                            <pre style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">@TempData["ResetLog"]</pre>
+                        </div>
+                    }
+                    @if (TempData["ConfirmationLog"] != null)
+                    {
+                        <div class="alert alert-success">
+                            <h6>لاگ تایید اسناد:</h6>
+                            <pre style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;">@TempData["ConfirmationLog"]</pre>
+                        </div>
                     }
 
                     <!-- Database Statistics -->
@@ -186,6 +218,22 @@
                                         <button type="submit" class="btn btn-outline-info w-100 mb-2">
                                             <i class="fas fa-calculator me-2"></i>
                                             بازمحاسبه صندوق IRR
+                                        </button>
+                                    </form>
+
+                                    <form asp-action="DiagnoseAccountingDocuments" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-secondary w-100 mb-2">
+                                            <i class="fas fa-search me-2"></i>
+                                            تشخیص اسناد حسابداری
+                                        </button>
+                                    </form>
+
+                                    <form asp-action="ResetAccountingDocumentVerification" method="post" onsubmit="return confirm('آیا مطمئن هستید؟ این عمل:\n\n✅ تمام سوابق مالی (مشتری + بانک) را حذف می‌کند\n✅ موجودی‌ها را صفر می‌کند\n✅ اسناد را غیرتایید می‌کند\n✅ همه چیز را به ترتیب زمانی بازسازی می‌کند\n\nاین عمل کامل است و نیازی به تایید مجدد ندارید.')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-success w-100 mb-2">
+                                            <i class="fas fa-sync-alt me-2"></i>
+                                            بازسازی کامل سوابق مالی
                                         </button>
                                     </form>
                                 </div>
