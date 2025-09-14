@@ -1122,11 +1122,14 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Starting balance recalculation for Customer {customerId} Currency {currencyCode} from record ID {minDeletedId}");
                 await RecalculateCustomerBalanceHistoryAsync(customerId, currencyCode, minDeletedId);
 
+                // Save history changes first
+                await _context.SaveChangesAsync();
+
                 // 3. Update current balance table
                 await RecalculateCurrentCustomerBalanceAsync(customerId, currencyCode);
             }
 
-            _logger.LogInformation($"Saving changes for customer balance history soft delete");
+            _logger.LogInformation($"Saving final changes for customer balance history soft delete");
             await _context.SaveChangesAsync();
         }
 
@@ -1180,11 +1183,14 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Starting balance recalculation for Currency Pool {currencyCode} from record ID {minDeletedId}");
                 await RecalculateCurrencyPoolHistoryAsync(currencyCode, minDeletedId);
 
+                // Save history changes first
+                await _context.SaveChangesAsync();
+
                 // 3. Update current pool balance
                 await RecalculateCurrentCurrencyPoolBalanceAsync(currencyCode);
             }
 
-            _logger.LogInformation($"Saving changes for currency pool history soft delete");
+            _logger.LogInformation($"Saving final changes for currency pool history soft delete");
             await _context.SaveChangesAsync();
         }
 
@@ -1234,11 +1240,14 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Starting balance recalculation for Bank Account {bankAccountId} from record ID {minDeletedId}");
                 await RecalculateBankAccountBalanceHistoryAsync(bankAccountId, minDeletedId);
 
+                // Save history changes first
+                await _context.SaveChangesAsync();
+
                 // 3. Update current balance
                 await RecalculateCurrentBankAccountBalanceAsync(bankAccountId);
             }
 
-            _logger.LogInformation($"Saving changes for bank account balance history soft delete");
+            _logger.LogInformation($"Saving final changes for bank account balance history soft delete");
             await _context.SaveChangesAsync();
         }
 
