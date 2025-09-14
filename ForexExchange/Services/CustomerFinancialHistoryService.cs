@@ -47,11 +47,12 @@ namespace ForexExchange.Services
                     ToDate = toDate.Value
                 };
 
-                // NEW APPROACH: Use CustomerBalanceHistory table directly
+                // NEW APPROACH: Use CustomerBalanceHistory table directly - EXCLUDE DELETED RECORDS
                 var historyQuery = _context.CustomerBalanceHistory
                     .Where(h => h.CustomerId == customerId && 
                                h.TransactionDate >= fromDate && 
-                               h.TransactionDate <= toDate);
+                               h.TransactionDate <= toDate &&
+                               !h.IsDeleted); // EXCLUDE DELETED RECORDS
 
                 // Apply currency filter if specified
                 if (!string.IsNullOrEmpty(currencyCode))

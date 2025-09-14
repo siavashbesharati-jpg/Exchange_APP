@@ -31,8 +31,8 @@ namespace ForexExchange.Services
         {
             try
             {
-                // Build query for BankAccountBalanceHistory
-                var query = _context.BankAccountBalanceHistory.AsQueryable();
+                // Build query for BankAccountBalanceHistory - EXCLUDE DELETED RECORDS
+                var query = _context.BankAccountBalanceHistory.Where(h => !h.IsDeleted);
 
                 // Apply bank account filter
                 if (bankAccountId.HasValue)
@@ -145,7 +145,7 @@ namespace ForexExchange.Services
         {
             try
             {
-                var query = _context.BankAccountBalanceHistory.AsQueryable();
+                var query = _context.BankAccountBalanceHistory.Where(h => !h.IsDeleted);
 
                 if (bankAccountId.HasValue)
                 {
@@ -158,7 +158,7 @@ namespace ForexExchange.Services
 
                 // Get current balance from latest record for each bank account
                 var latestBalances = await _context.BankAccountBalanceHistory
-                    .Where(h => !bankAccountId.HasValue || h.BankAccountId == bankAccountId.Value)
+                    .Where(h => !h.IsDeleted && (!bankAccountId.HasValue || h.BankAccountId == bankAccountId.Value))
                     .Include(h => h.BankAccount)
                     .GroupBy(h => h.BankAccountId)
                     .Select(g => new

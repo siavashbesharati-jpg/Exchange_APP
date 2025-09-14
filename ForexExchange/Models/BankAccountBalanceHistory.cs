@@ -71,6 +71,18 @@ namespace ForexExchange.Models
         [Display(Name = "Created By - ایجاد شده توسط")]
         public string? CreatedBy { get; set; }
 
+        // NEW: Soft delete flags
+        [Required]
+        [Display(Name = "Is Deleted - حذف شده")]
+        public bool IsDeleted { get; set; } = false;
+
+        [Display(Name = "Deleted At - تاریخ حذف")]
+        public DateTime? DeletedAt { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Deleted By - حذف شده توسط")]
+        public string? DeletedBy { get; set; }
+
         // Navigation properties
         public virtual BankAccount BankAccount { get; set; } = null!;
 

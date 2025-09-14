@@ -12,8 +12,11 @@ namespace ForexExchange.Models
         [Display(Name = "Order - معامله")]
         Order = 1,
         
+        [Display(Name = "Document - سند حسابداری")]
+        Document = 2,
+        
         [Display(Name = "ManualEdit - ویرایش دستی")]
-        ManualEdit = 2
+        ManualEdit = 3
     }
 
     /// <summary>
@@ -75,6 +78,18 @@ namespace ForexExchange.Models
         [StringLength(100)]
         [Display(Name = "Created By - ایجاد شده توسط")]
         public string? CreatedBy { get; set; }
+
+        // NEW: Soft delete flags
+        [Required]
+        [Display(Name = "Is Deleted - حذف شده")]
+        public bool IsDeleted { get; set; } = false;
+
+        [Display(Name = "Deleted At - تاریخ حذف")]
+        public DateTime? DeletedAt { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "Deleted By - حذف شده توسط")]
+        public string? DeletedBy { get; set; }
 
         /// <summary>
         /// Validates that BalanceAfter = BalanceBefore + TransactionAmount

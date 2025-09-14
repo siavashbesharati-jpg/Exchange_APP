@@ -690,7 +690,9 @@ namespace ForexExchange.Services
             string currencyCode, DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.CustomerBalanceHistory
-                .Where(h => h.CustomerId == customerId && h.CurrencyCode == currencyCode);
+                .Where(h => h.CustomerId == customerId && 
+                           h.CurrencyCode == currencyCode && 
+                           !h.IsDeleted); // EXCLUDE DELETED RECORDS
 
             if (fromDate.HasValue)
                 query = query.Where(h => h.CreatedAt >= fromDate.Value);
@@ -705,7 +707,7 @@ namespace ForexExchange.Services
             DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.CurrencyPoolHistory
-                .Where(h => h.CurrencyCode == currencyCode);
+                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted); // EXCLUDE DELETED RECORDS
 
             if (fromDate.HasValue)
                 query = query.Where(h => h.CreatedAt >= fromDate.Value);
@@ -720,7 +722,7 @@ namespace ForexExchange.Services
             DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.BankAccountBalanceHistory
-                .Where(h => h.BankAccountId == bankAccountId);
+                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted); // EXCLUDE DELETED RECORDS
 
             if (fromDate.HasValue)
                 query = query.Where(h => h.CreatedAt >= fromDate.Value);
@@ -740,7 +742,7 @@ namespace ForexExchange.Services
             foreach (var balance in customerBalances)
             {
                 var latestHistory = await _context.CustomerBalanceHistory
-                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode)
+                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -755,7 +757,7 @@ namespace ForexExchange.Services
             foreach (var pool in currencyPools)
             {
                 var latestHistory = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == pool.CurrencyCode)
+                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -770,7 +772,7 @@ namespace ForexExchange.Services
             foreach (var balance in bankBalances)
             {
                 var latestHistory = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == balance.BankAccountId)
+                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -799,7 +801,7 @@ namespace ForexExchange.Services
             foreach (var balance in customerBalances)
             {
                 var latestHistory = await _context.CustomerBalanceHistory
-                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode)
+                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -816,7 +818,7 @@ namespace ForexExchange.Services
             foreach (var pool in currencyPools)
             {
                 var latestHistory = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == pool.CurrencyCode)
+                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -833,7 +835,7 @@ namespace ForexExchange.Services
             foreach (var balance in bankBalances)
             {
                 var latestHistory = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == balance.BankAccountId)
+                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -996,172 +998,431 @@ namespace ForexExchange.Services
 
         #endregion
 
-        #region Delete Operations with Financial Impact Reversal
+        #region Smart Delete Operations with History Soft Delete and Recalculation
 
         /// <summary>
-        /// Safely delete an order by reversing its financial impacts
+        /// Safely delete an order by soft-deleting its history records and recalculating balances
         /// </summary>
         public async Task DeleteOrderAsync(Order order, string performedBy = "Admin")
         {
             try
             {
-                _logger.LogInformation($"Starting order deletion: Order {order.Id} by {performedBy}");
+                _logger.LogInformation($"Starting smart order deletion: Order {order.Id} by {performedBy}");
 
-                // 1. Reverse customer balance and currency pool impacts
-                // Orders are always processed immediately (no verification check needed)
-                await ReverseOrderFinancialImpactAsync(order, $"Order Deletion - {performedBy}");
+                // 1. Soft delete customer balance history records for this order
+                await SoftDeleteCustomerBalanceHistoryAsync(order.Id, null, performedBy);
 
-                // 2. Delete the order
+                // 2. Soft delete currency pool history records for this order
+                await SoftDeleteCurrencyPoolHistoryAsync(order.Id, null, performedBy);
+
+                // 3. Delete the order itself
                 _context.Orders.Remove(order);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Order deletion completed successfully: Order {order.Id}");
+                _logger.LogInformation($"Smart order deletion completed: Order {order.Id}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error deleting order {order.Id}: {ex.Message}");
+                _logger.LogError(ex, $"Error in smart order deletion {order.Id}: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// Safely delete an accounting document by reversing its financial impacts
+        /// Safely delete an accounting document by soft-deleting its history records and recalculating balances
         /// </summary>
         public async Task DeleteAccountingDocumentAsync(AccountingDocument document, string performedBy = "Admin")
         {
             try
             {
-                _logger.LogInformation($"Starting accounting document deletion: Document {document.Id} by {performedBy}");
+                _logger.LogInformation($"Starting smart document deletion: Document {document.Id} by {performedBy}");
 
-                // 1. Reverse financial impacts (only if document was verified)
+                // Only process if document was verified (had financial impact)
                 if (document.IsVerified)
                 {
-                    await ReverseAccountingDocumentFinancialImpactAsync(document, $"Document Deletion - {performedBy}");
+                    // 1. Soft delete customer balance history records for this document
+                    await SoftDeleteCustomerBalanceHistoryAsync(null, document.Id, performedBy);
+
+                    // 2. Soft delete bank account balance history records for this document
+                    await SoftDeleteBankAccountBalanceHistoryAsync(document.Id, performedBy);
                 }
 
-                // 2. Delete the document
+                // 3. Delete the document itself
                 _context.AccountingDocuments.Remove(document);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Accounting document deletion completed successfully: Document {document.Id}");
+                _logger.LogInformation($"Smart document deletion completed: Document {document.Id}");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error deleting accounting document {document.Id}: {ex.Message}");
+                _logger.LogError(ex, $"Error in smart document deletion {document.Id}: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// Reverse financial impact of an order (opposite of ProcessOrderCreationAsync)
+        /// Soft delete customer balance history records and recalculate subsequent balances
         /// </summary>
-        private async Task ReverseOrderFinancialImpactAsync(Order order, string reason)
+        private async Task SoftDeleteCustomerBalanceHistoryAsync(int? orderId, int? documentId, string performedBy)
         {
-            _logger.LogInformation($"Reversing financial impact for Order {order.Id}");
+            _logger.LogInformation($"SoftDeleteCustomerBalanceHistoryAsync - OrderId: {orderId}, DocumentId: {documentId}");
+            
+            // Find all history records for this order/document
+            List<CustomerBalanceHistory> historyRecords = new List<CustomerBalanceHistory>();
+            if (orderId.HasValue)
+            {
+                historyRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.ReferenceId == orderId.Value &&
+                                h.TransactionType == CustomerBalanceTransactionType.Order &&
+                                !h.IsDeleted)
+                    .OrderBy(h => h.CreatedAt)
+                    .ToListAsync();
+            }
+            else if (documentId.HasValue)
+            {
+                historyRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.ReferenceId == documentId.Value &&
+                                h.TransactionType == CustomerBalanceTransactionType.AccountingDocument &&
+                                !h.IsDeleted)
+                    .OrderBy(h => h.CreatedAt)
+                    .ToListAsync();
+            }
+            _logger.LogInformation($"Found {historyRecords.Count} customer balance history records to soft delete for Order {orderId} Document {documentId}");
 
-            // Reverse customer balance impacts (opposite of order creation)
-            await UpdateCustomerBalanceAsync(
-                customerId: order.CustomerId,
-                currencyCode: order.FromCurrency.Code,
-                amount: +order.FromAmount, // POSITIVE (was -amount originally)
-                transactionType: CustomerBalanceTransactionType.Manual,
-                relatedOrderId: order.Id,
-                reason: reason,
-                performedBy: "System"
-            );
+            if (!historyRecords.Any())
+            {
+                _logger.LogWarning($"No customer balance history found for Order {orderId} Document {documentId}");
+                return;
+            }
 
-            await UpdateCustomerBalanceAsync(
-                customerId: order.CustomerId,
-                currencyCode: order.ToCurrency.Code,
-                amount: -order.ToAmount, // NEGATIVE (was +amount originally)
-                transactionType: CustomerBalanceTransactionType.Manual,
-                relatedOrderId: order.Id,
-                reason: reason,
-                performedBy: "System"
-            );
+            _logger.LogInformation($"Found {historyRecords.Count} customer balance history records to soft delete");
 
-            // Reverse currency pool impacts (opposite of order creation)
-            await UpdateCurrencyPoolAsync(
-                currencyCode: order.FromCurrency.Code,
-                amount: -order.FromAmount, // NEGATIVE (was +amount originally)
-                transactionType: CurrencyPoolTransactionType.ManualEdit,
-                reason: reason,
-                performedBy: "System",
-                referenceId: order.Id
-            );
+            // Group by customer and currency for separate recalculation
+            var groups = historyRecords.GroupBy(h => new { h.CustomerId, h.CurrencyCode });
 
-            await UpdateCurrencyPoolAsync(
-                currencyCode: order.ToCurrency.Code,
-                amount: +order.ToAmount, // POSITIVE (was -amount originally)
-                transactionType: CurrencyPoolTransactionType.ManualEdit,
-                reason: reason,
-                performedBy: "System",
-                referenceId: order.Id
-            );
+            foreach (var group in groups)
+            {
+                var customerId = group.Key.CustomerId;
+                var currencyCode = group.Key.CurrencyCode;
+                var recordsToDelete = group.OrderBy(r => r.CreatedAt).ToList();
 
-            _logger.LogInformation($"Financial impact reversed for Order {order.Id}");
+                _logger.LogInformation($"Processing Customer {customerId} Currency {currencyCode}: {recordsToDelete.Count} records");
+
+                // 1. Mark records as deleted
+                foreach (var record in recordsToDelete)
+                {
+                    _logger.LogInformation($"Marking history record {record.Id} as deleted (Amount: {record.TransactionAmount})");
+                    record.IsDeleted = true;
+                    record.DeletedAt = DateTime.UtcNow;
+                    record.DeletedBy = performedBy;
+                }
+
+                // 2. Recalculate balances for subsequent records - use the minimum ID of deleted records
+                var minDeletedId = recordsToDelete.Min(r => r.Id);
+                _logger.LogInformation($"Starting balance recalculation for Customer {customerId} Currency {currencyCode} from record ID {minDeletedId}");
+                await RecalculateCustomerBalanceHistoryAsync(customerId, currencyCode, minDeletedId);
+
+                // 3. Update current balance table
+                await RecalculateCurrentCustomerBalanceAsync(customerId, currencyCode);
+            }
+
+            _logger.LogInformation($"Saving changes for customer balance history soft delete");
+            await _context.SaveChangesAsync();
         }
 
         /// <summary>
-        /// Reverse financial impact of an accounting document (opposite of ProcessAccountingDocumentAsync)
+        /// Soft delete currency pool history records and recalculate subsequent balances
         /// </summary>
-        private async Task ReverseAccountingDocumentFinancialImpactAsync(AccountingDocument document, string reason)
+        private async Task SoftDeleteCurrencyPoolHistoryAsync(int? orderId, int? documentId, string performedBy)
         {
-            _logger.LogInformation($"Reversing financial impact for Accounting Document {document.Id}");
+            _logger.LogInformation($"SoftDeleteCurrencyPoolHistoryAsync - OrderId: {orderId}, DocumentId: {documentId}");
+            
+            // Find all pool history records for this order/document
+            var historyRecords = await _context.CurrencyPoolHistory
+                .Where(h => h.ReferenceId == (orderId ?? documentId) && 
+                           ((orderId.HasValue && h.TransactionType == CurrencyPoolTransactionType.Order) ||
+                            (documentId.HasValue && h.TransactionType == CurrencyPoolTransactionType.Document)) &&
+                           !h.IsDeleted)
+                .OrderBy(h => h.CreatedAt)
+                .ToListAsync();
 
-            // Reverse customer impacts (opposite of original logic)
-            if (document.PayerCustomerId.HasValue)
+            _logger.LogInformation($"Found {historyRecords.Count} currency pool history records to soft delete for Order {orderId} Document {documentId}");
+
+            if (!historyRecords.Any())
             {
-                await UpdateCustomerBalanceAsync(
-                    document.PayerCustomerId.Value,
-                    document.CurrencyCode,
-                    -document.Amount, // NEGATIVE (was +amount originally)
-                    CustomerBalanceTransactionType.Manual,
-                    relatedDocumentId: document.Id,
-                    reason: reason,
-                    performedBy: "System"
-                );
+                _logger.LogWarning($"No currency pool history found for Order {orderId} Document {documentId}");
+                return;
             }
 
-            if (document.ReceiverCustomerId.HasValue)
+            _logger.LogInformation($"Found {historyRecords.Count} currency pool history records to soft delete");
+
+            // Group by currency for separate recalculation
+            var groups = historyRecords.GroupBy(h => h.CurrencyCode);
+
+            foreach (var group in groups)
             {
-                await UpdateCustomerBalanceAsync(
-                    document.ReceiverCustomerId.Value,
-                    document.CurrencyCode,
-                    +document.Amount, // POSITIVE (was -amount originally)
-                    CustomerBalanceTransactionType.Manual,
-                    relatedDocumentId: document.Id,
-                    reason: reason,
-                    performedBy: "System"
-                );
+                var currencyCode = group.Key;
+                var recordsToDelete = group.OrderBy(r => r.CreatedAt).ToList();
+
+                _logger.LogInformation($"Processing Currency Pool {currencyCode}: {recordsToDelete.Count} records");
+
+                // 1. Mark records as deleted
+                foreach (var record in recordsToDelete)
+                {
+                    _logger.LogInformation($"Marking pool history record {record.Id} as deleted (Currency: {record.CurrencyCode}, Amount: {record.TransactionAmount})");
+                    record.IsDeleted = true;
+                    record.DeletedAt = DateTime.UtcNow;
+                    record.DeletedBy = performedBy;
+                }
+
+                // 2. Recalculate balances for subsequent records
+                await RecalculateCurrencyPoolHistoryAsync(currencyCode, recordsToDelete.First().CreatedAt);
+
+                // 3. Update current pool balance
+                await RecalculateCurrentCurrencyPoolBalanceAsync(currencyCode);
             }
 
-            // Reverse bank account impacts
-            if (document.PayerBankAccountId.HasValue)
+            _logger.LogInformation($"Saving changes for currency pool history soft delete");
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Soft delete bank account balance history records and recalculate subsequent balances
+        /// </summary>
+        private async Task SoftDeleteBankAccountBalanceHistoryAsync(int documentId, string performedBy)
+        {
+            // Find all bank account history records for this document
+            var historyRecords = await _context.BankAccountBalanceHistory
+                .Where(h => h.ReferenceId == documentId && h.TransactionType == BankAccountTransactionType.Document &&
+                           !h.IsDeleted)
+                .OrderBy(h => h.CreatedAt)
+                .ToListAsync();
+
+            if (!historyRecords.Any())
             {
-                await ProcessBankAccountTransactionAsync(
-                    document.PayerBankAccountId.Value,
-                    +document.Amount, // POSITIVE (was -amount originally)
-                    BankAccountTransactionType.ManualEdit,
-                    document.Id,
-                    reason,
-                    "System"
-                );
+                _logger.LogInformation($"No bank account balance history found for Document {documentId}");
+                return;
             }
 
-            if (document.ReceiverBankAccountId.HasValue)
+            _logger.LogInformation($"Found {historyRecords.Count} bank account balance history records to soft delete");
+
+            // Group by bank account for separate recalculation
+            var groups = historyRecords.GroupBy(h => h.BankAccountId);
+
+            foreach (var group in groups)
             {
-                await ProcessBankAccountTransactionAsync(
-                    document.ReceiverBankAccountId.Value,
-                    -document.Amount, // NEGATIVE (was +amount originally)
-                    BankAccountTransactionType.ManualEdit,
-                    document.Id,
-                    reason,
-                    "System"
-                );
+                var bankAccountId = group.Key;
+                var recordsToDelete = group.OrderBy(r => r.CreatedAt).ToList();
+
+                _logger.LogInformation($"Processing Bank Account {bankAccountId}: {recordsToDelete.Count} records");
+
+                // 1. Mark records as deleted
+                foreach (var record in recordsToDelete)
+                {
+                    record.IsDeleted = true;
+                    record.DeletedAt = DateTime.UtcNow;
+                    record.DeletedBy = performedBy;
+                }
+
+                // 2. Recalculate balances for subsequent records
+                await RecalculateBankAccountBalanceHistoryAsync(bankAccountId, recordsToDelete.First().CreatedAt);
+
+                // 3. Update current balance
+                await RecalculateCurrentBankAccountBalanceAsync(bankAccountId);
             }
 
-            _logger.LogInformation($"Financial impact reversed for Accounting Document {document.Id}");
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Recalculate customer balance history after soft deletion based on record ID position
+        /// </summary>
+        private async Task RecalculateCustomerBalanceHistoryAsync(int customerId, string currencyCode, long fromRecordId)
+        {
+            _logger.LogInformation($"Recalculating customer balance history for Customer {customerId} Currency {currencyCode} from record ID {fromRecordId}");
+            
+            // Get all non-deleted records after the deletion point, ordered by ID (which preserves exact sequence)
+            var subsequentRecords = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId && 
+                           h.CurrencyCode == currencyCode && 
+                           h.Id > fromRecordId && 
+                           !h.IsDeleted)
+                .OrderBy(h => h.Id)
+                .ToListAsync();
+
+            if (!subsequentRecords.Any())
+            {
+                _logger.LogInformation($"No subsequent records to recalculate for Customer {customerId} Currency {currencyCode} after ID {fromRecordId}");
+                return;
+            }
+
+            // Find the last non-deleted record before the deletion point
+            var lastValidRecord = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId && 
+                           h.CurrencyCode == currencyCode && 
+                           h.Id < fromRecordId && 
+                           !h.IsDeleted)
+                .OrderByDescending(h => h.Id)
+                .FirstOrDefaultAsync();
+
+            var runningBalance = lastValidRecord?.BalanceAfter ?? 0m;
+
+            _logger.LogInformation($"Recalculating {subsequentRecords.Count} records from balance {runningBalance} (last valid record ID: {lastValidRecord?.Id ?? 0})");
+
+            // Recalculate each subsequent record in exact sequential order
+            foreach (var record in subsequentRecords)
+            {
+                var oldBalanceBefore = record.BalanceBefore;
+                var oldBalanceAfter = record.BalanceAfter;
+                
+                record.BalanceBefore = runningBalance;
+                record.BalanceAfter = runningBalance + record.TransactionAmount;
+                runningBalance = record.BalanceAfter;
+                
+                _logger.LogInformation($"Record ID {record.Id}: BalanceBefore {oldBalanceBefore} -> {record.BalanceBefore}, BalanceAfter {oldBalanceAfter} -> {record.BalanceAfter}");
+            }
+        }
+
+        /// <summary>
+        /// Recalculate currency pool history after soft deletion
+        /// </summary>
+        private async Task RecalculateCurrencyPoolHistoryAsync(string currencyCode, DateTime fromDate)
+        {
+            var subsequentRecords = await _context.CurrencyPoolHistory
+                .Where(h => h.CurrencyCode == currencyCode && 
+                           h.CreatedAt > fromDate && 
+                           !h.IsDeleted)
+                .OrderBy(h => h.CreatedAt)
+                .ToListAsync();
+
+            if (!subsequentRecords.Any()) return;
+
+            var lastValidRecord = await _context.CurrencyPoolHistory
+                .Where(h => h.CurrencyCode == currencyCode && 
+                           h.CreatedAt <= fromDate && 
+                           !h.IsDeleted)
+                .OrderByDescending(h => h.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var runningBalance = lastValidRecord?.BalanceAfter ?? 0m;
+
+            foreach (var record in subsequentRecords)
+            {
+                record.BalanceBefore = runningBalance;
+                record.BalanceAfter = runningBalance + record.TransactionAmount;
+                runningBalance = record.BalanceAfter;
+            }
+        }
+
+        /// <summary>
+        /// Recalculate bank account balance history after soft deletion
+        /// </summary>
+        private async Task RecalculateBankAccountBalanceHistoryAsync(int bankAccountId, DateTime fromDate)
+        {
+            var subsequentRecords = await _context.BankAccountBalanceHistory
+                .Where(h => h.BankAccountId == bankAccountId && 
+                           h.CreatedAt > fromDate && 
+                           !h.IsDeleted)
+                .OrderBy(h => h.CreatedAt)
+                .ToListAsync();
+
+            if (!subsequentRecords.Any()) return;
+
+            var lastValidRecord = await _context.BankAccountBalanceHistory
+                .Where(h => h.BankAccountId == bankAccountId && 
+                           h.CreatedAt <= fromDate && 
+                           !h.IsDeleted)
+                .OrderByDescending(h => h.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var runningBalance = lastValidRecord?.BalanceAfter ?? 0m;
+
+            foreach (var record in subsequentRecords)
+            {
+                record.BalanceBefore = runningBalance;
+                record.BalanceAfter = runningBalance + record.TransactionAmount;
+                runningBalance = record.BalanceAfter;
+            }
+        }
+
+        /// <summary>
+        /// Update current customer balance from latest non-deleted history
+        /// </summary>
+        private async Task RecalculateCurrentCustomerBalanceAsync(int customerId, string currencyCode)
+        {
+            _logger.LogInformation($"Recalculating current customer balance for Customer {customerId}, Currency {currencyCode}");
+            
+            var latestHistory = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId && h.CurrencyCode == currencyCode && !h.IsDeleted)
+                .OrderByDescending(h => h.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var currentBalance = await _context.CustomerBalances
+                .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
+
+            if (currentBalance != null)
+            {
+                var oldBalance = currentBalance.Balance;
+                currentBalance.Balance = latestHistory?.BalanceAfter ?? 0m;
+                currentBalance.LastUpdated = DateTime.UtcNow;
+                currentBalance.Notes = "Recalculated after deletion";
+                
+                _logger.LogInformation($"Updated customer {customerId} {currencyCode} balance from {oldBalance} to {currentBalance.Balance}");
+            }
+            else
+            {
+                _logger.LogWarning($"No current balance record found for Customer {customerId}, Currency {currencyCode}");
+            }
+        }
+
+        /// <summary>
+        /// Update current currency pool balance from latest non-deleted history
+        /// </summary>
+        private async Task RecalculateCurrentCurrencyPoolBalanceAsync(string currencyCode)
+        {
+            _logger.LogInformation($"Recalculating current currency pool balance for Currency {currencyCode}");
+            
+            var latestHistory = await _context.CurrencyPoolHistory
+                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted)
+                .OrderByDescending(h => h.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var currentPool = await _context.CurrencyPools
+                .FirstOrDefaultAsync(cp => cp.CurrencyCode == currencyCode && cp.IsActive);
+
+            if (currentPool != null)
+            {
+                var oldBalance = currentPool.Balance;
+                currentPool.Balance = latestHistory?.BalanceAfter ?? 0m;
+                currentPool.LastUpdated = DateTime.UtcNow;
+                currentPool.Notes = "Recalculated after deletion";
+                
+                _logger.LogInformation($"Updated currency pool {currencyCode} balance from {oldBalance} to {currentPool.Balance}");
+            }
+            else
+            {
+                _logger.LogWarning($"No current pool record found for Currency {currencyCode}");
+            }
+        }
+
+        /// <summary>
+        /// Update current bank account balance from latest non-deleted history
+        /// </summary>
+        private async Task RecalculateCurrentBankAccountBalanceAsync(int bankAccountId)
+        {
+            var latestHistory = await _context.BankAccountBalanceHistory
+                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted)
+                .OrderByDescending(h => h.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var currentBalance = await _context.BankAccountBalances
+                .FirstOrDefaultAsync(bab => bab.BankAccountId == bankAccountId);
+
+            if (currentBalance != null)
+            {
+                currentBalance.Balance = latestHistory?.BalanceAfter ?? 0m;
+                currentBalance.LastUpdated = DateTime.UtcNow;
+            }
         }
 
         #endregion
