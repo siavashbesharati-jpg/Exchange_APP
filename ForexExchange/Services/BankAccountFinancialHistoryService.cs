@@ -203,7 +203,7 @@ namespace ForexExchange.Services
                     .Select(ba => new BankAccountOption
                     {
                         Id = ba.Id,
-                        Name = (ba.AccountHolderName != "سیستم صرافی" ? ba.AccountHolderName : ba.BankName) + " (" + ba.CurrencyCode + ")",
+                        Name = ba.BankName + " - " + ba.CurrencyCode,
                         BankName = ba.BankName ?? "نامشخص"
                     })
                     .ToListAsync();
