@@ -213,9 +213,58 @@
                 .then(data => {
                     console.log('Exchange rate response:', data);
                     if (data.success && data.rate) {
-                        const rate = Math.round(data.rate);
-                        document.getElementById('calcRateInput').value = rate;
-                        console.log('Set calculator rate to:', rate);
+                        // Get currency codes for rate formatting
+                        const fromCode = calcFromCurrencyCode;
+                        const toCode = calcToCurrencyCode;
+
+                        console.log('Processing rate for currencies:', fromCode, 'to', toCode);
+
+                        let displayRate = data.rate;
+                        let isRateInverted = false;
+
+                        // Smart rate display: always show the larger, more intuitive number
+                        // Exception: If IRR is involved, follow existing logic for IRR
+                        if (fromCode && fromCode.toUpperCase() === 'IRR') {
+                            // FROM is IRR, invert to show foreign currency per IRR (e.g., 0.024 USD per IRR)
+                            displayRate = 1 / data.rate;
+                            isRateInverted = true;
+                        } else if (toCode && toCode.toUpperCase() === 'IRR') {
+                            // TO is IRR, keep direct rate (e.g., 42000 IRR per USD) 
+                            displayRate = data.rate;
+                            isRateInverted = false;
+                        } else {
+                            // Both currencies are non-IRR, choose direction that gives larger number
+                            const directRate = data.rate;
+                            const inverseRate = 1 / data.rate;
+                            
+                            if (inverseRate > directRate) {
+                                // Inverse rate is larger, so display it (swap the direction conceptually)
+                                displayRate = inverseRate;
+                                isRateInverted = true;
+                                console.log(`Using inverted rate ${displayRate.toFixed(4)} instead of ${directRate.toFixed(4)} for better UX`);
+                            } else {
+                                // Direct rate is larger or equal, use it
+                                displayRate = directRate;
+                                isRateInverted = false;
+                            }
+                        }
+
+                        // Apply proper precision based on currencies involved
+                        if ((fromCode && fromCode.toUpperCase() === 'IRR') || (toCode && toCode.toUpperCase() === 'IRR')) {
+                            // If IRR is involved, round to whole numbers
+                            displayRate = Math.round(displayRate);
+                        } else {
+                            // If both currencies are non-IRR, preserve 2 decimal places
+                            displayRate = Math.round(displayRate * 100) / 100;
+                        }
+
+                        console.log('Setting calculator rate to:', displayRate, 'isRateInverted:', isRateInverted);
+
+                        // Store whether the rate was inverted for calculation purposes
+                        window.calcRateInverted = isRateInverted;
+
+                        document.getElementById('calcRateInput').value = displayRate;
+                        console.log('Set calculator rate to:', displayRate);
                     } else {
                         console.log('No rate available, keeping manual input');
                     }
@@ -232,18 +281,35 @@
             const rate = parseFloat(document.getElementById('calcRateInput').value);
             
             console.log('fromAmount:', fromAmount, 'rate:', rate);
+            console.log('calcFromCurrencyCode:', calcFromCurrencyCode, 'calcToCurrencyCode:', calcToCurrencyCode);
+            console.log('calcRateInverted:', window.calcRateInverted);
             
             if (fromAmount && rate && rate > 0) {
                 // Calculate TO amount
+                const fromCode = calcFromCurrencyCode;
+                const toCode = calcToCurrencyCode;
                 let toAmount;
-                if (calcFromCurrencyCode && calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // From IRR to foreign currency
+
+                if (fromCode && fromCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // Display rate shows foreign currency per IRR (inverted), so divide
                     toAmount = fromAmount / rate;
                     toAmount = Math.round(toAmount * 1000) / 1000;
-                } else {
-                    // From foreign currency to IRR  
+                } else if (toCode && toCode.toUpperCase() === 'IRR') {
+                    // FROM is foreign currency, TO is IRR
+                    // Display rate shows IRR per foreign currency (direct), so multiply
                     toAmount = fromAmount * rate;
                     toAmount = Math.round(toAmount);
+                } else {
+                    // Both currencies are non-IRR
+                    if (window.calcRateInverted) {
+                        // Rate was inverted for display, so we need to invert it back for calculation
+                        toAmount = fromAmount / rate;
+                    } else {
+                        // Rate is direct
+                        toAmount = fromAmount * rate;
+                    }
+                    toAmount = Math.round(toAmount * 1000) / 1000;
                 }
                 
                 console.log('Calculated toAmount:', toAmount);
@@ -266,17 +332,34 @@
             const rate = parseFloat(document.getElementById('calcRateInput').value);
             
             console.log('toAmount:', toAmount, 'rate:', rate);
+            console.log('calcFromCurrencyCode:', calcFromCurrencyCode, 'calcToCurrencyCode:', calcToCurrencyCode);
+            console.log('calcRateInverted:', window.calcRateInverted);
             
             if (toAmount && rate && rate > 0) {
                 // Calculate FROM amount
+                const fromCode = calcFromCurrencyCode;
+                const toCode = calcToCurrencyCode;
                 let fromAmount;
-                if (calcFromCurrencyCode && calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // From IRR to foreign currency
+
+                if (fromCode && fromCode.toUpperCase() === 'IRR') {
+                    // FROM is IRR, TO is foreign currency
+                    // Display rate shows foreign currency per IRR (inverted), so multiply
                     fromAmount = toAmount * rate;
                     fromAmount = Math.round(fromAmount);
-                } else {
-                    // From foreign currency to IRR
+                } else if (toCode && toCode.toUpperCase() === 'IRR') {
+                    // FROM is foreign currency, TO is IRR
+                    // Display rate shows IRR per foreign currency (direct), so divide
                     fromAmount = toAmount / rate;
+                    fromAmount = Math.round(fromAmount * 1000) / 1000;
+                } else {
+                    // Both currencies are non-IRR
+                    if (window.calcRateInverted) {
+                        // Rate was inverted for display, so we need to multiply to get back
+                        fromAmount = toAmount * rate;
+                    } else {
+                        // Rate is direct, so divide
+                        fromAmount = toAmount / rate;
+                    }
                     fromAmount = Math.round(fromAmount * 1000) / 1000;
                 }
                 
@@ -322,17 +405,41 @@
         function updateMainFormFromCalculator(fromAmount, rate) {
             console.log('=== updateMainFormFromCalculator called ===');
             console.log('fromAmount:', fromAmount, 'rate:', rate);
+            console.log('calcFromCurrencyCode:', calcFromCurrencyCode, 'calcToCurrencyCode:', calcToCurrencyCode);
+            console.log('calcRateInverted:', window.calcRateInverted);
             
             // Update the main form amount input
             document.getElementById('amountInput').value = fromAmount;
             
+            // Convert calculator rate back to main form format (backend expects direct rate)
+            const fromCode = calcFromCurrencyCode;
+            const toCode = calcToCurrencyCode;
+            let mainFormRate;
+
+            if (fromCode && fromCode.toUpperCase() === 'IRR') {
+                // Calculator shows foreign currency per IRR (inverted), convert back to IRR per foreign currency
+                mainFormRate = 1 / rate;
+            } else if (toCode && toCode.toUpperCase() === 'IRR') {
+                // Calculator shows IRR per foreign currency (direct), keep as is
+                mainFormRate = rate;
+            } else {
+                // Both currencies are non-IRR
+                if (window.calcRateInverted) {
+                    // Calculator rate was inverted for display, convert back to original direction
+                    mainFormRate = 1 / rate;
+                } else {
+                    // Calculator rate is in direct direction, keep as is
+                    mainFormRate = rate;
+                }
+            }
+            
             // Update hidden fields
-            document.getElementById('hiddenRate').value = rate;
+            document.getElementById('hiddenRate').value = mainFormRate;
             
             // Update rate input if it exists
             const rateInput = document.getElementById('rateInput');
             if (rateInput) {
-                rateInput.value = rate;
+                rateInput.value = mainFormRate;
             }
             
             // Trigger calculation update
