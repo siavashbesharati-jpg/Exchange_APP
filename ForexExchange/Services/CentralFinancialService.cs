@@ -1015,8 +1015,10 @@ namespace ForexExchange.Services
                 // 2. Soft delete currency pool history records for this order
                 await SoftDeleteCurrencyPoolHistoryAsync(order.Id, null, performedBy);
 
-                // 3. Delete the order itself
-                _context.Orders.Remove(order);
+                // 3. Soft delete the order itself
+                order.IsDeleted = true;
+                order.DeletedAt = DateTime.UtcNow;
+                order.DeletedBy = performedBy;
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Smart order deletion completed: Order {order.Id}");
@@ -1047,8 +1049,10 @@ namespace ForexExchange.Services
                     await SoftDeleteBankAccountBalanceHistoryAsync(document.Id, performedBy);
                 }
 
-                // 3. Delete the document itself
-                _context.AccountingDocuments.Remove(document);
+                // 3. Soft delete the document itself
+                document.IsDeleted = true;
+                document.DeletedAt = DateTime.UtcNow;
+                document.DeletedBy = performedBy;
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Smart document deletion completed: Document {document.Id}");
@@ -1480,6 +1484,74 @@ namespace ForexExchange.Services
             else
             {
                 _logger.LogWarning($"No current balance record found for Bank Account {bankAccountId}");
+            }
+        }
+
+        #endregion
+
+        #region Admin Methods for Deleted Records (Bypass Global Query Filters)
+
+        /// <summary>
+        /// Get all orders including deleted ones (for admin purposes)
+        /// </summary>
+        public async Task<List<Order>> GetAllOrdersIncludingDeletedAsync()
+        {
+            return await _context.Orders.IgnoreQueryFilters().ToListAsync();
+        }
+
+        /// <summary>
+        /// Get all accounting documents including deleted ones (for admin purposes)
+        /// </summary>
+        public async Task<List<AccountingDocument>> GetAllDocumentsIncludingDeletedAsync()
+        {
+            return await _context.AccountingDocuments.IgnoreQueryFilters().ToListAsync();
+        }
+
+        /// <summary>
+        /// Get only deleted orders (for admin recovery purposes)
+        /// </summary>
+        public async Task<List<Order>> GetDeletedOrdersAsync()
+        {
+            return await _context.Orders.IgnoreQueryFilters().Where(o => o.IsDeleted).ToListAsync();
+        }
+
+        /// <summary>
+        /// Get only deleted accounting documents (for admin recovery purposes)
+        /// </summary>
+        public async Task<List<AccountingDocument>> GetDeletedDocumentsAsync()
+        {
+            return await _context.AccountingDocuments.IgnoreQueryFilters().Where(d => d.IsDeleted).ToListAsync();
+        }
+
+        /// <summary>
+        /// Restore a soft-deleted order (for admin recovery)
+        /// </summary>
+        public async Task RestoreOrderAsync(int orderId, string performedBy = "Admin")
+        {
+            var order = await _context.Orders.IgnoreQueryFilters().FirstOrDefaultAsync(o => o.Id == orderId && o.IsDeleted);
+            if (order != null)
+            {
+                order.IsDeleted = false;
+                order.DeletedAt = null;
+                order.DeletedBy = null;
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Order {orderId} restored by {performedBy}");
+            }
+        }
+
+        /// <summary>
+        /// Restore a soft-deleted accounting document (for admin recovery)
+        /// </summary>
+        public async Task RestoreDocumentAsync(int documentId, string performedBy = "Admin")
+        {
+            var document = await _context.AccountingDocuments.IgnoreQueryFilters().FirstOrDefaultAsync(d => d.Id == documentId && d.IsDeleted);
+            if (document != null)
+            {
+                document.IsDeleted = false;
+                document.DeletedAt = null;
+                document.DeletedBy = null;
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Document {documentId} restored by {performedBy}");
             }
         }
 

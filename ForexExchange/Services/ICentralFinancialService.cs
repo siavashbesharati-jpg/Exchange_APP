@@ -158,6 +158,40 @@ namespace ForexExchange.Services
         Task RecalculateIRRPoolFromOrdersAsync();
 
         #endregion
+
+        #region Admin Methods for Deleted Records
+
+        /// <summary>
+        /// Get all orders including deleted ones (for admin purposes)
+        /// </summary>
+        Task<List<Order>> GetAllOrdersIncludingDeletedAsync();
+
+        /// <summary>
+        /// Get all accounting documents including deleted ones (for admin purposes)
+        /// </summary>
+        Task<List<AccountingDocument>> GetAllDocumentsIncludingDeletedAsync();
+
+        /// <summary>
+        /// Get only deleted orders (for admin recovery purposes)
+        /// </summary>
+        Task<List<Order>> GetDeletedOrdersAsync();
+
+        /// <summary>
+        /// Get only deleted accounting documents (for admin recovery purposes)
+        /// </summary>
+        Task<List<AccountingDocument>> GetDeletedDocumentsAsync();
+
+        /// <summary>
+        /// Restore a soft-deleted order (for admin recovery)
+        /// </summary>
+        Task RestoreOrderAsync(int orderId, string performedBy = "Admin");
+
+        /// <summary>
+        /// Restore a soft-deleted accounting document (for admin recovery)
+        /// </summary>
+        Task RestoreDocumentAsync(int documentId, string performedBy = "Admin");
+
+        #endregion
     }
 
     /// <summary>

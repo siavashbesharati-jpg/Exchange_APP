@@ -51,6 +51,17 @@ namespace ForexExchange.Models
         [Display(Name = "Notes - یادداشت‌ها")]
         public string? Notes { get; set; }
         
+        // Soft Delete Properties
+        [Display(Name = "Is Deleted - حذف شده")]
+        public bool IsDeleted { get; set; } = false;
+        
+        [Display(Name = "Deleted At - تاریخ حذف")]
+        public DateTime? DeletedAt { get; set; }
+        
+        [StringLength(100)]
+        [Display(Name = "Deleted By - حذف شده توسط")]
+        public string? DeletedBy { get; set; }
+        
         /// <summary>
         /// Cross-currency pair identifier (e.g., "USD/EUR", "AED/TRY")
         /// شناسه جفت ارز متقابل

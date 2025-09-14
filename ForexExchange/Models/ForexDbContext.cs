@@ -511,6 +511,11 @@ namespace ForexExchange.Models
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Global Query Filters for Soft Delete
+            // Automatically exclude deleted Orders and AccountingDocuments from all queries
+            modelBuilder.Entity<Order>().HasQueryFilter(o => !o.IsDeleted);
+            modelBuilder.Entity<AccountingDocument>().HasQueryFilter(d => !d.IsDeleted);
+
             // Seed currencies
             modelBuilder.Entity<Currency>().HasData(
                 new Currency { Id = 1, Code = "IRR", Name = "Iranian Rial", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = seedDate },
