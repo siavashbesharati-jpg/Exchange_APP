@@ -36,7 +36,7 @@
                 <div class="col-sm-6 col-md-4">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="جستجو در عنوان سند...">
+                        <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="جستجو با شناسه سند...">
                     </div>
                 </div>
                 <div class="col-sm-6 col-md-8 text-end">
@@ -184,6 +184,13 @@
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                             }
+                                            @if (User.IsInRole("Admin"))
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger" title="حذف سند (ادمین)"
+                                                        onclick="confirmDocumentDelete(@item.Id, '@item.Title', @item.IsVerified.ToString().ToLower())">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -222,6 +229,32 @@
                 var form = document.createElement('form');
                 form.method = 'post';
                 form.action = '@Url.Action("Confirm", "AccountingDocuments")/' + documentId;
+                
+                // Get anti-forgery token from hidden form
+                var hiddenToken = document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]');
+                if (hiddenToken) {
+                    var tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = hiddenToken.value;
+                    form.appendChild(tokenInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function confirmDocumentDelete(documentId, documentTitle, isVerified) {
+            var verificationMessage = isVerified ? 
+                'این سند تأیید شده است و تأثیرات مالی آن برگردانده خواهد شد.' : 
+                'این سند هنوز تأیید نشده است.';
+            
+            if (confirm(`آیا از حذف سند #${documentId} (${documentTitle}) اطمینان دارید؟\n\n${verificationMessage}\n\nاین عملیات غیرقابل بازگشت است.`)) {
+                // Create and submit delete form
+                var form = document.createElement('form');
+                form.method = 'post';
+                form.action = '@Url.Action("Delete", "AccountingDocuments")/' + documentId;
                 
                 // Get anti-forgery token from hidden form
                 var hiddenToken = document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]');

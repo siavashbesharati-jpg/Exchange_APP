@@ -141,6 +141,13 @@
                                             <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning" title="ویرایش">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            @if (User.IsInRole("Admin"))
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-danger" title="حذف معامله (ادمین)"
+                                                        onclick="confirmOrderDelete(@item.Id, '@item.FromCurrency.Code', '@item.ToCurrency.Code')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -165,3 +172,34 @@
         </div>
     }
 </div>
+
+@* Hidden form for anti-forgery token *@
+<form id="hiddenTokenForm" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        function confirmOrderDelete(orderId, fromCurrency, toCurrency) {
+            if (confirm(`آیا از حذف معامله #${orderId} (${fromCurrency} به ${toCurrency}) اطمینان دارید؟\n\nاین عملیات تمام تأثیرات مالی معامله را برمی‌گرداند و غیرقابل بازگشت است.`)) {
+                // Create and submit delete form
+                var form = document.createElement('form');
+                form.method = 'post';
+                form.action = '@Url.Action("Delete", "Orders")/' + orderId;
+                
+                // Get anti-forgery token from hidden form
+                var hiddenToken = document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]');
+                if (hiddenToken) {
+                    var tokenInput = document.createElement('input');
+                    tokenInput.type = 'hidden';
+                    tokenInput.name = '__RequestVerificationToken';
+                    tokenInput.value = hiddenToken.value;
+                    form.appendChild(tokenInput);
+                }
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+}

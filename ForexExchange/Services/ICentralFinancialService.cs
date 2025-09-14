@@ -39,6 +39,16 @@ namespace ForexExchange.Services
         Task AdjustCustomerBalanceAsync(int customerId, string currencyCode, decimal adjustmentAmount, 
             string reason, string performedBy);
 
+        /// <summary>
+        /// Safely deletes an order by reversing its financial impacts
+        /// </summary>
+        Task DeleteOrderAsync(Order order, string performedBy = "Admin");
+
+        /// <summary>
+        /// Safely deletes an accounting document by reversing its financial impacts
+        /// </summary>
+        Task DeleteAccountingDocumentAsync(AccountingDocument document, string performedBy = "Admin");
+
         #endregion
 
         #region Currency Pool Operations

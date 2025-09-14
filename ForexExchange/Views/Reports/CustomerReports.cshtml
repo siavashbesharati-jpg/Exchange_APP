@@ -117,21 +117,22 @@
                                 <table class="table table-hover mb-0" id="timelineTable">
                                     <thead class="table-dark sticky-top">
                                         <tr class="text-center">
-                                            <th width="15%">تاریخ</th>
-                                            <th width="20%">نوع</th>
-                                            <th width="15%">ارز</th>
-                                            <th width="20%">مقدار</th>
-                                            <th width="20%">موجودی</th>
+                                            <th width="12%">تاریخ</th>
+                                            <th width="15%">نوع</th>
+                                            <th width="10%">ارز</th>
+                                            <th width="15%">مقدار</th>
+                                            <th width="15%">موجودی</th>
+                                            <th width="33%">توضیحات</th>
                                         </tr>
                                     </thead>
                                     <tbody id="timelineTableBody">
                                         <tr>
-                                            <td colspan="5" class="text-center py-5 text-muted">
+                                            <td colspan="6" class="text-center py-5 text-muted">
                                                 <i class="fas fa-user-plus fa-2x mb-2"></i>
                                                 <br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید
                                             </td>
                                         </tr>
-                                b    </tbody>
+                                    </tbody>
                                 </table>
                             </div>
 
@@ -251,7 +252,7 @@ function loadDataForActiveTab() {
 function showEmptyState() {
     // Show empty state for timeline
     document.getElementById('timelineTableBody').innerHTML = 
-        '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-user-plus fa-2x mb-2"></i><br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید</td></tr>';
+        '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-user-plus fa-2x mb-2"></i><br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید</td></tr>';
 }
 
 function clearDate(inputId) {
@@ -352,7 +353,7 @@ function renderBankStyleTimeline(timeline) {
     if (!timeline.transactions || timeline.transactions.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center py-5 text-muted">
+                <td colspan="6" class="text-center py-5 text-muted">
                     <i class="fas fa-info-circle fa-2x mb-2"></i>
                     <br>تراکنشی در بازه زمانی انتخاب شده یافت نشد
                 </td>
@@ -377,23 +378,11 @@ function renderBankStyleTimeline(timeline) {
         // Currency header row
         timelineHtml += `
             <tr class="table-info">
-                <td colspan="5" class="fw-bold text-center">
+                <td colspan="6" class="fw-bold text-center">
                     <i class="fas fa-coins me-2"></i>
                     تراکنش‌های ${currency}
                     <small class="ms-2">(${transactions.length} تراکنش)</small>
                 </td>
-            </tr>
-        `;
-
-        // Add initial balance row
-        const initialBalance = timeline.initialBalances[currency] || 0;
-        timelineHtml += `
-            <tr class="table-light">
-                <td class="text-center">  </td>
-                <td class="text-center"><span class="badge bg-secondary">موجودی اولیه</span></td>
-                <td class="text-center">${currency}</td>
-                <td class="text-center ltr-direction">-</td>
-                <td class="text-center ltr-direction fw-bold">${formatCurrency(initialBalance, currency)}</td>
             </tr>
         `;
 
@@ -433,12 +422,13 @@ function renderBankStyleTimeline(timeline) {
                     <td class="text-center">${currency}</td>
                     <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(transaction.amount, currency)}</td>
                     <td class="text-center ltr-direction fw-bold">${formatCurrency(transaction.runningBalance, currency)}</td>
+                    <td class="text-start"><small class="text-muted">${transaction.description || '-'}</small></td>
                 </tr>
             `;
         });
 
         // Add spacing row
-        timelineHtml += `<tr><td colspan="5" style="height: 15px; border: none;"></td></tr>`;
+        timelineHtml += `<tr><td colspan="6" style="height: 15px; border: none;"></td></tr>`;
     });
     
     tbody.innerHTML = timelineHtml;
@@ -529,7 +519,7 @@ function getTransactionBadgeClass(type) {
 function showTimelineEmptyState() {
     document.getElementById('timelineTableBody').innerHTML = `
         <tr>
-            <td colspan="7" class="text-center py-5 text-muted">
+            <td colspan="6" class="text-center py-5 text-muted">
                 <i class="fas fa-user-plus fa-2x mb-2"></i>
                 <br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید
             </td>
@@ -540,7 +530,7 @@ function showTimelineEmptyState() {
 function showTimelineLoading() {
     document.getElementById('timelineTableBody').innerHTML = `
         <tr>
-            <td colspan="7" class="text-center py-5">
+            <td colspan="6" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">در حال بارگذاری...</span>
                 </div>
@@ -553,7 +543,7 @@ function showTimelineLoading() {
 function showTimelineError(message) {
     document.getElementById('timelineTableBody').innerHTML = `
         <tr>
-            <td colspan="7" class="text-center py-5 text-danger">
+            <td colspan="6" class="text-center py-5 text-danger">
                 <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                 <br>${message}
             </td>

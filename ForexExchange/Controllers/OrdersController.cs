@@ -962,5 +962,52 @@ namespace ForexExchange.Controllers
             _context.Update(exchangeRate);
             await _context.SaveChangesAsync();
         }
+
+        // POST: Orders/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")] // Only admins can delete orders
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var order = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .FirstOrDefaultAsync(o => o.Id == id);
+
+                if (order == null)
+                {
+                    TempData["ErrorMessage"] = "معامله یافت نشد.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Use centralized service to delete with proper financial impact reversal
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _centralFinancialService.DeleteOrderAsync(order, currentUser?.UserName ?? "Admin");
+
+                // Log admin activity
+                var adminActivity = new AdminActivity
+                {
+                    AdminUserId = currentUser?.Id ?? "Unknown",
+                    ActivityType = AdminActivityType.OrderCancelled, // Using cancellation as closest to deletion
+                    Description = $"Deleted Order #{order.Id} - {order.FromCurrency.Code} to {order.ToCurrency.Code}",
+                    Timestamp = DateTime.UtcNow,
+                    IpAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString()
+                };
+                _context.AdminActivities.Add(adminActivity);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"معامله #{order.Id} با موفقیت حذف شد و تأثیرات مالی آن برگردانده شد.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error deleting order {id}");
+                TempData["ErrorMessage"] = "خطا در حذف معامله. لطفاً دوباره تلاش کنید.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

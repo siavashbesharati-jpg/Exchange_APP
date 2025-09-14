@@ -1,5 +1,6 @@
 using ForexExchange.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace ForexExchange.Services
 {
@@ -275,7 +276,20 @@ namespace ForexExchange.Services
             CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null,
             string? reason = null, string performedBy = "System")
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            await UpdateCustomerBalanceInternalAsync(customerId, currencyCode, amount, transactionType, 
+                relatedOrderId, relatedDocumentId, reason, performedBy, useTransaction: true);
+        }
+
+        private async Task UpdateCustomerBalanceInternalAsync(int customerId, string currencyCode, decimal amount,
+            CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null,
+            string? reason = null, string performedBy = "System", bool useTransaction = true)
+        {
+            IDbContextTransaction? transaction = null;
+            if (useTransaction)
+            {
+                transaction = await _context.Database.BeginTransactionAsync();
+            }
+            
             try
             {
                 // Get or create current balance
@@ -328,15 +342,26 @@ namespace ForexExchange.Services
                 currentBalance.Notes = $"Updated by {performedBy} at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                
+                if (transaction != null)
+                {
+                    await transaction.CommitAsync();
+                }
 
                 _logger.LogInformation($"Customer balance updated: Customer {customerId}, Currency {currencyCode}, Amount {amount}, New Balance {newBalance}");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                if (transaction != null)
+                {
+                    await transaction.RollbackAsync();
+                }
                 _logger.LogError(ex, $"Error updating customer balance: Customer {customerId}, Currency {currencyCode}, Amount {amount}");
                 throw;
+            }
+            finally
+            {
+                transaction?.Dispose();
             }
         }
 
@@ -970,5 +995,176 @@ namespace ForexExchange.Services
         }
 
         #endregion
+
+        #region Delete Operations with Financial Impact Reversal
+
+        /// <summary>
+        /// Safely delete an order by reversing its financial impacts
+        /// </summary>
+        public async Task DeleteOrderAsync(Order order, string performedBy = "Admin")
+        {
+            try
+            {
+                _logger.LogInformation($"Starting order deletion: Order {order.Id} by {performedBy}");
+
+                // 1. Reverse customer balance and currency pool impacts
+                // Orders are always processed immediately (no verification check needed)
+                await ReverseOrderFinancialImpactAsync(order, $"Order Deletion - {performedBy}");
+
+                // 2. Delete the order
+                _context.Orders.Remove(order);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Order deletion completed successfully: Order {order.Id}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error deleting order {order.Id}: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Safely delete an accounting document by reversing its financial impacts
+        /// </summary>
+        public async Task DeleteAccountingDocumentAsync(AccountingDocument document, string performedBy = "Admin")
+        {
+            try
+            {
+                _logger.LogInformation($"Starting accounting document deletion: Document {document.Id} by {performedBy}");
+
+                // 1. Reverse financial impacts (only if document was verified)
+                if (document.IsVerified)
+                {
+                    await ReverseAccountingDocumentFinancialImpactAsync(document, $"Document Deletion - {performedBy}");
+                }
+
+                // 2. Delete the document
+                _context.AccountingDocuments.Remove(document);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Accounting document deletion completed successfully: Document {document.Id}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error deleting accounting document {document.Id}: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Reverse financial impact of an order (opposite of ProcessOrderCreationAsync)
+        /// </summary>
+        private async Task ReverseOrderFinancialImpactAsync(Order order, string reason)
+        {
+            _logger.LogInformation($"Reversing financial impact for Order {order.Id}");
+
+            // Reverse customer balance impacts (opposite of order creation)
+            await UpdateCustomerBalanceAsync(
+                customerId: order.CustomerId,
+                currencyCode: order.FromCurrency.Code,
+                amount: +order.FromAmount, // POSITIVE (was -amount originally)
+                transactionType: CustomerBalanceTransactionType.Manual,
+                relatedOrderId: order.Id,
+                reason: reason,
+                performedBy: "System"
+            );
+
+            await UpdateCustomerBalanceAsync(
+                customerId: order.CustomerId,
+                currencyCode: order.ToCurrency.Code,
+                amount: -order.ToAmount, // NEGATIVE (was +amount originally)
+                transactionType: CustomerBalanceTransactionType.Manual,
+                relatedOrderId: order.Id,
+                reason: reason,
+                performedBy: "System"
+            );
+
+            // Reverse currency pool impacts (opposite of order creation)
+            await UpdateCurrencyPoolAsync(
+                currencyCode: order.FromCurrency.Code,
+                amount: -order.FromAmount, // NEGATIVE (was +amount originally)
+                transactionType: CurrencyPoolTransactionType.ManualEdit,
+                reason: reason,
+                performedBy: "System",
+                referenceId: order.Id
+            );
+
+            await UpdateCurrencyPoolAsync(
+                currencyCode: order.ToCurrency.Code,
+                amount: +order.ToAmount, // POSITIVE (was -amount originally)
+                transactionType: CurrencyPoolTransactionType.ManualEdit,
+                reason: reason,
+                performedBy: "System",
+                referenceId: order.Id
+            );
+
+            _logger.LogInformation($"Financial impact reversed for Order {order.Id}");
+        }
+
+        /// <summary>
+        /// Reverse financial impact of an accounting document (opposite of ProcessAccountingDocumentAsync)
+        /// </summary>
+        private async Task ReverseAccountingDocumentFinancialImpactAsync(AccountingDocument document, string reason)
+        {
+            _logger.LogInformation($"Reversing financial impact for Accounting Document {document.Id}");
+
+            // Reverse customer impacts (opposite of original logic)
+            if (document.PayerCustomerId.HasValue)
+            {
+                await UpdateCustomerBalanceAsync(
+                    document.PayerCustomerId.Value,
+                    document.CurrencyCode,
+                    -document.Amount, // NEGATIVE (was +amount originally)
+                    CustomerBalanceTransactionType.Manual,
+                    relatedDocumentId: document.Id,
+                    reason: reason,
+                    performedBy: "System"
+                );
+            }
+
+            if (document.ReceiverCustomerId.HasValue)
+            {
+                await UpdateCustomerBalanceAsync(
+                    document.ReceiverCustomerId.Value,
+                    document.CurrencyCode,
+                    +document.Amount, // POSITIVE (was -amount originally)
+                    CustomerBalanceTransactionType.Manual,
+                    relatedDocumentId: document.Id,
+                    reason: reason,
+                    performedBy: "System"
+                );
+            }
+
+            // Reverse bank account impacts
+            if (document.PayerBankAccountId.HasValue)
+            {
+                await ProcessBankAccountTransactionAsync(
+                    document.PayerBankAccountId.Value,
+                    +document.Amount, // POSITIVE (was -amount originally)
+                    BankAccountTransactionType.ManualEdit,
+                    document.Id,
+                    reason,
+                    "System"
+                );
+            }
+
+            if (document.ReceiverBankAccountId.HasValue)
+            {
+                await ProcessBankAccountTransactionAsync(
+                    document.ReceiverBankAccountId.Value,
+                    -document.Amount, // NEGATIVE (was +amount originally)
+                    BankAccountTransactionType.ManualEdit,
+                    document.Id,
+                    reason,
+                    "System"
+                );
+            }
+
+            _logger.LogInformation($"Financial impact reversed for Accounting Document {document.Id}");
+        }
+
+        #endregion
+
     }
 }

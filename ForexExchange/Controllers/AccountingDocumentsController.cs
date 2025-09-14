@@ -20,6 +20,7 @@ namespace ForexExchange.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INotificationHub _notificationHub;
         private readonly ICentralFinancialService _centralFinancialService;
+        private readonly ILogger<AccountingDocumentsController> _logger;
 
         public AccountingDocumentsController(
             ForexDbContext context,
@@ -29,7 +30,8 @@ namespace ForexExchange.Controllers
             AdminNotificationService adminNotificationService,
             UserManager<ApplicationUser> userManager,
             INotificationHub notificationHub,
-            ICentralFinancialService centralFinancialService)
+            ICentralFinancialService centralFinancialService,
+            ILogger<AccountingDocumentsController> logger)
         {
             _context = context;
             _customerBalanceService = customerBalanceService;
@@ -39,6 +41,7 @@ namespace ForexExchange.Controllers
             _userManager = userManager;
             _notificationHub = notificationHub;
             _centralFinancialService = centralFinancialService;
+            _logger = logger;
         }
 
         // GET: AccountingDocuments
@@ -76,9 +79,16 @@ namespace ForexExchange.Controllers
             // Apply filters
             if (!String.IsNullOrEmpty(searchString))
             {
-                documents = documents.Where(d => d.Title.Contains(searchString) ||
-                                                (d.Description != null && d.Description.Contains(searchString)) ||
-                                                (d.ReferenceNumber != null && d.ReferenceNumber.Contains(searchString)));
+                // Search by document ID
+                if (int.TryParse(searchString, out int documentId))
+                {
+                    documents = documents.Where(d => d.Id == documentId);
+                }
+                else
+                {
+                    // If not a valid integer, return no results
+                    documents = documents.Where(d => false);
+                }
             }
 
             if (customerFilter.HasValue)
@@ -746,6 +756,54 @@ namespace ForexExchange.Controllers
                     message = "خطای داخلی سرور: " + ex.Message
                 });
             }
+        }
+
+        // POST: AccountingDocuments/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")] // Only admins can delete documents
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var document = await _context.AccountingDocuments
+                    .Include(a => a.PayerCustomer)
+                    .Include(a => a.ReceiverCustomer)
+                    .Include(a => a.PayerBankAccount)
+                    .Include(a => a.ReceiverBankAccount)
+                    .FirstOrDefaultAsync(a => a.Id == id);
+
+                if (document == null)
+                {
+                    TempData["ErrorMessage"] = "سند حسابداری یافت نشد.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Use centralized service to delete with proper financial impact reversal
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _centralFinancialService.DeleteAccountingDocumentAsync(document, currentUser?.UserName ?? "Admin");
+
+                // Log admin activity
+                var adminActivity = new AdminActivity
+                {
+                    AdminUserId = currentUser?.Id ?? "Unknown",
+                    ActivityType = AdminActivityType.UserDeleted, // Using as closest match for document deletion
+                    Description = $"Deleted Accounting Document #{document.Id} - {document.Title}",
+                    Timestamp = DateTime.UtcNow,
+                    IpAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString()
+                };
+                _context.AdminActivities.Add(adminActivity);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = $"سند حسابداری #{document.Id} با موفقیت حذف شد و تأثیرات مالی آن برگردانده شد.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error deleting accounting document {id}");
+                TempData["ErrorMessage"] = "خطا در حذف سند حسابداری. لطفاً دوباره تلاش کنید.";
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         private bool AccountingDocumentExists(int id)
