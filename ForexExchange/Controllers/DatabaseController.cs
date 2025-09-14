@@ -654,5 +654,211 @@ namespace ForexExchange.Controllers
 
             return RedirectToAction("Index");
         }
+
+        [HttpPost]
+        public async Task<IActionResult> FixAllTransactionDates()
+        {
+            try
+            {
+                var fixLog = new List<string>();
+                int totalFixed = 0;
+
+                // Fix CustomerBalanceHistory transaction dates
+                var customerHistory = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionDate == h.CreatedAt) // Find records where dates are the same
+                    .ToListAsync();
+
+                fixLog.Add($"Found {customerHistory.Count} customer balance history records to fix");
+
+                foreach (var history in customerHistory)
+                {
+                    DateTime? correctDate = null;
+
+                    // If it's an order transaction, get the order creation date
+                    if (history.TransactionType == CustomerBalanceTransactionType.Order && history.ReferenceId.HasValue)
+                    {
+                        var order = await _context.Orders
+                            .FirstOrDefaultAsync(o => o.Id == history.ReferenceId.Value);
+                        if (order != null)
+                        {
+                            correctDate = order.CreatedAt;
+                        }
+                    }
+                    // If it's an accounting document transaction, get the document date
+                    else if (history.TransactionType == CustomerBalanceTransactionType.AccountingDocument && history.ReferenceId.HasValue)
+                    {
+                        var document = await _context.AccountingDocuments
+                            .FirstOrDefaultAsync(d => d.Id == history.ReferenceId.Value);
+                        if (document != null)
+                        {
+                            correctDate = document.DocumentDate;
+                        }
+                    }
+
+                    if (correctDate.HasValue && correctDate.Value != history.TransactionDate)
+                    {
+                        history.TransactionDate = correctDate.Value;
+                        totalFixed++;
+                    }
+                }
+
+                // Fix CurrencyPoolHistory transaction dates  
+                var poolHistory = await _context.CurrencyPoolHistory
+                    .Where(h => h.TransactionDate == h.CreatedAt) // Find records where dates are the same
+                    .ToListAsync();
+
+                fixLog.Add($"Found {poolHistory.Count} currency pool history records to fix");
+
+                foreach (var history in poolHistory)
+                {
+                    DateTime? correctDate = null;
+
+                    // If it's an order transaction, get the order creation date
+                    if (history.TransactionType == CurrencyPoolTransactionType.Order && history.ReferenceId.HasValue)
+                    {
+                        var order = await _context.Orders
+                            .FirstOrDefaultAsync(o => o.Id == history.ReferenceId.Value);
+                        if (order != null)
+                        {
+                            correctDate = order.CreatedAt;
+                        }
+                    }
+
+                    if (correctDate.HasValue && correctDate.Value != history.TransactionDate)
+                    {
+                        history.TransactionDate = correctDate.Value;
+                        totalFixed++;
+                    }
+                }
+
+                // Fix BankAccountBalanceHistory transaction dates
+                var bankHistory = await _context.BankAccountBalanceHistory
+                    .Where(h => h.TransactionDate == h.CreatedAt) // Find records where dates are the same
+                    .ToListAsync();
+
+                fixLog.Add($"Found {bankHistory.Count} bank account balance history records to fix");
+
+                foreach (var history in bankHistory)
+                {
+                    DateTime? correctDate = null;
+
+                    // If it's a document transaction, get the document date
+                    if (history.TransactionType == BankAccountTransactionType.Document && history.ReferenceId.HasValue)
+                    {
+                        var document = await _context.AccountingDocuments
+                            .FirstOrDefaultAsync(d => d.Id == history.ReferenceId.Value);
+                        if (document != null)
+                        {
+                            correctDate = document.DocumentDate;
+                        }
+                    }
+
+                    if (correctDate.HasValue && correctDate.Value != history.TransactionDate)
+                    {
+                        history.TransactionDate = correctDate.Value;
+                        totalFixed++;
+                    }
+                }
+
+                // Save all changes
+                if (totalFixed > 0)
+                {
+                    await _context.SaveChangesAsync();
+                    fixLog.Add($"Successfully saved {totalFixed} transaction date corrections");
+                }
+                else
+                {
+                    fixLog.Add("No transaction dates needed fixing");
+                }
+
+                var summary = new[]
+                {
+                    $"✅ تاریخ {totalFixed} تراکنش اصلاح شد",
+                    $"📋 بررسی شد: {customerHistory.Count} تاریخچه مشتری + {poolHistory.Count} تاریخچه صندوق + {bankHistory.Count} تاریخچه بانک",
+                    "🎯 منطق اصلاح: سفارشات = Order.CreatedAt، اسناد = Document.DocumentDate",
+                    "📅 حالا تاریخ تراکنش = تاریخ واقعی معامله (نه زمان ایجاد رکورد)"
+                };
+
+                TempData["Success"] = string.Join("<br/>", summary);
+                TempData["FixLog"] = string.Join("\n", fixLog);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در اصلاح تاریخ تراکنش‌ها: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RecalculateAllBalancesFromTransactionDates()
+        {
+            try
+            {
+                var recalcLog = new List<string>();
+                recalcLog.Add("شروع بازمحاسبه موجودی‌ها بر اساس تاریخ تراکنش‌ها...");
+
+                // Get counts before recalculation
+                var customerBalanceCount = await _context.CustomerBalances.CountAsync();
+                var poolBalanceCount = await _context.CurrencyPools.CountAsync();
+                var bankBalanceCount = await _context.BankAccountBalances.CountAsync();
+                
+                var customerHistoryCount = await _context.CustomerBalanceHistory.CountAsync();
+                var poolHistoryCount = await _context.CurrencyPoolHistory.CountAsync();
+                var bankHistoryCount = await _context.BankAccountBalanceHistory.CountAsync();
+
+                recalcLog.Add($"آمار قبل از بازمحاسبه:");
+                recalcLog.Add($"- موجودی مشتری: {customerBalanceCount}");
+                recalcLog.Add($"- موجودی صندوق: {poolBalanceCount}");
+                recalcLog.Add($"- موجودی بانک: {bankBalanceCount}");
+                recalcLog.Add($"- تاریخچه مشتری: {customerHistoryCount}");
+                recalcLog.Add($"- تاریخچه صندوق: {poolHistoryCount}");
+                recalcLog.Add($"- تاریخچه بانک: {bankHistoryCount}");
+
+                // Perform the recalculation
+                await _centralFinancialService.RecalculateAllBalancesFromTransactionDatesAsync("Database Admin");
+
+                recalcLog.Add("✅ بازمحاسبه با موفقیت انجام شد");
+
+                // Get some sample results to verify
+                var sampleCustomerBalances = await _context.CustomerBalances
+                    .Include(cb => cb.Customer)
+                    .Take(5)
+                    .ToListAsync();
+
+                var samplePools = await _context.CurrencyPools
+                    .Take(5)
+                    .ToListAsync();
+
+                recalcLog.Add("نمونه موجودی‌های محاسبه شده:");
+                foreach (var balance in sampleCustomerBalances)
+                {
+                    recalcLog.Add($"- مشتری {balance.Customer?.FullName}: {balance.Balance:F2} {balance.CurrencyCode}");
+                }
+
+                foreach (var pool in samplePools)
+                {
+                    recalcLog.Add($"- صندوق {pool.CurrencyCode}: {pool.Balance:F2}");
+                }
+
+                var summary = new[]
+                {
+                    "✅ بازمحاسبه کامل موجودی‌ها انجام شد",
+                    $"📊 {customerHistoryCount + poolHistoryCount + bankHistoryCount} رکورد تاریخچه پردازش شد",
+                    "🎯 ترتیب پردازش: بر اساس TransactionDate (تاریخ واقعی تراکنش)",
+                    "📈 موجودی‌ها حالا دقیقاً منطبق با ترتیب زمانی واقعی معاملات است",
+                    "🔄 تمام رکوردهای تاریخچه نیز بروزرسانی شدند"
+                };
+
+                TempData["Success"] = string.Join("<br/>", summary);
+                TempData["RecalcLog"] = string.Join("\n", recalcLog);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در بازمحاسبه موجودی‌ها: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
     }
 }

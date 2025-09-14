@@ -68,14 +68,14 @@ namespace ForexExchange.Services
         /// Preserves exact logic from existing pool management
         /// </summary>
         Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
-            string reason, string performedBy = "System", int? referenceId = null);
+            string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null);
         
         /// <summary>
         /// Decreases currency pool balance (selling to customer)
         /// Preserves exact logic from existing pool management
         /// </summary>
         Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType, 
-            string reason, string performedBy = "System", int? referenceId = null);
+            string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null);
         
         /// <summary>
         /// Manually adjusts currency pool balance with audit trail
@@ -102,7 +102,7 @@ namespace ForexExchange.Services
         /// Preserves exact logic from existing bank account processing
         /// </summary>
         Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType, 
-            int? relatedDocumentId, string reason, string performedBy = "System");
+            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null);
         
         /// <summary>
         /// Manually adjusts bank account balance with audit trail
@@ -150,6 +150,12 @@ namespace ForexExchange.Services
         /// Used for balance reconciliation and initial data migration
         /// </summary>
         Task RecalculateAllBalancesFromHistoryAsync();
+
+        /// <summary>
+        /// Recalculates all balances based on transaction dates in chronological order.
+        /// This method should be used after fixing transaction dates to ensure balance accuracy.
+        /// </summary>
+        Task RecalculateAllBalancesFromTransactionDatesAsync(string performedBy = "System");
 
         /// <summary>
         /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders

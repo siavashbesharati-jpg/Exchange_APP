@@ -51,7 +51,8 @@ namespace ForexExchange.Services
                 transactionType: CustomerBalanceTransactionType.Order,
                 relatedOrderId: order.Id,
                 reason: $"Order {order.Id}: Payment in {order.FromCurrency.Code}",
-                performedBy: performedBy
+                performedBy: performedBy,
+                transactionDate: order.CreatedAt // Use order creation date
             );
 
             // 2. Receipt transaction (ToCurrency - positive impact)
@@ -62,7 +63,8 @@ namespace ForexExchange.Services
                 transactionType: CustomerBalanceTransactionType.Order,
                 relatedOrderId: order.Id,
                 reason: $"Order {order.Id}: Receipt in {order.ToCurrency.Code}",
-                performedBy: performedBy
+                performedBy: performedBy,
+                transactionDate: order.CreatedAt // Use order creation date
             );
 
             // Update currency pools - PRESERVE EXACT LOGIC
@@ -73,7 +75,8 @@ namespace ForexExchange.Services
                 transactionType: CurrencyPoolTransactionType.Order,
                 reason: $"Bought from customer via Order {order.Id}",
                 performedBy: performedBy,
-                referenceId: order.Id
+                referenceId: order.Id,
+                transactionDate: order.CreatedAt // Use order creation date
             );
 
             // When customer buys ToCurrency from us, our pool decreases
@@ -83,7 +86,8 @@ namespace ForexExchange.Services
                 transactionType: CurrencyPoolTransactionType.Order,
                 reason: $"Sold to customer via Order {order.Id}",
                 performedBy: performedBy,
-                referenceId: order.Id
+                referenceId: order.Id,
+                transactionDate: order.CreatedAt // Use order creation date
             );
 
             _logger.LogInformation($"Order {order.Id} processing completed - dual currency impact recorded");
@@ -103,7 +107,8 @@ namespace ForexExchange.Services
                     transactionType: CustomerBalanceTransactionType.AccountingDocument,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
-                    performedBy: performedBy
+                    performedBy: performedBy,
+                    transactionDate: document.DocumentDate // Use document date
                 );
             }
 
@@ -116,7 +121,8 @@ namespace ForexExchange.Services
                     transactionType: CustomerBalanceTransactionType.AccountingDocument,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
-                    performedBy: performedBy
+                    performedBy: performedBy,
+                    transactionDate: document.DocumentDate // Use document date
                 );
             }
 
@@ -129,7 +135,8 @@ namespace ForexExchange.Services
                     transactionType: BankAccountTransactionType.Document,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
-                    performedBy: performedBy
+                    performedBy: performedBy,
+                    transactionDate: document.DocumentDate // Use document date
                 );
             }
 
@@ -141,7 +148,8 @@ namespace ForexExchange.Services
                     transactionType: BankAccountTransactionType.Document,
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
-                    performedBy: performedBy
+                    performedBy: performedBy,
+                    transactionDate: document.DocumentDate // Use document date
                 );
             }
 
@@ -185,7 +193,7 @@ namespace ForexExchange.Services
         }
 
         public async Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
-            string reason, string performedBy = "System", int? referenceId = null)
+            string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null)
         {
             await UpdateCurrencyPoolAsync(
                 currencyCode: currencyCode,
@@ -193,12 +201,13 @@ namespace ForexExchange.Services
                 transactionType: transactionType,
                 reason: reason,
                 performedBy: performedBy,
-                referenceId: referenceId
+                referenceId: referenceId,
+                transactionDate: transactionDate
             );
         }
 
         public async Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
-            string reason, string performedBy = "System", int? referenceId = null)
+            string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null)
         {
             await UpdateCurrencyPoolAsync(
                 currencyCode: currencyCode,
@@ -206,7 +215,8 @@ namespace ForexExchange.Services
                 transactionType: transactionType,
                 reason: reason,
                 performedBy: performedBy,
-                referenceId: referenceId
+                referenceId: referenceId,
+                transactionDate: transactionDate
             );
         }
 
@@ -243,7 +253,7 @@ namespace ForexExchange.Services
         }
 
         public async Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
-            int? relatedDocumentId, string reason, string performedBy = "System")
+            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null)
         {
             await UpdateBankAccountBalanceAsync(
                 bankAccountId: bankAccountId,
@@ -251,7 +261,8 @@ namespace ForexExchange.Services
                 transactionType: transactionType,
                 relatedDocumentId: relatedDocumentId,
                 reason: reason,
-                performedBy: performedBy
+                performedBy: performedBy,
+                transactionDate: transactionDate
             );
         }
 
@@ -274,15 +285,15 @@ namespace ForexExchange.Services
 
         private async Task UpdateCustomerBalanceAsync(int customerId, string currencyCode, decimal amount,
             CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null,
-            string? reason = null, string performedBy = "System")
+            string? reason = null, string performedBy = "System", DateTime? transactionDate = null)
         {
             await UpdateCustomerBalanceInternalAsync(customerId, currencyCode, amount, transactionType, 
-                relatedOrderId, relatedDocumentId, reason, performedBy, useTransaction: true);
+                relatedOrderId, relatedDocumentId, reason, performedBy, useTransaction: true, transactionDate);
         }
 
         private async Task UpdateCustomerBalanceInternalAsync(int customerId, string currencyCode, decimal amount,
             CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null,
-            string? reason = null, string performedBy = "System", bool useTransaction = true)
+            string? reason = null, string performedBy = "System", bool useTransaction = true, DateTime? transactionDate = null)
         {
             IDbContextTransaction? transaction = null;
             if (useTransaction)
@@ -323,7 +334,7 @@ namespace ForexExchange.Services
                     TransactionType = transactionType,
                     ReferenceId = relatedOrderId ?? relatedDocumentId,
                     Description = reason ?? GetTransactionTypeDescription(transactionType),
-                    TransactionDate = DateTime.UtcNow,
+                    TransactionDate = transactionDate ?? DateTime.UtcNow, // Use provided date or current time
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = performedBy
                 };
@@ -366,7 +377,7 @@ namespace ForexExchange.Services
         }
 
         private async Task UpdateCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
-            string reason, string performedBy = "System", int? referenceId = null)
+            string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -438,7 +449,7 @@ namespace ForexExchange.Services
                     TransactionType = transactionType,
                     ReferenceId = referenceId, // Now properly set for orders and documents
                     Description = reason,
-                    TransactionDate = DateTime.UtcNow,
+                    TransactionDate = transactionDate ?? DateTime.UtcNow, // Use provided date or current time
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = performedBy
                 };
@@ -480,7 +491,7 @@ namespace ForexExchange.Services
         }
 
         private async Task UpdateBankAccountBalanceAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
-            int? relatedDocumentId, string reason, string performedBy = "System")
+            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -513,7 +524,7 @@ namespace ForexExchange.Services
                     TransactionType = transactionType,
                     ReferenceId = relatedDocumentId,
                     Description = reason,
-                    TransactionDate = DateTime.UtcNow,
+                    TransactionDate = transactionDate ?? DateTime.UtcNow, // Use provided date or current time
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = performedBy
                 };
@@ -1553,6 +1564,206 @@ namespace ForexExchange.Services
                 await _context.SaveChangesAsync();
                 _logger.LogInformation($"Document {documentId} restored by {performedBy}");
             }
+        }
+
+        #endregion
+
+        #region Balance Recalculation Based on Transaction Dates
+
+        /// <summary>
+        /// Recalculates all balances based on transaction dates in chronological order.
+        /// This method should be used after fixing transaction dates to ensure balance accuracy.
+        /// </summary>
+        public async Task RecalculateAllBalancesFromTransactionDatesAsync(string performedBy = "System")
+        {
+            _logger.LogInformation("Starting complete balance recalculation based on transaction dates");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Step 1: Reset all current balances to zero
+                await ResetAllBalancesToZeroAsync();
+
+                // Step 2: Recalculate customer balances from history in chronological order
+                await RecalculateCustomerBalancesFromHistoryAsync();
+
+                // Step 3: Recalculate currency pool balances from history in chronological order
+                await RecalculateCurrencyPoolBalancesFromHistoryAsync();
+
+                // Step 4: Recalculate bank account balances from history in chronological order
+                await RecalculateBankAccountBalancesFromHistoryAsync();
+
+                await transaction.CommitAsync();
+                _logger.LogInformation("Successfully completed balance recalculation based on transaction dates");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to recalculate balances from transaction dates");
+                throw;
+            }
+        }
+
+        private async Task ResetAllBalancesToZeroAsync()
+        {
+            _logger.LogInformation("Resetting all balances to zero");
+
+            // Reset customer balances
+            var customerBalances = await _context.CustomerBalances.ToListAsync();
+            foreach (var balance in customerBalances)
+            {
+                balance.Balance = 0;
+                balance.LastUpdated = DateTime.UtcNow;
+            }
+
+            // Reset currency pool balances
+            var poolBalances = await _context.CurrencyPools.ToListAsync();
+            foreach (var pool in poolBalances)
+            {
+                pool.Balance = 0;
+                pool.LastUpdated = DateTime.UtcNow;
+            }
+
+            // Reset bank account balances
+            var bankBalances = await _context.BankAccountBalances.ToListAsync();
+            foreach (var balance in bankBalances)
+            {
+                balance.Balance = 0;
+                balance.LastUpdated = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("All balances reset to zero");
+        }
+
+        private async Task RecalculateCustomerBalancesFromHistoryAsync()
+        {
+            _logger.LogInformation("Recalculating customer balances from history");
+
+            // Get all customer history records ordered by transaction date
+            var historyRecords = await _context.CustomerBalanceHistory
+                .OrderBy(h => h.TransactionDate)
+                .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+                .ToListAsync();
+
+            _logger.LogInformation($"Processing {historyRecords.Count} customer history records");
+
+            // Process each record in chronological order
+            foreach (var history in historyRecords)
+            {
+                // Get or create current balance record
+                var currentBalance = await _context.CustomerBalances
+                    .FirstOrDefaultAsync(cb => cb.CustomerId == history.CustomerId && cb.CurrencyCode == history.CurrencyCode);
+
+                if (currentBalance == null)
+                {
+                    currentBalance = new CustomerBalance
+                    {
+                        CustomerId = history.CustomerId,
+                        CurrencyCode = history.CurrencyCode,
+                        Balance = 0,
+                        LastUpdated = DateTime.UtcNow
+                    };
+                    _context.CustomerBalances.Add(currentBalance);
+                }
+
+                // Apply the transaction amount to current balance
+                currentBalance.Balance += history.TransactionAmount;
+                currentBalance.LastUpdated = DateTime.UtcNow;
+
+                // Update the history record's balance fields to match recalculation
+                history.BalanceBefore = currentBalance.Balance - history.TransactionAmount;
+                history.BalanceAfter = currentBalance.Balance;
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Customer balance recalculation completed");
+        }
+
+        private async Task RecalculateCurrencyPoolBalancesFromHistoryAsync()
+        {
+            _logger.LogInformation("Recalculating currency pool balances from history");
+
+            // Get all pool history records ordered by transaction date
+            var historyRecords = await _context.CurrencyPoolHistory
+                .OrderBy(h => h.TransactionDate)
+                .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+                .ToListAsync();
+
+            _logger.LogInformation($"Processing {historyRecords.Count} currency pool history records");
+
+            // Process each record in chronological order
+            foreach (var history in historyRecords)
+            {
+                // Get or create current pool record
+                var currentPool = await _context.CurrencyPools
+                    .FirstOrDefaultAsync(cp => cp.CurrencyCode == history.CurrencyCode);
+
+                if (currentPool == null)
+                {
+                    currentPool = new CurrencyPool
+                    {
+                        CurrencyCode = history.CurrencyCode,
+                        Balance = 0,
+                        LastUpdated = DateTime.UtcNow
+                    };
+                    _context.CurrencyPools.Add(currentPool);
+                }
+
+                // Apply the transaction amount to current balance
+                currentPool.Balance += history.TransactionAmount;
+                currentPool.LastUpdated = DateTime.UtcNow;
+
+                // Update the history record's balance fields to match recalculation
+                history.BalanceBefore = currentPool.Balance - history.TransactionAmount;
+                history.BalanceAfter = currentPool.Balance;
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Currency pool balance recalculation completed");
+        }
+
+        private async Task RecalculateBankAccountBalancesFromHistoryAsync()
+        {
+            _logger.LogInformation("Recalculating bank account balances from history");
+
+            // Get all bank account history records ordered by transaction date
+            var historyRecords = await _context.BankAccountBalanceHistory
+                .OrderBy(h => h.TransactionDate)
+                .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+                .ToListAsync();
+
+            _logger.LogInformation($"Processing {historyRecords.Count} bank account history records");
+
+            // Process each record in chronological order
+            foreach (var history in historyRecords)
+            {
+                // Get or create current balance record
+                var currentBalance = await _context.BankAccountBalances
+                    .FirstOrDefaultAsync(bb => bb.BankAccountId == history.BankAccountId);
+
+                if (currentBalance == null)
+                {
+                    currentBalance = new BankAccountBalance
+                    {
+                        BankAccountId = history.BankAccountId,
+                        Balance = 0,
+                        LastUpdated = DateTime.UtcNow
+                    };
+                    _context.BankAccountBalances.Add(currentBalance);
+                }
+
+                // Apply the transaction amount to current balance
+                currentBalance.Balance += history.TransactionAmount;
+                currentBalance.LastUpdated = DateTime.UtcNow;
+
+                // Update the history record's balance fields to match recalculation
+                history.BalanceBefore = currentBalance.Balance - history.TransactionAmount;
+                history.BalanceAfter = currentBalance.Balance;
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Bank account balance recalculation completed");
         }
 
         #endregion
