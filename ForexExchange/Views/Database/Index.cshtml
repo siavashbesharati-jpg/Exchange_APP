@@ -269,6 +269,67 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-edit me-2"></i>
+                                        ایجاد رکورد دستی تاریخچه
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        ایجاد رکورد دستی برای اصلاحات و واردات داده‌های تاریخی
+                                    </div>
+                                    
+                                    <form asp-action="CreateManualCustomerBalanceHistory" method="post">
+                                        @Html.AntiForgeryToken()
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">شناسه مشتری:</label>
+                                                <input type="number" name="customerId" class="form-control" required min="1" placeholder="مثال: 1">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">کد ارز:</label>
+                                                <select name="currencyCode" class="form-control" required>
+                                                    <option value="">انتخاب ارز</option>
+                                                    <option value="IRR">IRR (ریال)</option>
+                                                    <option value="USD">USD (دلار)</option>
+                                                    <option value="EUR">EUR (یورو)</option>
+                                                    <option value="GBP">GBP (پوند)</option>
+                                                    <option value="AED">AED (درهم)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">مبلغ:</label>
+                                                <input type="number" name="amount" class="form-control" required step="0.01" placeholder="مثال: 1000000">
+                                                <small class="text-muted">عدد مثبت = افزایش موجودی، عدد منفی = کاهش موجودی</small>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">تاریخ تراکنش:</label>
+                                                <input type="date" name="transactionDate" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">دلیل تراکنش:</label>
+                                            <input type="text" name="reason" class="form-control" required placeholder="مثال: اصلاح موجودی ابتدایی، واردات داده تاریخی">
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-warning w-100" onclick="return confirm('آیا مطمئن هستید که می‌خواهید این رکورد دستی را ایجاد کنید؟\n\n⚠️ بعد از ایجاد رکورد دستی، حتماً بازمحاسبه موجودی‌ها را انجام دهید.')">
+                                            <i class="fas fa-plus me-2"></i>
+                                            ایجاد رکورد دستی
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

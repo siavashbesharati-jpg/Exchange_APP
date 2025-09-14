@@ -1568,6 +1568,81 @@ namespace ForexExchange.Services
 
         #endregion
 
+        #region Manual Balance History Creation
+
+        /// <summary>
+        /// Creates a manual customer balance history record with specified transaction date
+        /// This is useful for manual adjustments, corrections, or importing historical data
+        /// After creating manual records, use RecalculateAllBalancesFromTransactionDatesAsync to ensure coherence
+        /// </summary>
+        public async Task CreateManualCustomerBalanceHistoryAsync(
+            int customerId, 
+            string currencyCode, 
+            decimal amount, 
+            string reason, 
+            DateTime transactionDate, 
+            string performedBy = "Manual Entry")
+        {
+            _logger.LogInformation($"Creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}, Date {transactionDate:yyyy-MM-dd}");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Validate customer exists
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+                if (customer == null)
+                {
+                    throw new ArgumentException($"Customer with ID {customerId} not found");
+                }
+
+                // Validate currency exists
+                var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == currencyCode);
+                if (currency == null)
+                {
+                    throw new ArgumentException($"Currency with code {currencyCode} not found");
+                }
+
+                // Get current balance for this customer/currency to calculate before/after
+                var currentBalance = await _context.CustomerBalances
+                    .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
+
+                // For manual entries, we set temporary balance fields that will be corrected during recalculation
+                var tempBalanceBefore = currentBalance?.Balance ?? 0m;
+                var tempBalanceAfter = tempBalanceBefore + amount;
+
+                // Create the manual history record
+                var historyRecord = new CustomerBalanceHistory
+                {
+                    CustomerId = customerId,
+                    CurrencyCode = currencyCode,
+                    BalanceBefore = tempBalanceBefore, // Temporary - will be corrected during recalculation
+                    TransactionAmount = amount,
+                    BalanceAfter = tempBalanceAfter, // Temporary - will be corrected during recalculation
+                    TransactionType = CustomerBalanceTransactionType.Manual,
+                    ReferenceId = null, // Manual entries don't have reference IDs
+                    Description = reason,
+                    TransactionDate = transactionDate, // Use the specified date
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = performedBy
+                };
+
+                _context.CustomerBalanceHistory.Add(historyRecord);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Manual customer balance history created: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+                _logger.LogWarning("IMPORTANT: Run RecalculateAllBalancesFromTransactionDatesAsync() to ensure chronological balance coherence");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+                throw;
+            }
+        }
+
+        #endregion
+
         #region Balance Recalculation Based on Transaction Dates
 
         /// <summary>

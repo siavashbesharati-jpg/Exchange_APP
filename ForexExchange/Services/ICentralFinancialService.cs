@@ -158,6 +158,14 @@ namespace ForexExchange.Services
         Task RecalculateAllBalancesFromTransactionDatesAsync(string performedBy = "System");
 
         /// <summary>
+        /// Creates a manual customer balance history record with specified transaction date.
+        /// This is useful for manual adjustments, corrections, or importing historical data.
+        /// After creating manual records, use RecalculateAllBalancesFromTransactionDatesAsync to ensure coherence.
+        /// </summary>
+        Task CreateManualCustomerBalanceHistoryAsync(int customerId, string currencyCode, decimal amount, 
+            string reason, DateTime transactionDate, string performedBy = "Manual Entry");
+
+        /// <summary>
         /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders
         /// This method should be called once to fix missing IRR pool updates, then removed
         /// </summary>

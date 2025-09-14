@@ -860,5 +860,69 @@ namespace ForexExchange.Controllers
 
             return RedirectToAction("Index");
         }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateManualCustomerBalanceHistory(
+            int customerId, 
+            string currencyCode, 
+            decimal amount, 
+            string reason, 
+            DateTime transactionDate)
+        {
+            try
+            {
+                // Validate inputs
+                if (customerId <= 0)
+                {
+                    TempData["Error"] = "لطفاً مشتری معتبری انتخاب کنید";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrWhiteSpace(currencyCode))
+                {
+                    TempData["Error"] = "لطفاً ارز معتبری انتخاب کنید";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrWhiteSpace(reason))
+                {
+                    TempData["Error"] = "لطفاً دلیل تراکنش را وارد کنید";
+                    return RedirectToAction("Index");
+                }
+
+                // Get customer name for display
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+                var customerName = customer?.FullName ?? $"مشتری {customerId}";
+
+                // Create the manual history record
+                await _centralFinancialService.CreateManualCustomerBalanceHistoryAsync(
+                    customerId: customerId,
+                    currencyCode: currencyCode,
+                    amount: amount,
+                    reason: reason,
+                    transactionDate: transactionDate,
+                    performedBy: "Database Admin"
+                );
+
+                var summary = new[]
+                {
+                    "✅ رکورد دستی تاریخچه موجودی ایجاد شد",
+                    $"👤 مشتری: {customerName}",
+                    $"💰 مبلغ: {amount:N2} {currencyCode}",
+                    $"📅 تاریخ تراکنش: {transactionDate:yyyy-MM-dd}",
+                    $"📝 دلیل: {reason}",
+                    "",
+                    "⚠️ مهم: برای اطمینان از انسجام موجودی‌ها، حتماً دکمه 'بازمحاسبه بر اساس تاریخ تراکنش' را اجرا کنید"
+                };
+
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در ایجاد رکورد دستی: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
     }
 }
