@@ -1191,6 +1191,8 @@ namespace ForexExchange.Services
         /// </summary>
         private async Task SoftDeleteBankAccountBalanceHistoryAsync(int documentId, string performedBy)
         {
+            _logger.LogInformation($"SoftDeleteBankAccountBalanceHistoryAsync - DocumentId: {documentId}");
+            
             // Find all bank account history records for this document
             var historyRecords = await _context.BankAccountBalanceHistory
                 .Where(h => h.ReferenceId == documentId && h.TransactionType == BankAccountTransactionType.Document &&
@@ -1219,18 +1221,22 @@ namespace ForexExchange.Services
                 // 1. Mark records as deleted
                 foreach (var record in recordsToDelete)
                 {
+                    _logger.LogInformation($"Marking bank account history record {record.Id} as deleted (Amount: {record.TransactionAmount})");
                     record.IsDeleted = true;
                     record.DeletedAt = DateTime.UtcNow;
                     record.DeletedBy = performedBy;
                 }
 
-                // 2. Recalculate balances for subsequent records
-                await RecalculateBankAccountBalanceHistoryAsync(bankAccountId, recordsToDelete.First().CreatedAt);
+                // 2. Recalculate balances for subsequent records - use the minimum ID of deleted records
+                var minDeletedId = recordsToDelete.Min(r => r.Id);
+                _logger.LogInformation($"Starting balance recalculation for Bank Account {bankAccountId} from record ID {minDeletedId}");
+                await RecalculateBankAccountBalanceHistoryAsync(bankAccountId, minDeletedId);
 
                 // 3. Update current balance
                 await RecalculateCurrentBankAccountBalanceAsync(bankAccountId);
             }
 
+            _logger.LogInformation($"Saving changes for bank account balance history soft delete");
             await _context.SaveChangesAsync();
         }
 
@@ -1315,33 +1321,49 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Recalculate bank account balance history after soft deletion
+        /// Recalculate bank account balance history after soft deletion based on record ID position
         /// </summary>
-        private async Task RecalculateBankAccountBalanceHistoryAsync(int bankAccountId, DateTime fromDate)
+        private async Task RecalculateBankAccountBalanceHistoryAsync(int bankAccountId, long fromRecordId)
         {
+            _logger.LogInformation($"Recalculating bank account balance history for Bank Account {bankAccountId} from record ID {fromRecordId}");
+            
+            // Get all non-deleted records after the deletion point, ordered by ID (which preserves exact sequence)
             var subsequentRecords = await _context.BankAccountBalanceHistory
                 .Where(h => h.BankAccountId == bankAccountId && 
-                           h.CreatedAt > fromDate && 
+                           h.Id > fromRecordId && 
                            !h.IsDeleted)
-                .OrderBy(h => h.CreatedAt)
+                .OrderBy(h => h.Id)
                 .ToListAsync();
 
-            if (!subsequentRecords.Any()) return;
+            if (!subsequentRecords.Any())
+            {
+                _logger.LogInformation($"No subsequent records to recalculate for Bank Account {bankAccountId} after ID {fromRecordId}");
+                return;
+            }
 
+            // Find the last non-deleted record before the deletion point
             var lastValidRecord = await _context.BankAccountBalanceHistory
                 .Where(h => h.BankAccountId == bankAccountId && 
-                           h.CreatedAt <= fromDate && 
+                           h.Id < fromRecordId && 
                            !h.IsDeleted)
-                .OrderByDescending(h => h.CreatedAt)
+                .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
             var runningBalance = lastValidRecord?.BalanceAfter ?? 0m;
 
+            _logger.LogInformation($"Recalculating {subsequentRecords.Count} records from balance {runningBalance} (last valid record ID: {lastValidRecord?.Id ?? 0})");
+
+            // Recalculate each subsequent record in exact sequential order
             foreach (var record in subsequentRecords)
             {
+                var oldBalanceBefore = record.BalanceBefore;
+                var oldBalanceAfter = record.BalanceAfter;
+                
                 record.BalanceBefore = runningBalance;
                 record.BalanceAfter = runningBalance + record.TransactionAmount;
                 runningBalance = record.BalanceAfter;
+                
+                _logger.LogInformation($"Bank Account Record ID {record.Id}: BalanceBefore {oldBalanceBefore} -> {record.BalanceBefore}, BalanceAfter {oldBalanceAfter} -> {record.BalanceAfter}");
             }
         }
 
@@ -1410,6 +1432,8 @@ namespace ForexExchange.Services
         /// </summary>
         private async Task RecalculateCurrentBankAccountBalanceAsync(int bankAccountId)
         {
+            _logger.LogInformation($"Recalculating current bank account balance for Bank Account {bankAccountId}");
+            
             var latestHistory = await _context.BankAccountBalanceHistory
                 .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted)
                 .OrderByDescending(h => h.CreatedAt)
@@ -1420,8 +1444,15 @@ namespace ForexExchange.Services
 
             if (currentBalance != null)
             {
+                var oldBalance = currentBalance.Balance;
                 currentBalance.Balance = latestHistory?.BalanceAfter ?? 0m;
                 currentBalance.LastUpdated = DateTime.UtcNow;
+                
+                _logger.LogInformation($"Updated bank account {bankAccountId} balance from {oldBalance} to {currentBalance.Balance}");
+            }
+            else
+            {
+                _logger.LogWarning($"No current balance record found for Bank Account {bankAccountId}");
             }
         }
 
