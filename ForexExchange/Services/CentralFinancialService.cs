@@ -1175,8 +1175,10 @@ namespace ForexExchange.Services
                     record.DeletedBy = performedBy;
                 }
 
-                // 2. Recalculate balances for subsequent records
-                await RecalculateCurrencyPoolHistoryAsync(currencyCode, recordsToDelete.First().CreatedAt);
+                // 2. Recalculate balances for subsequent records - use the minimum ID of deleted records
+                var minDeletedId = recordsToDelete.Min(r => r.Id);
+                _logger.LogInformation($"Starting balance recalculation for Currency Pool {currencyCode} from record ID {minDeletedId}");
+                await RecalculateCurrencyPoolHistoryAsync(currencyCode, minDeletedId);
 
                 // 3. Update current pool balance
                 await RecalculateCurrentCurrencyPoolBalanceAsync(currencyCode);
@@ -1290,33 +1292,49 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Recalculate currency pool history after soft deletion
+        /// Recalculate currency pool history after soft deletion based on record ID position
         /// </summary>
-        private async Task RecalculateCurrencyPoolHistoryAsync(string currencyCode, DateTime fromDate)
+        private async Task RecalculateCurrencyPoolHistoryAsync(string currencyCode, long fromRecordId)
         {
+            _logger.LogInformation($"Recalculating currency pool history for Currency {currencyCode} from record ID {fromRecordId}");
+            
+            // Get all non-deleted records after the deletion point, ordered by ID (which preserves exact sequence)
             var subsequentRecords = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
-                           h.CreatedAt > fromDate && 
+                           h.Id > fromRecordId && 
                            !h.IsDeleted)
-                .OrderBy(h => h.CreatedAt)
+                .OrderBy(h => h.Id)
                 .ToListAsync();
 
-            if (!subsequentRecords.Any()) return;
+            if (!subsequentRecords.Any())
+            {
+                _logger.LogInformation($"No subsequent records to recalculate for Currency Pool {currencyCode} after ID {fromRecordId}");
+                return;
+            }
 
+            // Find the last non-deleted record before the deletion point
             var lastValidRecord = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
-                           h.CreatedAt <= fromDate && 
+                           h.Id < fromRecordId && 
                            !h.IsDeleted)
-                .OrderByDescending(h => h.CreatedAt)
+                .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
             var runningBalance = lastValidRecord?.BalanceAfter ?? 0m;
 
+            _logger.LogInformation($"Recalculating {subsequentRecords.Count} records from balance {runningBalance} (last valid record ID: {lastValidRecord?.Id ?? 0})");
+
+            // Recalculate each subsequent record in exact sequential order
             foreach (var record in subsequentRecords)
             {
+                var oldBalanceBefore = record.BalanceBefore;
+                var oldBalanceAfter = record.BalanceAfter;
+                
                 record.BalanceBefore = runningBalance;
                 record.BalanceAfter = runningBalance + record.TransactionAmount;
                 runningBalance = record.BalanceAfter;
+                
+                _logger.LogInformation($"Currency Pool Record ID {record.Id}: BalanceBefore {oldBalanceBefore} -> {record.BalanceBefore}, BalanceAfter {oldBalanceAfter} -> {record.BalanceAfter}");
             }
         }
 
