@@ -319,6 +319,8 @@
                 $('[name="PayerCustomerId"]').val('').trigger('change');
                 $('[name="PayerBankAccountId"]').val('').trigger('change');
             }
+            // Reset currency selection when payer type changes
+            handleBankAccountCurrencySelection();
             validateCurrency();
         });
 
@@ -344,6 +346,8 @@
                 $('[name="ReceiverCustomerId"]').val('').trigger('change');
                 $('[name="ReceiverBankAccountId"]').val('').trigger('change');
             }
+            // Reset currency selection when receiver type changes
+            handleBankAccountCurrencySelection();
             validateCurrency();
         });
 
@@ -386,9 +390,51 @@
         // Add currency validation on all relevant changes (Select2 compatible)
         document.getElementById('CurrencyCode').addEventListener('change', validateCurrency);
         
+        // Auto-select currency based on bank account selection
+        function handleBankAccountCurrencySelection() {
+            const currencySelect = document.getElementById('CurrencyCode');
+            const payerBankSelect = document.querySelector('[name="PayerBankAccountId"]');
+            const receiverBankSelect = document.querySelector('[name="ReceiverBankAccountId"]');
+            
+            let selectedCurrency = null;
+            
+            // Check payer bank account currency
+            if (payerBankSelect && payerBankSelect.value) {
+                const payerOption = payerBankSelect.options[payerBankSelect.selectedIndex];
+                selectedCurrency = payerOption ? payerOption.getAttribute('data-currency') : null;
+            }
+            
+            // Check receiver bank account currency (if no payer currency set)
+            if (!selectedCurrency && receiverBankSelect && receiverBankSelect.value) {
+                const receiverOption = receiverBankSelect.options[receiverBankSelect.selectedIndex];
+                selectedCurrency = receiverOption ? receiverOption.getAttribute('data-currency') : null;
+            }
+            
+            // Auto-select currency and disable/enable dropdown
+            if (selectedCurrency) {
+                currencySelect.value = selectedCurrency;
+                currencySelect.disabled = true;
+                currencySelect.style.backgroundColor = '#e9ecef';
+                currencySelect.title = 'ارز بر اساس حساب بانکی انتخاب شده تنظیم می‌شود';
+                
+                // Trigger change event for validation
+                currencySelect.dispatchEvent(new Event('change'));
+            } else {
+                currencySelect.disabled = false;
+                currencySelect.style.backgroundColor = '';
+                currencySelect.title = '';
+            }
+        }
+        
         // Use jQuery event delegation for Select2 elements
-        $(document).on('change', '[name="PayerBankAccountId"]', validateCurrency);
-        $(document).on('change', '[name="ReceiverBankAccountId"]', validateCurrency);
+        $(document).on('change', '[name="PayerBankAccountId"]', function() {
+            handleBankAccountCurrencySelection();
+            validateCurrency();
+        });
+        $(document).on('change', '[name="ReceiverBankAccountId"]', function() {
+            handleBankAccountCurrencySelection();
+            validateCurrency();
+        });
 
         // Auto-generate title function (Select2 compatible)
         function generateTitle() {
