@@ -174,9 +174,7 @@
                                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="جزئیات">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning" title="ویرایش">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                           
                                             @if (!item.IsVerified)
                                             {
                                                 <button type="button" class="btn btn-sm btn-outline-success" title="تأیید سند"
