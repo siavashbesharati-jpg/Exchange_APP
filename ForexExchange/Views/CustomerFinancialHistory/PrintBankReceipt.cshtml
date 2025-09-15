@@ -40,12 +40,38 @@
             padding: 20px;
             text-align: center;
             border-bottom: 3px solid #27ae60;
+            position: relative;
         }
 
-        .bank-logo {
+        .company-logo {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 10px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .company-logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        .company-name {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 5px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .company-website {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 15px;
         }
 
         .bank-name {
@@ -289,8 +315,11 @@
     <div class="receipt-container">
         <!-- Header -->
         <div class="receipt-header">
-            <div class="bank-logo">🏦</div>
-            <div class="bank-name">سامانه مدیریت ارز</div>
+            <div class="company-logo">
+                <img src="~/favicon/favicon-32x32.png" alt="لوگو گروه تابان" />
+            </div>
+            <div class="company-name">گروه تابان</div>
+            <div class="company-website">https://taban-group.com</div>
             <div class="receipt-title">رسید صورتحساب مشتری</div>
         </div>
 
@@ -433,11 +462,12 @@
         <div class="receipt-footer">
             <div class="print-info">
                 <strong>تاریخ چاپ:</strong> @DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") | 
-                <strong>کاربر:</strong> @User.Identity?.Name
+                <strong>کاربر:</strong> @(User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "نامشخص")
             </div>
             <div class="disclaimer">
                 این رسید به صورت خودکار تولید شده و نیاز به امضا ندارد • 
-                صحت اطلاعات با سامانه اصلی قابل بررسی است
+                صحت اطلاعات با گروه تابان قابل بررسی است • 
+                https://taban-group.com
             </div>
         </div>
     </div>
