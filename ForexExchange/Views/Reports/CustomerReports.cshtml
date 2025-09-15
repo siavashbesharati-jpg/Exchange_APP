@@ -118,8 +118,11 @@
                             <button class="btn btn-light btn-sm" onclick="exportTimelineData()">
                                 <i class="fas fa-file-excel me-1"></i>صادرات Excel
                             </button>
-                            <button class="btn btn-outline-light btn-sm" onclick="printTimeline()">
+                            @* <button class="btn btn-outline-light btn-sm" onclick="printTimeline()">
                                 <i class="fas fa-print me-1"></i>چاپ
+                            </button> *@
+                            <button class="btn btn-success btn-sm" onclick="openBankReceipt()">
+                                <i class="fas fa-receipt me-1"></i> چاپ 
                             </button>
                         </div>
                     </div>
@@ -717,6 +720,30 @@
         printWindow.focus();
         printWindow.print();
         printWindow.close();
+    }
+
+    function openBankReceipt() {
+        const customerId = document.getElementById('customerFilter').value;
+        if (!customerId || !currentTimeline) {
+            alert('لطفاً ابتدا مشتری را انتخاب کرده و تاریخچه مالی را بارگذاری کنید');
+            return;
+        }
+
+        const fromDate = document.getElementById('fromDate').value || '';
+        const toDate = document.getElementById('toDate').value || '';
+        const currencyCode = document.getElementById('currencyFilter').value || '';
+
+        // Build URL with query parameters
+        const params = new URLSearchParams({
+            customerId: customerId,
+            fromDate: fromDate,
+            toDate: toDate,
+            currencyCode: currencyCode
+        });
+
+        // Open bank receipt page in new window
+        const url = '@Url.Action("PrintBankReceipt", "CustomerFinancialHistory")?' + params.toString();
+        window.open(url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
     }
 
     // Navigation functions for clickable rows

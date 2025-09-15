@@ -162,5 +162,30 @@ namespace ForexExchange.Controllers
                 return Json(new { success = false, message = "خطا در صادرات فایل" });
             }
         }
+
+        /// <summary>
+        /// Display customer timeline in bank receipt format
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> PrintBankReceipt(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null)
+        {
+            try
+            {
+                if (customerId <= 0)
+                    return BadRequest("Invalid customer ID");
+
+                var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate, currencyCode);
+                
+                if (timeline == null)
+                    return NotFound("Timeline not found");
+
+                return View(timeline);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating bank receipt for customer {CustomerId}", customerId);
+                return View("Error");
+            }
+        }
     }
 }

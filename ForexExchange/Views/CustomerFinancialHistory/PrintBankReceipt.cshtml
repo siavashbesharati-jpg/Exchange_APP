@@ -1,0 +1,476 @@
+@model ForexExchange.Models.CustomerFinancialTimeline
+@{
+    ViewData["Title"] = "رسید بانکی - " + Model.CustomerName;
+    Layout = null; // No layout for print-friendly page
+}
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            direction: rtl;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.4;
+            font-size: 12px;
+        }
+
+        .receipt-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border: 2px solid #ddd;
+        }
+
+        .receipt-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #27ae60;
+        }
+
+        .bank-logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .bank-name {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .receipt-title {
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .receipt-info {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px dashed #ddd;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 11px;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 13px;
+            color: #333;
+        }
+
+        .balance-summary {
+            background: #e8f5e8;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px;
+        }
+
+        .balance-title {
+            text-align: center;
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .balance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .balance-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #27ae60;
+        }
+
+        .balance-currency {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .balance-amount {
+            font-size: 14px;
+            font-weight: bold;
+            direction: ltr;
+        }
+
+        .positive { color: #27ae60; }
+        .negative { color: #e74c3c; }
+
+        .transactions-section {
+            padding: 20px;
+        }
+
+        .section-title {
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            margin: -20px -20px 20px -20px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 11px;
+        }
+
+        .transaction-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 8px 5px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #34495e;
+        }
+
+        .transaction-table td {
+            padding: 6px 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        .transaction-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .transaction-table tbody tr:hover {
+            background: #e3f2fd;
+        }
+
+        .currency-group-header {
+            background: #3498db !important;
+            color: white !important;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .transaction-type {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .type-order { background: #3498db; color: white; }
+        .type-document { background: #9b59b6; color: white; }
+        .type-manual { background: #95a5a6; color: white; }
+
+        .amount-cell {
+            direction: ltr;
+            font-weight: bold;
+        }
+
+        .receipt-footer {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .print-info {
+            margin-bottom: 10px;
+        }
+
+        .disclaimer {
+            font-size: 10px;
+            color: #bdc3c7;
+            font-style: italic;
+        }
+
+        .no-transactions {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 40px;
+            background: #f8f9fa;
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        /* Print styles */
+        @@media print {
+            body {
+                background: white;
+                font-size: 10px;
+            }
+            
+            .receipt-container {
+                box-shadow: none;
+                border: 1px solid #000;
+                margin: 0;
+                max-width: none;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .transaction-table {
+                font-size: 9px;
+            }
+            
+            .transaction-table th,
+            .transaction-table td {
+                padding: 3px 2px;
+            }
+            
+            .receipt-header {
+                background: #333 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            
+            .balance-summary {
+                background: #f0f0f0 !important;
+                border: 1px solid #000 !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
+
+        /* RTL adjustments */
+        .ltr { direction: ltr; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <!-- Header -->
+        <div class="receipt-header">
+            <div class="bank-logo">🏦</div>
+            <div class="bank-name">سامانه مدیریت ارز</div>
+            <div class="receipt-title">رسید صورتحساب مشتری</div>
+        </div>
+
+        <!-- Receipt Information -->
+        <div class="receipt-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">نام مشتری:</div>
+                    <div class="info-value">@Model.CustomerName</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">کد مشتری:</div>
+                    <div class="info-value">@Model.CustomerId</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">از تاریخ:</div>
+                    <div class="info-value">@(Model.FromDate.ToString("yyyy/MM/dd"))</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">تا تاریخ:</div>
+                    <div class="info-value">@(Model.ToDate.ToString("yyyy/MM/dd"))</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">تاریخ گزارش:</div>
+                    <div class="info-value">@DateTime.Now.ToString("yyyy/MM/dd HH:mm")</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">تعداد تراکنش:</div>
+                    <div class="info-value">@Model.TotalTransactions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Summary -->
+        @if (Model.FinalBalances != null && Model.FinalBalances.Any())
+        {
+            <div class="balance-summary">
+                <div class="balance-title">موجودی نهایی حساب‌ها</div>
+                <div class="balance-grid">
+                    @foreach (var balance in Model.FinalBalances)
+                    {
+                        <div class="balance-item">
+                            <div class="balance-currency">@balance.Key</div>
+                            <div class="balance-amount @(balance.Value >= 0 ? "positive" : "negative")">
+                                @if (balance.Key == "IRR")
+                                {
+                                    @String.Format("{0:N0} تومان", balance.Value)
+                                }
+                                else
+                                {
+                                    @String.Format("{0:N8} {1}", balance.Value, balance.Key)
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Transactions -->
+        <div class="transactions-section">
+            <div class="section-title">تاریخچه تراکنش‌ها</div>
+            
+            @if (Model.Transactions != null && Model.Transactions.Any())
+            {
+                var currencyGroups = Model.Transactions.GroupBy(t => t.CurrencyCode).OrderBy(g => g.Key);
+
+                @foreach (var currencyGroup in currencyGroups)
+                {
+                    <table class="transaction-table">
+                        <thead>
+                            <tr class="currency-group-header">
+                                <td colspan="6">تراکنش‌های @currencyGroup.Key (@currencyGroup.Count() تراکنش)</td>
+                            </tr>
+                            <tr>
+                                <th width="12%">تاریخ</th>
+                                <th width="15%">نوع تراکنش</th>
+                                <th width="10%">شماره مرجع</th>
+                                <th width="18%">مبلغ</th>
+                                <th width="18%">موجودی</th>
+                                <th width="27%">توضیحات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var transaction in currencyGroup.OrderBy(t => t.TransactionDate))
+                            {
+                                <tr>
+                                    <td>@transaction.TransactionDate.ToString("yyyy/MM/dd")</td>
+                                    <td>
+                                        @{
+                                            var typeClass = transaction.ReferenceId.HasValue ? 
+                                                (transaction.Type == TransactionType.OrderSell || transaction.Type == TransactionType.OrderBuy ? "type-order" : "type-document") : 
+                                                "type-manual";
+                                            var typeText = transaction.ReferenceId.HasValue ?
+                                                (transaction.Type == TransactionType.OrderSell || transaction.Type == TransactionType.OrderBuy ? "معامله" : "سند") :
+                                                "تعدیل";
+                                        }
+                                        <span class="transaction-type @typeClass">@typeText</span>
+                                    </td>
+                                    <td>@(transaction.ReferenceId?.ToString() ?? "-")</td>
+                                    <td class="amount-cell @(transaction.Amount >= 0 ? "positive" : "negative")">
+                                        @if (transaction.CurrencyCode == "IRR")
+                                        {
+                                            @String.Format("{0:N0}", transaction.Amount)
+                                        }
+                                        else
+                                        {
+                                            @String.Format("{0:N8}", transaction.Amount)
+                                        }
+                                    </td>
+                                    <td class="amount-cell">
+                                        @if (transaction.CurrencyCode == "IRR")
+                                        {
+                                            @String.Format("{0:N0}", transaction.RunningBalance)
+                                        }
+                                        else
+                                        {
+                                            @String.Format("{0:N8}", transaction.RunningBalance)
+                                        }
+                                    </td>
+                                    <td class="text-right">@(transaction.Description ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <br />
+                }
+            }
+            else
+            {
+                <div class="no-transactions">
+                    <strong>هیچ تراکنشی در بازه زمانی انتخاب شده یافت نشد</strong>
+                    <br />
+                    <small>لطفاً بازه زمانی دیگری را انتخاب کنید</small>
+                </div>
+            }
+        </div>
+
+        <!-- Footer -->
+        <div class="receipt-footer">
+            <div class="print-info">
+                <strong>تاریخ چاپ:</strong> @DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") | 
+                <strong>کاربر:</strong> @User.Identity?.Name
+            </div>
+            <div class="disclaimer">
+                این رسید به صورت خودکار تولید شده و نیاز به امضا ندارد • 
+                صحت اطلاعات با سامانه اصلی قابل بررسی است
+            </div>
+        </div>
+    </div>
+
+    <!-- Print and Close Buttons -->
+    <div style="text-align: center; margin: 20px; padding: 20px;" class="no-print">
+        <button onclick="window.print()" style="background: #27ae60; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
+            🖨️ چاپ رسید
+        </button>
+        <button onclick="window.close()" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
+            ✖️ بستن
+        </button>
+    </div>
+
+    <script>
+        // Auto-focus for printing
+        window.addEventListener('load', function() {
+            // Optional: Auto-print when page loads
+            // window.print();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+P for print
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+            // Escape to close
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>
