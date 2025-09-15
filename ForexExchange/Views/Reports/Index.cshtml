@@ -52,6 +52,45 @@
             </div>
         </div>
 
+        <!-- Order Reports -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('order')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-exchange-alt text-warning"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">گزارشات معاملات</h5>
+                    <p class="text-muted small">تاریخچه و آمار معاملات  </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounting Documents Reports -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('document')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-file-invoice text-danger"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">گزارشات اسناد حسابداری</h5>
+                    <p class="text-muted small">تاریخچه و آمار اسناد مالی</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comprehensive Reports -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card report-card comprehensive-card h-100 shadow-sm border-0" onclick="navigateToReport('comprehensive')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-chart-pie text-white"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">گزارش جامع</h5>
+                    <p class="text-white-50 small">نمای کلی از تمامی فعالیت‌های سیستم</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -118,6 +157,15 @@ function navigateToReport(type) {
             break;
         case 'pool':
             url = '@Url.Action("PoolReports", "Reports")';
+            break;
+        case 'order':
+            url = '@Url.Action("OrderReports", "Reports")';
+            break;
+        case 'document':
+            url = '@Url.Action("DocumentReports", "Reports")';
+            break;
+        case 'comprehensive':
+            url = '@Url.Action("Comprehensive", "Reports")';
             break;
         default:
             url = '@Url.Action("CustomerReports", "Reports")';

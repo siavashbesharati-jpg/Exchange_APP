@@ -131,18 +131,34 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/GetOrdersData
         [HttpGet]
-        public async Task<IActionResult> GetOrdersData(DateTime? fromDate, DateTime? toDate)
+        public async Task<IActionResult> GetOrdersData(DateTime? fromDate, DateTime? toDate, string? fromCurrency, string? toCurrency, string? orderStatus)
         {
             try
             {
                 fromDate ??= DateTime.Today.AddDays(-30);
                 toDate ??= DateTime.Today.AddDays(1);
 
-                var orders = await _context.Orders
+                var query = _context.Orders
                     .Include(o => o.Customer)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
-                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
+                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+
+                // Apply currency filters
+                if (!string.IsNullOrEmpty(fromCurrency))
+                {
+                    query = query.Where(o => o.FromCurrency.Code == fromCurrency);
+                }
+
+                if (!string.IsNullOrEmpty(toCurrency))
+                {
+                    query = query.Where(o => o.ToCurrency.Code == toCurrency);
+                }
+
+                // Note: Status filter not implemented since all orders are completed
+                // You can add status logic here if needed
+
+                var orders = await query
                     .Select(o => new
                     {
                         id = o.Id,

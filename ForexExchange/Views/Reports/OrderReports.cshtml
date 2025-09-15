@@ -74,45 +74,7 @@
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-handshake text-success mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-success" id="totalOrders">-</h3>
-                    <p class="text-muted mb-0">تعداد کل معاملات</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-chart-line text-primary mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-primary" id="totalVolume">-</h3>
-                    <p class="text-muted mb-0">حجم کل معاملات</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-calculator text-info mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-info" id="avgOrderValue">-</h3>
-                    <p class="text-muted mb-0">میانگین ارزش معامله</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-percentage text-warning mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-warning" id="avgExchangeRate">-</h3>
-                    <p class="text-muted mb-0">میانگین نرخ تبدیل</p>
-                </div>
-            </div>
-        </div>
-    </div>
+   
 
     <!-- Orders Table -->
     <div class="row mb-4">
@@ -129,15 +91,15 @@
                         <table class="table table-hover" id="ordersTable">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>شناسه</th>
-                                    <th>تاریخ</th>
-                                    <th>مشتری</th>
-                                    <th>از ارز</th>
-                                    <th>مبلغ</th>
-                                    <th>به ارز</th>
-                                    <th>نرخ تبدیل</th>
-                                    <th>مبلغ نهایی</th>
-                                    <th>وضعیت</th>
+                                    <th class="sortable" data-column="id">شناسه <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="createdAt">تاریخ <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="customerName">مشتری <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="fromCurrency">از ارز <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="amount">مبلغ <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="toCurrency">به ارز <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="rate">نرخ تبدیل <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="totalValue">مبلغ نهایی <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="status">وضعیت <i class="fas fa-sort"></i></th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
@@ -218,6 +180,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
     document.getElementById('toDate').value = today.toISOString().split('T')[0];
     
+    // Add click event listeners to sortable headers
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', function() {
+            const column = this.getAttribute('data-column');
+            sortTable(column);
+        });
+        header.style.cursor = 'pointer';
+    });
+    
     loadOrderReports();
 });
 
@@ -228,9 +199,6 @@ function loadOrderReports() {
     const toCurrency = document.getElementById('toCurrency').value;
     const orderStatus = document.getElementById('orderStatus').value;
     
-    // Load stats
-    loadOrderStats();
-    
     // Load table data
     loadOrdersTable();
     
@@ -238,44 +206,8 @@ function loadOrderReports() {
     loadOrderCharts();
 }
 
-function loadOrderStats() {
-    // Show loading state
-    document.getElementById('totalOrders').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-    document.getElementById('totalVolume').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-    document.getElementById('avgOrderValue').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-    document.getElementById('avgExchangeRate').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-
-    const fromDate = document.getElementById('fromDate').value;
-    const toDate = document.getElementById('toDate').value;
-    const url = `@Url.Action("GetOrdersData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
-
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Error:', data.error);
-                return;
-            }
-
-            const stats = data.stats;
-            document.getElementById('totalOrders').textContent = formatNumber(stats.totalOrders);
-            document.getElementById('totalVolume').textContent = formatNumber(stats.totalVolume);
-            document.getElementById('avgOrderValue').textContent = formatNumber(Math.round(stats.totalVolume / (stats.totalOrders || 1)));
-            
-            // Calculate average exchange rate from orders
-            const avgRate = data.orders.length > 0 
-                ? data.orders.reduce((sum, order) => sum + order.rate, 0) / data.orders.length
-                : 0;
-            document.getElementById('avgExchangeRate').textContent = avgRate.toFixed(2);
-        })
-        .catch(error => {
-            console.error('Error loading order stats:', error);
-            document.getElementById('totalOrders').textContent = 'خطا';
-            document.getElementById('totalVolume').textContent = 'خطا';
-            document.getElementById('avgOrderValue').textContent = 'خطا';
-            document.getElementById('avgExchangeRate').textContent = 'خطا';
-        });
-}
+let ordersData = []; // Store orders data for sorting
+let currentSort = { column: null, direction: 'asc' };
 
 function loadOrdersTable() {
     const tbody = document.getElementById('ordersTableBody');
@@ -319,37 +251,8 @@ function loadOrdersTable() {
         }
         
         if (data.orders && data.orders.length > 0) {
-            data.orders.forEach(order => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${order.id}</td>
-                    <td>${formatDate(order.createdAt)}</td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm bg-success text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
-                                ${order.customerName.charAt(0)}
-                            </div>
-                            ${order.customerName}
-                        </div>
-                    </td>
-                    <td><span class="badge bg-primary">${order.fromCurrency}</span></td>
-                    <td>${formatNumber(order.amount)}</td>
-                    <td><span class="badge bg-info">${order.toCurrency}</span></td>
-                    <td>${order.rate}</td>
-                    <td>${formatNumber(order.totalValue)}</td>
-                    <td>
-                        <span class="badge ${order.status === 'تکمیل شده' ? 'bg-success' : 'bg-warning'}">
-                            ${order.status}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails(${order.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
+            ordersData = data.orders; // Store data for sorting
+            renderOrdersTable(ordersData);
         } else {
             tbody.innerHTML = `
                 <tr>
@@ -372,6 +275,91 @@ function loadOrdersTable() {
             </tr>
         `;
     });
+}
+
+function renderOrdersTable(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+    tbody.innerHTML = '';
+    
+    orders.forEach(order => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${order.id}</td>
+            <td>${new Date(order.createdAt).toLocaleDateString('en-GB')}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-success text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                        ${order.customerName.charAt(0)}
+                    </div>
+                    ${order.customerName}
+                </div>
+            </td>
+            <td><span class="badge bg-primary">${order.fromCurrency}</span></td>
+            <td>${formatNumber(order.amount)}</td>
+            <td><span class="badge bg-info">${order.toCurrency}</span></td>
+            <td>${order.rate}</td>
+            <td>${formatNumber(order.totalValue)}</td>
+            <td>
+                <span class="badge ${order.status === 'تکمیل شده' ? 'bg-success' : 'bg-warning'}">
+                    ${order.status}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails(${order.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function sortTable(column) {
+    // Toggle sort direction
+    if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+    }
+    
+    // Update sort icons
+    document.querySelectorAll('.sortable i').forEach(icon => {
+        icon.className = 'fas fa-sort';
+    });
+    
+    const currentHeader = document.querySelector(`[data-column="${column}"] i`);
+    if (currentSort.direction === 'asc') {
+        currentHeader.className = 'fas fa-sort-up';
+    } else {
+        currentHeader.className = 'fas fa-sort-down';
+    }
+    
+    // Sort the data
+    const sortedData = [...ordersData].sort((a, b) => {
+        let valueA = a[column];
+        let valueB = b[column];
+        
+        // Handle different data types
+        if (column === 'createdAt') {
+            valueA = new Date(valueA);
+            valueB = new Date(valueB);
+        } else if (column === 'amount' || column === 'rate' || column === 'totalValue' || column === 'id') {
+            valueA = parseFloat(valueA) || 0;
+            valueB = parseFloat(valueB) || 0;
+        } else {
+            valueA = valueA.toString().toLowerCase();
+            valueB = valueB.toString().toLowerCase();
+        }
+        
+        if (currentSort.direction === 'asc') {
+            return valueA > valueB ? 1 : -1;
+        } else {
+            return valueA < valueB ? 1 : -1;
+        }
+    });
+    
+    renderOrdersTable(sortedData);
 }
 
 function loadOrderCharts() {
@@ -499,12 +487,6 @@ function formatNumber(num) {
     if (num === 0) return '0';
     return num.toLocaleString('fa-IR');
 }
-
-function formatDate(dateString) {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fa-IR');
-}
 </script>
 
 <style>
@@ -525,5 +507,21 @@ function formatDate(dateString) {
 
 .badge {
     font-size: 0.75rem;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+
+
+.sortable i {
+    margin-left: 5px;
+    opacity: 0.7;
+}
+
+.sortable:hover i {
+    opacity: 1;
 }
 </style>
