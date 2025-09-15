@@ -25,15 +25,15 @@
                 <div class="card-body">
                     <h5 class="card-title"><i class="fas fa-filter me-2"></i>فیلترهای جستجو</h5>
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">از تاریخ</label>
                             <input type="date" class="form-control" id="fromDate">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">تا تاریخ</label>
                             <input type="date" class="form-control" id="toDate">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">نوع سند</label>
                             <select class="form-select" id="documentType">
                                 <option value="">همه</option>
@@ -42,53 +42,30 @@
                                 <option value="payment">پرداخت‌ها</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <label class="form-label">ارز</label>
+                            <select class="form-select" id="currency">
+                                <option value="">همه</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="AED">AED</option>
+                                <option value="IRR">IRR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">مشتری</label>
+                            <select class="form-select" id="customer">
+                                <option value="">همه</option>
+                                <!-- Customer options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-warning w-100" onclick="loadDocumentReports()">
                                 <i class="fas fa-search me-1"></i>جستجو
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-file-alt text-warning mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-warning" id="totalDocuments">-</h3>
-                    <p class="text-muted mb-0">تعداد کل اسناد</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-receipt text-success mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-success" id="totalReceipts">-</h3>
-                    <p class="text-muted mb-0">تعداد رسیدها</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-money-bill text-info mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-info" id="totalAmount">-</h3>
-                    <p class="text-muted mb-0">مجموع مبالغ</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <i class="fas fa-calendar-check text-primary mb-2" style="font-size: 2rem;"></i>
-                    <h3 class="text-primary" id="todayDocuments">-</h3>
-                    <p class="text-muted mb-0">اسناد امروز</p>
                 </div>
             </div>
         </div>
@@ -109,13 +86,13 @@
                         <table class="table table-hover" id="documentsTable">
                             <thead class="table-dark">
                                 <tr>
-                                    <th>شناسه</th>
-                                    <th>تاریخ</th>
-                                    <th>نوع سند</th>
-                                    <th>مشتری</th>
-                                    <th>مبلغ</th>
-                                    <th>شرح</th>
-                                    <th>وضعیت</th>
+                                    <th class="sortable" data-column="id">شناسه <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="date">تاریخ <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="type">نوع سند <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="customerName">مشتری <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="amount">مبلغ <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="description">شرح <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="status">وضعیت <i class="fas fa-sort"></i></th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
@@ -164,6 +141,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let documentTypesChart, documentTrendChart;
+let documentsData = []; // Store documents data for sorting
+let currentSort = { column: null, direction: 'asc' };
 
 document.addEventListener('DOMContentLoaded', function() {
     // Set default dates
@@ -173,47 +152,21 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
     document.getElementById('toDate').value = today.toISOString().split('T')[0];
     
+    // Add click event listeners to sortable headers
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', function() {
+            const column = this.getAttribute('data-column');
+            sortTable(column);
+        });
+        header.style.cursor = 'pointer';
+    });
+    
     loadDocumentReports();
 });
 
 function loadDocumentReports() {
-    loadDocumentStats();
     loadDocumentsTable();
     loadDocumentCharts();
-}
-
-function loadDocumentStats() {
-    // Show loading state
-    document.getElementById('totalDocuments').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-    document.getElementById('totalReceipts').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-    document.getElementById('totalAmount').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-    document.getElementById('todayDocuments').innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-
-    const fromDate = document.getElementById('fromDate').value;
-    const toDate = document.getElementById('toDate').value;
-    const url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
-
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Error:', data.error);
-                return;
-            }
-
-            const stats = data.stats;
-            document.getElementById('totalDocuments').textContent = formatNumber(stats.totalDocuments);
-            document.getElementById('totalReceipts').textContent = formatNumber(stats.totalReceipts);
-            document.getElementById('totalAmount').textContent = formatNumber(stats.totalAmount);
-            document.getElementById('todayDocuments').textContent = formatNumber(stats.todayDocuments);
-        })
-        .catch(error => {
-            console.error('Error loading document stats:', error);
-            document.getElementById('totalDocuments').textContent = 'خطا';
-            document.getElementById('totalReceipts').textContent = 'خطا';
-            document.getElementById('totalAmount').textContent = 'خطا';
-            document.getElementById('todayDocuments').textContent = 'خطا';
-        });
 }
 
 function loadDocumentsTable() {
@@ -231,7 +184,14 @@ function loadDocumentsTable() {
 
     const fromDate = document.getElementById('fromDate').value;
     const toDate = document.getElementById('toDate').value;
-    const url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+    const documentType = document.getElementById('documentType').value;
+    const currency = document.getElementById('currency').value;
+    const customer = document.getElementById('customer').value;
+    
+    let url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+    if (documentType) url += `&documentType=${documentType}`;
+    if (currency) url += `&currency=${currency}`;
+    if (customer) url += `&customer=${customer}`;
 
     fetch(url)
         .then(response => response.json())
@@ -251,37 +211,8 @@ function loadDocumentsTable() {
             tbody.innerHTML = '';
             
             if (data.documents && data.documents.length > 0) {
-                data.documents.forEach(doc => {
-                    const docDate = new Date(doc.date).toLocaleDateString('fa-IR');
-                    
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>DOC${doc.id.toString().padStart(3, '0')}</td>
-                        <td>${docDate}</td>
-                        <td><span class="badge bg-warning">${doc.type}</span></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar-sm bg-warning text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
-                                    ${doc.customerName.charAt(0)}
-                                </div>
-                                ${doc.customerName}
-                            </div>
-                        </td>
-                        <td>${formatNumber(doc.amount)}</td>
-                        <td>${doc.description}</td>
-                        <td>
-                            <span class="badge bg-success">
-                                ${doc.status}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="viewDocumentDetails(${doc.id})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+                documentsData = data.documents; // Store data for sorting
+                renderDocumentsTable(documentsData);
             } else {
                 tbody.innerHTML = `
                     <tr>
@@ -304,6 +235,89 @@ function loadDocumentsTable() {
                 </tr>
             `;
         });
+}
+
+function renderDocumentsTable(documents) {
+    const tbody = document.getElementById('documentsTableBody');
+    tbody.innerHTML = '';
+    
+    documents.forEach(doc => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>DOC${doc.id.toString().padStart(3, '0')}</td>
+            <td>${new Date(doc.date).toLocaleDateString('en-GB')}</td>
+            <td><span class="badge bg-warning">${doc.type}</span></td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-warning text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
+                        ${doc.customerName.charAt(0)}
+                    </div>
+                    ${doc.customerName}
+                </div>
+            </td>
+            <td>${formatNumber(doc.amount)}</td>
+            <td>${doc.description}</td>
+            <td>
+                <span class="badge bg-success">
+                    ${doc.status}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewDocumentDetails(${doc.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function sortTable(column) {
+    // Toggle sort direction
+    if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+    }
+    
+    // Update sort icons
+    document.querySelectorAll('.sortable i').forEach(icon => {
+        icon.className = 'fas fa-sort';
+    });
+    
+    const currentHeader = document.querySelector(`[data-column="${column}"] i`);
+    if (currentSort.direction === 'asc') {
+        currentHeader.className = 'fas fa-sort-up';
+    } else {
+        currentHeader.className = 'fas fa-sort-down';
+    }
+    
+    // Sort the data
+    const sortedData = [...documentsData].sort((a, b) => {
+        let valueA = a[column];
+        let valueB = b[column];
+        
+        // Handle different data types
+        if (column === 'date') {
+            valueA = new Date(valueA);
+            valueB = new Date(valueB);
+        } else if (column === 'amount' || column === 'id') {
+            valueA = parseFloat(valueA) || 0;
+            valueB = parseFloat(valueB) || 0;
+        } else {
+            valueA = valueA.toString().toLowerCase();
+            valueB = valueB.toString().toLowerCase();
+        }
+        
+        if (currentSort.direction === 'asc') {
+            return valueA > valueB ? 1 : -1;
+        } else {
+            return valueA < valueB ? 1 : -1;
+        }
+    });
+    
+    renderDocumentsTable(sortedData);
 }
 
 function loadDocumentCharts() {
@@ -375,12 +389,6 @@ function formatNumber(num) {
     if (num === 0) return '0';
     return num.toLocaleString('fa-IR');
 }
-
-function formatDate(dateString) {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fa-IR');
-}
 </script>
 
 <style>
@@ -401,5 +409,15 @@ function formatDate(dateString) {
 
 .badge {
     font-size: 0.75rem;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable i {
+    margin-left: 5px;
+    opacity: 0.7;
 }
 </style>

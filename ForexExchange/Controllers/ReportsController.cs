@@ -201,17 +201,33 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/GetDocumentsData
         [HttpGet]
-        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate)
+        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate, string? documentType, string? currency, string? customer)
         {
             try
             {
                 fromDate ??= DateTime.Today.AddDays(-30);
                 toDate ??= DateTime.Today.AddDays(1);
 
-                var accountingDocs = await _context.AccountingDocuments
+                var query = _context.AccountingDocuments
                     .Include(ad => ad.PayerCustomer)
                     .Include(ad => ad.ReceiverCustomer)
-                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate)
+                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate);
+
+                // Apply additional filters
+                if (!string.IsNullOrEmpty(currency))
+                {
+                    query = query.Where(ad => ad.CurrencyCode == currency);
+                }
+
+                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
+                {
+                    query = query.Where(ad => ad.PayerCustomerId == customerId || ad.ReceiverCustomerId == customerId);
+                }
+
+                // Note: documentType filter can be implemented based on your business logic
+                // Currently all documents are "سند حسابداری" type
+
+                var accountingDocs = await query
                     .Select(ad => new
                     {
                         id = ad.Id,
