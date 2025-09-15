@@ -107,7 +107,7 @@
                                     {
                                         @foreach (var customer in customers)
                                         {
-                                            <option value="@customer.Id">@customer.FullName (@customer.PhoneNumber)</option>
+                                            <option value="@customer.Id">@customer.FullName</option>
                                         }
                                     }
                                 </select>
@@ -139,7 +139,7 @@
                                     {
                                         @foreach (var customer in customers)
                                         {
-                                            <option value="@customer.Id">@customer.FullName (@customer.PhoneNumber)</option>
+                                            <option value="@customer.Id">@customer.FullName</option>
                                         }
                                     }
                                 </select>
@@ -195,12 +195,7 @@
                         <!-- Document Title -->
                         <div class="mb-3">
                             <label asp-for="Title" class="form-label">عنوان سند <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input asp-for="Title" class="form-control" id="documentTitle" placeholder="عنوان خودکار تولید می‌شود..." required />
-                                <button type="button" class="btn btn-outline-secondary" id="autoGenerateTitle" title="تولید خودکار عنوان">
-                                    <i class="fas fa-magic"></i>
-                                </button>
-                            </div>
+                            <input asp-for="Title" class="form-control" id="documentTitle" placeholder="عنوان خودکار تولید می‌شود..." required />
                             <span asp-validation-for="Title" class="text-danger"></span>
                             <div class="form-text">عنوان بر اساس اطلاعات وارد شده خودکار تولید می‌شود. می‌توانید آن را تغییر دهید.</div>
                         </div>
@@ -451,7 +446,7 @@
             if (payerType === '@ForexExchange.Models.PayerType.Customer') {
                 const payerSelect = document.querySelector('[name="PayerCustomerId"]');
                 if (payerSelect && payerSelect.selectedOptions && payerSelect.selectedOptions[0]) {
-                    payerName = payerSelect.selectedOptions[0].text.split(' - ')[0] || 'مشتری';
+                    payerName = payerSelect.selectedOptions[0].text || 'مشتری';
                 } else {
                     payerName = 'مشتری';
                 }
@@ -468,7 +463,7 @@
             if (receiverType === '@ForexExchange.Models.ReceiverType.Customer') {
                 const receiverSelect = document.querySelector('[name="ReceiverCustomerId"]');
                 if (receiverSelect && receiverSelect.selectedOptions && receiverSelect.selectedOptions[0]) {
-                    receiverName = receiverSelect.selectedOptions[0].text.split(' - ')[0] || 'مشتری';
+                    receiverName = receiverSelect.selectedOptions[0].text || 'مشتری';
                 } else {
                     receiverName = 'مشتری';
                 }
@@ -502,18 +497,11 @@
             document.getElementById('documentTitle').value = title;
         }
 
-        // Auto-generate title on field changes (only if title is empty or auto-generated)
+        // Auto-generate title on field changes - now fully automatic
         function autoGenerateTitle() {
-            const currentTitle = document.getElementById('documentTitle').value;
-            if (!currentTitle || 
-                (currentTitle.includes(' - ') && 
-                (currentTitle.includes('نقدی') || currentTitle.includes('رسید بانکی') || currentTitle.includes('حواله')))) {
-                generateTitle();
-            }
+            // Always generate title automatically when key fields change
+            generateTitle();
         }
-
-        // Manual title generation button
-        document.getElementById('autoGenerateTitle').addEventListener('click', generateTitle);
 
         // Add auto-title generation to existing event listeners
         const originalPayerTypeListener = document.getElementById('payerType').onchange;
