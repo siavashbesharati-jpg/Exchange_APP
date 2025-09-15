@@ -33,7 +33,8 @@
                             <label class="form-label">از تاریخ</label>
                             <div class="input-group">
                                 <input type="date" class="form-control" id="fromDate">
-                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('fromDate')" title="پاک کردن">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('fromDate')"
+                                    title="پاک کردن">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -42,7 +43,8 @@
                             <label class="form-label">تا تاریخ</label>
                             <div class="input-group">
                                 <input type="date" class="form-control" id="toDate">
-                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('toDate')" title="پاک کردن">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('toDate')"
+                                    title="پاک کردن">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -62,19 +64,35 @@
                         <div class="col-md-1">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-primary w-100" onclick="loadData()">
-                                <i class="fas fa-search me-1"></i>جستجو
+                                <i class="fas fa-search me-1"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Admin Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button id="manualBalanceBtn" class="btn btn-success w-100" onclick="openManualBalanceModal()"
+                                title="افزودن تعدیل دستی">
+                                <i class="fas fa-plus me-1"></i>تعدیل دستی
                             </button>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
-                            <button id="manualBalanceBtn" class="btn btn-success w-100" onclick="openManualBalanceModal()" title="افزودن تراکنش دستی">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="col-md-1">
-                            <label class="form-label">&nbsp;</label>
-                            <button id="recalculateBtn" class="btn btn-warning w-100" onclick="recalculateAllBalances()" title="بازمحاسبه همه موجودی‌ها بر اساس تاریخ تراکنش‌ها">
-                                <i class="fas fa-sync-alt"></i>
+                            <button id="recalculateBtn" class="btn btn-warning w-100" onclick="recalculateAllBalances()"
+                                title="بازمحاسبه همه موجودی‌ها بر اساس تاریخ تراکنش‌ها">
+                                <i class="fas fa-sync-alt me-1"></i>بازمحاسبه
                             </button>
                         </div>
                     </div>
@@ -89,88 +107,89 @@
 
             <!-- Financial Timeline Content -->
             <!-- New Simplified Timeline Table -->
-                    <div class="card shadow-sm border-3">
-                        <div class="card-header bg-gradient-primary text-white">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-history me-2"></i>
-                                    تاریخچه مالی مشتری
-                                </h5>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-light btn-sm" onclick="exportTimelineData()">
-                                        <i class="fas fa-file-excel me-1"></i>صادرات Excel
-                                    </button>
-                                    <button class="btn btn-outline-light btn-sm" onclick="printTimeline()">
-                                        <i class="fas fa-print me-1"></i>چاپ
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <!-- Customer Info Header -->
-                            <div id="customerInfoHeader" class="bg-light p-3 border-bottom" style="display: none;">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6 class="mb-1">اطلاعات مشتری</h6>
-                                        <p class="mb-0" id="customerInfoText">-</p>
-                                    </div>
-                                    <div class="col-md-6 text-center">
-                                        <h6 class="mb-1">بازه زمانی گزارش</h6>
-                                        <p class="mb-0" id="reportPeriodText">-</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Balance Summary -->
-                            <div id="balanceSummarySection" class="p-3 border-bottom bg-light" style="display: none;">
-                                <h6 class="mb-3 text-center">
-                                    <i class="fas fa-wallet text-primary me-2"></i>
-                                    موجودی‌های فعلی
-                                </h6>
-                                <div id="balanceSummaryContent" class="row">
-                                    <!-- Balance cards will be inserted here -->
-                                </div>
-                            </div>
-
-                            <!-- New Simplified Timeline Table -->
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0" id="timelineTable">
-                                    <thead class="table-dark sticky-top">
-                                        <tr class="text-center">
-                                            <th width="12%">تاریخ</th>
-                                            <th width="15%">نوع</th>
-                                            <th width="10%">ارز</th>
-                                            <th width="15%">مقدار</th>
-                                            <th width="15%">موجودی</th>
-                                            <th width="33%">توضیحات</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="timelineTableBody">
-                                        <tr>
-                                            <td colspan="6" class="text-center py-5 text-muted">
-                                                <i class="fas fa-user-plus fa-2x mb-2"></i>
-                                                <br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Timeline Pagination -->
-                            <div class="p-3 border-top bg-light">
-                                <nav id="timelinePagination" class="d-flex justify-content-center">
-                                    <!-- Pagination will be inserted here -->
-                                </nav>
-                            </div>
+            <div class="card shadow-sm border-3">
+                <div class="card-header bg-gradient-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>
+                            تاریخچه مالی مشتری
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-light btn-sm" onclick="exportTimelineData()">
+                                <i class="fas fa-file-excel me-1"></i>صادرات Excel
+                            </button>
+                            <button class="btn btn-outline-light btn-sm" onclick="printTimeline()">
+                                <i class="fas fa-print me-1"></i>چاپ
+                            </button>
                         </div>
                     </div>
                 </div>
+                <div class="card-body p-0">
+                    <!-- Customer Info Header -->
+                    <div id="customerInfoHeader" class="bg-light p-3 border-bottom" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-1">اطلاعات مشتری</h6>
+                                <p class="mb-0" id="customerInfoText">-</p>
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <h6 class="mb-1">بازه زمانی گزارش</h6>
+                                <p class="mb-0" id="reportPeriodText">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Balance Summary -->
+                    <div id="balanceSummarySection" class="p-3 border-bottom bg-light" style="display: none;">
+                        <h6 class="mb-3 text-center">
+                            <i class="fas fa-wallet text-primary me-2"></i>
+                            موجودی‌های فعلی
+                        </h6>
+                        <div id="balanceSummaryContent" class="row">
+                            <!-- Balance cards will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- New Simplified Timeline Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="timelineTable">
+                            <thead class="table-dark sticky-top">
+                                <tr class="text-center">
+                                    <th width="12%">تاریخ</th>
+                                    <th width="15%">نوع</th>
+                                    <th width="10%">ارز</th>
+                                    <th width="15%">مقدار</th>
+                                    <th width="15%">موجودی</th>
+                                    <th width="33%">توضیحات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timelineTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-user-plus fa-2x mb-2"></i>
+                                        <br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Timeline Pagination -->
+                    <div class="p-3 border-top bg-light">
+                        <nav id="timelinePagination" class="d-flex justify-content-center">
+                            <!-- Pagination will be inserted here -->
+                        </nav>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+</div>
 
 <!-- Manual Balance History Modal -->
-<div class="modal fade" id="manualBalanceModal" tabindex="-1" aria-labelledby="manualBalanceModalLabel" aria-hidden="true">
+<div class="modal fade" id="manualBalanceModal" tabindex="-1" aria-labelledby="manualBalanceModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -180,34 +199,40 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="manualBalanceForm">
+                @Html.AntiForgeryToken()
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
                         <strong>مشتری انتخاب شده:</strong> <span id="selectedCustomerName">-</span>
                     </div>
-                    
+
                     <!-- Hidden customer ID field -->
                     <input type="hidden" id="modalCustomerId" name="customerId" value="">
-                    
+
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="modalCurrencyCode" class="form-label">ارز <span class="text-danger">*</span></label>
-                            <select class="form-select" id="modalCurrencyCode" name="currencyCode" required>
+                            <label for="modalCurrencyCode" class="form-label">ارز <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select no-select2" id="modalCurrencyCode" name="currencyCode" required>
                                 <option value="">انتخاب ارز</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label for="modalAmount" class="form-label">مبلغ <span class="text-danger">*</span></label>
-                            <input type="number" step="0.00000001" class="form-control" id="modalAmount" name="amount" required>
+                            <input type="number" step="0.00000001" class="form-control" id="modalAmount" name="amount"
+                                required>
                             <div class="form-text">مبلغ مثبت: افزایش موجودی، مبلغ منفی: کاهش موجودی</div>
                         </div>
                         <div class="col-12">
                             <label for="modalReason" class="form-label">دلیل <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="modalReason" name="reason" rows="3" required placeholder="دلیل این تراکنش دستی را وارد کنید..."></textarea>
+                            <textarea class="form-control" id="modalReason" name="reason" rows="3" required
+                                placeholder="دلیل این تراکنش دستی را وارد کنید...">تعدیل دستی</textarea>
                         </div>
                         <div class="col-12">
-                            <label for="modalTransactionDate" class="form-label">تاریخ تراکنش <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="modalTransactionDate" name="transactionDate" required>
+                            <label for="modalTransactionDate" class="form-label">تاریخ و زمان تراکنش <span
+                                    class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="modalTransactionDate"
+                                name="transactionDate" required>
                         </div>
                     </div>
                 </div>
@@ -225,208 +250,208 @@
 </div>
 
 <script>
-let currentPage = { timeline: 1 };
-let pageSize = 10;
-let currentTimeline = null;
+    let currentPage = { timeline: 1 };
+    let pageSize = 10;
+    let currentTimeline = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Load currencies for filter
-    loadCurrencies();
-    
-    // Load customers for filter
-    loadCustomers();
-    
-    // Initialize empty tables
-    showEmptyState();
-    
-    // Customer filter change event (manual button is always enabled now)
-    document.getElementById('customerFilter').addEventListener('change', function() {
-        loadDataForActiveTab();
-    });
-    
-    // Date filter change event
-    document.getElementById('fromDate').addEventListener('change', function() {
-        loadDataForActiveTab();
-    });
-    document.getElementById('toDate').addEventListener('change', function() {
-        loadDataForActiveTab();
-    });
-    
-    // Currency filter change event
-    document.getElementById('currencyFilter').addEventListener('change', function() {
-        loadDataForActiveTab();
-    });
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        // Load currencies for filter
+        loadCurrencies();
 
+        // Load customers for filter
+        loadCustomers();
 
-function loadCurrencies() {
-    console.log('Loading currencies...');
-    fetch('@Url.Action("GetCurrencies", "Api")')
-        .then(response => {
-            console.log('Currency response status:', response.status);
-            return response.json();
-        })
-        .then(currencies => {
-            console.log('Currency data received:', currencies);
-            const select = document.getElementById('currencyFilter');
-            select.innerHTML = '<option value="">همه ارزها</option>';
-            
-            if (Array.isArray(currencies)) {
-                console.log('Number of currencies:', currencies.length);
-                currencies.forEach(currency => {
-                    select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
-                });
-            } else {
-                console.log('Invalid currency data structure');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading currencies:', error);
-            const select = document.getElementById('currencyFilter');
-            select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+        // Initialize empty tables
+        showEmptyState();
+
+        // Customer filter change event (manual button is always enabled now)
+        document.getElementById('customerFilter').addEventListener('change', function () {
+            loadDataForActiveTab();
         });
-}
 
-function loadCustomers() {
-    console.log('Loading customers...');
-    fetch('@Url.Action("GetCustomersData", "Reports")')
-        .then(response => {
-            console.log('Customer response status:', response.status);
-            return response.json();
-        })
-        .then(data => {
-            console.log('Customer data received:', data);
-            const select = document.getElementById('customerFilter');
-            select.innerHTML = '<option value="">انتخاب مشتری</option>';
-            
-            // The API returns customers directly in the data.customers array
-            if (data.customers && Array.isArray(data.customers)) {
-                console.log('Number of customers:', data.customers.length);
-                data.customers.forEach(customer => {
-                    select.innerHTML += `<option value="${customer.id}">${customer.fullName}</option>`;
-                });
-            } else {
-                console.log('No customers found or invalid data structure');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading customers:', error);
-            const select = document.getElementById('customerFilter');
-            select.innerHTML = '<option value="">خطا در بارگذاری مشتریان</option>';
+        // Date filter change event
+        document.getElementById('fromDate').addEventListener('change', function () {
+            loadDataForActiveTab();
         });
-}
+        document.getElementById('toDate').addEventListener('change', function () {
+            loadDataForActiveTab();
+        });
 
-function loadData() {
-    loadDataForActiveTab();
-}
+        // Currency filter change event
+        document.getElementById('currencyFilter').addEventListener('change', function () {
+            loadDataForActiveTab();
+        });
+    });
 
-function loadDataForActiveTab() {
-    loadCustomerTimeline();
-}
 
-function showEmptyState() {
-    // Show empty state for timeline
-    document.getElementById('timelineTableBody').innerHTML = 
-        '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-user-plus fa-2x mb-2"></i><br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید</td></tr>';
-}
+    function loadCurrencies() {
+        console.log('Loading currencies...');
+        fetch('@Url.Action("GetCurrencies", "Api")')
+            .then(response => {
+                console.log('Currency response status:', response.status);
+                return response.json();
+            })
+            .then(currencies => {
+                console.log('Currency data received:', currencies);
+                const select = document.getElementById('currencyFilter');
+                select.innerHTML = '<option value="">همه ارزها</option>';
 
-function clearDate(inputId) {
-    document.getElementById(inputId).value = '';
-    loadDataForActiveTab();
-}
-
-function updatePagination(containerId, totalPages, currentPageNum, loadFunction) {
-    const container = document.getElementById(containerId);
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-    
-    let pagination = '<ul class="pagination justify-content-center">';
-    
-    // Previous button
-    if (currentPageNum > 1) {
-        pagination += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${currentPageNum - 1}); return false;">قبلی</a></li>`;
-    }
-    
-    // Page numbers
-    for (let i = Math.max(1, currentPageNum - 2); i <= Math.min(totalPages, currentPageNum + 2); i++) {
-        const active = i === currentPageNum ? 'active' : '';
-        pagination += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="${loadFunction.name}(${i}); return false;">${i}</a></li>`;
-    }
-    
-    // Next button
-    if (currentPageNum < totalPages) {
-        pagination += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${currentPageNum + 1}); return false;">بعدی</a></li>`;
-    }
-    
-    pagination += '</ul>';
-    container.innerHTML = pagination;
-}
-
-function exportData() {
-    exportTimelineData();
-}
-
-function formatCurrency(amount, currencyCode) {
-    if (currencyCode === 'IRR') {
-        return new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
-    }
-    return new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 8
-    }).format(amount) + ' ' + currencyCode;
-}
-
-function formatDate(dateString) {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB'); // Georgian format: DD/MM/YYYY
-}
-
-// ========== FINANCIAL TIMELINE FUNCTIONS (BANK STYLE) ==========
-
-function loadCustomerTimeline() {
-    const customerId = document.getElementById('customerFilter').value;
-    if (!customerId) {
-        showTimelineEmptyState();
-        hideTimelineSections();
-        return;
+                if (Array.isArray(currencies)) {
+                    console.log('Number of currencies:', currencies.length);
+                    currencies.forEach(currency => {
+                        select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
+                    });
+                } else {
+                    console.log('Invalid currency data structure');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading currencies:', error);
+                const select = document.getElementById('currencyFilter');
+                select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+            });
     }
 
-    const fromDate = document.getElementById('fromDate').value || null;
-    const toDate = document.getElementById('toDate').value || null;
-    const currencyCode = document.getElementById('currencyFilter').value || null;
-    
-    // Show loading state
-    showTimelineLoading();
-    showTimelineSections();
-    
-    $.get('@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")', {
-        customerId: customerId,
-        fromDate: fromDate,
-        toDate: toDate,
-        currencyCode: currencyCode
-    })
-    .done(function(response) {
-        if (response.success) {
-            currentTimeline = response.data;
-            renderBankStyleTimeline(response.data);
-            updateCustomerInfo(response.data);
-        } else {
-            showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
+    function loadCustomers() {
+        console.log('Loading customers...');
+        fetch('@Url.Action("GetCustomersData", "Reports")')
+            .then(response => {
+                console.log('Customer response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Customer data received:', data);
+                const select = document.getElementById('customerFilter');
+                select.innerHTML = '<option value="">انتخاب مشتری</option>';
+
+                // The API returns customers directly in the data.customers array
+                if (data.customers && Array.isArray(data.customers)) {
+                    console.log('Number of customers:', data.customers.length);
+                    data.customers.forEach(customer => {
+                        select.innerHTML += `<option value="${customer.id}">${customer.fullName}</option>`;
+                    });
+                } else {
+                    console.log('No customers found or invalid data structure');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading customers:', error);
+                const select = document.getElementById('customerFilter');
+                select.innerHTML = '<option value="">خطا در بارگذاری مشتریان</option>';
+            });
+    }
+
+    function loadData() {
+        loadDataForActiveTab();
+    }
+
+    function loadDataForActiveTab() {
+        loadCustomerTimeline();
+    }
+
+    function showEmptyState() {
+        // Show empty state for timeline
+        document.getElementById('timelineTableBody').innerHTML =
+            '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-user-plus fa-2x mb-2"></i><br>لطفا برای دریافت تاریخچه مالی یک مشتری را انتخاب کنید</td></tr>';
+    }
+
+    function clearDate(inputId) {
+        document.getElementById(inputId).value = '';
+        loadDataForActiveTab();
+    }
+
+    function updatePagination(containerId, totalPages, currentPageNum, loadFunction) {
+        const container = document.getElementById(containerId);
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
         }
-    })
-    .fail(function() {
-        showTimelineError('خطا در ارتباط با سرور');
-    });
-}
 
-function renderBankStyleTimeline(timeline) {
-    const tbody = document.getElementById('timelineTableBody');
-    
-    if (!timeline.transactions || timeline.transactions.length === 0) {
-        tbody.innerHTML = `
+        let pagination = '<ul class="pagination justify-content-center">';
+
+        // Previous button
+        if (currentPageNum > 1) {
+            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${currentPageNum - 1}); return false;">قبلی</a></li>`;
+        }
+
+        // Page numbers
+        for (let i = Math.max(1, currentPageNum - 2); i <= Math.min(totalPages, currentPageNum + 2); i++) {
+            const active = i === currentPageNum ? 'active' : '';
+            pagination += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="${loadFunction.name}(${i}); return false;">${i}</a></li>`;
+        }
+
+        // Next button
+        if (currentPageNum < totalPages) {
+            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${currentPageNum + 1}); return false;">بعدی</a></li>`;
+        }
+
+        pagination += '</ul>';
+        container.innerHTML = pagination;
+    }
+
+    function exportData() {
+        exportTimelineData();
+    }
+
+    function formatCurrency(amount, currencyCode) {
+        if (currencyCode === 'IRR') {
+            return new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
+        }
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 8
+        }).format(amount) + ' ' + currencyCode;
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB'); // Georgian format: DD/MM/YYYY
+    }
+
+    // ========== FINANCIAL TIMELINE FUNCTIONS (BANK STYLE) ==========
+
+    function loadCustomerTimeline() {
+        const customerId = document.getElementById('customerFilter').value;
+        if (!customerId) {
+            showTimelineEmptyState();
+            hideTimelineSections();
+            return;
+        }
+
+        const fromDate = document.getElementById('fromDate').value || null;
+        const toDate = document.getElementById('toDate').value || null;
+        const currencyCode = document.getElementById('currencyFilter').value || null;
+
+        // Show loading state
+        showTimelineLoading();
+        showTimelineSections();
+
+        $.get('@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")', {
+            customerId: customerId,
+            fromDate: fromDate,
+            toDate: toDate,
+            currencyCode: currencyCode
+        })
+            .done(function (response) {
+                if (response.success) {
+                    currentTimeline = response.data;
+                    renderBankStyleTimeline(response.data);
+                    updateCustomerInfo(response.data);
+                } else {
+                    showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
+                }
+            })
+            .fail(function () {
+                showTimelineError('خطا در ارتباط با سرور');
+            });
+    }
+
+    function renderBankStyleTimeline(timeline) {
+        const tbody = document.getElementById('timelineTableBody');
+
+        if (!timeline.transactions || timeline.transactions.length === 0) {
+            tbody.innerHTML = `
             <tr>
                 <td colspan="6" class="text-center py-5 text-muted">
                     <i class="fas fa-info-circle fa-2x mb-2"></i>
@@ -434,24 +459,24 @@ function renderBankStyleTimeline(timeline) {
                 </td>
             </tr>
         `;
-        return;
-    }
-    
-    let timelineHtml = '';
-    
-    // Group transactions by currency for bank-style presentation
-    const currencyGroups = {};
-    timeline.transactions.forEach(transaction => {
-        if (!currencyGroups[transaction.currencyCode]) {
-            currencyGroups[transaction.currencyCode] = [];
+            return;
         }
-        currencyGroups[transaction.currencyCode].push(transaction);
-    });
 
-    // Render each currency group
-    Object.entries(currencyGroups).forEach(([currency, transactions]) => {
-        // Currency header row
-        timelineHtml += `
+        let timelineHtml = '';
+
+        // Group transactions by currency for bank-style presentation
+        const currencyGroups = {};
+        timeline.transactions.forEach(transaction => {
+            if (!currencyGroups[transaction.currencyCode]) {
+                currencyGroups[transaction.currencyCode] = [];
+            }
+            currencyGroups[transaction.currencyCode].push(transaction);
+        });
+
+        // Render each currency group
+        Object.entries(currencyGroups).forEach(([currency, transactions]) => {
+            // Currency header row
+            timelineHtml += `
             <tr class="table-info">
                 <td colspan="6" class="fw-bold text-center">
                     <i class="fas fa-coins me-2"></i>
@@ -461,38 +486,38 @@ function renderBankStyleTimeline(timeline) {
             </tr>
         `;
 
-        // Add transaction rows
-        transactions.forEach(transaction => {
-            // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4
-            const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
-            const isManualTransaction = !transaction.referenceId; // Manual transactions have no referenceId
-            
-            let typeText, transactionId, clickHandler, cursorStyle;
-            
-            if (isManualTransaction) {
-                // Manual transaction - no click handler
-                typeText = 'تعدیل دستی';
-                transactionId = '';
-                clickHandler = '';
-                cursorStyle = 'cursor: default;';
-            } else {
-                // Order or Document transaction - clickable
-                typeText = isOrderTransaction ? 'معامله' : 'سند';
-                transactionId = transaction.referenceId;
-                clickHandler = isOrderTransaction ? 
-                    `onclick="goToOrderDetail(${transactionId})"` : 
-                    `onclick="goToDocumentDetail(${transactionId})"`;
-                cursorStyle = 'cursor: pointer;';
-            }
-            
-            timelineHtml += `
+            // Add transaction rows
+            transactions.forEach(transaction => {
+                // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4
+                const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
+                const isManualTransaction = !transaction.referenceId; // Manual transactions have no referenceId
+
+                let typeText, transactionId, clickHandler, cursorStyle;
+
+                if (isManualTransaction) {
+                    // Manual transaction - no click handler
+                    typeText = 'تعدیل دستی';
+                    transactionId = '';
+                    clickHandler = '';
+                    cursorStyle = 'cursor: default;';
+                } else {
+                    // Order or Document transaction - clickable
+                    typeText = isOrderTransaction ? 'معامله' : 'سند';
+                    transactionId = transaction.referenceId;
+                    clickHandler = isOrderTransaction ?
+                        `onclick="goToOrderDetail(${transactionId})"` :
+                        `onclick="goToDocumentDetail(${transactionId})"`;
+                    cursorStyle = 'cursor: pointer;';
+                }
+
+                timelineHtml += `
                 <tr class="transaction-row" style="${cursorStyle}" ${clickHandler}>
                     <td class="text-center">${formatDate(transaction.transactionDate)}</td>
                     <td class="text-center">
-                        ${isManualTransaction ? 
-                            `<span class="badge bg-info">${typeText}</span>` :
-                            `<a href="#" class="text-decoration-none">${typeText} #${transactionId}</a>`
-                        }
+                        ${isManualTransaction ?
+                        `<span class="badge bg-info">${typeText}</span>` :
+                        `<a href="#" class="text-decoration-none">${typeText} #${transactionId}</a>`
+                    }
                     </td>
                     <td class="text-center">${currency}</td>
                     <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(transaction.amount, currency)}</td>
@@ -500,39 +525,39 @@ function renderBankStyleTimeline(timeline) {
                     <td class="text-start"><small class="text-muted">${transaction.description || '-'}</small></td>
                 </tr>
             `;
+            });
+
+            // Add spacing row
+            timelineHtml += `<tr><td colspan="6" style="height: 15px; border: none;"></td></tr>`;
         });
 
-        // Add spacing row
-        timelineHtml += `<tr><td colspan="6" style="height: 15px; border: none;"></td></tr>`;
-    });
-    
-    tbody.innerHTML = timelineHtml;
-    renderBalanceSummary(timeline.finalBalances);
-}
-
-function updateCustomerInfo(timeline) {
-    document.getElementById('customerInfoText').textContent = timeline.customerName;
-    const fromDate = timeline.fromDate ? new Date(timeline.fromDate).toLocaleDateString('en-GB') : 'ابتدای زمان';
-    const toDate = timeline.toDate ? new Date(timeline.toDate).toLocaleDateString('en-GB') : 'انتهای زمان';
-    document.getElementById('reportPeriodText').textContent = `${fromDate} تا ${toDate}`;
-}
-
-function renderBalanceSummary(balances) {
-    const container = document.getElementById('balanceSummaryContent');
-    
-    if (!balances || Object.keys(balances).length === 0) {
-        container.innerHTML = '<div class="col-12 text-center text-muted">موجودی‌ای یافت نشد</div>';
-        return;
+        tbody.innerHTML = timelineHtml;
+        renderBalanceSummary(timeline.finalBalances);
     }
-    
-    let balanceHtml = '';
-    Object.entries(balances).forEach(([currency, amount]) => {
-        const isPositive = amount >= 0;
-        const colorClass = isPositive ? 'success' : 'danger';
-        const iconClass = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
-        const sign = isPositive ? '+' : '-';
-        
-        balanceHtml += `
+
+    function updateCustomerInfo(timeline) {
+        document.getElementById('customerInfoText').textContent = timeline.customerName;
+        const fromDate = timeline.fromDate ? new Date(timeline.fromDate).toLocaleDateString('en-GB') : 'ابتدای زمان';
+        const toDate = timeline.toDate ? new Date(timeline.toDate).toLocaleDateString('en-GB') : 'انتهای زمان';
+        document.getElementById('reportPeriodText').textContent = `${fromDate} تا ${toDate}`;
+    }
+
+    function renderBalanceSummary(balances) {
+        const container = document.getElementById('balanceSummaryContent');
+
+        if (!balances || Object.keys(balances).length === 0) {
+            container.innerHTML = '<div class="col-12 text-center text-muted">موجودی‌ای یافت نشد</div>';
+            return;
+        }
+
+        let balanceHtml = '';
+        Object.entries(balances).forEach(([currency, amount]) => {
+            const isPositive = amount >= 0;
+            const colorClass = isPositive ? 'success' : 'danger';
+            const iconClass = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+            const sign = isPositive ? '+' : '-';
+
+            balanceHtml += `
             <div class="col-md-3 mb-2">
                 <div class="d-flex align-items-center p-2 bg-white rounded shadow-sm">
                     <div class="me-2">
@@ -550,49 +575,49 @@ function renderBalanceSummary(balances) {
                 </div>
             </div>
         `;
-    });
-    
-    container.innerHTML = balanceHtml;
-}
+        });
 
-function getTransactionTypeIcon(type) {
-    const icons = {
-        0: 'fas fa-balance-scale',     // InitialBalance
-        1: 'fas fa-arrow-down',        // OrderSell
-        2: 'fas fa-arrow-up',          // OrderBuy
-        3: 'fas fa-plus-circle',       // DocumentCredit
-        4: 'fas fa-minus-circle',      // DocumentDebit
-        5: 'fas fa-edit'               // ManualAdjustment
-    };
-    return icons[type] || 'fas fa-exchange-alt';
-}
+        container.innerHTML = balanceHtml;
+    }
 
-function getTransactionTypeText(type) {
-    const texts = {
-        0: 'موجودی اولیه',
-        1: 'فروش ارز',
-        2: 'خرید ارز',
-        3: 'واریز',
-        4: 'برداشت',
-        5: 'تعدیل'
-    };
-    return texts[type] || 'تراکنش';
-}
+    function getTransactionTypeIcon(type) {
+        const icons = {
+            0: 'fas fa-balance-scale',     // InitialBalance
+            1: 'fas fa-arrow-down',        // OrderSell
+            2: 'fas fa-arrow-up',          // OrderBuy
+            3: 'fas fa-plus-circle',       // DocumentCredit
+            4: 'fas fa-minus-circle',      // DocumentDebit
+            5: 'fas fa-edit'               // ManualAdjustment
+        };
+        return icons[type] || 'fas fa-exchange-alt';
+    }
 
-function getTransactionBadgeClass(type) {
-    const classes = {
-        0: 'bg-secondary',    // InitialBalance
-        1: 'bg-danger',       // OrderSell
-        2: 'bg-success',      // OrderBuy
-        3: 'bg-success',      // DocumentCredit
-        4: 'bg-danger',       // DocumentDebit
-        5: 'bg-warning'       // ManualAdjustment
-    };
-    return classes[type] || 'bg-primary';
-}
+    function getTransactionTypeText(type) {
+        const texts = {
+            0: 'موجودی اولیه',
+            1: 'فروش ارز',
+            2: 'خرید ارز',
+            3: 'واریز',
+            4: 'برداشت',
+            5: 'تعدیل'
+        };
+        return texts[type] || 'تراکنش';
+    }
 
-function showTimelineEmptyState() {
-    document.getElementById('timelineTableBody').innerHTML = `
+    function getTransactionBadgeClass(type) {
+        const classes = {
+            0: 'bg-secondary',    // InitialBalance
+            1: 'bg-danger',       // OrderSell
+            2: 'bg-success',      // OrderBuy
+            3: 'bg-success',      // DocumentCredit
+            4: 'bg-danger',       // DocumentDebit
+            5: 'bg-warning'       // ManualAdjustment
+        };
+        return classes[type] || 'bg-primary';
+    }
+
+    function showTimelineEmptyState() {
+        document.getElementById('timelineTableBody').innerHTML = `
         <tr>
             <td colspan="6" class="text-center py-5 text-muted">
                 <i class="fas fa-user-plus fa-2x mb-2"></i>
@@ -600,10 +625,10 @@ function showTimelineEmptyState() {
             </td>
         </tr>
     `;
-}
+    }
 
-function showTimelineLoading() {
-    document.getElementById('timelineTableBody').innerHTML = `
+    function showTimelineLoading() {
+        document.getElementById('timelineTableBody').innerHTML = `
         <tr>
             <td colspan="6" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
@@ -613,10 +638,10 @@ function showTimelineLoading() {
             </td>
         </tr>
     `;
-}
+    }
 
-function showTimelineError(message) {
-    document.getElementById('timelineTableBody').innerHTML = `
+    function showTimelineError(message) {
+        document.getElementById('timelineTableBody').innerHTML = `
         <tr>
             <td colspan="6" class="text-center py-5 text-danger">
                 <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
@@ -624,49 +649,49 @@ function showTimelineError(message) {
             </td>
         </tr>
     `;
-}
-
-function showTimelineSections() {
-    document.getElementById('customerInfoHeader').style.display = 'block';
-    document.getElementById('balanceSummarySection').style.display = 'block';
-}
-
-function hideTimelineSections() {
-    document.getElementById('customerInfoHeader').style.display = 'none';
-    document.getElementById('balanceSummarySection').style.display = 'none';
-}
-
-function exportTimelineData() {
-    const customerId = document.getElementById('customerFilter').value;
-    if (!customerId) {
-        alert('لطفاً ابتدا مشتری را انتخاب کنید');
-        return;
     }
 
-    const fromDate = document.getElementById('fromDate').value || null;
-    const toDate = document.getElementById('toDate').value || null;
-    
-    const params = new URLSearchParams({
-        customerId: customerId,
-        fromDate: fromDate,
-        toDate: toDate
-    });
-    
-    // For now, show success message - Excel export can be implemented later
-    alert('صادرات تاریخچه مالی به فرمت Excel در ادامه پیاده‌سازی خواهد شد');
-}
-
-function printTimeline() {
-    if (!currentTimeline) {
-        alert('ابتدا تاریخچه مالی را بارگذاری کنید');
-        return;
+    function showTimelineSections() {
+        document.getElementById('customerInfoHeader').style.display = 'block';
+        document.getElementById('balanceSummarySection').style.display = 'block';
     }
-    
-    // Create print-friendly version
-    const printWindow = window.open('', '_blank');
-    const customerName = currentTimeline.customerName;
-    
-    printWindow.document.write(`
+
+    function hideTimelineSections() {
+        document.getElementById('customerInfoHeader').style.display = 'none';
+        document.getElementById('balanceSummarySection').style.display = 'none';
+    }
+
+    function exportTimelineData() {
+        const customerId = document.getElementById('customerFilter').value;
+        if (!customerId) {
+            alert('لطفاً ابتدا مشتری را انتخاب کنید');
+            return;
+        }
+
+        const fromDate = document.getElementById('fromDate').value || null;
+        const toDate = document.getElementById('toDate').value || null;
+
+        const params = new URLSearchParams({
+            customerId: customerId,
+            fromDate: fromDate,
+            toDate: toDate
+        });
+
+        // For now, show success message - Excel export can be implemented later
+        alert('صادرات تاریخچه مالی به فرمت Excel در ادامه پیاده‌سازی خواهد شد');
+    }
+
+    function printTimeline() {
+        if (!currentTimeline) {
+            alert('ابتدا تاریخچه مالی را بارگذاری کنید');
+            return;
+        }
+
+        // Create print-friendly version
+        const printWindow = window.open('', '_blank');
+        const customerName = currentTimeline.customerName;
+
+        printWindow.document.write(`
         <html>
         <head>
             <title>تاریخچه مالی - ${customerName}</title>
@@ -687,400 +712,418 @@ function printTimeline() {
         </body>
         </html>
     `);
-    
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-}
 
-// Navigation functions for clickable rows
-function goToOrderDetail(orderId) {
-    window.open(`/Orders/Details/${orderId}`, '_blank');
-}
-
-function goToDocumentDetail(documentId) {
-    window.open(`/AccountingDocuments/Details/${documentId}`, '_blank');
-}
-
-// ========== MANUAL BALANCE HISTORY FUNCTIONS ==========
-
-function openManualBalanceModal() {
-    const customerId = document.getElementById('customerFilter').value;
-    const customerSelect = document.getElementById('customerFilter');
-    
-    if (!customerId) {
-        alert('لطفاً ابتدا مشتری را انتخاب کنید');
-        return;
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
     }
-    
-    // Set customer info in modal
-    document.getElementById('modalCustomerId').value = customerId;
-    const selectedCustomerText = customerSelect.options[customerSelect.selectedIndex].text;
-    document.getElementById('selectedCustomerName').textContent = selectedCustomerText;
-    
-    // Set default transaction date to today
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-    document.getElementById('modalTransactionDate').value = formattedDate;
-    
-    // Load currencies in modal
-    loadCurrenciesForModal();
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('manualBalanceModal'));
-    modal.show();
-}
 
-function loadCurrenciesForModal() {
-    console.log('Loading currencies for modal...');
-    fetch('@Url.Action("GetCurrencies", "Api")')
-        .then(response => {
-            console.log('Modal currency response status:', response.status);
-            return response.json();
-        })
-        .then(currencies => {
-            console.log('Modal currency data received:', currencies);
-            const select = document.getElementById('modalCurrencyCode');
-            select.innerHTML = '<option value="">انتخاب ارز</option>';
-            
-            if (Array.isArray(currencies)) {
-                console.log('Number of currencies for modal:', currencies.length);
-                currencies.forEach(currency => {
-                    select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
-                });
-                console.log('Modal currency options populated');
-            } else {
-                console.log('Invalid modal currency data structure');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading currencies for modal:', error);
-            const select = document.getElementById('modalCurrencyCode');
-            select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
-        });
-}
-
-// Handle manual balance form submission
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('manualBalanceForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        submitManualBalance();
-    });
-});
-
-function submitManualBalance() {
-    const form = document.getElementById('manualBalanceForm');
-    const formData = new FormData(form);
-    
-    // Create URL-encoded data for the request
-    const data = {
-        customerId: formData.get('customerId'),
-        currencyCode: formData.get('currencyCode'),
-        amount: parseFloat(formData.get('amount')),
-        reason: formData.get('reason'),
-        transactionDate: formData.get('transactionDate')
-    };
-    
-    // Validate required fields
-    if (!data.customerId || !data.currencyCode || !data.amount || !data.reason || !data.transactionDate) {
-        alert('لطفاً همه فیلدهای الزامی را پر کنید');
-        return;
+    // Navigation functions for clickable rows
+    function goToOrderDetail(orderId) {
+        window.open(`/Orders/Details/${orderId}`, '_blank');
     }
-    
-    // Show loading state
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    submitBtn.disabled = true;
-    
-    // Create form data for POST request
-    const postData = new URLSearchParams();
-    Object.keys(data).forEach(key => {
-        postData.append(key, data[key]);
-    });
-    // Add antiforgery token
-    postData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
-    
-    fetch('@Url.Action("CreateManualCustomerBalanceHistory", "Database")', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: postData
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            // Success - close modal and refresh data
-            const modal = bootstrap.Modal.getInstance(document.getElementById('manualBalanceModal'));
-            modal.hide();
-            
-            // Reset form
-            form.reset();
-            
-            // Show success message
-            alert('تراکنش دستی با موفقیت ثبت شد');
-            
-            // Refresh customer timeline if it's loaded
-            if (document.getElementById('customerFilter').value) {
-                loadCustomerTimeline();
-            }
-        } else {
-            alert('خطا در ثبت تراکنش: ' + (result.error || result.message || 'خطای ناشناخته'));
+
+    function goToDocumentDetail(documentId) {
+        window.open(`/AccountingDocuments/Details/${documentId}`, '_blank');
+    }
+
+    // ========== MANUAL BALANCE HISTORY FUNCTIONS ==========
+
+    function openManualBalanceModal() {
+        const customerId = document.getElementById('customerFilter').value;
+        const customerSelect = document.getElementById('customerFilter');
+
+        if (!customerId) {
+            alert('لطفاً ابتدا مشتری را انتخاب کنید');
+            return;
         }
-    })
-    .catch(error => {
-        console.error('Error submitting manual balance:', error);
-        alert('خطا در ارسال اطلاعات: ' + error.message);
-    })
-    .finally(() => {
-        // Restore button state
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    });
-}
 
-// ========== RECALCULATE BALANCES FUNCTION ==========
+        // Set customer info in modal
+        document.getElementById('modalCustomerId').value = customerId;
+        const selectedCustomerText = customerSelect.options[customerSelect.selectedIndex].text;
+        document.getElementById('selectedCustomerName').textContent = selectedCustomerText;
 
-function recalculateAllBalances() {
-    if (!confirm('آیا مطمئن هستید که می‌خواهید همه موجودی‌ها را بر اساس تاریخ تراکنش‌ها بازمحاسبه کنید؟\n\nاین عملیات ممکن است چند دقیقه طول بکشد.')) {
-        return;
+        // Set default transaction date and time to now
+        const today = new Date();
+        // Format for datetime-local input (YYYY-MM-DDTHH:MM)
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const hours = String(today.getHours()).padStart(2, '0');
+        const minutes = String(today.getMinutes()).padStart(2, '0');
+        const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+        document.getElementById('modalTransactionDate').value = formattedDateTime;
+
+        // Load currencies in modal
+        loadCurrenciesForModal();
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('manualBalanceModal'));
+        modal.show();
     }
-    
-    const recalculateBtn = document.getElementById('recalculateBtn');
-    const originalText = recalculateBtn.innerHTML;
-    
-    // Show loading state
-    recalculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    recalculateBtn.disabled = true;
-    
-    fetch('@Url.Action("RecalculateAllBalancesFromTransactionDates", "Database")', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-        },
-        body: '__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        console.log('Response headers:', response.headers.get('content-type'));
-        
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            return response.json();
-        } else {
-            // If not JSON, read as text to see what we got
-            return response.text().then(text => {
-                console.log('Response text:', text);
-                throw new Error('Server returned HTML instead of JSON. Possibly redirected to error page.');
+
+    function loadCurrenciesForModal() {
+        console.log('Loading currencies for modal...');
+        fetch('@Url.Action("GetCurrencies", "Api")')
+            .then(response => {
+                console.log('Modal currency response status:', response.status);
+                return response.json();
+            })
+            .then(currencies => {
+                console.log('Modal currency data received:', currencies);
+                const select = document.getElementById('modalCurrencyCode');
+                select.innerHTML = '<option value="">انتخاب ارز</option>';
+
+                if (Array.isArray(currencies)) {
+                    console.log('Number of currencies for modal:', currencies.length);
+                    currencies.forEach(currency => {
+                        select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
+                    });
+                    console.log('Modal currency options populated');
+                } else {
+                    console.log('Invalid modal currency data structure');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading currencies for modal:', error);
+                const select = document.getElementById('modalCurrencyCode');
+                select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
             });
-        }
-    })
-    .then(result => {
-        if (result.success) {
-            alert('بازمحاسبه موجودی‌ها با موفقیت انجام شد!\n\n' + (result.message || 'همه موجودی‌ها بازمحاسبه شدند.'));
-            
-            // Refresh customer timeline if it's loaded
-            if (document.getElementById('customerFilter').value) {
-                loadCustomerTimeline();
-            }
-        } else {
-            alert('خطا در بازمحاسبه موجودی‌ها: ' + (result.error || result.message || 'خطای ناشناخته'));
-        }
-    })
-    .catch(error => {
-        console.error('Error during recalculation:', error);
-        alert('خطا در ارسال درخواست بازمحاسبه: ' + error.message);
-    })
-    .finally(() => {
-        // Restore button state
-        recalculateBtn.innerHTML = originalText;
-        recalculateBtn.disabled = false;
+    }
+
+    // Handle manual balance form submission
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('manualBalanceForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            submitManualBalance();
+        });
     });
-}
+
+    function submitManualBalance() {
+        const form = document.getElementById('manualBalanceForm');
+        const formData = new FormData(form);
+
+        // Create URL-encoded data for the request
+        const data = {
+            customerId: formData.get('customerId'),
+            currencyCode: formData.get('currencyCode'),
+            amount: parseFloat(formData.get('amount')),
+            reason: formData.get('reason'),
+            transactionDate: formData.get('transactionDate')
+        };
+
+        // Validate required fields
+        if (!data.customerId || !data.currencyCode || !data.amount || !data.reason || !data.transactionDate) {
+            alert('لطفاً همه فیلدهای الزامی را پر کنید');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        submitBtn.disabled = true;
+
+        // Create form data for POST request
+        const postData = new URLSearchParams();
+        Object.keys(data).forEach(key => {
+            postData.append(key, data[key]);
+        });
+        // Add antiforgery token
+        postData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
+
+        fetch('@Url.Action("CreateManualCustomerBalanceHistory", "Database")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: postData
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Success - close modal and refresh data
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('manualBalanceModal'));
+                    modal.hide();
+
+                    // Reset form
+                    form.reset();
+
+                    // Show success message
+                    alert('تراکنش دستی با موفقیت ثبت شد');
+
+                    // Refresh customer timeline if it's loaded
+                    if (document.getElementById('customerFilter').value) {
+                        loadCustomerTimeline();
+                    }
+                } else {
+                    alert('خطا در ثبت تراکنش: ' + (result.error || result.message || 'خطای ناشناخته'));
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting manual balance:', error);
+                alert('خطا در ارسال اطلاعات: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+    }
+
+    // ========== RECALCULATE BALANCES FUNCTION ==========
+
+    function recalculateAllBalances() {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید همه موجودی‌ها را بر اساس تاریخ تراکنش‌ها بازمحاسبه کنید؟\n\nاین عملیات ممکن است چند دقیقه طول بکشد.')) {
+            return;
+        }
+
+        const recalculateBtn = document.getElementById('recalculateBtn');
+        const originalText = recalculateBtn.innerHTML;
+
+        // Show loading state
+        recalculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        recalculateBtn.disabled = true;
+
+        fetch('@Url.Action("RecalculateAllBalancesFromTransactionDates", "Database")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: '__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers.get('content-type'));
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // If not JSON, read as text to see what we got
+                    return response.text().then(text => {
+                        console.log('Response text:', text);
+                        throw new Error('Server returned HTML instead of JSON. Possibly redirected to error page.');
+                    });
+                }
+            })
+            .then(result => {
+                if (result.success) {
+                    alert('بازمحاسبه موجودی‌ها با موفقیت انجام شد!\n\n' + (result.message || 'همه موجودی‌ها بازمحاسبه شدند.'));
+
+                    // Refresh customer timeline if it's loaded
+                    if (document.getElementById('customerFilter').value) {
+                        loadCustomerTimeline();
+                    }
+                } else {
+                    alert('خطا در بازمحاسبه موجودی‌ها: ' + (result.error || result.message || 'خطای ناشناخته'));
+                }
+            })
+            .catch(error => {
+                console.error('Error during recalculation:', error);
+                alert('خطا در ارسال درخواست بازمحاسبه: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                recalculateBtn.innerHTML = originalText;
+                recalculateBtn.disabled = false;
+            });
+    }
 </script>
 
 <style>
-.card {
-    border-radius: 15px;
-    border: 3px solid #e9ecef;
-}
-
-.card:hover {
-    border-color: #e9ecef;
-    transition: border-color 0.3s ease;
-}
-
-.nav-tabs .nav-link {
-    border-radius: 10px 10px 0 0;
-    border: 2px solid transparent;
-    margin-right: 2px;
-}
-
-.nav-tabs .nav-link.active {
-    border-color: #6c757d #6c757d #fff #6c757d;
-    font-weight: bold;
-}
-
-.table th {
-    border-top: none;
-    font-weight: 600;
-    background-color: #343a40;
-    color: white;
-}
-
-/* Center align all table content by default */
-.table td, .table th {
-    text-align: center;
-    vertical-align: middle;
-}
-
-.badge {
-    font-size: 0.75rem;
-    padding: 0.375em 0.75em;
-}
-
-.page-link {
-    border-radius: 8px;
-    margin: 0 2px;
-    border: 2px solid #dee2e6;
-}
-
-.page-item.active .page-link {
-    background-color: #6c757d;
-    border-color: #6c757d;
-}
-
-.btn {
-    border-radius: 8px;
-    border-width: 2px;
-}
-
-.form-control, .form-select {
-    border-radius: 8px;
-    border: 2px solid #ced4da;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: #6c757d;
-    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
-}
-
-/* Currency styling consistency */
-.text-end {
-    text-align: left !important;
-}
-
-/* LTR direction for numbers */
-.ltr-direction {
-    direction: ltr;
-}
-
-/* RTL adjustments */
-.me-1 { margin-left: 0.25rem !important; margin-right: 0 !important; }
-.me-2 { margin-left: 0.5rem !important; margin-right: 0 !important; }
-
-/* Clickable elements */
-a:not(.btn):not(.page-link) {
-    color: #007bff;
-    text-decoration: none;
-}
-
-a:not(.btn):not(.page-link):hover {
-    color: #0056b3;
-    text-decoration: underline;
-}
-
-/* Loading states */
-.spinner-border {
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-/* Mobile responsiveness */
-@@media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.875rem;
+    .card {
+        border-radius: 15px;
+        border: 3px solid #e9ecef;
     }
-    
+
+    .card:hover {
+        border-color: #e9ecef;
+        transition: border-color 0.3s ease;
+    }
+
     .nav-tabs .nav-link {
-        font-size: 0.875rem;
-        padding: 0.5rem 0.75rem;
+        border-radius: 10px 10px 0 0;
+        border: 2px solid transparent;
+        margin-right: 2px;
     }
-}
 
-/* Timeline Bank Style Enhancements */
-.transaction-row:hover {
-    background-color: #f8f9fa;
-    transition: background-color 0.2s ease;
-}
-
-.table-info td {
-    background-color: #d1ecf1 !important;
-    border-color: #b8daff !important;
-}
-
-.table-light td {
-    background-color: #f8f9fa !important;
-}
-
-.table-warning td {
-    background-color: #fff3cd !important;
-    border-color: #ffeaa7 !important;
-    font-weight: 500;
-}
-
-.bg-gradient-primary {
-    background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%) !important;
-}
-
-.bg-gradient-success {
-    background: linear-gradient(87deg, #2dce89 0, #2dcecc 100%) !important;
-}
-
-.bg-gradient-info {
-    background: linear-gradient(87deg, #11cdef 0, #1171ef 100%) !important;
-}
-
-.bg-gradient-warning {
-    background: linear-gradient(87deg, #fb6340 0, #fbb140 100%) !important;
-}
-
-#timelineTable thead th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background-color: #343a40 !important;
-}
-
-.timeline-summary-card {
-    transition: transform 0.2s ease;
-}
-
-.timeline-summary-card:hover {
-    transform: translateY(-2px);
-}
-
-/* Print styles for timeline */
-@@media print {
-    .timeline-tab .card-header,
-    .timeline-tab .btn {
-        display: none !important;
+    .nav-tabs .nav-link.active {
+        border-color: #6c757d #6c757d #fff #6c757d;
+        font-weight: bold;
     }
-    
-    .timeline-tab .table {
-        font-size: 12px;
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        background-color: #343a40;
+        color: white;
     }
-    
-    .timeline-tab .table th,
-    .timeline-tab .table td {
-        padding: 4px;
-        border: 1px solid #000;
+
+    /* Center align all table content by default */
+    .table td,
+    .table th {
+        text-align: center;
+        vertical-align: middle;
     }
-}
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.375em 0.75em;
+    }
+
+    .page-link {
+        border-radius: 8px;
+        margin: 0 2px;
+        border: 2px solid #dee2e6;
+    }
+
+    .page-item.active .page-link {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .btn {
+        border-radius: 8px;
+        border-width: 2px;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 8px;
+        border: 2px solid #ced4da;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #6c757d;
+        box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+    }
+
+    /* Currency styling consistency */
+    .text-end {
+        text-align: left !important;
+    }
+
+    /* LTR direction for numbers */
+    .ltr-direction {
+        direction: ltr;
+    }
+
+    /* RTL adjustments */
+    .me-1 {
+        margin-left: 0.25rem !important;
+        margin-right: 0 !important;
+    }
+
+    .me-2 {
+        margin-left: 0.5rem !important;
+        margin-right: 0 !important;
+    }
+
+    /* Clickable elements */
+    a:not(.btn):not(.page-link) {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    a:not(.btn):not(.page-link):hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+    /* Loading states */
+    .spinner-border {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    /* Mobile responsiveness */
+    @@media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+
+        .nav-tabs .nav-link {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+        }
+    }
+
+    /* Timeline Bank Style Enhancements */
+    .transaction-row:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+    .table-info td {
+        background-color: #d1ecf1 !important;
+        border-color: #b8daff !important;
+    }
+
+    .table-light td {
+        background-color: #f8f9fa !important;
+    }
+
+    .table-warning td {
+        background-color: #fff3cd !important;
+        border-color: #ffeaa7 !important;
+        font-weight: 500;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%) !important;
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(87deg, #2dce89 0, #2dcecc 100%) !important;
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(87deg, #11cdef 0, #1171ef 100%) !important;
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(87deg, #fb6340 0, #fbb140 100%) !important;
+    }
+
+    #timelineTable thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #343a40 !important;
+    }
+
+    .timeline-summary-card {
+        transition: transform 0.2s ease;
+    }
+
+    .timeline-summary-card:hover {
+        transform: translateY(-2px);
+    }
+
+    /* Print styles for timeline */
+    @@media print {
+
+        .timeline-tab .card-header,
+        .timeline-tab .btn {
+            display: none !important;
+        }
+
+        .timeline-tab .table {
+            font-size: 12px;
+        }
+
+        .timeline-tab .table th,
+        .timeline-tab .table td {
+            padding: 4px;
+            border: 1px solid #000;
+        }
+    }
 </style>

@@ -943,10 +943,22 @@ namespace ForexExchange.Controllers
                     "⚠️ مهم: برای اطمینان از انسجام موجودی‌ها، حتماً دکمه 'بازمحاسبه بر اساس تاریخ تراکنش' را اجرا کنید"
                 };
 
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تراکنش دستی با موفقیت ثبت شد" });
+                }
+
                 TempData["Success"] = string.Join("<br/>", summary);
             }
             catch (Exception ex)
             {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در ایجاد رکورد دستی: {ex.Message}" });
+                }
+                
                 TempData["Error"] = $"خطا در ایجاد رکورد دستی: {ex.Message}";
             }
 

@@ -1723,14 +1723,20 @@ namespace ForexExchange.Services
 
             _logger.LogInformation($"Processing {historyRecords.Count} customer history records");
 
+            // Pre-load all existing customer balances into a dictionary for efficient lookup
+            var existingBalances = await _context.CustomerBalances.ToListAsync();
+            var balanceLookup = existingBalances.ToDictionary(
+                cb => $"{cb.CustomerId}_{cb.CurrencyCode}", 
+                cb => cb
+            );
+
             // Process each record in chronological order
             foreach (var history in historyRecords)
             {
+                var balanceKey = $"{history.CustomerId}_{history.CurrencyCode}";
+                
                 // Get or create current balance record
-                var currentBalance = await _context.CustomerBalances
-                    .FirstOrDefaultAsync(cb => cb.CustomerId == history.CustomerId && cb.CurrencyCode == history.CurrencyCode);
-
-                if (currentBalance == null)
+                if (!balanceLookup.TryGetValue(balanceKey, out var currentBalance))
                 {
                     currentBalance = new CustomerBalance
                     {
@@ -1740,6 +1746,7 @@ namespace ForexExchange.Services
                         LastUpdated = DateTime.UtcNow
                     };
                     _context.CustomerBalances.Add(currentBalance);
+                    balanceLookup[balanceKey] = currentBalance; // Add to lookup for future iterations
                 }
 
                 // Apply the transaction amount to current balance

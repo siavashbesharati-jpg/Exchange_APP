@@ -43,11 +43,17 @@ function initializeSelect2() {
     
     console.log('Initializing Select2 on select elements...');
     
-    $('select:not(.select2-hidden-accessible)').each(function() {
+    $('select:not(.select2-hidden-accessible):not(.no-select2)').each(function() {
         var $select = $(this);
         
         // Skip if already initialized
         if ($select.hasClass('select2-hidden-accessible')) {
+            return;
+        }
+        
+        // Skip if marked to not use Select2
+        if ($select.hasClass('no-select2')) {
+            console.log('Skipping Select2 for element with no-select2 class:', $select[0]);
             return;
         }
         
