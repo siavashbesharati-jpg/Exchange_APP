@@ -34,8 +34,25 @@ namespace ForexExchange.Services
 
                 // Set default date range if not provided
                 var isDateFiltered = fromDate.HasValue || toDate.HasValue;
-                fromDate ??= DateTime.MinValue;
-                toDate ??= DateTime.MaxValue;
+                
+                // Adjust dates to include full days
+                if (fromDate.HasValue)
+                {
+                    fromDate = fromDate.Value.Date; // Start of day (00:00:00)
+                }
+                else
+                {
+                    fromDate = DateTime.MinValue;
+                }
+
+                if (toDate.HasValue)
+                {
+                    toDate = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of day (23:59:59.9999999)
+                }
+                else
+                {
+                    toDate = DateTime.MaxValue;
+                }
 
                 _logger.LogInformation($"Getting timeline for customer {customerId} from {fromDate} to {toDate}, DateFiltered: {isDateFiltered}");
 

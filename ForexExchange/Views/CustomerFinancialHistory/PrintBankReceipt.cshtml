@@ -370,7 +370,7 @@
                                 }
                                 else
                                 {
-                                    @String.Format("{0:N8} {1}", balance.Value, balance.Key)
+                                    @(Math.Round(balance.Value, 2).ToString("0.##") + " " + balance.Key)
                                 }
                             </div>
                         </div>
@@ -427,7 +427,7 @@
                                         }
                                         else
                                         {
-                                            @String.Format("{0:N8}", transaction.Amount)
+                                            @(Math.Round(transaction.Amount, 2).ToString("0.##"))
                                         }
                                     </td>
                                     <td class="amount-cell">
@@ -437,7 +437,7 @@
                                         }
                                         else
                                         {
-                                            @String.Format("{0:N8}", transaction.RunningBalance)
+                                            @(Math.Round(transaction.RunningBalance, 2).ToString("0.##"))
                                         }
                                     </td>
                                     <td class="text-right">@(transaction.Description ?? "-")</td>
