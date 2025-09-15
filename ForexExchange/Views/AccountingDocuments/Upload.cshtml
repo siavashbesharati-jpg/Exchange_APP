@@ -216,7 +216,8 @@
                             <!-- Document Date -->
                             <div class="col-md-6 mb-3">
                                 <label asp-for="DocumentDate" class="form-label">تاریخ سند <span class="text-danger">*</span></label>
-                                <input asp-for="DocumentDate" class="form-control" type="datetime-local" required />
+                                <input asp-for="DocumentDate" class="form-control" type="datetime-local" 
+                                       value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
                                 <span asp-validation-for="DocumentDate" class="text-danger"></span>
                             </div>
 
