@@ -6,258 +6,103 @@
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <h2><i class="fas fa-chart-bar text-primary me-2"></i>گزارشات مالی جامع</h2>
-            <p class="text-muted">مشاهده و تحلیل کامل اطلاعات مالی، معاملات، تراز مشتریان و حساب‌های بانکی</p>
-        </div>
-    </div>
-
-    <!-- Advanced Filters -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>فیلترهای پیشرفته</h5>
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h2><i class="fas fa-chart-bar text-primary me-2"></i>گزارشات مالی جامع</h2>
+                    <p class="text-muted">مشاهده و تحلیل کامل اطلاعات مالی، معاملات، تراز مشتریان و حساب‌های بانکی</p>
                 </div>
-                <div class="card-body">
-                    <form id="reportFilters">
-                        <div class="row g-3">
-                            <!-- Date Range -->
-                            <div class="col-md-3">
-                                <label class="form-label">از تاریخ</label>
-                                <input type="date" class="form-control" id="fromDate" name="fromDate" value="">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">تا تاریخ</label>
-                                <input type="date" class="form-control" id="toDate" name="toDate" value="">
-                            </div>
-                            
-                            <!-- Customer Filter -->
-                            <div class="col-md-3">
-                                <label class="form-label">مشتری</label>
-                                <select class="form-select" id="customerId" name="customerId">
-                                    <option value="">همه مشتریان</option>
-                                    <!-- Will be populated via AJAX -->
-                                </select>
-                            </div>
-                            
-                            <!-- Currency Filter -->
-                            <div class="col-md-3">
-                                <label class="form-label">ارز</label>
-                                <select class="form-select" id="currencyId" name="currencyId">
-                                    <option value="">همه ارزها</option>
-                                    <!-- Will be populated via AJAX -->
-                                </select>
-                            </div>
-                            
-                            <!-- Bank Account Filter -->
-                            <div class="col-md-4">
-                                <label class="form-label">حساب بانکی</label>
-                                <select class="form-select" id="bankAccountId" name="bankAccountId">
-                                    <option value="">همه حساب‌ها</option>
-                                    <!-- Will be populated via AJAX -->
-                                </select>
-                            </div>
-                            
-                            <!-- Report Type -->
-                            <div class="col-md-4">
-                                <label class="form-label">نوع گزارش</label>
-                                <select class="form-select" id="reportType" name="reportType">
-                                    <option value="all">همه گزارشات</option>
-                                    <option value="orders">معاملات مشتریان</option>
-                                    <option value="balances">تراز مشتریان</option>
-                                    <option value="bank_balances">موجودی بانک‌ها</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="button" class="btn btn-primary me-2" onclick="applyFilters()">
-                                    <i class="fas fa-search me-1"></i>اعمال فیلتر
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
-                                    <i class="fas fa-undo me-1"></i>پاک کردن
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-1"></i>بازگشت به فهرست گزارشات
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Report Tabs -->
-    <div class="card">
-        <div class="card-header">
-            <ul class="nav nav-tabs card-header-tabs" id="reportTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-panel" type="button" role="tab">
-                        <i class="fas fa-clipboard-list me-1"></i>معاملات مشتریان
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="balances-tab" data-bs-toggle="tab" data-bs-target="#balances-panel" type="button" role="tab">
-                        <i class="fas fa-user-friends me-1"></i>تراز مشتریان
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="bank-balances-tab" data-bs-toggle="tab" data-bs-target="#bank-balances-panel" type="button" role="tab">
-                        <i class="fas fa-university me-1"></i>موجودی بانک‌ها
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts-panel" type="button" role="tab">
-                        <i class="fas fa-chart-pie me-1"></i>نمودارها
-                    </button>
-                </li>
-            </ul>
-        </div>
-        
-        <div class="card-body">
-            <div class="tab-content" id="reportTabContent">
-                <!-- Customer Orders Tab -->
-                <div class="tab-pane fade show active" id="orders-panel" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5><i class="fas fa-clipboard-list text-primary me-2"></i>معاملات مشتریان</h5>
+    <!-- Under Development Notice -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-tools text-warning" style="font-size: 4rem;"></i>
                     </div>
+                    <h3 class="text-dark mb-3">در حال توسعه</h3>
+                    <p class="text-muted mb-4 lead">
+                        این بخش در حال توسعه و بهبود است. به زودی امکانات جامع گزارش‌گیری مالی در دسترس خواهد بود.
+                    </p>
                     
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover" id="ordersTable">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>شناسه</th>
-                                    <th>تاریخ</th>
-                                    <th>مشتری</th>
-                                    <th>نوع معامله</th>
-                                    <th>ارز مبدا</th>
-                                    <th class="text-center">مقدار</th>
-                                    <th>ارز مقصد</th>
-                                    <th>نرخ</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="10" class="text-center">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">در حال بارگذاری...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Features Coming Soon -->
+                    <div class="row text-start mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-check-circle me-2"></i>امکانات در حال توسعه:
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    گزارشات جامع معاملات
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    تحلیل تراز مشتریان
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    موجودی حساب‌های بانکی
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-chart-line me-2"></i>نمودارها و تحلیل‌ها:
+                            </h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    نمودار حجم معاملات
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    روند معاملات روزانه
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    تحلیل توزیع ارزها
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Customer Balances Tab -->
-                <div class="tab-pane fade" id="balances-panel" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5><i class="fas fa-user-friends text-success me-2"></i>تراز مشتریان</h5>
+                    <!-- Alternative Options -->
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-info-circle me-2"></i>در حال حاضر می‌توانید از گزارشات زیر استفاده کنید:
+                        </h6>
+                        <div class="row mt-3">
+                            <div class="col-md-4 mb-2">
+                                <a href="@Url.Action("OrderReports", "Reports")" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="fas fa-exchange-alt me-1"></i>گزارشات معاملات
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <a href="@Url.Action("CustomerReports", "Reports")" class="btn btn-outline-success btn-sm w-100">
+                                    <i class="fas fa-users me-1"></i>گزارشات مشتریان
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <a href="@Url.Action("DocumentReports", "Reports")" class="btn btn-outline-warning btn-sm w-100">
+                                    <i class="fas fa-file-invoice me-1"></i>گزارشات اسناد
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover" id="balancesTable">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>مشتری</th>
-                                    <th>ارز</th>
-                                    <th class="text-center">تراز</th>
-                                    <th>وضعیت</th>
-                                    <th>آخرین بروزرسانی</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="6" class="text-center">
-                                        <div class="spinner-border text-success" role="status">
-                                            <span class="visually-hidden">در حال بارگذاری...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
-                <!-- Bank Balances Tab -->
-                <div class="tab-pane fade" id="bank-balances-panel" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5><i class="fas fa-university text-info me-2"></i>موجودی حساب‌های بانکی</h5>
-                    </div>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover" id="bankBalancesTable">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>بانک</th>
-                                    <th>شماره حساب</th>
-                                    <th>ارز</th>
-                                    <th class="text-center">موجودی</th>
-                                    <th>آخرین بروزرسانی</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="7" class="text-center">
-                                        <div class="spinner-border text-info" role="status">
-                                            <span class="visually-hidden">در حال بارگذاری...</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Charts Tab -->
-                <div class="tab-pane fade" id="charts-panel" role="tabpanel">
-                    <h5><i class="fas fa-chart-pie text-warning me-2"></i>نمودارها و تحلیل‌ها</h5>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6>حجم معاملات بر اساس ارز</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="currencyVolumeChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6>روند معاملات روزانه</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="dailyTrendChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6>توزیع تراز مشتریان</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="customerBalanceChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6>موجودی بانک‌ها</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="bankBalanceChart" width="400" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Contact Info -->
+                    <div class="text-muted">
+                        <small>
+                            <i class="fas fa-envelope me-1"></i>
+                            
+                        </small>
                     </div>
                 </div>
             </div>
@@ -267,649 +112,42 @@
 
 @section Styles {
     <style>
-        /* Enhanced System Balance Card Styles */
-        .system-balance-card {
-            transition: all 0.3s ease;
-            border-radius: 15px !important;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
-            border: 1px solid #dee2e6 !important;
-            color: #495057 !important;
-        }
-
-        .system-balance-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .system-balance-card .card-body {
-            padding: 1rem !important;
-        }
-
-        .system-balance-card .card-title {
-            font-size: 0.9rem !important;
-        }
-
-        .currency-select {
-            border-radius: 8px !important;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            font-size: 0.8rem !important;
-        }
-
-        .currency-select:focus {
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3) !important;
-            border-color: transparent !important;
-        }
-
-        /* Horizontal System Balance Card Styles */
-        .system-balance-horizontal-card {
-            transition: all 0.3s ease;
-            border-radius: 10px !important;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
-            border: 1px solid #dee2e6 !important;
-            color: #495057 !important;
-        }
-
-        .system-balance-horizontal-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .system-balance-horizontal-card .currency-select {
-            font-size: 0.85rem !important;
-            min-width: 120px;
-        }
-
-        .system-balance-horizontal-card .system-balance-amount {
-            font-size: 1.25rem !important;
-            margin-bottom: 0 !important;
-        }
-
-        .system-balance-horizontal-card .balance-label {
-            font-size: 0.75rem !important;
-        }
-
-        .system-balance-amount {
-            font-family: inherit; /* Keep consistent with page font */
-            text-shadow: none; /* Remove text shadow for cleaner look */
-            transition: all 0.4s ease;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 20px !important; /* Set balance font size to 20px */
-        }
-
-        .balance-display-section {
-            background: rgba(0, 123, 255, 0.05);
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid rgba(0, 123, 255, 0.1);
-        }
-
-        .loading-placeholder {
-            color: #007bff;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .balance-status-indicator {
-            transition: all 0.3s ease;
-        }
-
-        .balance-status-indicator .badge {
-            border-radius: 20px;
-            font-size: 0.75rem;
-        }
-
-        /* Positive/Negative Balance Colors */
-        .balance-positive {
-            color: #28a745 !important;
-            text-shadow: none; /* Remove text shadow */
-        }
-
-        .balance-negative {
-            color: #dc3545 !important;
-            text-shadow: none; /* Remove text shadow */
-        }
-
-        .balance-neutral {
-            color: #007bff !important;
-            text-shadow: none; /* Remove text shadow */
-        }
-
-        /* Animation for balance updates */
-        @@keyframes balanceUpdate {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .balance-updating {
-            animation: balanceUpdate 0.6s ease-in-out;
-        }
-
-        /* Currency selector wrapper */
-        .currency-selector-wrapper {
-            background: rgba(0, 123, 255, 0.05);
-            border-radius: 8px;
-            padding: 10px;
-            border: 1px solid rgba(0, 123, 255, 0.1);
-        }
-
-        /* Quick info footer */
-        .quick-info-footer {
-            border-top: 1px solid rgba(0, 123, 255, 0.1) !important;
-        }
-
-        /* Responsive adjustments */
-        @@media (max-width: 768px) {
-            .system-balance-amount {
-                font-size: 1.1rem !important;
-            }
-            
-            .currency-selector-wrapper {
-                padding: 6px;
-            }
-
-            .system-balance-card .card-title {
-                font-size: 0.8rem !important;
-            }
-
-            .currency-select {
-                font-size: 0.7rem !important;
-            }
-
-            /* Horizontal balance card responsive */
-            .system-balance-horizontal-card .row {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .system-balance-horizontal-card .col-md-3,
-            .system-balance-horizontal-card .col-md-4,
-            .system-balance-horizontal-card .col-md-2 {
-                margin-bottom: 1rem;
-            }
-
-            .system-balance-horizontal-card .system-balance-amount {
-                font-size: 1rem !important;
-            }
-        }
-
-        @@media (max-width: 992px) {
-            .system-balance-horizontal-card .row {
-                gap: 0.5rem;
-            }
-            
-            .system-balance-horizontal-card .system-balance-amount {
-                font-size: 1.1rem !important;
-            }
-        }
-
-        /* Additional existing styles */
         .card {
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             border: 1px solid rgba(0, 0, 0, 0.125);
+            border-radius: 15px;
         }
         
-        .card-header {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        .alert {
+            border-radius: 10px;
         }
         
-        .table th {
-            border-top: none;
-            font-weight: 600;
-            font-size: 0.875rem;
+        .btn {
+            border-radius: 8px;
         }
         
-        .badge {
-            font-size: 0.75rem;
+        .list-unstyled li {
+            transition: all 0.2s ease;
         }
         
-        .spinner-border {
-            width: 1.5rem;
-            height: 1.5rem;
+        .list-unstyled li:hover {
+            padding-left: 10px;
         }
         
-        .nav-tabs .nav-link {
-            border: none;
-            color: #6c757d;
+        .fa-tools {
+            animation: bounce 2s infinite;
         }
         
-        .nav-tabs .nav-link.active {
-            background-color: transparent;
-            border-bottom: 3px solid #007bff;
-            color: #007bff;
+        @@keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
         }
     </style>
-}
-
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        let ordersChart, balancesChart, bankChart, trendChart;
-        
-        $(document).ready(function() {
-            loadFilterOptions();
-            loadOrdersData();
-            initializeCharts();
-            loadSystemBalance(); // Load initial system balance
-            
-            // Add currency selector change event
-            $('#currencySelector').change(function() {
-                loadSystemBalance();
-            });
-        });
-
-        // Load filter dropdown options
-        function loadFilterOptions() {
-            // Load customers
-            $.get('/api/customers', function(data) {
-                const customerSelect = $('#customerId');
-                customerSelect.empty().append('<option value="">همه مشتریان</option>');
-                data.forEach(customer => {
-                    customerSelect.append(`<option value="${customer.id}">${customer.fullName}</option>`);
-                });
-            });
-
-            // Load currencies
-            $.get('/api/currencies', function(data) {
-                const currencySelect = $('#currencyId');
-                currencySelect.empty().append('<option value="">همه ارزها</option>');
-                data.forEach(currency => {
-                    currencySelect.append(`<option value="${currency.id}">${currency.name} (${currency.code})</option>`);
-                });
-            });
-
-            // Load bank accounts
-            $.get('/api/bankaccounts', function(data) {
-                const bankSelect = $('#bankAccountId');
-                bankSelect.empty().append('<option value="">همه حساب‌ها</option>');
-                data.forEach(account => {
-                    bankSelect.append(`<option value="${account.id}">${account.bankName} - ${account.accountNumber}</option>`);
-                });
-            });
-        }
-
-      
-
-        // Get current filter data
-        function getFilterData() {
-            return {
-                fromDate: $('#fromDate').val(),
-                toDate: $('#toDate').val(),
-                customerId: $('#customerId').val() || null,
-                currencyId: $('#currencyId').val() || null,
-                bankAccountId: $('#bankAccountId').val() || null,
-                reportType: $('#reportType').val()
-            };
-        }
-
-        // Apply filters
-        function applyFilters() {
-            loadOrdersData();
-            loadBalancesData();
-            loadBankBalancesData();
-            updateCharts();
-        }
-
-        // Reset filters
-        function resetFilters() {
-            $('#reportFilters')[0].reset();
-            $('#fromDate').val('@DateTime.Now.AddDays(-30).ToString("yyyy-MM-dd")');
-            $('#toDate').val('@DateTime.Now.ToString("yyyy-MM-dd")');
-            applyFilters();
-        }
-
-        // Load system balance converted to selected currency
-        function loadSystemBalance() {
-            const selectedCurrency = $('#currencySelector').val();
-            const balanceElement = $('#systemBalance');
-            const statusElement = $('#balanceStatus');
-            const lastUpdateElement = $('#lastUpdate');
-            
-            // Show loading state with enhanced UI
-            balanceElement.html(`
-                <div class="loading-placeholder">
-                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                    محاسبه تراز...
-                </div>
-            `);
-            
-            statusElement.html(`
-                <span class="badge bg-primary text-white">
-                    <i class="fas fa-sync-alt fa-spin me-1"></i>در حال بروزرسانی...
-                </span>
-            `);
-            
-            $.ajax({
-                url: '/Reports/GetSystemBalance',
-                type: 'GET',
-                data: { targetCurrency: selectedCurrency },
-                success: function(data) {
-                    if (data.success) {
-                        // Add animation class
-                        balanceElement.addClass('balance-updating');
-                        
-                        // Format the balance with proper styling - use English numbers
-                        const balance = parseFloat(data.balance);
-                        const formattedBalance = balance.toLocaleString('en-US', {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 2
-                        });
-                        
-                        // Determine balance color class based on value
-                        let balanceClass = 'balance-neutral';
-                        let statusBadgeClass = 'bg-warning';
-                        let statusIcon = 'fa-equals';
-                        let statusText = 'متعادل';
-                        
-                        if (balance > 0) {
-                            balanceClass = 'balance-positive';
-                            statusBadgeClass = 'bg-success';
-                            statusIcon = 'fa-arrow-up';
-                            statusText = 'مثبت';
-                        } else if (balance < 0) {
-                            balanceClass = 'balance-negative';
-                            statusBadgeClass = 'bg-danger';
-                            statusIcon = 'fa-arrow-down';
-                            statusText = 'منفی';
-                        }
-                        
-                        // Update balance display
-                        balanceElement.html(`
-                            <span class="${balanceClass}">
-                                ${formattedBalance} <small class="opacity-75">${selectedCurrency}</small>
-                            </span>
-                        `);
-                        
-                        // Update status indicator
-                        statusElement.html(`
-                            <span class="badge ${statusBadgeClass} text-white">
-                                <i class="fas ${statusIcon} me-1"></i>${statusText}
-                            </span>
-                        `);
-                        
-                        // Update last update time - use English numbers
-                        const now = new Date();
-                        lastUpdateElement.text(now.toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        }));
-                        
-                        // Remove animation class after animation completes
-                        setTimeout(() => {
-                            balanceElement.removeClass('balance-updating');
-                        }, 600);
-                        
-                    } else {
-                        balanceElement.html(`
-                            <span class="text-danger">
-                                <i class="fas fa-exclamation-triangle me-1"></i>خطا در بارگذاری
-                            </span>
-                        `);
-                        statusElement.html(`
-                            <span class="badge bg-danger text-white">
-                                <i class="fas fa-times me-1"></i>خطا
-                            </span>
-                        `);
-                        console.error('Error loading system balance:', data.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    balanceElement.html(`
-                        <span class="text-danger">
-                            <i class="fas fa-wifi me-1"></i>خطا در اتصال
-                        </span>
-                    `);
-                    statusElement.html(`
-                        <span class="badge bg-danger text-white">
-                            <i class="fas fa-exclamation-circle me-1"></i>اتصال قطع
-                        </span>
-                    `);
-                    console.error('Network error loading system balance:', error);
-                }
-            });
-        }
-
-        // Load orders data
-        function loadOrdersData() {
-            const filters = getFilterData();
-            console.log('Loading orders with filters:', filters); // Debug log
-            $('#ordersTable tbody').html('<tr><td colspan="10" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>');
-            
-            $.post('/Reports/GetOrdersData', filters, function(data) {
-                console.log('Orders data received:', data); // Debug log
-                let html = '';
-                if (data && data.length > 0) {
-                    data.forEach(order => {
-                        const statusBadge = getStatusBadge(order.status);
-                        html += `
-                            <tr>
-                                <td>${order.id}</td>
-                                <td>${new Date(order.createdAt).toLocaleDateString('fa-IR')}</td>
-                                <td>${order.customerName}</td>
-                                <td>${order.orderType}</td>
-                                <td>${order.fromCurrency}</td>
-                                <td dir="ltr" style="text-align: center;">${order.amount?.toLocaleString()}</td>
-                                <td>${order.toCurrency}</td>
-                                <td dir="ltr" style="text-align: center;">${order.exchangeRate?.toLocaleString()}</td>
-                                <td>
-                                    <a href="/Orders/Details/${order.id}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>`;
-                    });
-                } else {
-                    html = '<tr><td colspan="10" class="text-center">هیچ رکوردی یافت نشد</td></tr>';
-                }
-                $('#ordersTable tbody').html(html);
-            }).fail(function(xhr, status, error) {
-                console.error('Error loading orders:', error, xhr.responseText); // Debug log
-                $('#ordersTable tbody').html('<tr><td colspan="10" class="text-center text-danger">خطا در بارگذاری داده‌ها</td></tr>');
-            });
-        }
-
-        // Load balances data
-        function loadBalancesData() {
-            const filters = getFilterData();
-            $('#balancesTable tbody').html('<tr><td colspan="6" class="text-center"><div class="spinner-border text-success" role="status"></div></td></tr>');
-            
-            $.post('/Reports/GetBalancesData', filters, function(data) {
-                let html = '';
-                if (data && data.length > 0) {
-                    data.forEach(balance => {
-                        const balanceBadge = getBalanceBadge(balance.balance);
-                        html += `
-                            <tr>
-                                <td>${balance.customerName}</td>
-                                <td>${balance.currencyCode}</td>
-                                <td dir="ltr" style="text-align: center;">${balance.balance?.toLocaleString()}</td>
-                                <td>${balanceBadge}</td>
-                                <td>${new Date(balance.lastUpdated).toLocaleDateString('fa-IR')}</td>
-                                <td>
-                                    <a href="/Customers/Details/${balance.customerId}" class="btn btn-sm btn-outline-info">
-                                        <i class="fas fa-user"></i>
-                                    </a>
-                                </td>
-                            </tr>`;
-                    });
-                } else {
-                    html = '<tr><td colspan="6" class="text-center">هیچ رکوردی یافت نشد</td></tr>';
-                }
-                $('#balancesTable tbody').html(html);
-            });
-        }
-
-        // Load bank balances data
-        function loadBankBalancesData() {
-            const filters = getFilterData();
-            $('#bankBalancesTable tbody').html('<tr><td colspan="7" class="text-center"><div class="spinner-border text-info" role="status"></div></td></tr>');
-            
-            $.post('/Reports/GetBankBalancesData', filters, function(data) {
-                let html = '';
-                if (data && data.length > 0) {
-                    data.forEach(account => {
-                        const balanceBadge = getBalanceBadge(account.balance);
-                        html += `
-                            <tr>
-                                <td>${account.bankName}</td>
-                                <td>${account.accountNumber}</td>
-                                <td>${account.currencyCode}</td>
-                                <td dir="ltr" style="text-align: center;">${account.balance?.toLocaleString()}</td>
-                                <td>${new Date(account.lastUpdated).toLocaleDateString('fa-IR')}</td>
-                                <td>
-                                    <a href="/BankAccount/Details/${account.id}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-university"></i>
-                                    </a>
-                                </td>
-                            </tr>`;
-                    });
-                } else {
-                    html = '<tr><td colspan="7" class="text-center">هیچ رکوردی یافت نشد</td></tr>';
-                }
-                $('#bankBalancesTable tbody').html(html);
-            });
-        }
-
-        // Get status badge
-        function getStatusBadge(status) {
-            const badges = {
-                'Pending': '<span class="badge bg-warning">در انتظار</span>',
-                'Completed': '<span class="badge bg-success">تکمیل شده</span>',
-                'Cancelled': '<span class="badge bg-danger">لغو شده</span>',
-                'Processing': '<span class="badge bg-info">در حال پردازش</span>'
-            };
-            return badges[status] || '<span class="badge bg-secondary">نامشخص</span>';
-        }
-
-        // Get balance badge
-        function getBalanceBadge(balance) {
-            if (balance > 0) {
-                return '<span class="badge bg-success">بستانکار</span>';
-            } else if (balance < 0) {
-                return '<span class="badge bg-danger">بدهکار</span>';
-            } else {
-                return '<span class="badge bg-secondary">صفر</span>';
-            }
-        }
-
-        // Initialize charts
-        function initializeCharts() {
-            // Currency volume chart
-            const currencyCtx = document.getElementById('currencyVolumeChart').getContext('2d');
-            ordersChart = new Chart(currencyCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['دلار', 'یورو', 'درهم', 'تومان'],
-                    datasets: [{
-                        data: [40, 30, 20, 10],
-                        backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
-                    }]
-                }
-            });
-
-            // Daily trend chart
-            const trendCtx = document.getElementById('dailyTrendChart').getContext('2d');
-            trendChart = new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
-                    datasets: [{
-                        label: 'حجم معاملات',
-                        data: [12, 19, 15, 17, 14, 22, 18],
-                        borderColor: '#007bff',
-                        fill: false
-                    }]
-                }
-            });
-
-            // Customer balance chart
-            const customerCtx = document.getElementById('customerBalanceChart').getContext('2d');
-            balancesChart = new Chart(customerCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['بستانکار', 'بدهکار', 'صفر'],
-                    datasets: [{
-                        data: [25, 15, 10],
-                        backgroundColor: ['#28a745', '#dc3545', '#6c757d']
-                    }]
-                }
-            });
-
-            // Bank balance chart
-            const bankCtx = document.getElementById('bankBalanceChart').getContext('2d');
-            bankChart = new Chart(bankCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['ملی', 'پارسیان', 'سامان', 'پاسارگاد'],
-                    datasets: [{
-                        label: 'موجودی (میلیون تومان)',
-                        data: [150, 120, 90, 80],
-                        backgroundColor: '#17a2b8'
-                    }]
-                }
-            });
-        }
-
-        // Update charts with filtered data
-        function updateCharts() {
-            const filters = getFilterData();
-            
-            // Update charts with real data from server
-            $.post('/Reports/GetChartsData', filters, function(data) {
-                // Update currency volume chart
-                if (data.currencyVolume) {
-                    ordersChart.data.labels = data.currencyVolume.labels;
-                    ordersChart.data.datasets[0].data = data.currencyVolume.data;
-                    ordersChart.update();
-                }
-
-                // Update daily trend chart
-                if (data.dailyTrend) {
-                    trendChart.data.labels = data.dailyTrend.labels;
-                    trendChart.data.datasets[0].data = data.dailyTrend.data;
-                    trendChart.update();
-                }
-
-                // Update customer balance chart
-                if (data.customerBalance) {
-                    balancesChart.data.datasets[0].data = data.customerBalance.data;
-                    balancesChart.update();
-                }
-
-                // Update bank balance chart
-                if (data.bankBalance) {
-                    bankChart.data.labels = data.bankBalance.labels;
-                    bankChart.data.datasets[0].data = data.bankBalance.data;
-                    bankChart.update();
-                }
-            });
-        }
-
-        // Export to Excel
-        function exportToExcel(type) {
-            const filters = getFilterData();
-            const params = new URLSearchParams(filters);
-            window.open(`/Reports/ExportToExcel?type=${type}&${params}`, '_blank');
-        }
-
-        // Tab change event
-        $('#reportTabs button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
-            const target = e.target.getAttribute('data-bs-target');
-            
-            if (target === '#balances-panel') {
-                loadBalancesData();
-            } else if (target === '#bank-balances-panel') {
-                loadBankBalancesData();
-            } else if (target === '#charts-panel') {
-                updateCharts();
-            }
-        });
-    </script>
 }

@@ -79,9 +79,9 @@
                                 <tr>
                                     <th class="sortable" data-column="id">شناسه <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="date">تاریخ <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" data-column="type">نوع سند <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="customerName">مشتری <i class="fas fa-sort"></i>
                                     </th>
+                                    <th class="sortable" data-column="currency">ارز <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="amount">مبلغ <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="description">شرح <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="status">وضعیت <i class="fas fa-sort"></i></th>
@@ -209,7 +209,6 @@
             row.innerHTML = `
             <td>DOC${doc.id.toString().padStart(3, '0')}</td>
             <td>${new Date(doc.date).toLocaleDateString('en-GB')}</td>
-            <td><span class="badge bg-warning">${doc.type}</span></td>
             <td>
                 <div class="d-flex align-items-center">
                     <div class="avatar-sm bg-warning text-white rounded-circle me-2 d-flex align-items-center justify-content-center">
@@ -218,6 +217,7 @@
                     ${doc.customerName}
                 </div>
             </td>
+            <td><span class="badge bg-primary">${doc.currencyCode || 'N/A'}</span></td>
             <td>${formatNumber(doc.amount)}</td>
             <td>${doc.description}</td>
             <td>
@@ -268,6 +268,10 @@
             } else if (column === 'amount' || column === 'id') {
                 valueA = parseFloat(valueA) || 0;
                 valueB = parseFloat(valueB) || 0;
+            } else if (column === 'currency') {
+                // Handle currency sorting - use currencyCode field
+                valueA = (a.currencyCode || '').toString().toLowerCase();
+                valueB = (b.currencyCode || '').toString().toLowerCase();
             } else {
                 valueA = valueA.toString().toLowerCase();
                 valueB = valueB.toString().toLowerCase();
@@ -284,7 +288,7 @@
     }
 
     function viewDocumentDetails(docId) {
-        alert('مشاهده جزئیات سند: ' + docId);
+        window.location.href = '@Url.Action("Details", "AccountingDocuments")/' + docId;
     }
 
     function exportDocumentData() {

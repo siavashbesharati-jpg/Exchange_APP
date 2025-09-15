@@ -232,6 +232,7 @@ namespace ForexExchange.Controllers
                         type = "سند حسابداری",
                         customerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName : (ad.ReceiverCustomer != null ? ad.ReceiverCustomer.FullName : "نامشخص"),
                         amount = ad.Amount,
+                        currencyCode = ad.CurrencyCode,
                         description = ad.Description,
                         status = "تایید شده"
                     })
