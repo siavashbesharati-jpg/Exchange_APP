@@ -1,0 +1,402 @@
+@model ForexExchange.Controllers.DateFormatTestViewModel
+
+@{
+    ViewData["Title"] = "تست فرمت تاریخ - یکسان‌سازی نمایش تاریخ";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">تست فرمت تاریخ یکسان</h2>
+            <div class="text-muted small">نمایش یکسان تاریخ در تمامی بخش‌های نرم‌افزار - فرمت روز-ماه-سال</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Application Configuration -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog"></i> تنظیمات کاربرد</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>فرمت نمایش تاریخ:</strong></td>
+                            <td><code>@Model.DateDisplayFormat</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>فرمت نمایش تاریخ و زمان:</strong></td>
+                            <td><code>@Model.DateTimeDisplayFormat</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>فرهنگ (Culture):</strong></td>
+                            <td><code>fa-IR (Persian/Iran)</code></td>
+                        </tr>
+                        <tr>
+                            <td><strong>جهت متن:</strong></td>
+                            <td><code>RTL (راست به چپ)</code></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Values -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar"></i> مقادیر فعلی</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>تاریخ امروز:</strong></td>
+                            <td><span class="badge bg-primary">@Model.CurrentDateDisplay</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>تاریخ و زمان فعلی:</strong></td>
+                            <td><span class="badge bg-info">@Model.CurrentDateTimeDisplay</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>تاریخ خام (DateTime.Now):</strong></td>
+                            <td><span class="badge bg-secondary">@Model.CurrentDate</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>نمونه تاریخ:</strong></td>
+                            <td><span class="badge bg-warning text-dark">@Model.SampleDate.ToDisplayDate()</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Formatting Examples -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-list"></i> نمونه‌های فرمت‌بندی تاریخ</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>توضیحات</th>
+                            <th>نتیجه</th>
+                            <th>نوع فرمت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var example in Model.Examples)
+                        {
+                            <tr>
+                                <td>@example.Description</td>
+                                <td><code class="text-primary">@example.Value</code></td>
+                                <td>
+                                    @if (example.Value.Contains("/"))
+                                    {
+                                        <span class="badge bg-success">Day-Month-Year ✓</span>
+                                    }
+                                    else if (example.Value.Contains("-"))
+                                    {
+                                        <span class="badge bg-warning text-dark">ISO Format</span>
+                                    }
+                                    else if (string.IsNullOrEmpty(example.Value))
+                                    {
+                                        <span class="badge bg-secondary">Empty/Null</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info">Other Format</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Date Parsing Test -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-test-tube"></i> تست تجزیه تاریخ</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <label for="dateTestInput" class="form-label">تاریخ را به فرمت روز/ماه/سال وارد کنید:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="dateTestInput" 
+                               placeholder="مثال: 25/12/2024 یا 01/01/1403" />
+                        <button class="btn btn-primary" type="button" onclick="testDateParsing()">
+                            <i class="fas fa-check"></i> تست
+                        </button>
+                    </div>
+                    <small class="form-text text-muted">
+                        فرمت‌های پشتیبانی شده: dd/MM/yyyy، dd-MM-yyyy، dd.MM.yyyy، d/M/yyyy
+                    </small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">نمونه‌های معتبر:</label>
+                    <div class="small">
+                        <code>25/12/2024</code><br>
+                        <code>01-01-2024</code><br>
+                        <code>5.3.2024</code><br>
+                        <code>15/06/1403</code>
+                    </div>
+                </div>
+            </div>
+            <div id="parseResult" class="mt-3" style="display: none;">
+                <!-- Result will be shown here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- HTML Date Input Demo -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> نمایش ورودی تاریخ HTML5</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">این بخش نحوه عملکرد ورودی‌های تاریخ HTML5 را با فرمت یکسان روز-ماه-سال نمایش می‌دهد:</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="testDateInput" class="form-label">انتخاب تاریخ (type="date"):</label>
+                    <input type="date" class="form-control" id="testDateInput" />
+                    <small class="form-text text-muted">فرمت نمایش: روز/ماه/سال</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="testDateTimeInput" class="form-label">انتخاب تاریخ و زمان (type="datetime-local"):</label>
+                    <input type="datetime-local" class="form-control" id="testDateTimeInput" />
+                    <small class="form-text text-muted">فرمت نمایش: روز/ماه/سال + زمان</small>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <button type="button" class="btn btn-secondary" onclick="setCurrentDateValues()">
+                    <i class="fas fa-calendar-day"></i> تنظیم تاریخ امروز
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearDateValues()">
+                    <i class="fas fa-eraser"></i> پاک کردن
+                </button>
+            </div>
+            
+            <div id="dateInputResult" class="mt-3" style="display: none;">
+                <div class="alert alert-info">
+                    <strong>مقادیر انتخاب شده:</strong>
+                    <ul class="mb-0">
+                        <li>تاریخ: <span id="selectedDate">-</span></li>
+                        <li>تاریخ و زمان: <span id="selectedDateTime">-</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consistency Information -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle"></i> اطلاعات یکسان‌سازی</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>✅ تغییرات انجام شده:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> اضافه شدن <code>DateTimeHelper</code> class</li>
+                        <li><i class="fas fa-check text-success"></i> تنظیم فرهنگ <code>fa-IR</code> در Program.cs</li>
+                        <li><i class="fas fa-check text-success"></i> جایگزینی <code>ToPersianDateTextify()</code></li>
+                        <li><i class="fas fa-check text-success"></i> اضافه شدن extension methods یکسان</li>
+                        <li><i class="fas fa-check text-success"></i> تنظیم RequestLocalization middleware</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>📝 فرمت استاندارد:</h6>
+                    <div class="bg-light p-3 rounded">
+                        <strong>روز-ماه-سال (dd/MM/yyyy)</strong><br>
+                        <small class="text-muted">
+                            این فرمت برای کاربران ایرانی مناسب‌تر و آشناتر است.<br>
+                            تمامی تاریخ‌ها در سراسر نرم‌افزار به این شکل نمایش داده می‌شوند.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function testDateParsing() {
+            const input = document.getElementById('dateTestInput');
+            const resultDiv = document.getElementById('parseResult');
+            const dateString = input.value.trim();
+            
+            if (!dateString) {
+                showResult(false, 'لطفاً یک تاریخ وارد کنید', null, null);
+                return;
+            }
+            
+            fetch('@Url.Action("TestParsing", "DateFormatTest")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'dateString=' + encodeURIComponent(dateString)
+            })
+            .then(response => response.json())
+            .then(data => {
+                showResult(data.success, data.message, data.parsedDate, data.formattedBack);
+            })
+            .catch(error => {
+                showResult(false, 'خطا در ارتباط با سرور: ' + error.message, null, null);
+            });
+        }
+        
+        function showResult(success, message, parsedDate, formattedBack) {
+            const resultDiv = document.getElementById('parseResult');
+            const alertClass = success ? 'alert-success' : 'alert-danger';
+            const icon = success ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            
+            let html = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="fas ${icon}"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            if (success && parsedDate && formattedBack) {
+                html += `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <tr>
+                                <td><strong>ورودی:</strong></td>
+                                <td><code>${document.getElementById('dateTestInput').value}</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>تاریخ تجزیه شده:</strong></td>
+                                <td><code>${parsedDate}</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>فرمت یکسان:</strong></td>
+                                <td><code class="text-success">${formattedBack}</code></td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+        }
+        
+        // Test with Enter key
+        document.getElementById('dateTestInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testDateParsing();
+            }
+        });
+        
+        // Date input demo functions
+        function setCurrentDateValues() {
+            const now = new Date();
+            const dateInput = document.getElementById('testDateInput');
+            const dateTimeInput = document.getElementById('testDateTimeInput');
+            
+            if (window.ForexDateUtils) {
+                dateInput.value = window.ForexDateUtils.formatInputDate(now);
+                dateTimeInput.value = window.ForexDateUtils.formatInputDateTime(now);
+            } else {
+                // Fallback
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                
+                dateInput.value = `${year}-${month}-${day}`;
+                dateTimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+            
+            // Trigger change events
+            dateInput.dispatchEvent(new Event('change'));
+            dateTimeInput.dispatchEvent(new Event('change'));
+            
+            updateDateInputResult();
+        }
+        
+        function clearDateValues() {
+            document.getElementById('testDateInput').value = '';
+            document.getElementById('testDateTimeInput').value = '';
+            document.getElementById('dateInputResult').style.display = 'none';
+        }
+        
+        function updateDateInputResult() {
+            const dateInput = document.getElementById('testDateInput');
+            const dateTimeInput = document.getElementById('testDateTimeInput');
+            const resultDiv = document.getElementById('dateInputResult');
+            const selectedDateSpan = document.getElementById('selectedDate');
+            const selectedDateTimeSpan = document.getElementById('selectedDateTime');
+            
+            let hasValue = false;
+            
+            if (dateInput.value) {
+                const date = new Date(dateInput.value);
+                if (window.ForexDateUtils) {
+                    selectedDateSpan.textContent = window.ForexDateUtils.formatDisplayDate(date);
+                } else {
+                    selectedDateSpan.textContent = date.toLocaleDateString('fa-IR');
+                }
+                hasValue = true;
+            } else {
+                selectedDateSpan.textContent = '-';
+            }
+            
+            if (dateTimeInput.value) {
+                const date = new Date(dateTimeInput.value);
+                if (window.ForexDateUtils) {
+                    selectedDateTimeSpan.textContent = window.ForexDateUtils.formatDisplayDate(date) + ' ' + 
+                        date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    selectedDateTimeSpan.textContent = date.toLocaleString('fa-IR');
+                }
+                hasValue = true;
+            } else {
+                selectedDateTimeSpan.textContent = '-';
+            }
+            
+            resultDiv.style.display = hasValue ? 'block' : 'none';
+        }
+        
+        // Listen for changes on date inputs
+        document.getElementById('testDateInput').addEventListener('change', updateDateInputResult);
+        document.getElementById('testDateTimeInput').addEventListener('change', updateDateInputResult);
+    </script>
+}
+
+<style>
+    .badge {
+        font-size: 0.9em;
+    }
+    
+    code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        border: 1px solid #dee2e6;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+</style>

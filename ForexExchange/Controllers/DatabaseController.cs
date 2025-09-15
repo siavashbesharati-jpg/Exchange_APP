@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -850,15 +851,42 @@ namespace ForexExchange.Controllers
                     "🔄 تمام رکوردهای تاریخچه نیز بروزرسانی شدند"
                 };
 
+                // Check if this is an AJAX request
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
+
+                if (isAjaxRequest)
+                {
+                    return Json(new { 
+                        success = true, 
+                        message = string.Join("\n", summary),
+                        log = string.Join("\n", recalcLog)
+                    });
+                }
+
+                // Return redirect for regular form submissions
                 TempData["Success"] = string.Join("<br/>", summary);
                 TempData["RecalcLog"] = string.Join("\n", recalcLog);
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"خطا در بازمحاسبه موجودی‌ها: {ex.Message}";
-            }
+                // Check if this is an AJAX request
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
 
-            return RedirectToAction("Index");
+                if (isAjaxRequest)
+                {
+                    return Json(new { 
+                        success = false, 
+                        error = $"خطا در بازمحاسبه موجودی‌ها: {ex.Message}"
+                    });
+                }
+
+                // Return redirect for regular form submissions
+                TempData["Error"] = $"خطا در بازمحاسبه موجودی‌ها: {ex.Message}";
+                return RedirectToAction("Index");
+            }
         }
 
         [HttpPost]

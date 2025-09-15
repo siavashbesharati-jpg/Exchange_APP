@@ -2,6 +2,14 @@
     ViewData["Title"] = "گزارشات مشتریان";
 }
 
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@{
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+
+<input type="hidden" name="__RequestVerificationToken" value="@requestToken" />
+
 <div class="container-fluid">
     <!-- Header -->
     <div class="row mb-4">
@@ -39,7 +47,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">مشتری <span class="text-danger">*</span></label>
                             <select class="form-select" id="customerFilter">
                                 <option value="">انتخاب مشتری</option>
@@ -51,10 +59,22 @@
                                 <option value="">همه ارزها</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-1">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-primary w-100" onclick="loadData()">
                                 <i class="fas fa-search me-1"></i>جستجو
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button id="manualBalanceBtn" class="btn btn-success w-100" onclick="openManualBalanceModal()" title="افزودن تراکنش دستی">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <button id="recalculateBtn" class="btn btn-warning w-100" onclick="recalculateAllBalances()" title="بازمحاسبه همه موجودی‌ها بر اساس تاریخ تراکنش‌ها">
+                                <i class="fas fa-sync-alt"></i>
                             </button>
                         </div>
                     </div>
@@ -149,6 +169,61 @@
     </div>
 </div>
 
+<!-- Manual Balance History Modal -->
+<div class="modal fade" id="manualBalanceModal" tabindex="-1" aria-labelledby="manualBalanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="manualBalanceModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>افزودن تراکنش دستی
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="manualBalanceForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>مشتری انتخاب شده:</strong> <span id="selectedCustomerName">-</span>
+                    </div>
+                    
+                    <!-- Hidden customer ID field -->
+                    <input type="hidden" id="modalCustomerId" name="customerId" value="">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="modalCurrencyCode" class="form-label">ارز <span class="text-danger">*</span></label>
+                            <select class="form-select" id="modalCurrencyCode" name="currencyCode" required>
+                                <option value="">انتخاب ارز</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modalAmount" class="form-label">مبلغ <span class="text-danger">*</span></label>
+                            <input type="number" step="0.00000001" class="form-control" id="modalAmount" name="amount" required>
+                            <div class="form-text">مبلغ مثبت: افزایش موجودی، مبلغ منفی: کاهش موجودی</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="modalReason" class="form-label">دلیل <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="modalReason" name="reason" rows="3" required placeholder="دلیل این تراکنش دستی را وارد کنید..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="modalTransactionDate" class="form-label">تاریخ تراکنش <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="modalTransactionDate" name="transactionDate" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>انصراف
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>ثبت تراکنش
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentPage = { timeline: 1 };
 let pageSize = 10;
@@ -164,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize empty tables
     showEmptyState();
     
-    // Customer filter change event
+    // Customer filter change event (manual button is always enabled now)
     document.getElementById('customerFilter').addEventListener('change', function() {
         loadDataForActiveTab();
     });
@@ -626,6 +701,207 @@ function goToOrderDetail(orderId) {
 
 function goToDocumentDetail(documentId) {
     window.open(`/AccountingDocuments/Details/${documentId}`, '_blank');
+}
+
+// ========== MANUAL BALANCE HISTORY FUNCTIONS ==========
+
+function openManualBalanceModal() {
+    const customerId = document.getElementById('customerFilter').value;
+    const customerSelect = document.getElementById('customerFilter');
+    
+    if (!customerId) {
+        alert('لطفاً ابتدا مشتری را انتخاب کنید');
+        return;
+    }
+    
+    // Set customer info in modal
+    document.getElementById('modalCustomerId').value = customerId;
+    const selectedCustomerText = customerSelect.options[customerSelect.selectedIndex].text;
+    document.getElementById('selectedCustomerName').textContent = selectedCustomerText;
+    
+    // Set default transaction date to today
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    document.getElementById('modalTransactionDate').value = formattedDate;
+    
+    // Load currencies in modal
+    loadCurrenciesForModal();
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('manualBalanceModal'));
+    modal.show();
+}
+
+function loadCurrenciesForModal() {
+    console.log('Loading currencies for modal...');
+    fetch('@Url.Action("GetCurrencies", "Api")')
+        .then(response => {
+            console.log('Modal currency response status:', response.status);
+            return response.json();
+        })
+        .then(currencies => {
+            console.log('Modal currency data received:', currencies);
+            const select = document.getElementById('modalCurrencyCode');
+            select.innerHTML = '<option value="">انتخاب ارز</option>';
+            
+            if (Array.isArray(currencies)) {
+                console.log('Number of currencies for modal:', currencies.length);
+                currencies.forEach(currency => {
+                    select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
+                });
+                console.log('Modal currency options populated');
+            } else {
+                console.log('Invalid modal currency data structure');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading currencies for modal:', error);
+            const select = document.getElementById('modalCurrencyCode');
+            select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+        });
+}
+
+// Handle manual balance form submission
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('manualBalanceForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitManualBalance();
+    });
+});
+
+function submitManualBalance() {
+    const form = document.getElementById('manualBalanceForm');
+    const formData = new FormData(form);
+    
+    // Create URL-encoded data for the request
+    const data = {
+        customerId: formData.get('customerId'),
+        currencyCode: formData.get('currencyCode'),
+        amount: parseFloat(formData.get('amount')),
+        reason: formData.get('reason'),
+        transactionDate: formData.get('transactionDate')
+    };
+    
+    // Validate required fields
+    if (!data.customerId || !data.currencyCode || !data.amount || !data.reason || !data.transactionDate) {
+        alert('لطفاً همه فیلدهای الزامی را پر کنید');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    submitBtn.disabled = true;
+    
+    // Create form data for POST request
+    const postData = new URLSearchParams();
+    Object.keys(data).forEach(key => {
+        postData.append(key, data[key]);
+    });
+    // Add antiforgery token
+    postData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
+    
+    fetch('@Url.Action("CreateManualCustomerBalanceHistory", "Database")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: postData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Success - close modal and refresh data
+            const modal = bootstrap.Modal.getInstance(document.getElementById('manualBalanceModal'));
+            modal.hide();
+            
+            // Reset form
+            form.reset();
+            
+            // Show success message
+            alert('تراکنش دستی با موفقیت ثبت شد');
+            
+            // Refresh customer timeline if it's loaded
+            if (document.getElementById('customerFilter').value) {
+                loadCustomerTimeline();
+            }
+        } else {
+            alert('خطا در ثبت تراکنش: ' + (result.error || result.message || 'خطای ناشناخته'));
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting manual balance:', error);
+        alert('خطا در ارسال اطلاعات: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// ========== RECALCULATE BALANCES FUNCTION ==========
+
+function recalculateAllBalances() {
+    if (!confirm('آیا مطمئن هستید که می‌خواهید همه موجودی‌ها را بر اساس تاریخ تراکنش‌ها بازمحاسبه کنید؟\n\nاین عملیات ممکن است چند دقیقه طول بکشد.')) {
+        return;
+    }
+    
+    const recalculateBtn = document.getElementById('recalculateBtn');
+    const originalText = recalculateBtn.innerHTML;
+    
+    // Show loading state
+    recalculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    recalculateBtn.disabled = true;
+    
+    fetch('@Url.Action("RecalculateAllBalancesFromTransactionDates", "Database")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
+        body: '__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers.get('content-type'));
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            // If not JSON, read as text to see what we got
+            return response.text().then(text => {
+                console.log('Response text:', text);
+                throw new Error('Server returned HTML instead of JSON. Possibly redirected to error page.');
+            });
+        }
+    })
+    .then(result => {
+        if (result.success) {
+            alert('بازمحاسبه موجودی‌ها با موفقیت انجام شد!\n\n' + (result.message || 'همه موجودی‌ها بازمحاسبه شدند.'));
+            
+            // Refresh customer timeline if it's loaded
+            if (document.getElementById('customerFilter').value) {
+                loadCustomerTimeline();
+            }
+        } else {
+            alert('خطا در بازمحاسبه موجودی‌ها: ' + (result.error || result.message || 'خطای ناشناخته'));
+        }
+    })
+    .catch(error => {
+        console.error('Error during recalculation:', error);
+        alert('خطا در ارسال درخواست بازمحاسبه: ' + error.message);
+    })
+    .finally(() => {
+        // Restore button state
+        recalculateBtn.innerHTML = originalText;
+        recalculateBtn.disabled = false;
+    });
 }
 </script>
 
