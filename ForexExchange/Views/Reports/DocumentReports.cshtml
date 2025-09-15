@@ -34,15 +34,6 @@
                             <input type="date" class="form-control" id="toDate">
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label">نوع سند</label>
-                            <select class="form-select" id="documentType">
-                                <option value="">همه</option>
-                                <option value="accounting">اسناد حسابداری</option>
-                                <option value="receipt">رسیدها</option>
-                                <option value="payment">پرداخت‌ها</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
                             <label class="form-label">ارز</label>
                             <select class="form-select" id="currency">
                                 <option value="">همه</option>
@@ -89,7 +80,8 @@
                                     <th class="sortable" data-column="id">شناسه <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="date">تاریخ <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="type">نوع سند <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" data-column="customerName">مشتری <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="customerName">مشتری <i class="fas fa-sort"></i>
+                                    </th>
                                     <th class="sortable" data-column="amount">مبلغ <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="description">شرح <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="status">وضعیت <i class="fas fa-sort"></i></th>
@@ -112,66 +104,39 @@
             </div>
         </div>
     </div>
-
-    <!-- Charts Section -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>توزیع انواع اسناد</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="documentTypesChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>روند ایجاد اسناد</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="documentTrendChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let documentTypesChart, documentTrendChart;
-let documentsData = []; // Store documents data for sorting
-let currentSort = { column: null, direction: 'asc' };
+    let documentsData = []; // Store documents data for sorting
+    let currentSort = { column: null, direction: 'asc' };
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Set default dates
-    const today = new Date();
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-    
-    document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
-    document.getElementById('toDate').value = today.toISOString().split('T')[0];
-    
-    // Add click event listeners to sortable headers
-    document.querySelectorAll('.sortable').forEach(header => {
-        header.addEventListener('click', function() {
-            const column = this.getAttribute('data-column');
-            sortTable(column);
+    document.addEventListener('DOMContentLoaded', function () {
+        // Set default dates
+        const today = new Date();
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+
+        document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
+        document.getElementById('toDate').value = today.toISOString().split('T')[0];
+
+        // Add click event listeners to sortable headers
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', function () {
+                const column = this.getAttribute('data-column');
+                sortTable(column);
+            });
+            header.style.cursor = 'pointer';
         });
-        header.style.cursor = 'pointer';
+
+        loadDocumentReports();
     });
-    
-    loadDocumentReports();
-});
 
-function loadDocumentReports() {
-    loadDocumentsTable();
-    loadDocumentCharts();
-}
+    function loadDocumentReports() {
+        loadDocumentsTable();
+    }
 
-function loadDocumentsTable() {
-    const tbody = document.getElementById('documentsTableBody');
-    tbody.innerHTML = `
+    function loadDocumentsTable() {
+        const tbody = document.getElementById('documentsTableBody');
+        tbody.innerHTML = `
         <tr>
             <td colspan="8" class="text-center py-5">
                 <div class="spinner-border text-warning" role="status">
@@ -182,22 +147,20 @@ function loadDocumentsTable() {
         </tr>
     `;
 
-    const fromDate = document.getElementById('fromDate').value;
-    const toDate = document.getElementById('toDate').value;
-    const documentType = document.getElementById('documentType').value;
-    const currency = document.getElementById('currency').value;
-    const customer = document.getElementById('customer').value;
-    
-    let url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
-    if (documentType) url += `&documentType=${documentType}`;
-    if (currency) url += `&currency=${currency}`;
-    if (customer) url += `&customer=${customer}`;
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        const currency = document.getElementById('currency').value;
+        const customer = document.getElementById('customer').value;
 
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                tbody.innerHTML = `
+        let url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+        if (currency) url += `&currency=${currency}`;
+        if (customer) url += `&customer=${customer}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    tbody.innerHTML = `
                     <tr>
                         <td colspan="8" class="text-center py-5 text-danger">
                             <i class="fas fa-exclamation-triangle"></i>
@@ -205,16 +168,16 @@ function loadDocumentsTable() {
                         </td>
                     </tr>
                 `;
-                return;
-            }
+                    return;
+                }
 
-            tbody.innerHTML = '';
-            
-            if (data.documents && data.documents.length > 0) {
-                documentsData = data.documents; // Store data for sorting
-                renderDocumentsTable(documentsData);
-            } else {
-                tbody.innerHTML = `
+                tbody.innerHTML = '';
+
+                if (data.documents && data.documents.length > 0) {
+                    documentsData = data.documents; // Store data for sorting
+                    renderDocumentsTable(documentsData);
+                } else {
+                    tbody.innerHTML = `
                     <tr>
                         <td colspan="8" class="text-center py-5 text-muted">
                             <i class="fas fa-info-circle"></i>
@@ -222,11 +185,11 @@ function loadDocumentsTable() {
                         </td>
                     </tr>
                 `;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading documents table:', error);
-            tbody.innerHTML = `
+                }
+            })
+            .catch(error => {
+                console.error('Error loading documents table:', error);
+                tbody.innerHTML = `
                 <tr>
                     <td colspan="8" class="text-center py-5 text-danger">
                         <i class="fas fa-exclamation-triangle"></i>
@@ -234,16 +197,16 @@ function loadDocumentsTable() {
                     </td>
                 </tr>
             `;
-        });
-}
+            });
+    }
 
-function renderDocumentsTable(documents) {
-    const tbody = document.getElementById('documentsTableBody');
-    tbody.innerHTML = '';
-    
-    documents.forEach(doc => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
+    function renderDocumentsTable(documents) {
+        const tbody = document.getElementById('documentsTableBody');
+        tbody.innerHTML = '';
+
+        documents.forEach(doc => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
             <td>DOC${doc.id.toString().padStart(3, '0')}</td>
             <td>${new Date(doc.date).toLocaleDateString('en-GB')}</td>
             <td><span class="badge bg-warning">${doc.type}</span></td>
@@ -268,156 +231,99 @@ function renderDocumentsTable(documents) {
                 </button>
             </td>
         `;
-        tbody.appendChild(row);
-    });
-}
+            tbody.appendChild(row);
+        });
+    }
 
-function sortTable(column) {
-    // Toggle sort direction
-    if (currentSort.column === column) {
-        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSort.column = column;
-        currentSort.direction = 'asc';
-    }
-    
-    // Update sort icons
-    document.querySelectorAll('.sortable i').forEach(icon => {
-        icon.className = 'fas fa-sort';
-    });
-    
-    const currentHeader = document.querySelector(`[data-column="${column}"] i`);
-    if (currentSort.direction === 'asc') {
-        currentHeader.className = 'fas fa-sort-up';
-    } else {
-        currentHeader.className = 'fas fa-sort-down';
-    }
-    
-    // Sort the data
-    const sortedData = [...documentsData].sort((a, b) => {
-        let valueA = a[column];
-        let valueB = b[column];
-        
-        // Handle different data types
-        if (column === 'date') {
-            valueA = new Date(valueA);
-            valueB = new Date(valueB);
-        } else if (column === 'amount' || column === 'id') {
-            valueA = parseFloat(valueA) || 0;
-            valueB = parseFloat(valueB) || 0;
+    function sortTable(column) {
+        // Toggle sort direction
+        if (currentSort.column === column) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
         } else {
-            valueA = valueA.toString().toLowerCase();
-            valueB = valueB.toString().toLowerCase();
+            currentSort.column = column;
+            currentSort.direction = 'asc';
         }
-        
+
+        // Update sort icons
+        document.querySelectorAll('.sortable i').forEach(icon => {
+            icon.className = 'fas fa-sort';
+        });
+
+        const currentHeader = document.querySelector(`[data-column="${column}"] i`);
         if (currentSort.direction === 'asc') {
-            return valueA > valueB ? 1 : -1;
+            currentHeader.className = 'fas fa-sort-up';
         } else {
-            return valueA < valueB ? 1 : -1;
+            currentHeader.className = 'fas fa-sort-down';
         }
-    });
-    
-    renderDocumentsTable(sortedData);
-}
 
-function loadDocumentCharts() {
-    // Document Types Chart
-    const ctx1 = document.getElementById('documentTypesChart').getContext('2d');
-    if (documentTypesChart) {
-        documentTypesChart.destroy();
-    }
-    
-    documentTypesChart = new Chart(ctx1, {
-        type: 'doughnut',
-        data: {
-            labels: ['رسید دریافت', 'رسید پرداخت', 'سند حسابداری', 'سایر'],
-            datasets: [{
-                data: [40, 30, 25, 5],
-                backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#6c757d'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
+        // Sort the data
+        const sortedData = [...documentsData].sort((a, b) => {
+            let valueA = a[column];
+            let valueB = b[column];
+
+            // Handle different data types
+            if (column === 'date') {
+                valueA = new Date(valueA);
+                valueB = new Date(valueB);
+            } else if (column === 'amount' || column === 'id') {
+                valueA = parseFloat(valueA) || 0;
+                valueB = parseFloat(valueB) || 0;
+            } else {
+                valueA = valueA.toString().toLowerCase();
+                valueB = valueB.toString().toLowerCase();
             }
-        }
-    });
-    
-    // Document Trend Chart
-    const ctx2 = document.getElementById('documentTrendChart').getContext('2d');
-    if (documentTrendChart) {
-        documentTrendChart.destroy();
-    }
-    
-    documentTrendChart = new Chart(ctx2, {
-        type: 'line',
-        data: {
-            labels: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
-            datasets: [{
-                label: 'تعداد اسناد',
-                data: [8, 12, 6, 15, 10, 18, 14],
-                borderColor: '#ffc107',
-                backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
+
+            if (currentSort.direction === 'asc') {
+                return valueA > valueB ? 1 : -1;
+            } else {
+                return valueA < valueB ? 1 : -1;
             }
-        }
-    });
-}
+        });
 
-function viewDocumentDetails(docId) {
-    alert('مشاهده جزئیات سند: ' + docId);
-}
+        renderDocumentsTable(sortedData);
+    }
 
-function exportDocumentData() {
-    window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=documents';
-}
+    function viewDocumentDetails(docId) {
+        alert('مشاهده جزئیات سند: ' + docId);
+    }
 
-function formatNumber(num) {
-    if (num === 0) return '0';
-    return num.toLocaleString('fa-IR');
-}
+    function exportDocumentData() {
+        window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=documents';
+    }
+
+    function formatNumber(num) {
+        if (num === 0) return '0';
+        return num.toLocaleString('fa-IR');
+    }
 </script>
 
 <style>
-.avatar-sm {
-    width: 32px;
-    height: 32px;
-    font-size: 0.875rem;
-}
+    .avatar-sm {
+        width: 32px;
+        height: 32px;
+        font-size: 0.875rem;
+    }
 
-.table th {
-    border-top: none;
-    font-weight: 600;
-}
+    .table th {
+        border-top: none;
+        font-weight: 600;
+    }
 
-.card {
-    border-radius: 10px;
-}
+    .card {
+        border-radius: 10px;
+    }
 
-.badge {
-    font-size: 0.75rem;
-}
+    .badge {
+        font-size: 0.75rem;
+    }
 
-.sortable {
-    cursor: pointer;
-    user-select: none;
-}
+    .sortable {
+        cursor: pointer;
+        user-select: none;
+    }
 
-.sortable i {
-    margin-left: 5px;
-    opacity: 0.7;
-}
+    .sortable i {
+        margin-left: 5px;
+        opacity: 0.7;
+    }
 </style>

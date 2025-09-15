@@ -119,58 +119,11 @@
             </div>
         </div>
     </div>
-
-    <!-- Charts Section -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>روند معاملات روزانه</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="dailyOrdersChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>توزیع معاملات بر اساس ارز</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="currencyDistributionChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>حجم معاملات بر اساس ارز</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="volumeByCurrency"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>تغییرات نرخ ارز</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="exchangeRateChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let dailyOrdersChart, currencyDistributionChart, volumeByByCurrency, exchangeRateChart;
+let ordersData = []; // Store orders data for sorting
+let currentSort = { column: null, direction: 'asc' };
 
 document.addEventListener('DOMContentLoaded', function() {
     // Set default dates
@@ -193,21 +146,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadOrderReports() {
-    const fromDate = document.getElementById('fromDate').value;
-    const toDate = document.getElementById('toDate').value;
-    const fromCurrency = document.getElementById('fromCurrency').value;
-    const toCurrency = document.getElementById('toCurrency').value;
-    const orderStatus = document.getElementById('orderStatus').value;
-    
     // Load table data
     loadOrdersTable();
-    
-    // Load charts
-    loadOrderCharts();
 }
-
-let ordersData = []; // Store orders data for sorting
-let currentSort = { column: null, direction: 'asc' };
 
 function loadOrdersTable() {
     const tbody = document.getElementById('ordersTableBody');
@@ -360,119 +301,6 @@ function sortTable(column) {
     });
     
     renderOrdersTable(sortedData);
-}
-
-function loadOrderCharts() {
-    // Daily Orders Chart
-    const ctx1 = document.getElementById('dailyOrdersChart').getContext('2d');
-    if (dailyOrdersChart) {
-        dailyOrdersChart.destroy();
-    }
-    
-    dailyOrdersChart = new Chart(ctx1, {
-        type: 'line',
-        data: {
-            labels: ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه'],
-            datasets: [{
-                label: 'تعداد معاملات',
-                data: [12, 19, 15, 25, 22, 30, 28],
-                borderColor: '#28a745',
-                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-    
-    // Currency Distribution Chart
-    const ctx2 = document.getElementById('currencyDistributionChart').getContext('2d');
-    if (currencyDistributionChart) {
-        currencyDistributionChart.destroy();
-    }
-    
-    currencyDistributionChart = new Chart(ctx2, {
-        type: 'doughnut',
-        data: {
-            labels: ['USD', 'EUR', 'AED', 'IRR'],
-            datasets: [{
-                data: [35, 25, 20, 20],
-                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-
-    // Volume by Currency Chart
-    const ctx3 = document.getElementById('volumeByCurrency').getContext('2d');
-    if (volumeByByCurrency) {
-        volumeByByCurrency.destroy();
-    }
-    
-    volumeByByCurrency = new Chart(ctx3, {
-        type: 'bar',
-        data: {
-            labels: ['USD', 'EUR', 'AED', 'IRR'],
-            datasets: [{
-                label: 'حجم معاملات',
-                data: [450000, 320000, 180000, 75000000],
-                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545'],
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-    // Exchange Rate Chart
-    const ctx4 = document.getElementById('exchangeRateChart').getContext('2d');
-    if (exchangeRateChart) {
-        exchangeRateChart.destroy();
-    }
-    
-    exchangeRateChart = new Chart(ctx4, {
-        type: 'line',
-        data: {
-            labels: ['هفته 1', 'هفته 2', 'هفته 3', 'هفته 4'],
-            datasets: [{
-                label: 'USD به IRR',
-                data: [42000, 42500, 43000, 42800],
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                fill: false,
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: false
-                }
-            }
-        }
-    });
 }
 
 function viewOrderDetails(orderId) {
