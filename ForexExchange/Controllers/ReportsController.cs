@@ -201,7 +201,7 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/GetDocumentsData
         [HttpGet]
-        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate, string? currency, string? customer)
+        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId)
         {
             try
             {
@@ -224,6 +224,12 @@ namespace ForexExchange.Controllers
                     query = query.Where(ad => ad.PayerCustomerId == customerId || ad.ReceiverCustomerId == customerId);
                 }
 
+                // Add reference ID filter
+                if (!string.IsNullOrEmpty(referenceId))
+                {
+                    query = query.Where(ad => ad.ReferenceNumber != null && ad.ReferenceNumber.Contains(referenceId));
+                }
+
                 var accountingDocs = await query
                     .Select(ad => new
                     {
@@ -233,6 +239,7 @@ namespace ForexExchange.Controllers
                         customerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName : (ad.ReceiverCustomer != null ? ad.ReceiverCustomer.FullName : "نامشخص"),
                         amount = ad.Amount,
                         currencyCode = ad.CurrencyCode,
+                        referenceNumber = ad.ReferenceNumber,
                         description = ad.Description,
                         status = "تایید شده"
                     })
@@ -721,6 +728,27 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error loading bank accounts");
                 return Json(new { success = false, error = "خطا در بارگذاری حساب‌های بانکی" });
+            }
+        }
+
+        // GET: Reports/GetCustomers
+        [HttpGet]
+        public async Task<IActionResult> GetCustomers()
+        {
+            try
+            {
+                var customers = await _context.Customers
+                    .Where(c => c.IsActive && !c.IsSystem)
+                    .Select(c => new { id = c.Id, fullName = c.FullName })
+                    .OrderBy(c => c.fullName)
+                    .ToListAsync();
+
+                return Json(customers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading customers");
+                return Json(new { error = "خطا در بارگذاری مشتریان" });
             }
         }
     }

@@ -51,6 +51,10 @@
                             </select>
                         </div>
                         <div class="col-md-2">
+                            <label class="form-label">شناسه مرجع</label>
+                            <input type="text" class="form-control" id="referenceId" placeholder="شماره مرجع یا شناسه">
+                        </div>
+                        <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-warning w-100" onclick="loadDocumentReports()">
                                 <i class="fas fa-search me-1"></i>جستجو
@@ -79,8 +83,8 @@
                                 <tr>
                                     <th class="sortable" data-column="id">شناسه <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="date">تاریخ <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" data-column="customerName">مشتری <i class="fas fa-sort"></i>
-                                    </th>
+                                    <th class="sortable" data-column="customerName">مشتری <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" data-column="referenceNumber">شماره مرجع <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="currency">ارز <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="amount">مبلغ <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="description">شرح <i class="fas fa-sort"></i></th>
@@ -90,7 +94,7 @@
                             </thead>
                             <tbody id="documentsTableBody">
                                 <tr>
-                                    <td colspan="8" class="text-center py-5">
+                                    <td colspan="9" class="text-center py-5">
                                         <div class="spinner-border text-warning" role="status">
                                             <span class="visually-hidden">در حال بارگذاری...</span>
                                         </div>
@@ -127,8 +131,58 @@
             header.style.cursor = 'pointer';
         });
 
+        // Load customers dropdown
+        loadCustomers();
+        
+        // Add Enter key event listener to all filter inputs
+        addEnterKeyListeners();
+        
         loadDocumentReports();
     });
+
+    function loadCustomers() {
+        fetch('@Url.Action("GetCustomers", "Reports")')
+            .then(response => response.json())
+            .then(data => {
+                const customerSelect = document.getElementById('customer');
+                customerSelect.innerHTML = '<option value="">همه</option>';
+                
+                if (data && data.length > 0) {
+                    data.forEach(customer => {
+                        const option = document.createElement('option');
+                        option.value = customer.id;
+                        option.textContent = customer.fullName;
+                        customerSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error loading customers:', error);
+            });
+    }
+
+    function addEnterKeyListeners() {
+        // Add Enter key event listener to all filter inputs and selects
+        const filterElements = [
+            'fromDate',
+            'toDate', 
+            'currency',
+            'customer',
+            'referenceId'
+        ];
+
+        filterElements.forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        loadDocumentReports();
+                    }
+                });
+            }
+        });
+    }
 
     function loadDocumentReports() {
         loadDocumentsTable();
@@ -138,7 +192,7 @@
         const tbody = document.getElementById('documentsTableBody');
         tbody.innerHTML = `
         <tr>
-            <td colspan="8" class="text-center py-5">
+            <td colspan="9" class="text-center py-5">
                 <div class="spinner-border text-warning" role="status">
                     <span class="visually-hidden">در حال بارگذاری...</span>
                 </div>
@@ -151,10 +205,12 @@
         const toDate = document.getElementById('toDate').value;
         const currency = document.getElementById('currency').value;
         const customer = document.getElementById('customer').value;
+        const referenceId = document.getElementById('referenceId').value;
 
         let url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
         if (currency) url += `&currency=${currency}`;
         if (customer) url += `&customer=${customer}`;
+        if (referenceId) url += `&referenceId=${encodeURIComponent(referenceId)}`;
 
         fetch(url)
             .then(response => response.json())
@@ -162,7 +218,7 @@
                 if (data.error) {
                     tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-danger">
+                        <td colspan="9" class="text-center py-5 text-danger">
                             <i class="fas fa-exclamation-triangle"></i>
                             ${data.error}
                         </td>
@@ -179,7 +235,7 @@
                 } else {
                     tbody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
+                        <td colspan="9" class="text-center py-5 text-muted">
                             <i class="fas fa-info-circle"></i>
                             هیچ سندی در این بازه زمانی یافت نشد
                         </td>
@@ -191,7 +247,7 @@
                 console.error('Error loading documents table:', error);
                 tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-5 text-danger">
+                    <td colspan="9" class="text-center py-5 text-danger">
                         <i class="fas fa-exclamation-triangle"></i>
                         خطا در بارگذاری اطلاعات
                     </td>
@@ -217,6 +273,9 @@
                     ${doc.customerName}
                 </div>
             </td>
+            <td>
+                ${formatReferenceNumber(doc.referenceNumber)}
+            </td>
             <td><span class="badge bg-primary">${doc.currencyCode || 'N/A'}</span></td>
             <td>${formatNumber(doc.amount)}</td>
             <td>${doc.description}</td>
@@ -233,6 +292,9 @@
         `;
             tbody.appendChild(row);
         });
+
+        // Start protection after rendering is complete
+        setTimeout(startReferenceNumberProtection, 500);
     }
 
     function sortTable(column) {
@@ -272,6 +334,10 @@
                 // Handle currency sorting - use currencyCode field
                 valueA = (a.currencyCode || '').toString().toLowerCase();
                 valueB = (b.currencyCode || '').toString().toLowerCase();
+            } else if (column === 'referenceNumber') {
+                // Handle reference number sorting
+                valueA = (a.referenceNumber || '').toString().toLowerCase();
+                valueB = (b.referenceNumber || '').toString().toLowerCase();
             } else {
                 valueA = valueA.toString().toLowerCase();
                 valueB = valueB.toString().toLowerCase();
@@ -298,6 +364,57 @@
     function formatNumber(num) {
         if (num === 0) return '0';
         return num.toLocaleString('fa-IR');
+    }
+
+    function formatReferenceNumber(referenceNumber) {
+        // Don't format reference numbers - they are identifiers, not amounts
+        return referenceNumber || '-';
+    }
+
+    // Override global formatting for reference numbers
+    function protectReferenceNumbers() {
+        // Find all reference number cells and restore their original values
+        const referenceNumberCells = document.querySelectorAll('td:nth-child(4)'); // 4th column is reference number
+        
+        documentsData.forEach((doc, index) => {
+            if (referenceNumberCells[index] && doc.referenceNumber) {
+                const cell = referenceNumberCells[index];
+                const expectedValue = doc.referenceNumber.toString();
+                
+                // If the cell content has been modified by global formatters, restore it
+                if (cell.textContent !== expectedValue && cell.textContent !== '-') {
+                    cell.textContent = expectedValue;
+                }
+            }
+        });
+    }
+
+    // Continuously protect reference numbers from global formatting
+    function startReferenceNumberProtection() {
+        // Protect immediately
+        protectReferenceNumbers();
+        
+        // Protect every 2 seconds to override any global formatting
+        setInterval(protectReferenceNumbers, 2000);
+        
+        // Also protect on DOM mutations (when content changes)
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    setTimeout(protectReferenceNumbers, 100);
+                }
+            });
+        });
+        
+        // Start observing the table body for changes
+        const tableBody = document.getElementById('documentsTableBody');
+        if (tableBody) {
+            observer.observe(tableBody, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+        }
     }
 </script>
 
