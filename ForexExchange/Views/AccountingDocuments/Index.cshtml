@@ -33,13 +33,19 @@
     <div class="card mb-3">
         <div class="card-body">
             <form asp-action="Index" method="get" class="row g-2 align-items-center">
-                <div class="col-sm-6 col-md-4">
+                <div class="col-sm-6 col-md-3">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="جستجو با شناسه سند...">
                     </div>
                 </div>
-                <div class="col-sm-6 col-md-8 text-end">
+                <div class="col-sm-6 col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                        <input type="text" name="ReferenceNumber" value="@ViewData["ReferenceFilter"]" class="form-control" placeholder="شناسه رهگیری...">
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-6 text-end">
                     <input type="hidden" name="currentFilter" value="@ViewData["CurrentFilter"]" />
                     <input type="hidden" name="sortOrder" value="@ViewData["CurrentSort"]" />
                     <input type="hidden" name="typeFilter" value="@ViewData["TypeFilter"]" />
@@ -66,34 +72,40 @@
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["IdSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]">#</a>
+                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">#</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["TitleSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]">عنوان سند</a>
+                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">عنوان سند</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["TypeSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]">نوع سند</a>
+                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">نوع سند</a>
                                 </th>
                                 
                                 
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["CustomerSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]">مشتری</a>
+                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">مشتری</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["AmountSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]">مبلغ</a>
+                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">مبلغ</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
-                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]">تاریخ سند</a>
+                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">تاریخ سند</a>
                                 </th>
                                 <th>وضعیت</th>
                                 <th>عملیات</th>
@@ -108,7 +120,7 @@
                                         <strong>@item.Title</strong>
                                         @if (!string.IsNullOrEmpty(item.ReferenceNumber))
                                         {
-                                            <br><small class="text-muted">مرجع: @item.ReferenceNumber</small>
+                                            <br><small class="text-muted">مرجع: <span class="no-format-number" data-no-format="true">@item.ReferenceNumber</span></small>
                                         }
                                     </td>
                                     <td>
@@ -221,6 +233,54 @@
 
 @section Scripts {
     <script>
+        // Protect reference numbers from global formatting scripts
+        document.addEventListener('DOMContentLoaded', function() {
+            protectReferenceNumbers();
+            
+            // Protect continuously against global formatting
+            setInterval(protectReferenceNumbers, 2000);
+            
+            // Also protect on DOM mutations
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                        setTimeout(protectReferenceNumbers, 100);
+                    }
+                });
+            });
+            
+            // Start observing the table for changes
+            const tableBody = document.querySelector('tbody');
+            if (tableBody) {
+                observer.observe(tableBody, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            }
+        });
+        
+        function protectReferenceNumbers() {
+            // Find all elements with no-format-number class
+            const referenceElements = document.querySelectorAll('.no-format-number[data-no-format="true"]');
+            
+            referenceElements.forEach(function(element) {
+                // Store original value if not already stored
+                if (!element.hasAttribute('data-original-value')) {
+                    element.setAttribute('data-original-value', element.textContent.trim());
+                }
+                
+                const originalValue = element.getAttribute('data-original-value');
+                const currentValue = element.textContent.trim();
+                
+                // If the content has been modified by global formatters, restore it
+                if (currentValue !== originalValue && currentValue.includes(',')) {
+                    element.textContent = originalValue;
+                    console.log('Protected reference number from formatting:', originalValue);
+                }
+            });
+        }
+
         function confirmDocument(documentId) {
             if (confirm('آیا از تأیید این سند حسابداری اطمینان دارید؟ این عملیات ترازها را بروزرسانی خواهد کرد.')) {
                 // Create and submit confirmation form

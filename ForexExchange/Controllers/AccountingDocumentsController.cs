@@ -45,7 +45,7 @@ namespace ForexExchange.Controllers
         }
 
         // GET: AccountingDocuments
-        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, int? customerFilter, DocumentType? typeFilter, bool? statusFilter)
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, string referenceNumber, int? customerFilter, DocumentType? typeFilter, bool? statusFilter)
         {
             ViewData["CurrentSort"] = sortOrder;
             ViewData["IdSortParm"] = String.IsNullOrEmpty(sortOrder) ? "id_desc" : "";
@@ -65,6 +65,7 @@ namespace ForexExchange.Controllers
             }
 
             ViewData["CurrentFilter"] = searchString;
+            ViewData["ReferenceFilter"] = referenceNumber;
             ViewData["CustomerFilter"] = customerFilter;
             ViewData["TypeFilter"] = typeFilter;
             ViewData["StatusFilter"] = statusFilter;
@@ -89,6 +90,13 @@ namespace ForexExchange.Controllers
                     // If not a valid integer, return no results
                     documents = documents.Where(d => false);
                 }
+            }
+
+            // Filter by reference number
+            if (!String.IsNullOrEmpty(referenceNumber))
+            {
+                documents = documents.Where(d => !string.IsNullOrEmpty(d.ReferenceNumber) && 
+                                                d.ReferenceNumber.Contains(referenceNumber));
             }
 
             if (customerFilter.HasValue)
