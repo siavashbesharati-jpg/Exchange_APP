@@ -666,8 +666,7 @@ namespace ForexExchange.Controllers
                 int totalFixed = 0;
 
                 // Fix CustomerBalanceHistory transaction dates
-                var customerHistory = await _context.CustomerBalanceHistory
-                    .Where(h => h.TransactionDate == h.CreatedAt) // Find records where dates are the same
+                var customerHistory = await _context.CustomerBalanceHistory // Find records where dates are the same
                     .ToListAsync();
 
                 fixLog.Add($"Found {customerHistory.Count} customer balance history records to fix");
@@ -697,7 +696,7 @@ namespace ForexExchange.Controllers
                         }
                     }
 
-                    if (correctDate.HasValue && correctDate.Value != history.TransactionDate)
+                    if (correctDate.HasValue)
                     {
                         history.TransactionDate = correctDate.Value;
                         totalFixed++;

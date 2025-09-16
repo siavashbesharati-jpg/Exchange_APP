@@ -1724,13 +1724,14 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation("Recalculating customer balances from history");
 
-            // Get all customer history records ordered by transaction date
-            var historyRecords = await _context.CustomerBalanceHistory
-                .OrderBy(h => h.TransactionDate)
-                .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+            // Get all unique customer+currency combinations (excluding deleted records)
+            var customerCurrencyCombinations = await _context.CustomerBalanceHistory
+                .Where(h => !h.IsDeleted) // Only consider non-deleted records
+                .Select(h => new { h.CustomerId, h.CurrencyCode })
+                .Distinct()
                 .ToListAsync();
 
-            _logger.LogInformation($"Processing {historyRecords.Count} customer history records");
+            _logger.LogInformation($"Processing {customerCurrencyCombinations.Count} customer+currency combinations");
 
             // Pre-load all existing customer balances into a dictionary for efficient lookup
             var existingBalances = await _context.CustomerBalances.ToListAsync();
@@ -1739,32 +1740,166 @@ namespace ForexExchange.Services
                 cb => cb
             );
 
-            // Process each record in chronological order
-            foreach (var history in historyRecords)
+            // Process each customer+currency combination separately
+            foreach (var combination in customerCurrencyCombinations)
             {
-                var balanceKey = $"{history.CustomerId}_{history.CurrencyCode}";
-                
-                // Get or create current balance record
+                _logger.LogInformation($"Processing Customer {combination.CustomerId} - Currency {combination.CurrencyCode}");
+
+                // Get all history records for this specific customer+currency, ordered by transaction date
+                // IMPORTANT: Exclude deleted records from the sequence
+                var historyRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.CustomerId == combination.CustomerId && 
+                               h.CurrencyCode == combination.CurrencyCode &&
+                               !h.IsDeleted) // EXCLUDE DELETED RECORDS!
+                    .OrderBy(h => h.TransactionDate)
+                    .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+                    .ToListAsync();
+
+                // Special logging for customer+currency that contains ReferenceId = 114
+                bool hasReferenceId114 = historyRecords.Any(h => h.ReferenceId == 114);
+                if (hasReferenceId114)
+                {
+                    _logger.LogWarning($"[REF-114-SEQUENCE] Found ReferenceId 114 in Customer {combination.CustomerId} - Currency {combination.CurrencyCode}");
+                    _logger.LogWarning($"[REF-114-SEQUENCE] Total transactions in this sequence: {historyRecords.Count}");
+                    _logger.LogWarning($"[REF-114-SEQUENCE] FULL SEQUENCE BEFORE PROCESSING:");
+                    
+                    for (int i = 0; i < historyRecords.Count; i++)
+                    {
+                        var h = historyRecords[i];
+                        _logger.LogWarning($"[REF-114-SEQUENCE] #{i+1}: ID={h.Id}, RefId={h.ReferenceId}, Date={h.TransactionDate:yyyy-MM-dd HH:mm:ss}, Type={h.TransactionType}, Amount={h.TransactionAmount}, OLD_Before={h.BalanceBefore}, OLD_After={h.BalanceAfter}");
+                    }
+                }
+
+                // Get or create current balance record for this customer+currency
+                var balanceKey = $"{combination.CustomerId}_{combination.CurrencyCode}";
                 if (!balanceLookup.TryGetValue(balanceKey, out var currentBalance))
                 {
                     currentBalance = new CustomerBalance
                     {
-                        CustomerId = history.CustomerId,
-                        CurrencyCode = history.CurrencyCode,
+                        CustomerId = combination.CustomerId,
+                        CurrencyCode = combination.CurrencyCode,
                         Balance = 0,
                         LastUpdated = DateTime.UtcNow
                     };
                     _context.CustomerBalances.Add(currentBalance);
-                    balanceLookup[balanceKey] = currentBalance; // Add to lookup for future iterations
+                    balanceLookup[balanceKey] = currentBalance;
                 }
 
-                // Apply the transaction amount to current balance
-                currentBalance.Balance += history.TransactionAmount;
+                // Reset balance to zero for this customer+currency before recalculation
+                currentBalance.Balance = 0;
+
+                // Process each transaction chronologically for this customer+currency
+                for (int i = 0; i < historyRecords.Count; i++)
+                {
+                    var history = historyRecords[i];
+                    
+                    // Special detailed logging for ReferenceId = 114
+                    bool isReferenceId114 = history.ReferenceId == 114;
+                    
+                    if (isReferenceId114)
+                    {
+                        _logger.LogWarning($"[REF-114] ==================== PROCESSING REF-114 ====================");
+                        _logger.LogWarning($"[REF-114] Customer: {history.CustomerId}, Currency: {history.CurrencyCode}");
+                        _logger.LogWarning($"[REF-114] Transaction ID: {history.Id}, Date: {history.TransactionDate:yyyy-MM-dd HH:mm:ss}");
+                        _logger.LogWarning($"[REF-114] Transaction Type: {history.TransactionType}, Amount: {history.TransactionAmount}");
+                        _logger.LogWarning($"[REF-114] Record position in sequence: {i+1} of {historyRecords.Count}");
+                        _logger.LogWarning($"[REF-114] OLD BalanceBefore: {history.BalanceBefore}, OLD BalanceAfter: {history.BalanceAfter}");
+                        
+                        // Show previous record details if exists
+                        if (i > 0)
+                        {
+                            var prevRecord = historyRecords[i-1];
+                            _logger.LogWarning($"[REF-114] PREVIOUS RECORD IN SEQUENCE:");
+                            _logger.LogWarning($"[REF-114]   - Previous ID: {prevRecord.Id}, RefId: {prevRecord.ReferenceId}");
+                            _logger.LogWarning($"[REF-114]   - Previous Date: {prevRecord.TransactionDate:yyyy-MM-dd HH:mm:ss}");
+                            _logger.LogWarning($"[REF-114]   - Previous Type: {prevRecord.TransactionType}, Amount: {prevRecord.TransactionAmount}");
+                            _logger.LogWarning($"[REF-114]   - Previous BalanceBefore: {prevRecord.BalanceBefore}");
+                            _logger.LogWarning($"[REF-114]   - Previous BalanceAfter: {prevRecord.BalanceAfter}");
+                            _logger.LogWarning($"[REF-114]   - Will use Previous.BalanceAfter ({prevRecord.BalanceAfter}) as my BalanceBefore");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"[REF-114] This is the FIRST record in sequence, BalanceBefore will be 0");
+                        }
+                    }
+                    
+                    // Set balance before this transaction:
+                    // - For first record: use 0 (starting balance)
+                    // - For subsequent records: use exactly the BalanceAfter of previous record
+                    if (i == 0)
+                    {
+                        history.BalanceBefore = 0; // First transaction starts from zero
+                    }
+                    else
+                    {
+                        history.BalanceBefore = historyRecords[i-1].BalanceAfter; // Chain consistency!
+                    }
+                    
+                    // Apply the transaction amount to get BalanceAfter
+                    history.BalanceAfter = history.BalanceBefore + history.TransactionAmount;
+                    
+                    if (isReferenceId114)
+                    {
+                        _logger.LogWarning($"[REF-114] CALCULATION RESULT:");
+                        _logger.LogWarning($"[REF-114] NEW BalanceBefore: {history.BalanceBefore}");
+                        _logger.LogWarning($"[REF-114] Transaction Amount: {history.TransactionAmount}");
+                        _logger.LogWarning($"[REF-114] NEW BalanceAfter: {history.BalanceAfter} = {history.BalanceBefore} + {history.TransactionAmount}");
+                        
+                        if (i > 0)
+                        {
+                            var prevRecord = historyRecords[i-1];
+                            _logger.LogWarning($"[REF-114] Chain Check: Previous BalanceAfter ({prevRecord.BalanceAfter}) == My BalanceBefore ({history.BalanceBefore}): {prevRecord.BalanceAfter == history.BalanceBefore}");
+                        }
+                        
+                        _logger.LogWarning($"[REF-114] ==================== END REF-114 PROCESSING ====================");
+                    }
+                }
+
+                // Update the current balance to the final balance (last record's BalanceAfter)
+                currentBalance.Balance = historyRecords.Count > 0 ? historyRecords.Last().BalanceAfter : 0;
                 currentBalance.LastUpdated = DateTime.UtcNow;
 
-                // Update the history record's balance fields to match recalculation
-                history.BalanceBefore = currentBalance.Balance - history.TransactionAmount;
-                history.BalanceAfter = currentBalance.Balance;
+                if (hasReferenceId114)
+                {
+                    _logger.LogWarning($"[REF-114-SEQUENCE] FINAL SEQUENCE AFTER PROCESSING:");
+                    for (int i = 0; i < historyRecords.Count; i++)
+                    {
+                        var h = historyRecords[i];
+                        var prefix = h.ReferenceId == 114 ? ">>> REF-114 >>>" : "              ";
+                        _logger.LogWarning($"[REF-114-SEQUENCE] {prefix} #{i+1}: ID={h.Id}, RefId={h.ReferenceId}, Date={h.TransactionDate:yyyy-MM-dd HH:mm:ss}, Amount={h.TransactionAmount}, Before={h.BalanceBefore}, After={h.BalanceAfter}");
+                        
+                        // Check sequence consistency
+                        if (i > 0)
+                        {
+                            var prevTransaction = historyRecords[i-1];
+                            if (h.BalanceBefore != prevTransaction.BalanceAfter)
+                            {
+                                _logger.LogError($"[REF-114-ERROR] SEQUENCE BREAK at transaction #{i+1}! Previous BalanceAfter={prevTransaction.BalanceAfter} != Current BalanceBefore={h.BalanceBefore}");
+                            }
+                            else
+                            {
+                                _logger.LogInformation($"[REF-114-SUCCESS] Chain consistent at #{i+1}: Previous BalanceAfter={prevTransaction.BalanceAfter} == Current BalanceBefore={h.BalanceBefore}");
+                            }
+                        }
+                        
+                        // Show next record details if this is REF-114
+                        if (h.ReferenceId == 114 && i < historyRecords.Count - 1)
+                        {
+                            var nextRecord = historyRecords[i+1];
+                            _logger.LogWarning($"[REF-114-CHAIN] NEXT RECORD AFTER REF-114:");
+                            _logger.LogWarning($"[REF-114-CHAIN]   - Next ID: {nextRecord.Id}, RefId: {nextRecord.ReferenceId}");
+                            _logger.LogWarning($"[REF-114-CHAIN]   - Next Date: {nextRecord.TransactionDate:yyyy-MM-dd HH:mm:ss}");
+                            _logger.LogWarning($"[REF-114-CHAIN]   - Next should get BalanceBefore = {h.BalanceAfter} (my BalanceAfter)");
+                            _logger.LogWarning($"[REF-114-CHAIN]   - Next actual BalanceBefore = {nextRecord.BalanceBefore}");
+                            _logger.LogWarning($"[REF-114-CHAIN]   - Chain continues correctly: {nextRecord.BalanceBefore == h.BalanceAfter}");
+                        }
+                    }
+                    var finalBalance = historyRecords.Count > 0 ? historyRecords.Last().BalanceAfter : 0;
+                    _logger.LogWarning($"[REF-114-SEQUENCE] Final Balance for Customer {combination.CustomerId} - Currency {combination.CurrencyCode}: {finalBalance}");
+                }
+
+                var finalBalance2 = historyRecords.Count > 0 ? historyRecords.Last().BalanceAfter : 0;
+                _logger.LogInformation($"Customer {combination.CustomerId} - Currency {combination.CurrencyCode}: {historyRecords.Count} transactions processed, final balance: {finalBalance2}");
             }
 
             await _context.SaveChangesAsync();
@@ -1775,39 +1910,73 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation("Recalculating currency pool balances from history");
 
-            // Get all pool history records ordered by transaction date
-            var historyRecords = await _context.CurrencyPoolHistory
-                .OrderBy(h => h.TransactionDate)
-                .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+            // Get all unique currencies that have pool history (excluding deleted records)
+            var currencies = await _context.CurrencyPoolHistory
+                .Where(h => !h.IsDeleted) // Only consider non-deleted records
+                .Select(h => h.CurrencyCode)
+                .Distinct()
                 .ToListAsync();
 
-            _logger.LogInformation($"Processing {historyRecords.Count} currency pool history records");
+            _logger.LogInformation($"Processing {currencies.Count} currencies for pool balances");
 
-            // Process each record in chronological order
-            foreach (var history in historyRecords)
+            // Process each currency separately
+            foreach (var currencyCode in currencies)
             {
-                // Get or create current pool record
+                _logger.LogInformation($"Processing Currency Pool: {currencyCode}");
+
+                // Get all pool history records for this currency, ordered by transaction date
+                // IMPORTANT: Exclude deleted records from the sequence
+                var historyRecords = await _context.CurrencyPoolHistory
+                    .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted) // EXCLUDE DELETED RECORDS!
+                    .OrderBy(h => h.TransactionDate)
+                    .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+                    .ToListAsync();
+
+                // Get or create current pool record for this currency
                 var currentPool = await _context.CurrencyPools
-                    .FirstOrDefaultAsync(cp => cp.CurrencyCode == history.CurrencyCode);
+                    .FirstOrDefaultAsync(cp => cp.CurrencyCode == currencyCode);
 
                 if (currentPool == null)
                 {
                     currentPool = new CurrencyPool
                     {
-                        CurrencyCode = history.CurrencyCode,
+                        CurrencyCode = currencyCode,
                         Balance = 0,
                         LastUpdated = DateTime.UtcNow
                     };
                     _context.CurrencyPools.Add(currentPool);
                 }
 
-                // Apply the transaction amount to current balance
-                currentPool.Balance += history.TransactionAmount;
+                // Reset balance to zero for this currency before recalculation
+                currentPool.Balance = 0;
+
+                // Process each transaction chronologically for this currency
+                for (int i = 0; i < historyRecords.Count; i++)
+                {
+                    var history = historyRecords[i];
+                    
+                    // Set balance before this transaction:
+                    // - For first record: use 0 (starting balance)
+                    // - For subsequent records: use exactly the BalanceAfter of previous record
+                    if (i == 0)
+                    {
+                        history.BalanceBefore = 0; // First transaction starts from zero
+                    }
+                    else
+                    {
+                        history.BalanceBefore = historyRecords[i-1].BalanceAfter; // Chain consistency!
+                    }
+                    
+                    // Apply the transaction amount to get BalanceAfter
+                    history.BalanceAfter = history.BalanceBefore + history.TransactionAmount;
+                }
+
+                // Update the current pool balance to the final balance (last record's BalanceAfter)
+                currentPool.Balance = historyRecords.Count > 0 ? historyRecords.Last().BalanceAfter : 0;
                 currentPool.LastUpdated = DateTime.UtcNow;
 
-                // Update the history record's balance fields to match recalculation
-                history.BalanceBefore = currentPool.Balance - history.TransactionAmount;
-                history.BalanceAfter = currentPool.Balance;
+                var finalPoolBalance = historyRecords.Count > 0 ? historyRecords.Last().BalanceAfter : 0;
+                _logger.LogInformation($"Currency Pool {currencyCode}: {historyRecords.Count} transactions processed, final balance: {finalPoolBalance}");
             }
 
             await _context.SaveChangesAsync();
@@ -1818,39 +1987,73 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation("Recalculating bank account balances from history");
 
-            // Get all bank account history records ordered by transaction date
-            var historyRecords = await _context.BankAccountBalanceHistory
-                .OrderBy(h => h.TransactionDate)
-                .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+            // Get all unique bank accounts that have balance history (excluding deleted records)
+            var bankAccountIds = await _context.BankAccountBalanceHistory
+                .Where(h => !h.IsDeleted) // Only consider non-deleted records
+                .Select(h => h.BankAccountId)
+                .Distinct()
                 .ToListAsync();
 
-            _logger.LogInformation($"Processing {historyRecords.Count} bank account history records");
+            _logger.LogInformation($"Processing {bankAccountIds.Count} bank accounts for balance recalculation");
 
-            // Process each record in chronological order
-            foreach (var history in historyRecords)
+            // Process each bank account separately
+            foreach (var bankAccountId in bankAccountIds)
             {
-                // Get or create current balance record
+                _logger.LogInformation($"Processing Bank Account ID: {bankAccountId}");
+
+                // Get all bank account history records for this account, ordered by transaction date
+                // IMPORTANT: Exclude deleted records from the sequence
+                var historyRecords = await _context.BankAccountBalanceHistory
+                    .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted) // EXCLUDE DELETED RECORDS!
+                    .OrderBy(h => h.TransactionDate)
+                    .ThenBy(h => h.Id) // Secondary sort for same transaction dates
+                    .ToListAsync();
+
+                // Get or create current balance record for this bank account
                 var currentBalance = await _context.BankAccountBalances
-                    .FirstOrDefaultAsync(bb => bb.BankAccountId == history.BankAccountId);
+                    .FirstOrDefaultAsync(bb => bb.BankAccountId == bankAccountId);
 
                 if (currentBalance == null)
                 {
                     currentBalance = new BankAccountBalance
                     {
-                        BankAccountId = history.BankAccountId,
+                        BankAccountId = bankAccountId,
                         Balance = 0,
                         LastUpdated = DateTime.UtcNow
                     };
                     _context.BankAccountBalances.Add(currentBalance);
                 }
 
-                // Apply the transaction amount to current balance
-                currentBalance.Balance += history.TransactionAmount;
+                // Reset balance to zero for this bank account before recalculation
+                currentBalance.Balance = 0;
+
+                // Process each transaction chronologically for this bank account
+                for (int i = 0; i < historyRecords.Count; i++)
+                {
+                    var history = historyRecords[i];
+                    
+                    // Set balance before this transaction:
+                    // - For first record: use 0 (starting balance)
+                    // - For subsequent records: use exactly the BalanceAfter of previous record
+                    if (i == 0)
+                    {
+                        history.BalanceBefore = 0; // First transaction starts from zero
+                    }
+                    else
+                    {
+                        history.BalanceBefore = historyRecords[i-1].BalanceAfter; // Chain consistency!
+                    }
+                    
+                    // Apply the transaction amount to get BalanceAfter
+                    history.BalanceAfter = history.BalanceBefore + history.TransactionAmount;
+                }
+
+                // Update the current balance to the final balance (last record's BalanceAfter)
+                currentBalance.Balance = historyRecords.Count > 0 ? historyRecords.Last().BalanceAfter : 0;
                 currentBalance.LastUpdated = DateTime.UtcNow;
 
-                // Update the history record's balance fields to match recalculation
-                history.BalanceBefore = currentBalance.Balance - history.TransactionAmount;
-                history.BalanceAfter = currentBalance.Balance;
+                var finalBankBalance = historyRecords.Count > 0 ? historyRecords.Last().BalanceAfter : 0;
+                _logger.LogInformation($"Bank Account {bankAccountId}: {historyRecords.Count} transactions processed, final balance: {finalBankBalance}");
             }
 
             await _context.SaveChangesAsync();
