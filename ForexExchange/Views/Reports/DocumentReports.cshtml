@@ -27,11 +27,21 @@
                     <div class="row g-3">
                         <div class="col-md-2">
                             <label class="form-label">از تاریخ</label>
-                            <input type="date" class="form-control" id="fromDate">
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="fromDate">
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearDate('fromDate')" title="پاک کردن تاریخ">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">تا تاریخ</label>
-                            <input type="date" class="form-control" id="toDate">
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="toDate">
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearDate('toDate')" title="پاک کردن تاریخ">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">ارز</label>
@@ -115,12 +125,9 @@
     let currentSort = { column: null, direction: 'asc' };
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Set default dates
-        const today = new Date();
-        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
-
-        document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
-        document.getElementById('toDate').value = today.toISOString().split('T')[0];
+        // Don't set default dates - let users choose to filter by date or not
+        // document.getElementById('fromDate').value = '';
+        // document.getElementById('toDate').value = '';
 
         // Add click event listeners to sortable headers
         document.querySelectorAll('.sortable').forEach(header => {
@@ -182,6 +189,12 @@
                 });
             }
         });
+    }
+
+    function clearDate(inputId) {
+        document.getElementById(inputId).value = '';
+        // Automatically trigger search after clearing date
+        loadDocumentReports();
     }
 
     function loadDocumentReports() {
