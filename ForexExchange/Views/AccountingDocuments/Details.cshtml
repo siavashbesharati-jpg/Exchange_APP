@@ -197,6 +197,16 @@
         margin-bottom: 10px;
     }
     
+    /* Protect reference numbers from global formatting */
+    .no-format-number {
+        position: relative;
+    }
+    
+    .no-format-number::before {
+        content: attr(data-original-value);
+        display: none;
+    }
+    
     @@media print {
         body * {
             visibility: hidden;
@@ -359,7 +369,7 @@
         {
             <div class="document-row">
                 <div class="document-label">شماره تراکنش:</div>
-                <div class="document-value">@Model.ReferenceNumber</div>
+                <div class="document-value no-format-number" data-no-format="true">@Model.ReferenceNumber</div>
             </div>
         }
 
@@ -447,5 +457,50 @@
 </div>
 
 @section Scripts {
-    <!-- File download is now handled directly by the anchor tag -->
+    <script>
+        // Protect reference numbers from global formatting scripts
+        document.addEventListener('DOMContentLoaded', function() {
+            protectReferenceNumbers();
+            
+            // Protect continuously against global formatting
+            setInterval(protectReferenceNumbers, 2000);
+            
+            // Also protect on DOM mutations
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                        setTimeout(protectReferenceNumbers, 100);
+                    }
+                });
+            });
+            
+            // Start observing the document for changes
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+        });
+        
+        function protectReferenceNumbers() {
+            // Find all elements with no-format-number class
+            const referenceElements = document.querySelectorAll('.no-format-number[data-no-format="true"]');
+            
+            referenceElements.forEach(function(element) {
+                // Store original value if not already stored
+                if (!element.hasAttribute('data-original-value')) {
+                    element.setAttribute('data-original-value', element.textContent.trim());
+                }
+                
+                const originalValue = element.getAttribute('data-original-value');
+                const currentValue = element.textContent.trim();
+                
+                // If the content has been modified by global formatters, restore it
+                if (currentValue !== originalValue && currentValue.includes(',')) {
+                    element.textContent = originalValue;
+                    console.log('Protected reference number from formatting:', originalValue);
+                }
+            });
+        }
+    </script>
 }
