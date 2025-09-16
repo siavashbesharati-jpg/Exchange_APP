@@ -57,12 +57,19 @@ namespace ForexExchange.Scripts
                         }
 
                         // Update TransactionNumber if AccountingDocument has a ReferenceNumber
+                        // and it's different from current TransactionNumber
                         if (!string.IsNullOrEmpty(accountingDocument.ReferenceNumber))
                         {
-                            historyRecord.TransactionNumber = accountingDocument.ReferenceNumber;
-                            updatedCount++;
-                            
-                            _logger.LogDebug($"Updated CustomerBalanceHistory ID {historyRecord.Id} - Customer: {historyRecord.Customer?.FullName ?? "Unknown"}, TransactionNumber: {accountingDocument.ReferenceNumber}");
+                            // Update if TransactionNumber is null/empty OR different from ReferenceNumber
+                            if (string.IsNullOrEmpty(historyRecord.TransactionNumber) || 
+                                historyRecord.TransactionNumber != accountingDocument.ReferenceNumber)
+                            {
+                                var oldTransactionNumber = historyRecord.TransactionNumber ?? "[خالی]";
+                                historyRecord.TransactionNumber = accountingDocument.ReferenceNumber;
+                                updatedCount++;
+                                
+                                _logger.LogDebug($"Updated CustomerBalanceHistory ID {historyRecord.Id} - Customer: {historyRecord.Customer?.FullName ?? "Unknown"}, TransactionNumber: {oldTransactionNumber} → {accountingDocument.ReferenceNumber}");
+                            }
                         }
                         else
                         {
@@ -135,12 +142,19 @@ namespace ForexExchange.Scripts
                         }
 
                         // Update TransactionNumber if AccountingDocument has a ReferenceNumber
+                        // and it's different from current TransactionNumber
                         if (!string.IsNullOrEmpty(accountingDocument.ReferenceNumber))
                         {
-                            historyRecord.TransactionNumber = accountingDocument.ReferenceNumber;
-                            updatedCount++;
-                            
-                            _logger.LogDebug($"Updated BankAccountBalanceHistory ID {historyRecord.Id} - Bank Account: {historyRecord.BankAccount?.BankName} {historyRecord.BankAccount?.AccountNumber}, TransactionNumber: {accountingDocument.ReferenceNumber}");
+                            // Update if TransactionNumber is null/empty OR different from ReferenceNumber
+                            if (string.IsNullOrEmpty(historyRecord.TransactionNumber) || 
+                                historyRecord.TransactionNumber != accountingDocument.ReferenceNumber)
+                            {
+                                var oldTransactionNumber = historyRecord.TransactionNumber ?? "[خالی]";
+                                historyRecord.TransactionNumber = accountingDocument.ReferenceNumber;
+                                updatedCount++;
+                                
+                                _logger.LogDebug($"Updated BankAccountBalanceHistory ID {historyRecord.Id} - Bank Account: {historyRecord.BankAccount?.BankName} {historyRecord.BankAccount?.AccountNumber}, TransactionNumber: {oldTransactionNumber} → {accountingDocument.ReferenceNumber}");
+                            }
                         }
                         else
                         {
@@ -220,9 +234,25 @@ namespace ForexExchange.Scripts
                            && !string.IsNullOrEmpty(h.TransactionNumber))
                 .CountAsync();
 
+            // NEW: Count mismatched TransactionNumbers in CustomerBalanceHistory
+            var customerHistoryMismatched = await _context.CustomerBalanceHistory
+                .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument 
+                           && !h.IsDeleted 
+                           && h.ReferenceId.HasValue
+                           && !string.IsNullOrEmpty(h.TransactionNumber))
+                .Join(_context.AccountingDocuments,
+                      h => h.ReferenceId.Value,
+                      d => d.Id,
+                      (h, d) => new { History = h, Document = d })
+                .Where(joined => !joined.Document.IsDeleted
+                                && !string.IsNullOrEmpty(joined.Document.ReferenceNumber)
+                                && joined.History.TransactionNumber != joined.Document.ReferenceNumber)
+                .CountAsync();
+
             report.CustomerBalanceHistoryTotal = customerHistoryTotal;
             report.CustomerBalanceHistoryWithTransactionNumber = customerHistoryWithTransactionNumber;
             report.CustomerBalanceHistoryWithoutTransactionNumber = customerHistoryTotal - customerHistoryWithTransactionNumber;
+            report.CustomerBalanceHistoryMismatched = customerHistoryMismatched;
 
             // BankAccountBalanceHistory statistics
             var bankHistoryTotal = await _context.BankAccountBalanceHistory
@@ -235,9 +265,25 @@ namespace ForexExchange.Scripts
                            && !string.IsNullOrEmpty(h.TransactionNumber))
                 .CountAsync();
 
+            // NEW: Count mismatched TransactionNumbers in BankAccountBalanceHistory
+            var bankHistoryMismatched = await _context.BankAccountBalanceHistory
+                .Where(h => h.TransactionType == BankAccountTransactionType.Document 
+                           && !h.IsDeleted 
+                           && h.ReferenceId.HasValue
+                           && !string.IsNullOrEmpty(h.TransactionNumber))
+                .Join(_context.AccountingDocuments,
+                      h => h.ReferenceId.Value,
+                      d => d.Id,
+                      (h, d) => new { History = h, Document = d })
+                .Where(joined => !joined.Document.IsDeleted
+                                && !string.IsNullOrEmpty(joined.Document.ReferenceNumber)
+                                && joined.History.TransactionNumber != joined.Document.ReferenceNumber)
+                .CountAsync();
+
             report.BankAccountBalanceHistoryTotal = bankHistoryTotal;
             report.BankAccountBalanceHistoryWithTransactionNumber = bankHistoryWithTransactionNumber;
             report.BankAccountBalanceHistoryWithoutTransactionNumber = bankHistoryTotal - bankHistoryWithTransactionNumber;
+            report.BankAccountBalanceHistoryMismatched = bankHistoryMismatched;
 
             // AccountingDocument statistics
             var accountingDocumentsTotal = await _context.AccountingDocuments
@@ -265,12 +311,14 @@ namespace ForexExchange.Scripts
         public int CustomerBalanceHistoryTotal { get; set; }
         public int CustomerBalanceHistoryWithTransactionNumber { get; set; }
         public int CustomerBalanceHistoryWithoutTransactionNumber { get; set; }
+        public int CustomerBalanceHistoryMismatched { get; set; }
         public decimal CustomerBalanceHistoryCoveragePercentage => 
             CustomerBalanceHistoryTotal > 0 ? (decimal)CustomerBalanceHistoryWithTransactionNumber / CustomerBalanceHistoryTotal * 100 : 0;
 
         public int BankAccountBalanceHistoryTotal { get; set; }
         public int BankAccountBalanceHistoryWithTransactionNumber { get; set; }
         public int BankAccountBalanceHistoryWithoutTransactionNumber { get; set; }
+        public int BankAccountBalanceHistoryMismatched { get; set; }
         public decimal BankAccountBalanceHistoryCoveragePercentage => 
             BankAccountBalanceHistoryTotal > 0 ? (decimal)BankAccountBalanceHistoryWithTransactionNumber / BankAccountBalanceHistoryTotal * 100 : 0;
 
@@ -290,12 +338,14 @@ CustomerBalanceHistory (AccountingDocument type):
 - Total Records: {CustomerBalanceHistoryTotal}
 - With TransactionNumber: {CustomerBalanceHistoryWithTransactionNumber}
 - Without TransactionNumber: {CustomerBalanceHistoryWithoutTransactionNumber}
+- Mismatched TransactionNumber: {CustomerBalanceHistoryMismatched}
 - Coverage: {CustomerBalanceHistoryCoveragePercentage:F2}%
 
 BankAccountBalanceHistory (Document type):
 - Total Records: {BankAccountBalanceHistoryTotal}
 - With TransactionNumber: {BankAccountBalanceHistoryWithTransactionNumber}
 - Without TransactionNumber: {BankAccountBalanceHistoryWithoutTransactionNumber}
+- Mismatched TransactionNumber: {BankAccountBalanceHistoryMismatched}
 - Coverage: {BankAccountBalanceHistoryCoveragePercentage:F2}%
 
 AccountingDocuments:
