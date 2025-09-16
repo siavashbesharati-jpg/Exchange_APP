@@ -95,6 +95,7 @@ namespace ForexExchange.Services
                     Amount = h.TransactionAmount,
                     RunningBalance = h.BalanceAfter, // Use BalanceAfter as running balance
                     ReferenceId = h.ReferenceId, // Can be null for Manual transactions
+                    TransactionNumber = h.TransactionNumber, // Add TransactionNumber from balance history
                     Notes = h.Description
                 }).ToList();
 

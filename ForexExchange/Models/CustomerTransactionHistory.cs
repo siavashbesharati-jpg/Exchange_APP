@@ -17,6 +17,7 @@ namespace ForexExchange.Models
         public decimal Amount { get; set; }
         public decimal RunningBalance { get; set; }
         public int? ReferenceId { get; set; } // Order ID or Document ID
+        public string? TransactionNumber { get; set; } // Transaction Number from AccountingDocument.ReferenceNumber
         public string? Notes { get; set; }
 
         // For orders - additional context
