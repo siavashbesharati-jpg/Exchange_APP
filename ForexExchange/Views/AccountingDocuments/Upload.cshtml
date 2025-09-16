@@ -1,3 +1,4 @@
+
 @model ForexExchange.Models.AccountingDocument
 
 @{
@@ -218,7 +219,7 @@
 
                             <!-- Reference Number -->
                             <div class="col-md-6 mb-3">
-                                <label asp-for="ReferenceNumber" class="form-label">شماره مرجع</label>
+                                <label asp-for="ReferenceNumber" class="form-label">شماره تراکنش</label>
                                 <input asp-for="ReferenceNumber" class="form-control" placeholder="شماره پیگیری یا مرجع" />
                                 <span asp-validation-for="ReferenceNumber" class="text-danger"></span>
                             </div>
@@ -629,7 +630,7 @@
                 content += `<div class="col-md-4 mb-2"><strong>مبلغ:</strong> ${data.amount}</div>`;
             }
             if (data.referenceId) {
-                content += `<div class="col-md-4 mb-2"><strong>شماره مرجع:</strong> ${data.referenceId}</div>`;
+                content += `<div class="col-md-4 mb-2"><strong>شماره تراکنش:</strong> ${data.referenceId}</div>`;
             }
             if (data.date) {
                 content += `<div class="col-md-4 mb-2"><strong>تاریخ:</strong> ${data.date}</div>`;

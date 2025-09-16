@@ -981,7 +981,7 @@ namespace ForexExchange.Controllers
                     "📊 گزارش قبل از بروزرسانی:",
                     $"- CustomerBalanceHistory: {initialReport.CustomerBalanceHistoryTotal} کل، {initialReport.CustomerBalanceHistoryWithTransactionNumber} با شماره تراکنش",
                     $"- BankAccountBalanceHistory: {initialReport.BankAccountBalanceHistoryTotal} کل، {initialReport.BankAccountBalanceHistoryWithTransactionNumber} با شماره تراکنش",
-                    $"- AccountingDocuments: {initialReport.AccountingDocumentsTotal} کل، {initialReport.AccountingDocumentsWithReferenceNumber} با شماره مرجع",
+                    $"- AccountingDocuments: {initialReport.AccountingDocumentsTotal} کل، {initialReport.AccountingDocumentsWithReferenceNumber} با شماره تراکنش",
                     ""
                 };
 
@@ -1004,7 +1004,7 @@ namespace ForexExchange.Controllers
                     "- CustomerBalanceHistory با TransactionType=AccountingDocument ← AccountingDocument.ReferenceNumber",
                     "- BankAccountBalanceHistory با TransactionType=Document ← AccountingDocument.ReferenceNumber",
                     "",
-                    "✨ حالا تمام سوابق تراکنش شماره مرجع مناسب دارند"
+                    "✨ حالا تمام سوابق تراکنش شماره تراکنش مناسب دارند"
                 };
 
                 // Calculate improvements
@@ -1108,8 +1108,8 @@ namespace ForexExchange.Controllers
                     "",
                     "📄 AccountingDocuments:",
                     $"- کل اسناد: {report.AccountingDocumentsTotal:N0}",
-                    $"- با شماره مرجع: {report.AccountingDocumentsWithReferenceNumber:N0}",
-                    $"- بدون شماره مرجع: {report.AccountingDocumentsWithoutReferenceNumber:N0}",
+                    $"- با شماره تراکنش: {report.AccountingDocumentsWithReferenceNumber:N0}",
+                    $"- بدون شماره تراکنش: {report.AccountingDocumentsWithoutReferenceNumber:N0}",
                     $"- پوشش: {report.AccountingDocumentsCoveragePercentage:F1}%"
                 };
 

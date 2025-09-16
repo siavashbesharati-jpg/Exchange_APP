@@ -93,7 +93,7 @@ namespace ForexExchange.Models
 
         // Optional: Reference number for external tracking
         [StringLength(50)]
-        [Display(Name = "Reference Number - شماره مرجع")]
+        [Display(Name = "Reference Number - شماره تراکنش")]
         public string? ReferenceNumber { get; set; }
 
         // File attachment (optional - for supporting documents)
