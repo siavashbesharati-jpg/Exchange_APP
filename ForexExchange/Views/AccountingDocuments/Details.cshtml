@@ -199,12 +199,25 @@
     
     /* Protect reference numbers from global formatting */
     .no-format-number {
-        position: relative;
+        position: relative !important;
+        font-family: monospace !important;
     }
     
     .no-format-number::before {
         content: attr(data-original-value);
         display: none;
+    }
+    
+    /* Force prevention of number formatting on reference numbers */
+    .no-format-number[data-no-format="true"] {
+        white-space: nowrap !important;
+        font-variant-numeric: tabular-nums !important;
+    }
+    
+    /* Override any global number formatting specifically */
+    .document-content .no-format-number[data-no-format="true"] {
+        font-family: 'Courier New', monospace !important;
+        letter-spacing: 0.5px !important;
     }
     
     @@media print {
@@ -369,7 +382,11 @@
         {
             <div class="document-row">
                 <div class="document-label"> شناسه رهگیری :</div>
-                <div class="document-value no-format-number" data-no-format="true">@Model.ReferenceNumber</div>
+                <div class="document-value no-format-number protected-reference" 
+                     data-no-format="true" 
+                     data-protected="true" 
+                     data-no-comma="true" 
+                     data-original-value="@Model.ReferenceNumber">@Model.ReferenceNumber</div>
             </div>
         }
 
@@ -458,18 +475,21 @@
 
 @section Scripts {
     <script>
-        // Protect reference numbers from global formatting scripts
+        // Protect reference numbers from global formatting scripts - Enhanced Version
         document.addEventListener('DOMContentLoaded', function() {
             protectReferenceNumbers();
             
-            // Protect continuously against global formatting
-            setInterval(protectReferenceNumbers, 2000);
+            // More aggressive protection - check every 500ms instead of 2 seconds
+            setInterval(protectReferenceNumbers, 500);
             
-            // Also protect on DOM mutations
+            // Immediate protection on any DOM changes
             const observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                        setTimeout(protectReferenceNumbers, 100);
+                        // Immediate protection, no delay
+                        protectReferenceNumbers();
+                        // Also protect after a short delay in case of async changes
+                        setTimeout(protectReferenceNumbers, 50);
                     }
                 });
             });
@@ -480,6 +500,9 @@
                 subtree: true,
                 characterData: true
             });
+            
+            // Override global formatting functions if they exist
+            overrideGlobalFormatting();
         });
         
         function protectReferenceNumbers() {
@@ -496,11 +519,68 @@
                 const currentValue = element.textContent.trim();
                 
                 // If the content has been modified by global formatters, restore it
-                if (currentValue !== originalValue && currentValue.includes(',')) {
+                if (currentValue !== originalValue && (currentValue.includes(',') || currentValue.includes('٬'))) {
                     element.textContent = originalValue;
                     console.log('Protected reference number from formatting:', originalValue);
                 }
+                
+                // Add additional protection attributes
+                element.setAttribute('data-protected', 'true');
+                element.setAttribute('data-no-comma', 'true');
+                element.classList.add('protected-reference');
+                
+                // Override any innerHTML/textContent setters temporarily
+                const originalInnerHTML = element.innerHTML;
+                Object.defineProperty(element, 'innerHTML', {
+                    get: function() { return originalValue; },
+                    set: function(value) {
+                        if (value.includes(',') || value.includes('٬')) {
+                            console.log('Blocked attempt to format reference number:', value);
+                            return;
+                        }
+                        return originalInnerHTML;
+                    },
+                    configurable: true
+                });
             });
+        }
+        
+        function overrideGlobalFormatting() {
+            // Common global formatting function names to intercept
+            const formatFunctionNames = ['formatNumber', 'addCommas', 'numberWithCommas', 'formatCurrency'];
+            
+            formatFunctionNames.forEach(function(funcName) {
+                if (window[funcName]) {
+                    const originalFunc = window[funcName];
+                    window[funcName] = function(element, value) {
+                        // Check if this element should be protected
+                        if (element && (element.hasAttribute('data-no-format') || element.classList.contains('no-format-number'))) {
+                            console.log('Blocked global formatting on protected element');
+                            return element.textContent || value;
+                        }
+                        return originalFunc.apply(this, arguments);
+                    };
+                }
+            });
+            
+            // Also intercept jQuery-based formatters if jQuery is available
+            if (window.jQuery) {
+                const originalText = jQuery.fn.text;
+                jQuery.fn.text = function(value) {
+                    if (arguments.length === 0) {
+                        return originalText.call(this);
+                    }
+                    
+                    // Check if any element in the selection should be protected
+                    return this.each(function() {
+                        if (this.hasAttribute && this.hasAttribute('data-no-format')) {
+                            console.log('Blocked jQuery text formatting on protected element');
+                            return;
+                        }
+                        originalText.call(jQuery(this), value);
+                    });
+                };
+            }
         }
     </script>
 }
