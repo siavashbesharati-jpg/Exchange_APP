@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using ForexExchange.Scripts;
 using DNTPersianUtils.Core;
 
 namespace ForexExchange.Controllers
@@ -960,6 +961,175 @@ namespace ForexExchange.Controllers
                 }
                 
                 TempData["Error"] = $"خطا در ایجاد رکورد دستی: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateTransactionNumbers()
+        {
+            try
+            {
+                var updateScript = new UpdateTransactionNumbers(_context, 
+                    LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<UpdateTransactionNumbers>());
+
+                // Generate initial report
+                var initialReport = await updateScript.GenerateTransactionNumberCoverageReportAsync();
+                
+                var initialLog = new List<string>
+                {
+                    "📊 گزارش قبل از بروزرسانی:",
+                    $"- CustomerBalanceHistory: {initialReport.CustomerBalanceHistoryTotal} کل، {initialReport.CustomerBalanceHistoryWithTransactionNumber} با شماره تراکنش",
+                    $"- BankAccountBalanceHistory: {initialReport.BankAccountBalanceHistoryTotal} کل، {initialReport.BankAccountBalanceHistoryWithTransactionNumber} با شماره تراکنش",
+                    $"- AccountingDocuments: {initialReport.AccountingDocumentsTotal} کل، {initialReport.AccountingDocumentsWithReferenceNumber} با شماره مرجع",
+                    ""
+                };
+
+                // Perform the updates
+                await updateScript.UpdateAllHistoryTransactionNumbersAsync();
+
+                // Generate final report
+                var finalReport = await updateScript.GenerateTransactionNumberCoverageReportAsync();
+
+                var updateLog = new List<string>
+                {
+                    "✅ بروزرسانی شماره تراکنش‌ها تکمیل شد:",
+                    "",
+                    "📈 نتایج نهایی:",
+                    $"- CustomerBalanceHistory: {finalReport.CustomerBalanceHistoryWithTransactionNumber} از {finalReport.CustomerBalanceHistoryTotal} ({finalReport.CustomerBalanceHistoryCoveragePercentage:F1}%)",
+                    $"- BankAccountBalanceHistory: {finalReport.BankAccountBalanceHistoryWithTransactionNumber} از {finalReport.BankAccountBalanceHistoryTotal} ({finalReport.BankAccountBalanceHistoryCoveragePercentage:F1}%)",
+                    $"- AccountingDocuments: {finalReport.AccountingDocumentsWithReferenceNumber} از {finalReport.AccountingDocumentsTotal} ({finalReport.AccountingDocumentsCoveragePercentage:F1}%)",
+                    "",
+                    "🎯 منطق بروزرسانی:",
+                    "- CustomerBalanceHistory با TransactionType=AccountingDocument ← AccountingDocument.ReferenceNumber",
+                    "- BankAccountBalanceHistory با TransactionType=Document ← AccountingDocument.ReferenceNumber",
+                    "",
+                    "✨ حالا تمام سوابق تراکنش شماره مرجع مناسب دارند"
+                };
+
+                // Calculate improvements
+                var customerImprovement = finalReport.CustomerBalanceHistoryWithTransactionNumber - initialReport.CustomerBalanceHistoryWithTransactionNumber;
+                var bankImprovement = finalReport.BankAccountBalanceHistoryWithTransactionNumber - initialReport.BankAccountBalanceHistoryWithTransactionNumber;
+
+                if (customerImprovement > 0 || bankImprovement > 0)
+                {
+                    updateLog.Add("");
+                    updateLog.Add($"📊 بهبودها:");
+                    if (customerImprovement > 0)
+                        updateLog.Add($"- CustomerBalanceHistory: +{customerImprovement} رکورد بروزرسانی شد");
+                    if (bankImprovement > 0)
+                        updateLog.Add($"- BankAccountBalanceHistory: +{bankImprovement} رکورد بروزرسانی شد");
+                }
+                else
+                {
+                    updateLog.Add("");
+                    updateLog.Add("ℹ️ هیچ رکورد جدیدی نیاز به بروزرسانی نداشت - همه چیز از قبل به‌روز بود");
+                }
+
+                // Check if this is an AJAX request
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
+
+                if (isAjaxRequest)
+                {
+                    return Json(new { 
+                        success = true, 
+                        message = "بروزرسانی شماره تراکنش‌ها با موفقیت انجام شد",
+                        initialReport = initialReport,
+                        finalReport = finalReport,
+                        improvements = new { customer = customerImprovement, bank = bankImprovement }
+                    });
+                }
+
+                TempData["Success"] = string.Join("<br/>", updateLog);
+                TempData["InitialReport"] = string.Join("\n", initialLog);
+            }
+            catch (Exception ex)
+            {
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
+
+                if (isAjaxRequest)
+                {
+                    return Json(new { 
+                        success = false, 
+                        error = $"خطا در بروزرسانی شماره تراکنش‌ها: {ex.Message}"
+                    });
+                }
+
+                TempData["Error"] = $"خطا در بروزرسانی شماره تراکنش‌ها: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTransactionNumberReport()
+        {
+            try
+            {
+                var updateScript = new UpdateTransactionNumbers(_context, 
+                    LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<UpdateTransactionNumbers>());
+
+                var report = await updateScript.GenerateTransactionNumberCoverageReportAsync();
+
+                // Check if this is an AJAX request
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
+
+                if (isAjaxRequest)
+                {
+                    return Json(new { 
+                        success = true, 
+                        report = report,
+                        summary = new {
+                            customerCoverage = $"{report.CustomerBalanceHistoryWithTransactionNumber}/{report.CustomerBalanceHistoryTotal} ({report.CustomerBalanceHistoryCoveragePercentage:F1}%)",
+                            bankCoverage = $"{report.BankAccountBalanceHistoryWithTransactionNumber}/{report.BankAccountBalanceHistoryTotal} ({report.BankAccountBalanceHistoryCoveragePercentage:F1}%)",
+                            documentCoverage = $"{report.AccountingDocumentsWithReferenceNumber}/{report.AccountingDocumentsTotal} ({report.AccountingDocumentsCoveragePercentage:F1}%)"
+                        }
+                    });
+                }
+
+                var reportLines = new[]
+                {
+                    "📊 گزارش پوشش شماره تراکنش:",
+                    "",
+                    "👥 CustomerBalanceHistory (نوع سند حسابداری):",
+                    $"- کل رکوردها: {report.CustomerBalanceHistoryTotal:N0}",
+                    $"- با شماره تراکنش: {report.CustomerBalanceHistoryWithTransactionNumber:N0}",
+                    $"- بدون شماره تراکنش: {report.CustomerBalanceHistoryWithoutTransactionNumber:N0}",
+                    $"- پوشش: {report.CustomerBalanceHistoryCoveragePercentage:F1}%",
+                    "",
+                    "🏦 BankAccountBalanceHistory (نوع سند):",
+                    $"- کل رکوردها: {report.BankAccountBalanceHistoryTotal:N0}",
+                    $"- با شماره تراکنش: {report.BankAccountBalanceHistoryWithTransactionNumber:N0}",
+                    $"- بدون شماره تراکنش: {report.BankAccountBalanceHistoryWithoutTransactionNumber:N0}",
+                    $"- پوشش: {report.BankAccountBalanceHistoryCoveragePercentage:F1}%",
+                    "",
+                    "📄 AccountingDocuments:",
+                    $"- کل اسناد: {report.AccountingDocumentsTotal:N0}",
+                    $"- با شماره مرجع: {report.AccountingDocumentsWithReferenceNumber:N0}",
+                    $"- بدون شماره مرجع: {report.AccountingDocumentsWithoutReferenceNumber:N0}",
+                    $"- پوشش: {report.AccountingDocumentsCoveragePercentage:F1}%"
+                };
+
+                TempData["Info"] = string.Join("<br/>", reportLines);
+            }
+            catch (Exception ex)
+            {
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
+
+                if (isAjaxRequest)
+                {
+                    return Json(new { 
+                        success = false, 
+                        error = $"خطا در تولید گزارش: {ex.Message}"
+                    });
+                }
+
+                TempData["Error"] = $"خطا در تولید گزارش شماره تراکنش‌ها: {ex.Message}";
             }
 
             return RedirectToAction("Index");

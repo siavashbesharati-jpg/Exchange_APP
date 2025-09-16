@@ -266,6 +266,19 @@
                                             بازمحاسبه بر اساس تاریخ تراکنش
                                         </button>
                                     </form>
+
+                                    <button type="button" class="btn btn-outline-info w-100 mb-2" onclick="getTransactionNumberReport()">
+                                        <i class="fas fa-chart-bar me-2"></i>
+                                        گزارش پوشش شماره تراکنش
+                                    </button>
+
+                                    <form asp-action="UpdateTransactionNumbers" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید شماره تراکنش‌ها را بروزرسانی کنید؟\n\n📋 این عمل:\n• CustomerBalanceHistory با نوع AccountingDocument را بروزرسانی می‌کند\n• BankAccountBalanceHistory با نوع Document را بروزرسانی می‌کند\n• شماره تراکنش را از AccountingDocument.ReferenceNumber می‌گیرد\n\nاین عمل امن است و فقط فیلدهای خالی را پر می‌کند.')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-success w-100 mb-2">
+                                            <i class="fas fa-hashtag me-2"></i>
+                                            بروزرسانی شماره تراکنش‌ها
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -394,6 +407,85 @@
         function cleanPools() {
         }
         // Clean actions are now regular POST forms to ensure TempData shows after redirect
+
+        function getTransactionNumberReport() {
+            $('#loadingModal').modal('show');
+
+            $.get('@Url.Action("GetTransactionNumberReport")')
+                .done(function (response) {
+                    $('#loadingModal').modal('hide');
+                    
+                    if (response.success) {
+                        var report = response.report;
+                        var summary = response.summary;
+                        
+                        var reportHtml = `
+                            <div style="text-align: right; direction: rtl;">
+                                <h5>📊 گزارش پوشش شماره تراکنش</h5>
+                                <hr>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <h6>👥 CustomerBalanceHistory (نوع سند حسابداری):</h6>
+                                        <ul>
+                                            <li>کل رکوردها: <strong>${report.customerBalanceHistoryTotal.toLocaleString()}</strong></li>
+                                            <li>با شماره تراکنش: <strong>${report.customerBalanceHistoryWithTransactionNumber.toLocaleString()}</strong></li>
+                                            <li>بدون شماره تراکنش: <strong>${report.customerBalanceHistoryWithoutTransactionNumber.toLocaleString()}</strong></li>
+                                            <li>پوشش: <strong>${report.customerBalanceHistoryCoveragePercentage.toFixed(1)}%</strong></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <h6>🏦 BankAccountBalanceHistory (نوع سند):</h6>
+                                        <ul>
+                                            <li>کل رکوردها: <strong>${report.bankAccountBalanceHistoryTotal.toLocaleString()}</strong></li>
+                                            <li>با شماره تراکنش: <strong>${report.bankAccountBalanceHistoryWithTransactionNumber.toLocaleString()}</strong></li>
+                                            <li>بدون شماره تراکنش: <strong>${report.bankAccountBalanceHistoryWithoutTransactionNumber.toLocaleString()}</strong></li>
+                                            <li>پوشش: <strong>${report.bankAccountBalanceHistoryCoveragePercentage.toFixed(1)}%</strong></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <h6>📄 AccountingDocuments:</h6>
+                                        <ul>
+                                            <li>کل اسناد: <strong>${report.accountingDocumentsTotal.toLocaleString()}</strong></li>
+                                            <li>با شماره مرجع: <strong>${report.accountingDocumentsWithReferenceNumber.toLocaleString()}</strong></li>
+                                            <li>بدون شماره مرجع: <strong>${report.accountingDocumentsWithoutReferenceNumber.toLocaleString()}</strong></li>
+                                            <li>پوشش: <strong>${report.accountingDocumentsCoveragePercentage.toFixed(1)}%</strong></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>خلاصه:</strong><br>
+                                    • مشتری: ${summary.customerCoverage}<br>
+                                    • بانک: ${summary.bankCoverage}<br>
+                                    • اسناد: ${summary.documentCoverage}
+                                </div>
+                            </div>
+                        `;
+                        
+                        Swal.fire({
+                            title: 'گزارش شماره تراکنش',
+                            html: reportHtml,
+                            width: '800px',
+                            confirmButtonText: 'بستن',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    } else {
+                        Swal.fire('خطا!', response.error || 'خطا در تولید گزارش', 'error');
+                    }
+                })
+                .fail(function (xhr, status, error) {
+                    $('#loadingModal').modal('hide');
+                    Swal.fire('خطا!', 'خطا در ارتباط با سرور: ' + error, 'error');
+                });
+        }
     </script>
 }
 
