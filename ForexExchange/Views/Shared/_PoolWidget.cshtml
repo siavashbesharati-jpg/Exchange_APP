@@ -11,7 +11,7 @@
         <div class="d-flex align-items-center position-absolute" style="right: 15px;">
             <small id="pool-last-update" class="me-3">
                 <i class="fas fa-clock me-1"></i>
-                @DateTime.Now.ToString("HH:mm:ss")
+                <span id="current-time">@DateTime.Now.ToString("HH:mm:ss")</span>
             </small>
         </div>
     </div>
@@ -231,5 +231,31 @@
     font-size: 0.65rem;
 }
 </style>
+
+<script>
+    // Real-time clock update
+    function updateCurrentTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+            timeElement.textContent = timeString;
+        }
+    }
+    
+    // Update time immediately when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCurrentTime();
+        
+        // Update time every second
+        setInterval(updateCurrentTime, 1000);
+    });
+</script>
 
 

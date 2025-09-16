@@ -272,6 +272,114 @@
     </div>
 </div>
 
+<!-- Transaction Confirmation Modal -->
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="confirmationModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> تأیید ثبت سند حسابداری
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> لطفاً اطلاعات زیر را بررسی کنید. این عملیات تأثیرات زیر را بر ترازها خواهد داشت:
+                </div>
+                
+                <!-- Transaction Summary -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-file-invoice"></i> خلاصه تراکنش</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2"><strong>نوع سند:</strong> <span id="preview-type"></span></div>
+                                <div class="mb-2"><strong>عنوان:</strong> <span id="preview-title"></span></div>
+                                <div class="mb-2"><strong>مبلغ:</strong> <span id="preview-amount" class="text-primary fw-bold"></span></div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2"><strong>پرداخت‌کننده:</strong> <span id="preview-payer"></span></div>
+                                <div class="mb-2"><strong>دریافت‌کننده:</strong> <span id="preview-receiver"></span></div>
+                                <div class="mb-2"><strong>تاریخ:</strong> <span id="preview-date"></span></div>
+                            </div>
+                        </div>
+                        <div id="preview-reference" class="mt-2" style="display: none;">
+                            <strong> شناسه رهگیری:</strong> <span id="preview-reference-number" class="no-format-number protected-reference" data-no-format="true" data-protected="true" data-no-comma="true"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance Effects -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-balance-scale"></i> تأثیرات بر ترازها</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="balance-effects-loading" class="text-center py-3">
+                            <i class="fas fa-spinner fa-spin"></i> در حال محاسبه تأثیرات...
+                        </div>
+                        <div id="balance-effects-content" style="display: none;">
+                            <!-- Customer Balance Effects -->
+                            <div id="customer-effects" style="display: none;">
+                                <h6 class="text-success"><i class="fas fa-user"></i> تأثیرات بر مشتریان:</h6>
+                                <div id="customer-effects-list"></div>
+                            </div>
+                            
+                            <!-- Bank Account Effects -->
+                            <div id="bank-effects" style="display: none;" class="mt-3">
+                                <h6 class="text-info"><i class="fas fa-university"></i> تأثیرات بر حساب‌های بانکی:</h6>
+                                <div id="bank-effects-list"></div>
+                            </div>
+                            
+                            <!-- Currency Pool Effects -->
+                            <div id="pool-effects" style="display: none;" class="mt-3">
+                                <h6 class="text-warning"><i class="fas fa-coins"></i> تأثیرات بر صندوق ارزی:</h6>
+                                <div id="pool-effects-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Messages -->
+                <div id="confirmation-warnings" style="display: none;">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> هشدارها:</h6>
+                        <ul id="warnings-list" class="mb-0"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> انصراف
+                </button>
+                <button type="button" id="confirmSubmitBtn" class="btn btn-primary">
+                    <i class="fas fa-check"></i> تأیید و ثبت سند
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Additional protection for modal reference numbers */
+    .modal .no-format-number {
+        position: relative !important;
+        font-family: 'Courier New', monospace !important;
+        font-variant-numeric: tabular-nums !important;
+        white-space: nowrap !important;
+        letter-spacing: 0.5px !important;
+    }
+    
+    .modal .protected-reference {
+        background-color: #f8f9fa !important;
+        padding: 2px 4px !important;
+        border-radius: 3px !important;
+        border: 1px solid #dee2e6 !important;
+    }
+</style>
+
 @section Scripts {
     <script>
         // Wait for Select2 to initialize before running page-specific scripts
@@ -517,8 +625,11 @@
         $(document).on('change', '[name="PayerBankAccountId"]', validateSelfTransaction);
         $(document).on('change', '[name="ReceiverBankAccountId"]', validateSelfTransaction);
 
-        // Form validation
+        // Form validation and confirmation
         document.querySelector('form').addEventListener('submit', function(e) {
+            console.log('🚨 ULTIMATE DEBUG: Form submit event triggered!');
+            e.preventDefault(); // Always prevent initial submission
+            
             const requiredFields = document.querySelectorAll('input[required], select[required]');
             let isValid = true;
 
@@ -532,9 +643,14 @@
             });
 
             if (!isValid) {
-                e.preventDefault();
+                console.log('❌ Form validation failed');
                 alert('لطفاً تمامی فیلدهای اجباری را پر کنید.');
+                return;
             }
+
+            console.log('✅ Form validation passed, showing confirmation modal...');
+            // Show confirmation modal
+            showConfirmationModal();
         });
 
         // File validation (only if file is selected)
@@ -733,6 +849,579 @@
         function hideOcrResults() {
             document.getElementById('ocrResults').style.display = 'none';
         }
+
+        // Transaction Confirmation Modal Functions
+        function showConfirmationModal() {
+            console.log('🚨 ULTIMATE DEBUG: showConfirmationModal() called!');
+            
+            // Populate transaction preview
+            populateTransactionPreview();
+            
+            // Show loading and fetch balance effects
+            document.getElementById('balance-effects-loading').style.display = 'block';
+            document.getElementById('balance-effects-content').style.display = 'none';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            modal.show();
+            
+            // Fetch balance effects
+            fetchBalanceEffects();
+        }
+
+        function populateTransactionPreview() {
+            console.log('🔥 ULTIMATE DEBUG: populateTransactionPreview() STARTED');
+            
+            // Get form values
+            const form = document.querySelector('form');
+            console.log('📝 Form element found:', !!form);
+            
+            if (!form) {
+                console.error('❌ CRITICAL: Form not found!');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            console.log('📋 FormData created, iterating through all values:');
+            
+            // Debug: Log all form data
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}: "${value}"`);
+            }
+            
+            // Document type - Fixed enum mapping (Cash=0, Havala=1)
+            const typeValue = formData.get('Type');
+            console.log('🏷️ Document Type Value:', typeValue, typeof typeValue);
+            let typeName = 'نامشخص';
+            if (typeValue === '0') {
+                typeName = 'نقدی';
+                console.log('✅ Type set to: نقدی');
+            } else if (typeValue === '1') {
+                typeName = 'حواله';
+                console.log('✅ Type set to: حواله');
+            } else {
+                console.log('⚠️ Unknown type value:', typeValue);
+            }
+            document.getElementById('preview-type').textContent = typeName;
+            console.log('📄 Type displayed in modal:', typeName);
+            
+            // CRITICAL DEBUG: Check if modal elements exist
+            const elements = {
+                'preview-type': document.getElementById('preview-type'),
+                'preview-payer': document.getElementById('preview-payer'),
+                'preview-receiver': document.getElementById('preview-receiver'),
+                'preview-title': document.getElementById('preview-title'),
+                'preview-amount': document.getElementById('preview-amount'),
+                'preview-date': document.getElementById('preview-date')
+            };
+            
+            console.log('🎯 MODAL ELEMENTS CHECK:');
+            Object.keys(elements).forEach(id => {
+                const element = elements[id];
+                console.log(`  ${id}: ${!!element ? '✅ FOUND' : '❌ MISSING'}`);
+                if (element) {
+                    console.log(`    Current text: "${element.textContent}"`);
+                }
+            });
+            
+            // Title
+            document.getElementById('preview-title').textContent = formData.get('Title') || 'بدون عنوان';
+            
+            // Amount and currency
+            const amount = formData.get('Amount') || '0';
+            const currency = formData.get('CurrencyCode') || '';
+            const formattedAmount = Number(amount).toLocaleString('fa-IR') + ' ' + currency;
+            document.getElementById('preview-amount').textContent = formattedAmount;
+            
+            // Payer - Enhanced Select2 support with ULTIMATE DEBUG
+            const payerType = formData.get('PayerType');
+            console.log('👤 Payer Type Value:', payerType, typeof payerType);
+            let payerName = 'نامشخص';
+            
+            if (payerType === '0') { // Customer
+                console.log('🔍 Processing CUSTOMER payer...');
+                const payerCustomerId = formData.get('PayerCustomerId');
+                console.log('🆔 Payer Customer ID:', payerCustomerId);
+                
+                const payerSelect = document.querySelector('[name="PayerCustomerId"]');
+                console.log('🎯 Payer Select Element found:', !!payerSelect);
+                
+                if (payerSelect) {
+                    console.log('📋 Payer Select Options:', payerSelect.options.length);
+                    for (let i = 0; i < payerSelect.options.length; i++) {
+                        console.log(`  Option ${i}: value="${payerSelect.options[i].value}", text="${payerSelect.options[i].text}"`);
+                    }
+                }
+                
+                if (payerCustomerId && payerSelect) {
+                    // Try Select2 first (more reliable for dynamically loaded options)
+                    try {
+                        console.log('🔄 Trying Select2 data extraction...');
+                        const select2Data = $(payerSelect).select2('data');
+                        console.log('📊 Select2 Data:', select2Data);
+                        
+                        if (select2Data && select2Data.length > 0 && select2Data[0].text && select2Data[0].text !== payerCustomerId) {
+                            payerName = select2Data[0].text;
+                            console.log('✅ Got payer name from Select2:', payerName);
+                        } else {
+                            console.log('⚠️ Select2 data not usable, trying native select...');
+                            // Fallback to native select option
+                            const selectedOption = payerSelect.querySelector(`option[value="${payerCustomerId}"]`);
+                            console.log('🎯 Selected Option found:', !!selectedOption);
+                            if (selectedOption) {
+                                console.log('📝 Selected Option text:', selectedOption.textContent);
+                            }
+                            
+                            if (selectedOption && selectedOption.textContent) {
+                                payerName = selectedOption.textContent;
+                                console.log('✅ Got payer name from native select:', payerName);
+                            } else {
+                                payerName = 'مشتری (شناسه: ' + payerCustomerId + ')';
+                                console.log('🔄 Using fallback payer name:', payerName);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('❌ Select2 extraction failed:', e);
+                        // Fallback if Select2 fails
+                        const selectedOption = payerSelect.querySelector(`option[value="${payerCustomerId}"]`);
+                        if (selectedOption && selectedOption.textContent) {
+                            payerName = selectedOption.textContent;
+                            console.log('✅ Got payer name from fallback:', payerName);
+                        } else {
+                            payerName = 'مشتری (شناسه: ' + payerCustomerId + ')';
+                            console.log('🔄 Using ultimate fallback payer name:', payerName);
+                        }
+                    }
+                } else {
+                    payerName = 'مشتری (انتخاب نشده)';
+                    console.log('⚠️ No payer customer selected');
+                }
+            } else if (payerType === '1') { // System
+                console.log('🏦 Processing SYSTEM payer...');
+                const payerBankId = formData.get('PayerBankAccountId');
+                console.log('🆔 Payer Bank ID:', payerBankId);
+                
+                const payerBankSelect = document.querySelector('[name="PayerBankAccountId"]');
+                console.log('🎯 Payer Bank Select found:', !!payerBankSelect);
+                
+                if (payerBankSelect) {
+                    console.log('📋 Payer Bank Options:', payerBankSelect.options.length);
+                    for (let i = 0; i < Math.min(3, payerBankSelect.options.length); i++) {
+                        console.log(`  Bank Option ${i}: value="${payerBankSelect.options[i].value}", text="${payerBankSelect.options[i].text}"`);
+                    }
+                }
+                
+                if (payerBankId && payerBankSelect) {
+                    // Try Select2 first
+                    try {
+                        console.log('🔄 Trying Select2 for bank data...');
+                        const select2Data = $(payerBankSelect).select2('data');
+                        console.log('📊 Bank Select2 Data:', select2Data);
+                        
+                        if (select2Data && select2Data.length > 0 && select2Data[0].text && select2Data[0].text !== payerBankId) {
+                            const bankText = select2Data[0].text;
+                            console.log('📝 Bank text from Select2:', bankText);
+                            // Extract bank name from format: "AccountNumber - BankName (Currency)"
+                            const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
+                            const bankName = bankMatch ? bankMatch[1].trim() : bankText;
+                            payerName = 'سیستم - ' + bankName;
+                            console.log('✅ Got payer bank name from Select2:', payerName);
+                        } else {
+                            console.log('⚠️ Select2 bank data not usable, trying native...');
+                            // Fallback to native select option
+                            const selectedOption = payerBankSelect.querySelector(`option[value="${payerBankId}"]`);
+                            if (selectedOption && selectedOption.textContent) {
+                                const bankText = selectedOption.textContent;
+                                console.log('📝 Bank text from native:', bankText);
+                                const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
+                                const bankName = bankMatch ? bankMatch[1].trim() : bankText;
+                                payerName = 'سیستم - ' + bankName;
+                                console.log('✅ Got payer bank name from native:', payerName);
+                            } else {
+                                payerName = 'سیستم (حساب شناسه: ' + payerBankId + ')';
+                                console.log('🔄 Using bank fallback name:', payerName);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('❌ Bank Select2 failed:', e);
+                        // Fallback if Select2 fails
+                        const selectedOption = payerBankSelect.querySelector(`option[value="${payerBankId}"]`);
+                        if (selectedOption && selectedOption.textContent) {
+                            const bankText = selectedOption.textContent;
+                            const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
+                            const bankName = bankMatch ? bankMatch[1].trim() : bankText;
+                            payerName = 'سیستم - ' + bankName;
+                            console.log('✅ Got payer bank from ultimate fallback:', payerName);
+                        } else {
+                            payerName = 'سیستم (حساب شناسه: ' + payerBankId + ')';
+                            console.log('🔄 Using ultimate bank fallback:', payerName);
+                        }
+                    }
+                } else {
+                    payerName = 'سیستم (حساب انتخاب نشده)';
+                    console.log('⚠️ No payer bank selected');
+                }
+            } else {
+                console.log('❓ Unknown payer type:', payerType);
+            }
+            
+            document.getElementById('preview-payer').textContent = payerName;
+            console.log('👤 Final payer name displayed:', payerName);
+            
+            // Receiver - Enhanced Select2 support
+            const receiverType = formData.get('ReceiverType');
+            let receiverName = 'نامشخص';
+            if (receiverType === '0') { // Customer
+                const receiverCustomerId = formData.get('ReceiverCustomerId');
+                const receiverSelect = document.querySelector('[name="ReceiverCustomerId"]');
+                if (receiverCustomerId && receiverSelect) {
+                    // Try Select2 first (more reliable for dynamically loaded options)
+                    try {
+                        const select2Data = $(receiverSelect).select2('data');
+                        if (select2Data && select2Data.length > 0 && select2Data[0].text && select2Data[0].text !== receiverCustomerId) {
+                            receiverName = select2Data[0].text;
+                        } else {
+                            // Fallback to native select option
+                            const selectedOption = receiverSelect.querySelector(`option[value="${receiverCustomerId}"]`);
+                            if (selectedOption && selectedOption.textContent) {
+                                receiverName = selectedOption.textContent;
+                            } else {
+                                receiverName = 'مشتری (شناسه: ' + receiverCustomerId + ')';
+                            }
+                        }
+                    } catch (e) {
+                        // Fallback if Select2 fails
+                        const selectedOption = receiverSelect.querySelector(`option[value="${receiverCustomerId}"]`);
+                        if (selectedOption && selectedOption.textContent) {
+                            receiverName = selectedOption.textContent;
+                        } else {
+                            receiverName = 'مشتری (شناسه: ' + receiverCustomerId + ')';
+                        }
+                    }
+                } else {
+                    receiverName = 'مشتری (انتخاب نشده)';
+                }
+            } else if (receiverType === '1') { // System
+                const receiverBankId = formData.get('ReceiverBankAccountId');
+                const receiverBankSelect = document.querySelector('[name="ReceiverBankAccountId"]');
+                if (receiverBankId && receiverBankSelect) {
+                    // Try Select2 first
+                    try {
+                        const select2Data = $(receiverBankSelect).select2('data');
+                        if (select2Data && select2Data.length > 0 && select2Data[0].text && select2Data[0].text !== receiverBankId) {
+                            const bankText = select2Data[0].text;
+                            // Extract bank name from format: "AccountNumber - BankName (Currency)"
+                            const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
+                            const bankName = bankMatch ? bankMatch[1].trim() : bankText;
+                            receiverName = 'سیستم - ' + bankName;
+                        } else {
+                            // Fallback to native select option
+                            const selectedOption = receiverBankSelect.querySelector(`option[value="${receiverBankId}"]`);
+                            if (selectedOption && selectedOption.textContent) {
+                                const bankText = selectedOption.textContent;
+                                const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
+                                const bankName = bankMatch ? bankMatch[1].trim() : bankText;
+                                receiverName = 'سیستم - ' + bankName;
+                            } else {
+                                receiverName = 'سیستم (حساب شناسه: ' + receiverBankId + ')';
+                            }
+                        }
+                    } catch (e) {
+                        // Fallback if Select2 fails
+                        const selectedOption = receiverBankSelect.querySelector(`option[value="${receiverBankId}"]`);
+                        if (selectedOption && selectedOption.textContent) {
+                            const bankText = selectedOption.textContent;
+                            const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
+                            const bankName = bankMatch ? bankMatch[1].trim() : bankText;
+                            receiverName = 'سیستم - ' + bankName;
+                        } else {
+                            receiverName = 'سیستم (حساب شناسه: ' + receiverBankId + ')';
+                        }
+                    }
+                } else {
+                    receiverName = 'سیستم (حساب انتخاب نشده)';
+                }
+            }
+            document.getElementById('preview-receiver').textContent = receiverName;
+            
+            // Date
+            const docDate = formData.get('DocumentDate');
+            if (docDate) {
+                const date = new Date(docDate);
+                const persianDate = date.toLocaleDateString('fa-IR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                document.getElementById('preview-date').textContent = persianDate;
+            } else {
+                document.getElementById('preview-date').textContent = 'تاریخ انتخاب نشده';
+            }
+            
+            // Reference number
+            const refNumber = formData.get('ReferenceNumber');
+            if (refNumber && refNumber.trim()) {
+                document.getElementById('preview-reference').style.display = 'block';
+                document.getElementById('preview-reference-number').textContent = refNumber;
+                
+                // Apply reference number protection immediately
+                setTimeout(function() {
+                    const refElement = document.getElementById('preview-reference-number');
+                    if (refElement) {
+                        refElement.setAttribute('data-original-value', refNumber);
+                        refElement.classList.add('no-format-number', 'protected-reference');
+                        refElement.setAttribute('data-no-format', 'true');
+                        refElement.setAttribute('data-protected', 'true');
+                        refElement.setAttribute('data-no-comma', 'true');
+                    }
+                }, 50);
+            } else {
+                document.getElementById('preview-reference').style.display = 'none';
+            }
+            
+            console.log('🎉 ULTIMATE DEBUG: populateTransactionPreview() COMPLETED!');
+            console.log('📊 FINAL SUMMARY:');
+            console.log(`  Type: "${document.getElementById('preview-type').textContent}"`);
+            console.log(`  Payer: "${document.getElementById('preview-payer').textContent}"`);
+            console.log(`  Receiver: "${document.getElementById('preview-receiver').textContent}"`);
+            console.log(`  Title: "${document.getElementById('preview-title').textContent}"`);
+            console.log(`  Amount: "${document.getElementById('preview-amount').textContent}"`);
+            console.log(`  Date: "${document.getElementById('preview-date').textContent}"`);
+        }
+
+        function fetchBalanceEffects() {
+            const form = document.querySelector('form');
+            
+            // Create a structured object instead of FormData for better model binding
+            const transactionData = {
+                Type: parseInt(form.querySelector('[name="Type"]').value) || 0,
+                PayerType: parseInt(form.querySelector('[name="PayerType"]').value) || 0,
+                ReceiverType: parseInt(form.querySelector('[name="ReceiverType"]').value) || 0,
+                PayerCustomerId: form.querySelector('[name="PayerCustomerId"]').value || null,
+                ReceiverCustomerId: form.querySelector('[name="ReceiverCustomerId"]').value || null,
+                PayerBankAccountId: form.querySelector('[name="PayerBankAccountId"]').value || null,
+                ReceiverBankAccountId: form.querySelector('[name="ReceiverBankAccountId"]').value || null,
+                Amount: parseFloat(form.querySelector('[name="Amount"]').value) || 0,
+                CurrencyCode: form.querySelector('[name="CurrencyCode"]').value || '',
+                Title: form.querySelector('[name="Title"]').value || '',
+                Description: form.querySelector('[name="Description"]').value || '',
+                DocumentDate: form.querySelector('[name="DocumentDate"]').value || '',
+                ReferenceNumber: form.querySelector('[name="ReferenceNumber"]').value || ''
+            };
+            
+            // Convert empty strings to null for proper model binding
+            Object.keys(transactionData).forEach(key => {
+                if (transactionData[key] === '' || transactionData[key] === 'null') {
+                    transactionData[key] = null;
+                }
+            });
+            
+            // Debug: Log transaction data being sent
+            console.log('Sending transaction data for balance effects:', transactionData);
+            
+            // Get anti-forgery token
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            fetch('@Url.Action("PreviewTransactionEffects", "AccountingDocuments")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify(transactionData)
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error('Error response body:', text);
+                        throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}...`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Balance effects response:', data);
+                
+                document.getElementById('balance-effects-loading').style.display = 'none';
+                document.getElementById('balance-effects-content').style.display = 'block';
+                
+                if (data.success) {
+                    displayBalanceEffects(data.effects);
+                    displayWarnings(data.warnings);
+                } else {
+                    document.getElementById('balance-effects-content').innerHTML = 
+                        '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> خطا در محاسبه تأثیرات: ' + (data.message || 'خطای نامشخص') + '</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching balance effects:', error);
+                
+                document.getElementById('balance-effects-loading').style.display = 'none';
+                document.getElementById('balance-effects-content').style.display = 'block';
+                document.getElementById('balance-effects-content').innerHTML = 
+                    '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> خطا در ارتباط با سرور: ' + error.message + 
+                    '<br><small class="mt-2 d-block">جزئیات خطا در کنسول مرورگر قابل مشاهده است.</small></div>';
+            });
+        }
+
+        function displayBalanceEffects(effects) {
+            console.log('Balance Effects Data:', effects); // Debug log
+            let hasAnyEffects = false;
+            
+            // Customer effects
+            if (effects.customerEffects && effects.customerEffects.length > 0) {
+                const customerDiv = document.getElementById('customer-effects');
+                const customerList = document.getElementById('customer-effects-list');
+                let customerHtml = '';
+                
+                effects.customerEffects.forEach(effect => {
+                    const changeClass = effect.change >= 0 ? 'text-success' : 'text-danger';
+                    const changeIcon = effect.change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+                    const formattedChange = Math.abs(effect.change).toLocaleString('fa-IR');
+                    const formattedNewBalance = effect.newBalance.toLocaleString('fa-IR');
+                    
+                    customerHtml += `
+                        <div class="border rounded p-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>${effect.customerName}</strong>
+                                <span class="badge bg-secondary">${effect.currency}</span>
+                            </div>
+                            <div class="small mt-1">
+                                <div>تراز فعلی: <span class="fw-bold">${effect.currentBalance.toLocaleString('fa-IR')} ${effect.currency}</span></div>
+                                <div>تغییر: <span class="${changeClass} fw-bold">
+                                    <i class="${changeIcon}"></i> ${formattedChange} ${effect.currency}
+                                </span></div>
+                                <div>تراز جدید: <span class="fw-bold text-primary">${formattedNewBalance} ${effect.currency}</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                customerList.innerHTML = customerHtml;
+                customerDiv.style.display = 'block';
+                hasAnyEffects = true;
+            } else {
+                document.getElementById('customer-effects').style.display = 'none';
+            }
+            
+            // Bank account effects
+            if (effects.bankAccountEffects && effects.bankAccountEffects.length > 0) {
+                console.log('Bank Account Effects Found:', effects.bankAccountEffects); // Debug log
+                const bankDiv = document.getElementById('bank-effects');
+                const bankList = document.getElementById('bank-effects-list');
+                let bankHtml = '';
+                
+                effects.bankAccountEffects.forEach(effect => {
+                    const changeClass = effect.change >= 0 ? 'text-success' : 'text-danger';
+                    const changeIcon = effect.change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+                    const formattedChange = Math.abs(effect.change).toLocaleString('fa-IR');
+                    const formattedNewBalance = effect.newBalance.toLocaleString('fa-IR');
+                    
+                    bankHtml += `
+                        <div class="border rounded p-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>${effect.bankName} - ${effect.accountNumber}</strong>
+                                <span class="badge bg-info">${effect.currency}</span>
+                            </div>
+                            <div class="small mt-1">
+                                <div>تراز فعلی: <span class="fw-bold">${effect.currentBalance.toLocaleString('fa-IR')} ${effect.currency}</span></div>
+                                <div>تغییر: <span class="${changeClass} fw-bold">
+                                    <i class="${changeIcon}"></i> ${formattedChange} ${effect.currency}
+                                </span></div>
+                                <div>تراز جدید: <span class="fw-bold text-primary">${formattedNewBalance} ${effect.currency}</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                bankList.innerHTML = bankHtml;
+                bankDiv.style.display = 'block';
+                hasAnyEffects = true;
+            } else {
+                console.log('No Bank Account Effects Found'); // Debug log
+                document.getElementById('bank-effects').style.display = 'none';
+            }
+            
+            // Currency pool effects
+            if (effects.poolEffects && effects.poolEffects.length > 0) {
+                const poolDiv = document.getElementById('pool-effects');
+                const poolList = document.getElementById('pool-effects-list');
+                let poolHtml = '';
+                
+                effects.poolEffects.forEach(effect => {
+                    const changeClass = effect.change >= 0 ? 'text-success' : 'text-danger';
+                    const changeIcon = effect.change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
+                    const formattedChange = Math.abs(effect.change).toLocaleString('fa-IR');
+                    const formattedNewBalance = effect.newBalance.toLocaleString('fa-IR');
+                    
+                    poolHtml += `
+                        <div class="border rounded p-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>صندوق ${effect.currencyName}</strong>
+                                <span class="badge bg-warning">${effect.currency}</span>
+                            </div>
+                            <div class="small mt-1">
+                                <div>تراز فعلی: <span class="fw-bold">${effect.currentBalance.toLocaleString('fa-IR')} ${effect.currency}</span></div>
+                                <div>تغییر: <span class="${changeClass} fw-bold">
+                                    <i class="${changeIcon}"></i> ${formattedChange} ${effect.currency}
+                                </span></div>
+                                <div>تراز جدید: <span class="fw-bold text-primary">${formattedNewBalance} ${effect.currency}</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                poolList.innerHTML = poolHtml;
+                poolDiv.style.display = 'block';
+                hasAnyEffects = true;
+            } else {
+                document.getElementById('pool-effects').style.display = 'none';
+            }
+            
+            // Show message if no effects found
+            if (!hasAnyEffects) {
+                document.getElementById('balance-effects-content').innerHTML = 
+                    '<div class="alert alert-info"><i class="fas fa-info-circle"></i> هیچ تأثیری بر ترازها یافت نشد. ممکن است تراکنش فقط بین حساب‌های یکسان باشد.</div>';
+            }
+        }
+
+        function displayWarnings(warnings) {
+            if (warnings && warnings.length > 0) {
+                const warningsDiv = document.getElementById('confirmation-warnings');
+                const warningsList = document.getElementById('warnings-list');
+                
+                let warningsHtml = '';
+                warnings.forEach(warning => {
+                    warningsHtml += `<li>${warning}</li>`;
+                });
+                
+                warningsList.innerHTML = warningsHtml;
+                warningsDiv.style.display = 'block';
+            } else {
+                document.getElementById('confirmation-warnings').style.display = 'none';
+            }
+        }
+
+        // Confirm submit button handler
+        document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+            modal.hide();
+            
+            // Submit form
+            const form = document.querySelector('form');
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Temporarily remove the event listener to allow actual submission
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            // Submit the new form
+            newForm.submit();
+        });
         
         } // End of initializePageScripts function
     </script>
