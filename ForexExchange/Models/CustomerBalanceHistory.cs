@@ -67,6 +67,10 @@ namespace ForexExchange.Models
         [Display(Name = "Description - توضیحات")]
         public string? Description { get; set; }
 
+        [StringLength(50)]
+        [Display(Name = "Transaction Number - شماره تراکنش")]
+        public string? TransactionNumber { get; set; }
+
         [Required]
         [Display(Name = "Transaction Date - تاریخ تراکنش")]
         public DateTime TransactionDate { get; set; }

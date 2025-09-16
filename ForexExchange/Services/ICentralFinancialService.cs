@@ -102,7 +102,7 @@ namespace ForexExchange.Services
         /// Preserves exact logic from existing bank account processing
         /// </summary>
         Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType, 
-            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null);
+            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null, string? transactionNumber = null);
         
         /// <summary>
         /// Manually adjusts bank account balance with audit trail
@@ -163,7 +163,7 @@ namespace ForexExchange.Services
         /// After creating manual records, use RecalculateAllBalancesFromTransactionDatesAsync to ensure coherence.
         /// </summary>
         Task CreateManualCustomerBalanceHistoryAsync(int customerId, string currencyCode, decimal amount, 
-            string reason, DateTime transactionDate, string performedBy = "Manual Entry");
+            string reason, DateTime transactionDate, string performedBy = "Manual Entry", string? transactionNumber = null);
 
         /// <summary>
         /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders

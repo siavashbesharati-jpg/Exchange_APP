@@ -108,7 +108,8 @@ namespace ForexExchange.Services
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy,
-                    transactionDate: document.DocumentDate // Use document date
+                    transactionDate: document.DocumentDate, // Use document date
+                    transactionNumber: document.ReferenceNumber
                 );
             }
 
@@ -122,7 +123,8 @@ namespace ForexExchange.Services
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy,
-                    transactionDate: document.DocumentDate // Use document date
+                    transactionDate: document.DocumentDate, // Use document date
+                    transactionNumber: document.ReferenceNumber
                 );
             }
 
@@ -136,7 +138,8 @@ namespace ForexExchange.Services
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy,
-                    transactionDate: document.DocumentDate // Use document date
+                    transactionDate: document.DocumentDate, // Use document date
+                    transactionNumber: document.ReferenceNumber
                 );
             }
 
@@ -149,7 +152,8 @@ namespace ForexExchange.Services
                     relatedDocumentId: document.Id,
                     reason: $"Document {document.Id}: {document.Title}",
                     performedBy: performedBy,
-                    transactionDate: document.DocumentDate // Use document date
+                    transactionDate: document.DocumentDate, // Use document date
+                    transactionNumber: document.ReferenceNumber
                 );
             }
 
@@ -253,7 +257,7 @@ namespace ForexExchange.Services
         }
 
         public async Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
-            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null)
+            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null, string? transactionNumber = null)
         {
             await UpdateBankAccountBalanceAsync(
                 bankAccountId: bankAccountId,
@@ -262,7 +266,8 @@ namespace ForexExchange.Services
                 relatedDocumentId: relatedDocumentId,
                 reason: reason,
                 performedBy: performedBy,
-                transactionDate: transactionDate
+                transactionDate: transactionDate,
+                transactionNumber: transactionNumber
             );
         }
 
@@ -285,15 +290,15 @@ namespace ForexExchange.Services
 
         private async Task UpdateCustomerBalanceAsync(int customerId, string currencyCode, decimal amount,
             CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null,
-            string? reason = null, string performedBy = "System", DateTime? transactionDate = null)
+            string? reason = null, string performedBy = "System", DateTime? transactionDate = null, string? transactionNumber = null)
         {
             await UpdateCustomerBalanceInternalAsync(customerId, currencyCode, amount, transactionType, 
-                relatedOrderId, relatedDocumentId, reason, performedBy, useTransaction: true, transactionDate);
+                relatedOrderId, relatedDocumentId, reason, performedBy, useTransaction: true, transactionDate, transactionNumber);
         }
 
         private async Task UpdateCustomerBalanceInternalAsync(int customerId, string currencyCode, decimal amount,
             CustomerBalanceTransactionType transactionType, int? relatedOrderId = null, int? relatedDocumentId = null,
-            string? reason = null, string performedBy = "System", bool useTransaction = true, DateTime? transactionDate = null)
+            string? reason = null, string performedBy = "System", bool useTransaction = true, DateTime? transactionDate = null, string? transactionNumber = null)
         {
             IDbContextTransaction? transaction = null;
             if (useTransaction)
@@ -334,6 +339,7 @@ namespace ForexExchange.Services
                     TransactionType = transactionType,
                     ReferenceId = relatedOrderId ?? relatedDocumentId,
                     Description = reason ?? GetTransactionTypeDescription(transactionType),
+                    TransactionNumber = transactionNumber,
                     TransactionDate = transactionDate ?? DateTime.UtcNow, // Use provided date or current time
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = performedBy
@@ -491,7 +497,7 @@ namespace ForexExchange.Services
         }
 
         private async Task UpdateBankAccountBalanceAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
-            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null)
+            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null, string? transactionNumber = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -524,6 +530,7 @@ namespace ForexExchange.Services
                     TransactionType = transactionType,
                     ReferenceId = relatedDocumentId,
                     Description = reason,
+                    TransactionNumber = transactionNumber,
                     TransactionDate = transactionDate ?? DateTime.UtcNow, // Use provided date or current time
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = performedBy
@@ -1581,7 +1588,8 @@ namespace ForexExchange.Services
             decimal amount, 
             string reason, 
             DateTime transactionDate, 
-            string performedBy = "Manual Entry")
+            string performedBy = "Manual Entry",
+            string? transactionNumber = null)
         {
             _logger.LogInformation($"Creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}, Date {transactionDate:yyyy-MM-dd}");
 
@@ -1621,6 +1629,7 @@ namespace ForexExchange.Services
                     TransactionType = CustomerBalanceTransactionType.Manual,
                     ReferenceId = null, // Manual entries don't have reference IDs
                     Description = reason,
+                    TransactionNumber = transactionNumber,
                     TransactionDate = transactionDate, // Use the specified date
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = performedBy
