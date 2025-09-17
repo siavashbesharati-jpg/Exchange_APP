@@ -14,12 +14,14 @@ namespace ForexExchange.Extensions
         /// <param name="value">The decimal value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
         /// <returns>Formatted string with thousand separators</returns>
-        public static string FormatCurrency(this decimal value, string currencyCode = null)
+        public static string FormatCurrency(this decimal value, string? currencyCode = null)
         {
-            // For IRR (Iranian Rial), use no decimal places and round to nearest whole number
+            // For IRR (Iranian Rial), round up to the nearest thousand and drop the last three digits
             if (currencyCode == "IRR")
             {
-                return Math.Round(value).ToString("N0", CultureInfo.InvariantCulture);
+                var divided = value / 1000;
+                var roundedUp = Math.Ceiling(divided);
+                return roundedUp.ToString("N0", CultureInfo.InvariantCulture);
             }
             
             // For non-IRR currencies, use up to 3 decimal places with proper rounding, remove trailing zeros
@@ -43,7 +45,7 @@ namespace ForexExchange.Extensions
         /// <param name="value">The double value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
         /// <returns>Formatted string with thousand separators</returns>
-        public static string FormatCurrency(this double value, string currencyCode = null)
+        public static string FormatCurrency(this double value, string? currencyCode = null)
         {
             return ((decimal)value).FormatCurrency(currencyCode);
         }
@@ -54,7 +56,7 @@ namespace ForexExchange.Extensions
         /// <param name="value">The float value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
         /// <returns>Formatted string with thousand separators</returns>
-        public static string FormatCurrency(this float value, string currencyCode = null)
+        public static string FormatCurrency(this float value, string? currencyCode = null)
         {
             return ((decimal)value).FormatCurrency(currencyCode);
         }
@@ -85,7 +87,7 @@ namespace ForexExchange.Extensions
         /// <param name="value">The nullable decimal value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
         /// <returns>Formatted string with thousand separators, or empty string if null</returns>
-        public static string FormatCurrency(this decimal? value, string currencyCode = null)
+        public static string FormatCurrency(this decimal? value, string? currencyCode = null)
         {
             return value?.FormatCurrency(currencyCode) ?? "";
         }
@@ -96,7 +98,7 @@ namespace ForexExchange.Extensions
         /// <param name="value">The nullable double value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
         /// <returns>Formatted string with thousand separators, or empty string if null</returns>
-        public static string FormatCurrency(this double? value, string currencyCode = null)
+        public static string FormatCurrency(this double? value, string? currencyCode = null)
         {
             return value?.FormatCurrency(currencyCode) ?? "";
         }
