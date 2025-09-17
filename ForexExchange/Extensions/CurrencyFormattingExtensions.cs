@@ -102,5 +102,27 @@ namespace ForexExchange.Extensions
         {
             return value?.FormatCurrency(currencyCode) ?? "";
         }
+
+        /// <summary>
+        /// Rounds a decimal value based on currency-specific rules.
+        /// For IRR, rounds up to the nearest 1000. For others, rounds to 3 decimal places.
+        /// This affects the actual value, not just the display format.
+        /// </summary>
+        /// <param name="value">The decimal value to round.</param>
+        /// <param name="currencyCode">The currency code (e.g., "IRR").</param>
+        /// <returns>The rounded decimal value.</returns>
+        public static decimal RoundToCurrencyDefaults(this decimal value, string? currencyCode)
+        {
+            if (currencyCode == "IRR")
+            {
+                // For IRR, we round up to the nearest 1000.
+                return Math.Ceiling(value / 1000) * 1000;
+            }
+            else
+            {
+                // For other currencies, round to 3 decimal places.
+                return Math.Round(value, 3, MidpointRounding.AwayFromZero);
+            }
+        }
     }
 }
