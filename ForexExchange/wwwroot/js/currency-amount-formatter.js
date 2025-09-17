@@ -407,6 +407,9 @@ class CurrencyAmountFormatter {
         const tooltip = this.tooltips.get(input);
         if (!tooltip) return;
 
+        const currency = input.getAttribute('data-currency');
+        const isIRR = currency && currency.toUpperCase() === 'IRR';
+
         let content = '';
         
         // Add close button at the top
@@ -417,19 +420,30 @@ class CurrencyAmountFormatter {
             <i class="fas fa-times"></i>
         </div>`;
         
-        // Add formatted number (with top padding to avoid close button)
-        // Show for any valid number including zero and small numbers
-        if (formattedNumber) {
-            content += `<div class="formatted-number" style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 20px 20px 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
-                <span style="font-size: 14px;">${formattedNumber}</span>
-            </div>`;
-        }
+        if (isIRR) {
+            // For IRR, show value as-is with Toman label (no division)
+            const tomanFormatted = new Intl.NumberFormat('en-US').format(Math.round(numericValue));
+            const tomanWords = this.converter.convertToPersianWords(numericValue) + ' تومان';
 
-        // Add Persian words (with right padding to avoid close button)
-        if (persianWords) {
-            content += `<div style="color: #FFE082; font-size: 12px; line-height: 1.5; padding: 4px 20px 4px 0;">
-                <span>${persianWords}</span>
+            content += `<div class="formatted-number" style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 20px 20px 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                <span style="font-size: 14px;">${tomanFormatted} تومان</span>
             </div>`;
+            content += `<div style="color: #FFE082; font-size: 12px; line-height: 1.5; padding: 4px 20px 4px 0;">
+                <span>${tomanWords}</span>
+            </div>`;
+
+        } else {
+            // For other currencies
+            if (formattedNumber) {
+                 content += `<div class="formatted-number" style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 20px 20px 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                    <span style="font-size: 14px;">${formattedNumber}</span>
+                </div>`;
+            }
+            if (persianWords) {
+                content += `<div style="color: #FFE082; font-size: 12px; line-height: 1.5; padding: 4px 20px 4px 0;">
+                    <span>${persianWords}</span>
+                </div>`;
+            }
         }
 
         // Keep the arrow element

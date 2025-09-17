@@ -16,10 +16,10 @@ namespace ForexExchange.Extensions
         /// <returns>Formatted string with thousand separators</returns>
         public static string FormatCurrency(this decimal value, string? currencyCode = null)
         {
-            // For IRR, the value is already rounded in the DB. Divide by 1000 for display.
+            // For IRR, display the value as-is with thousand separators (no division)
             if (currencyCode == "IRR")
             {
-                return (value / 1000).ToString("N0", CultureInfo.InvariantCulture);
+                return value.ToString("N0", CultureInfo.InvariantCulture);
             }
             
             // For non-IRR currencies, format with up to 8 decimal places and remove trailing zeros.

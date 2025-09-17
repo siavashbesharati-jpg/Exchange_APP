@@ -33,9 +33,8 @@ window.ForexCurrencyFormatter = (function() {
         const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
         
         if (isIRR) {
-            // IRR: No decimals, round to nearest whole number
-            const rounded = Math.round(numAmount);
-            return new Intl.NumberFormat('en-US').format(rounded);
+            // IRR: display value as-is with thousand separators (no division)
+            return new Intl.NumberFormat('en-US').format(Math.round(numAmount));
         } else {
             // Non-IRR: 3 decimal places with proper rounding, remove trailing zeros
             const rounded = Math.round(numAmount * 1000) / 1000; // Round to 3 decimals
