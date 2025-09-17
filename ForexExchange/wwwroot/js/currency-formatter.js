@@ -33,8 +33,8 @@ window.ForexCurrencyFormatter = (function() {
         const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
         
         if (isIRR) {
-            // IRR: No decimals, round to nearest whole number
-            const rounded = Math.round(numAmount);
+            // IRR: Smart rounding to nearest appropriate unit
+            const rounded = roundIRRToNearestUnit(numAmount);
             return new Intl.NumberFormat('en-US').format(rounded);
         } else {
             // Non-IRR: 3 decimal places with proper rounding, remove trailing zeros
@@ -115,6 +115,54 @@ window.ForexCurrencyFormatter = (function() {
         }
         
         return true; // Non-IRR can have decimals
+    }
+
+    /**
+     * Smart rounding for IRR amounts - always rounds UP (ceiling) to the nearest appropriate unit
+     * Automatically detects the best rounding unit (billion, million, thousand, hundred, ten)
+     * and always rounds up to the nearest multiple of that unit
+     * @param {number} value - The IRR amount to round
+     * @returns {number} Rounded amount UP to the nearest appropriate unit
+     */
+    function roundIRRToNearestUnit(value) {
+        // Handle zero
+        if (value === 0) return 0;
+
+        // For negative numbers, we need special handling to maintain "rounding up" behavior
+        // For negatives, "rounding up" means getting closer to zero (less negative)
+        const isNegative = value < 0;
+        const absValue = Math.abs(value);
+
+        let roundedValue;
+
+        if (absValue >= 1_000_000_000) { // 1 billion and above
+            // Round UP to nearest billion
+            const billions = absValue / 1_000_000_000;
+            roundedValue = Math.ceil(billions) * 1_000_000_000;
+        } else if (absValue >= 1_000_000) { // 1 million to 999 million
+            // Round UP to nearest million
+            const millions = absValue / 1_000_000;
+            roundedValue = Math.ceil(millions) * 1_000_000;
+        } else if (absValue >= 1_000) { // 1 thousand to 999 thousand
+            // Round UP to nearest thousand
+            const thousands = absValue / 1_000;
+            roundedValue = Math.ceil(thousands) * 1_000;
+        } else if (absValue >= 100) { // 100 to 999
+            // Round UP to nearest hundred
+            const hundreds = absValue / 100;
+            roundedValue = Math.ceil(hundreds) * 100;
+        } else if (absValue >= 10) { // 10 to 99
+            // Round UP to nearest ten
+            const tens = absValue / 10;
+            roundedValue = Math.ceil(tens) * 10;
+        } else { // Less than 10
+            // Round UP to nearest whole number
+            roundedValue = Math.ceil(absValue);
+        }
+
+        // For negative numbers, we want to round towards zero (less negative)
+        // So we apply the negative sign to the ceiling result
+        return isNegative ? -roundedValue : roundedValue;
     }
 
     // Public API

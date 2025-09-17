@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <title>IRR Smart Rounding Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-case { 
+            margin: 10px 0; 
+            padding: 10px; 
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-case.pass { border-color: #28a745; background-color: #d4edda; }
+        .test-case.fail { border-color: #dc3545; background-color: #f8d7da; }
+        .input { color: #6c757d; font-family: monospace; }
+        .output { color: #495057; font-weight: bold; font-family: monospace; }
+        .expected { color: #28a745; font-family: monospace; }
+        .status { 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            color: white; 
+            font-size: 12px;
+        }
+        .pass .status { background-color: #28a745; }
+        .fail .status { background-color: #dc3545; }
+        h1 { color: #343a40; text-align: center; }
+        h2 { color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; }
+        .live-test {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .live-test input {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin: 5px;
+            width: 200px;
+        }
+        .live-result {
+            font-size: 18px;
+            font-weight: bold;
+            color: #495057;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 IRR Smart Ceiling Rounding Test</h1>
+        <p style="text-align: center; color: #6c757d;">Testing intelligent ceiling rounding: always rounds UP to nearest unit (billion, million, thousand, hundred, ten)</p>
+
+        <div class="live-test">
+            <h3>🔴 Live Test:</h3>
+            <p>Enter an IRR amount: <input type="number" id="testInput" step="0.01" placeholder="Enter IRR amount..." /></p>
+            <div class="live-result">
+                Formatted Result: <span id="result">-</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔢 Billion Range Tests (≥ 1,000,000,000)</h2>
+            <div id="billion-tests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💰 Million Range Tests (1,000,000 - 999,999,999)</h2>
+            <div id="million-tests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💵 Thousand Range Tests (1,000 - 999,999)</h2>
+            <div id="thousand-tests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💴 Hundred Range Tests (100 - 999)</h2>
+            <div id="hundred-tests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💶 Ten Range Tests (10 - 99)</h2>
+            <div id="ten-tests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💷 Single Digit Tests (0 - 9)</h2>
+            <div id="single-tests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>➖ Negative Number Tests</h2>
+            <div id="negative-tests"></div>
+        </div>
+    </div>
+
+    <script src="./js/currency-formatter.js"></script>
+    <script>
+        // Test cases organized by range - Updated for ceiling behavior
+        const testCases = {
+            billion: [
+                { input: 1445990000, expected: "1,446,000,000", description: "1,445,990,000 → 1,446,000,000 (your example)" },
+                { input: 1000000001, expected: "2,000,000,000", description: "1B+1 → 2B (ceiling)" },
+                { input: 1500000000, expected: "2,000,000,000", description: "1.5B → 2B (ceiling)" },
+                { input: 2750000000, expected: "3,000,000,000", description: "2.75B → 3B (ceiling)" },
+                { input: 1000000000, expected: "1,000,000,000", description: "1B → 1B (exact)" }
+            ],
+            million: [
+                { input: 1445949954, expected: "1,445,950,000", description: "1,445,949,954 → 1,445,950,000 (your example)" },
+                { input: 1500000, expected: "2,000,000", description: "1.5M → 2M (ceiling)" },
+                { input: 1000001, expected: "2,000,000", description: "1M+1 → 2M (ceiling)" },
+                { input: 2750000, expected: "3,000,000", description: "2.75M → 3M (ceiling)" },
+                { input: 1000000, expected: "1,000,000", description: "1M → 1M (exact)" }
+            ],
+            thousand: [
+                { input: 123456, expected: "130,000", description: "123,456 → 130,000 (your example)" },
+                { input: 1500, expected: "2,000", description: "1.5K → 2K (ceiling)" },
+                { input: 1001, expected: "2,000", description: "1,001 → 2K (ceiling)" },
+                { input: 2750, expected: "3,000", description: "2.75K → 3K (ceiling)" },
+                { input: 1000, expected: "1,000", description: "1K → 1K (exact)" }
+            ],
+            hundred: [
+                { input: 457, expected: "500", description: "457 → 500 (your example)" },
+                { input: 150, expected: "200", description: "150 → 200 (ceiling)" },
+                { input: 101, expected: "200", description: "101 → 200 (ceiling)" },
+                { input: 275, expected: "300", description: "275 → 300 (ceiling)" },
+                { input: 100, expected: "100", description: "100 → 100 (exact)" }
+            ],
+            ten: [
+                { input: 89, expected: "90", description: "89 → 90 (your example)" },
+                { input: 15, expected: "20", description: "15 → 20 (ceiling)" },
+                { input: 11, expected: "20", description: "11 → 20 (ceiling)" },
+                { input: 27, expected: "30", description: "27 → 30 (ceiling)" },
+                { input: 10, expected: "10", description: "10 → 10 (exact)" }
+            ],
+            single: [
+                { input: 5.7, expected: "6", description: "5.7 → 6 (ceiling)" },
+                { input: 3.2, expected: "4", description: "3.2 → 4 (ceiling)" },
+                { input: 7.5, expected: "8", description: "7.5 → 8 (ceiling)" },
+                { input: 1.1, expected: "2", description: "1.1 → 2 (ceiling)" },
+                { input: 0, expected: "0", description: "0 → 0" }
+            ],
+            negative: [
+                { input: -1500000000, expected: "-2,000,000,000", description: "-1.5B → -2B (ceiling towards zero)" },
+                { input: -457, expected: "-500", description: "-457 → -500 (ceiling towards zero)" },
+                { input: -89, expected: "-90", description: "-89 → -90 (ceiling towards zero)" },
+                { input: -15, expected: "-20", description: "-15 → -20 (ceiling towards zero)" },
+                { input: -7.5, expected: "-8", description: "-7.5 → -8 (ceiling towards zero)" }
+            ]
+        };
+
+        function runTestSuite() {
+            let totalTests = 0;
+            let passedTests = 0;
+
+            Object.keys(testCases).forEach(category => {
+                const container = document.getElementById(`${category}-tests`);
+                testCases[category].forEach(test => {
+                    totalTests++;
+                    const result = window.formatCurrency(test.input, 'IRR');
+                    const passed = result === test.expected;
+                    if (passed) passedTests++;
+
+                    const testElement = document.createElement('div');
+                    testElement.className = `test-case ${passed ? 'pass' : 'fail'}`;
+                    testElement.innerHTML = `
+                        <div>
+                            <strong>${test.description}</strong><br>
+                            <span class="input">Input: ${test.input}</span>
+                        </div>
+                        <div>
+                            <div class="output">Got: ${result}</div>
+                            <div class="expected">Expected: ${test.expected}</div>
+                        </div>
+                        <div class="status">${passed ? 'PASS' : 'FAIL'}</div>
+                    `;
+                    container.appendChild(testElement);
+                });
+            });
+
+            // Add summary
+            const summary = document.createElement('div');
+            summary.style.cssText = 'text-align: center; margin: 20px 0; padding: 15px; background: #e9ecef; border-radius: 8px;';
+            summary.innerHTML = `
+                <h3>📊 Test Summary</h3>
+                <p><strong>${passedTests}/${totalTests}</strong> tests passed (${Math.round(passedTests/totalTests*100)}%)</p>
+            `;
+            document.body.appendChild(summary);
+        }
+
+        // Live testing
+        const input = document.getElementById('testInput');
+        const result = document.getElementById('result');
+        
+        input.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                const formatted = window.formatCurrency(value, 'IRR');
+                result.textContent = formatted;
+                result.style.color = '#28a745';
+            } else {
+                result.textContent = '-';
+                result.style.color = '#6c757d';
+            }
+        });
+
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', runTestSuite);
+    </script>
+</body>
+</html>
