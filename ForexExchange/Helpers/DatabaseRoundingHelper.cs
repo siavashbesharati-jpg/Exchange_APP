@@ -133,8 +133,8 @@ namespace ForexExchange.Helpers
         {
             if (currencyCode == "IRR")
             {
-                // Divide by 1000 and round up to the nearest whole number
-                return Math.Ceiling(value / 1000);
+                // For IRR, we round up to the nearest 1000.
+                return Math.Ceiling(value / 1000) * 1000;
             }
             else
             {
