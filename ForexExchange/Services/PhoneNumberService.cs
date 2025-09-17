@@ -64,15 +64,18 @@ namespace ForexExchange.Services
         /// </summary>
         /// <param name="normalizedPhoneNumber">Normalized phone number</param>
         /// <returns>True if valid</returns>
-        public static bool IsValidNormalizedPhoneNumber(string normalizedPhoneNumber)
+        public static bool IsValidNormalizedPhoneNumber(string? normalizedPhoneNumber)
         {
             if (string.IsNullOrWhiteSpace(normalizedPhoneNumber))
                 return false;
 
-            // Should start with 00 followed by country code and number
-            // Minimum length: 00 + 2-digit country code + 8-digit number = 12
+            // Must start with "00" and be followed only by digits.
+            if (!Regex.IsMatch(normalizedPhoneNumber, @"^00\d+$"))
+                return false;
+
+            // Minimum length: 00 + 1-digit country code + 4-digit number = 7
             // Maximum length: 00 + 3-digit country code + 15-digit number = 20
-            return true;
+            return normalizedPhoneNumber.Length >= 7 && normalizedPhoneNumber.Length <= 20;
         }
 
         /// <summary>
@@ -83,27 +86,11 @@ namespace ForexExchange.Services
         /// <returns>Display format</returns>
         public static string GetDisplayFormat(string normalizedPhoneNumber)
         {
-            if (string.IsNullOrWhiteSpace(normalizedPhoneNumber) || normalizedPhoneNumber.Length < 4)
+            if (string.IsNullOrWhiteSpace(normalizedPhoneNumber) || !normalizedPhoneNumber.StartsWith("00"))
                 return normalizedPhoneNumber;
 
-            // Convert 0098912xxxxxx to +98 912 xxxxxx
-            if (normalizedPhoneNumber.StartsWith("00"))
-            {
-                string countryCode = normalizedPhoneNumber.Substring(2, 2);
-                string number = normalizedPhoneNumber.Substring(4);
-
-                // Special formatting for Iran
-                if (countryCode == "98" && number.Length >= 10)
-                {
-                    return $"+98 {number.Substring(0, 3)} {number.Substring(3)}";
-                }
-                else
-                {
-                    return $"+{countryCode} {number}";
-                }
-            }
-
-            return normalizedPhoneNumber;
+            // Convert 00... to +...
+            return "+" + normalizedPhoneNumber.Substring(2);
         }
 
         /// <summary>
