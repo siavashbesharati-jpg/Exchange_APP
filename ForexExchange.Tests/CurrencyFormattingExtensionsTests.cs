@@ -7,10 +7,10 @@ namespace ForexExchange.Tests
     {
         [Theory]
         // Test cases for IRR: Input values are pre-rounded (as if from DB)
-        [InlineData(5457000000, "IRR", "5,457,000")]
-        [InlineData(3046000000, "IRR", "3,046,000")]
-        [InlineData(13000, "IRR", "13")]
-        [InlineData(1000, "IRR", "1")]
+        [InlineData(5457000000, "IRR", "5,457,000,000")]
+        [InlineData(3046000000, "IRR", "3,046,000,000")]
+        [InlineData(13000, "IRR", "13,000")]
+        [InlineData(1000, "IRR", "1,000")]
         [InlineData(0, "IRR", "0")]
         
         // Test cases for other currencies
