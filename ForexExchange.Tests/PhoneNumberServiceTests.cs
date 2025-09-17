@@ -28,10 +28,13 @@ namespace ForexExchange.Tests
         [InlineData("00989123456789", true)]
         [InlineData("00911234567890", true)]
         [InlineData("0012345678901", true)]
-        [InlineData("0098", true)] // Technically valid based on current logic
-        [InlineData("123", false)]
+        [InlineData("009812345", true)] // Valid length
+        [InlineData("123", false)] // Does not start with 00
+        [InlineData("00", false)] // Too short
+        [InlineData("00123", false)] // Too short
+        [InlineData("0012345678901234567890", false)] // Too long
+        [InlineData("00abc", false)] // Contains non-digits
         [InlineData("", false)]
-        [InlineData(null, false)]
         public void IsValidNormalizedPhoneNumber_ShouldValidateCorrectly(string normalizedPhoneNumber, bool expected)
         {
             // Act
@@ -41,12 +44,22 @@ namespace ForexExchange.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public void IsValidNormalizedPhoneNumber_ShouldReturnFalseForNull()
+        {
+            // Act
+            var result = PhoneNumberService.IsValidNormalizedPhoneNumber(null);
+
+            // Assert
+            Assert.False(result);
+        }
+
         [Theory]
-        [InlineData("00989123456789", "+98 912 3456789")]
-        [InlineData("00919876543210", "+91 9876543210")]
-        [InlineData("0012025550125", "+1 2025550125")]
-        [InlineData("00442079460000", "+44 2079460000")]
-        [InlineData("0098", "+98 ")]
+        [InlineData("00989123456789", "+989123456789")]
+        [InlineData("00919876543210", "+919876543210")]
+        [InlineData("0012025550125", "+12025550125")]
+        [InlineData("00442079460000", "+442079460000")]
+        [InlineData("0098", "+98")]
         [InlineData("invalid", "invalid")]
         public void GetDisplayFormat_ShouldFormatCorrectly(string normalizedPhoneNumber, string expected)
         {
