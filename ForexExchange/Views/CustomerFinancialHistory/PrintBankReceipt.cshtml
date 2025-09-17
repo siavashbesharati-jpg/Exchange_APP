@@ -35,11 +35,11 @@
         }
 
         .receipt-header {
-            background: linear-gradient(135deg, #3498db 0%, #5dade2 100%);
+            background: #001f4d;
             color: white;
             padding: 15px 20px;
             text-align: right;
-            border-bottom: 2px solid #2980b9;
+            border-bottom: 2px solid #001a3a;
             position: relative;
             display: flex;
             align-items: center;
@@ -107,6 +107,8 @@
 
         .print-header {
             display: none;
+            margin-top: 20px;
+            background: #001f4d;
         }
 
         .receipt-info {
@@ -315,7 +317,7 @@
             }
             
             .receipt-header {
-                background: #3498db !important;
+                background: #001f4d !important;
                 -webkit-print-color-adjust: exact;
                 color-adjust: exact;
             }
@@ -329,12 +331,13 @@
 
             .print-header {
                 display: flex !important;
-                background: #3498db !important;
+                background: #001f4d !important;
                 color: white !important;
                 padding: 10px 15px !important;
                 align-items: center !important;
                 gap: 10px !important;
                 margin-bottom: 10px !important;
+                margin-top: 20px !important;
                 -webkit-print-color-adjust: exact;
                 color-adjust: exact;
             }
@@ -406,6 +409,11 @@
         </div>
 
         <!-- Balance Summary -->
+        <!-- Balance Summary (moved back to before transactions) -->
+
+        <!-- Transactions -->
+        <div class="transactions-section">
+        <!-- Balance Summary (should be before transactions) -->
         @if (Model.FinalBalances != null && Model.FinalBalances.Any())
         {
             <div class="balance-summary">
@@ -422,7 +430,7 @@
                                 }
                                 else
                                 {
-                                    @(Math.Round(balance.Value, 2).ToString("0.##") + " " + balance.Key)
+                                    @(balance.Value.ToString("N2") + " " + balance.Key)
                                 }
                             </div>
                         </div>
@@ -430,9 +438,6 @@
                 </div>
             </div>
         }
-
-        <!-- Transactions -->
-        <div class="transactions-section">
             <div class="section-title">تاریخچه تراکنش‌ها</div>
             
             @if (Model.Transactions != null && Model.Transactions.Any())
@@ -457,15 +462,14 @@
                         <table class="transaction-table">
                             <thead>
                                 <tr class="currency-group-header">
-                                    <td colspan="6">تراکنش‌های @currencyGroup.Key (@currencyGroup.Count() تراکنش)</td>
+                                    <td colspan="5">تراکنش‌های @currencyGroup.Key (@currencyGroup.Count() تراکنش)</td>
                                 </tr>
                                 <tr>
-                                    <th width="12%">تاریخ</th>
-                                    <th width="15%">نوع تراکنش</th>
-                                    <th width="10%">شماره تراکنش</th>
-                                    <th width="18%">مبلغ</th>
-                                    <th width="18%">موجودی</th>
-                                    <th width="27%">توضیحات</th>
+                                    <th width="15%">تاریخ</th>
+                                    <th width="18%">نوع تراکنش</th>
+                                    <th width="12%">شماره تراکنش</th>
+                                    <th width="20%">مبلغ</th>
+                                    <th width="20%">موجودی</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -492,7 +496,7 @@
                                             }
                                             else
                                             {
-                                                @(Math.Round(transaction.Amount, 2).ToString("0.##"))
+                                                @(transaction.Amount.ToString("N2"))
                                             }
                                         </td>
                                         <td class="amount-cell">
@@ -502,10 +506,9 @@
                                             }
                                             else
                                             {
-                                                @(Math.Round(transaction.RunningBalance, 2).ToString("0.##"))
+                                                @(transaction.RunningBalance.ToString("N2"))
                                             }
                                         </td>
-                                        <td class="text-right">@(transaction.Description ?? "-")</td>
                                     </tr>
                                 }
                             </tbody>
