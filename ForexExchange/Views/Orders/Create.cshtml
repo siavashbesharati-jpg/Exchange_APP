@@ -154,10 +154,32 @@
                             <span asp-validation-for="Notes" class="text-danger"></span>
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
-                            <button type="submit" class="btn btn-primary">ثبت معامله</button>
-                        </div>
+
+                                                <div class="d-flex justify-content-between">
+                                                        <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                                                        <button type="button" class="btn btn-info" id="previewEffectsBtn">پیش‌نمایش تاثیر</button>
+                                                        <button type="submit" class="btn btn-primary" id="finalSubmitBtn" style="display:none;">تایید و ثبت نهایی</button>
+                                                </div>
+
+                                                <!-- Preview Modal -->
+                                                <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="previewModalLabel">پیش‌نمایش تاثیر معامله</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div id="previewOrderDetails"></div>
+                                                                <div id="previewOrderEffects"></div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                                                                <button type="button" class="btn btn-primary" id="confirmPreviewBtn">تایید و ثبت نهایی</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
 
                         <!-- Hidden fields for calculated values -->
                         <input type="hidden" asp-for="ToAmount" id="hiddenTotalAmount" value="0" />
@@ -177,7 +199,161 @@
     }
 
     <!-- Include Currency Formatter -->
+
     <script src="~/js/currency-formatter.js"></script>
+    <script>
+    // Helper: get form values for preview
+    function getOrderPreviewData() {
+        return {
+            customerId: parseInt(document.getElementById('customerSelect').value) || 0,
+            fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
+            toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
+            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,
+            rate: parseFloat(document.getElementById('calcRateInput').value) || 0
+        };
+    }
+
+    // Show preview modal with order and effect details
+
+    function showPreviewModal(order, effects) {
+                // Helper to get property in both PascalCase and camelCase
+                        function getProp(obj, name) {
+                                return obj[name] ?? obj[name.charAt(0).toLowerCase() + name.slice(1)];
+                        }
+
+                        // Get customer name from dropdown
+                        let customerSelect = document.getElementById('customerSelect');
+                        let customerName = '';
+                        if (customerSelect) {
+                                if (typeof $ !== 'undefined' && $(customerSelect).hasClass('select2-hidden-accessible')) {
+                                        let selected = $(customerSelect).select2('data')[0];
+                                        customerName = selected ? selected.text : '';
+                                } else {
+                                        let idx = customerSelect.selectedIndex;
+                                        customerName = idx > 0 ? customerSelect.options[idx].text : '';
+                                }
+                        }
+
+                        // Get selected date
+                        let dateValue = document.getElementById('createdAtInput')?.value || '';
+
+                        // Currency labels
+                        let fromCurrency = getProp(effects, 'FromCurrencyName') ? `${getProp(effects, 'FromCurrencyName')} (${getProp(effects, 'FromCurrencyCode')})` : getProp(effects, 'FromCurrencyCode') || order.fromCurrencyId;
+                        let toCurrency = getProp(effects, 'ToCurrencyName') ? `${getProp(effects, 'ToCurrencyName')} (${getProp(effects, 'ToCurrencyCode')})` : getProp(effects, 'ToCurrencyCode') || order.toCurrencyId;
+
+                        // Order details table with improved UX
+                        let html = `
+                        <div class="mb-3">
+                            <h5 class="mb-3"><i class="bi bi-receipt"></i> جزئیات سفارش</h5>
+                            <table class="table table-bordered table-sm mb-0">
+                                <tbody>
+                                    <tr><th class="text-center">مشتری</th><td class="text-center">${customerName}</td></tr>
+                                    <tr><th class="text-center">دریافت می کنیم</th><td class="text-center">${fromCurrency}</td></tr>
+                                    <tr><th class="text-center">پرداخت می کنیم</th><td class="text-center">${toCurrency}</td></tr>
+                                    <tr><th class="text-center">مقدار</th><td class="text-center" dir="ltr"><span class="fw-bold">${order.fromAmount}</span></td></tr>
+                                    <tr><th class="text-center">نرخ</th><td class="text-center" dir="ltr">${order.rate}</td></tr>
+                                    <tr><th class="text-center">تاریخ</th><td class="text-center">${dateValue}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>`;
+                        document.getElementById('previewOrderDetails').innerHTML = html;
+
+                        // Effects table, all values text-center
+                        let eff = effects;
+                                let effHtml = `
+                                <div style="background: #fff7e6; border-radius: 8px; padding: 12px 8px 8px 8px;">
+                                    <h5 class="mb-3"><i class="bi bi-bar-chart"></i> تاثیر بر موجودی‌ها</h5>
+                                    <table class="table table-striped table-bordered table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="text-center">نوع</th>
+                                                <th class="text-center">ارز</th>
+                                                <th class="text-center">قبل</th>
+                                                <th class="text-center">بعد</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="text-center"><i class="bi bi-person"></i> مشتری</td>
+                                                <td class="text-center">${fromCurrency}</td>
+                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldCustomerBalanceFrom') ?? '-'}</td>
+                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewCustomerBalanceFrom') ?? '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center"><i class="bi bi-person"></i> مشتری</td>
+                                                <td class="text-center">${toCurrency}</td>
+                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldCustomerBalanceTo') ?? '-'}</td>
+                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewCustomerBalanceTo') ?? '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center"><i class="bi bi-cash-coin"></i> صندوق</td>
+                                                <td class="text-center">${fromCurrency}</td>
+                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldPoolBalanceFrom') ?? '-'}</td>
+                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewPoolBalanceFrom') ?? '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="text-center"><i class="bi bi-cash-coin"></i> صندوق</td>
+                                                <td class="text-center">${toCurrency}</td>
+                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldPoolBalanceTo') ?? '-'}</td>
+                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewPoolBalanceTo') ?? '-'}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>`;
+                        document.getElementById('previewOrderEffects').innerHTML = effHtml;
+
+                        var modal = new bootstrap.Modal(document.getElementById('previewModal'));
+                        modal.show();
+    }
+
+
+    document.getElementById('previewEffectsBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        const data = getOrderPreviewData();
+        fetch('/Orders/PreviewOrderEffects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+            body: JSON.stringify(data)
+        })
+        .then(async res => {
+            if (!res.ok) {
+                let msg = 'خطا در دریافت پیش‌نمایش';
+                try {
+                    const err = await res.text();
+                    msg += ': ' + err;
+                } catch {}
+                document.getElementById('previewOrderDetails').innerHTML = '';
+                document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>${msg}</div>`;
+                var modal = new bootstrap.Modal(document.getElementById('previewModal'));
+                modal.show();
+                console.error(msg);
+                return;
+            }
+            return res.json();
+        })
+        .then(effects => {
+            if (effects) showPreviewModal(data, effects);
+        })
+        .catch(err => {
+            document.getElementById('previewOrderDetails').innerHTML = '';
+            document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>خطای ارتباط با سرور: ${err}</div>`;
+            var modal = new bootstrap.Modal(document.getElementById('previewModal'));
+            modal.show();
+            console.error('AJAX error:', err);
+        });
+    });
+
+    document.getElementById('confirmPreviewBtn').addEventListener('click', function() {
+        // Hide modal, show submit button, and submit form
+        var modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
+        modal.hide();
+        document.getElementById('finalSubmitBtn').style.display = '';
+        document.getElementById('finalSubmitBtn').click();
+    });
+
+    // Hide final submit button by default
+    document.getElementById('finalSubmitBtn').style.display = 'none';
+    </script>
 
     <script>
         let currentRate = null;

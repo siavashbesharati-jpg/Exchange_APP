@@ -42,6 +42,78 @@ namespace ForexExchange.Controllers
             _centralFinancialService = centralFinancialService;
         }
 
+        // POST: Orders/PreviewOrderEffects
+        [HttpPost]
+        [Authorize(Roles = "Admin,Manager,Staff")]
+        public async Task<IActionResult> PreviewOrderEffects([FromBody] OrderPreviewRequestDto dto)
+        {
+            // Validate required fields
+            if (dto.CustomerId == 0 || dto.FromCurrencyId == 0 || dto.ToCurrencyId == 0 || dto.FromAmount <= 0 || dto.Rate <= 0)
+                return BadRequest("اطلاعات ناقص یا نامعتبر است.");
+
+            // Fetch currencies
+            var fromCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Id == dto.FromCurrencyId);
+            var toCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Id == dto.ToCurrencyId);
+            if (fromCurrency == null || toCurrency == null)
+                return BadRequest("ارز انتخاب شده یافت نشد.");
+
+            // Calculate ToAmount (simulate server logic)
+            decimal toAmount = 0;
+            if (dto.Rate > 0)
+            {
+                // Use the same logic as in Create
+                toAmount = Math.Round(dto.FromAmount * dto.Rate, 2);
+            }
+
+            // Build order object for simulation
+            var order = new Order
+            {
+                CustomerId = dto.CustomerId,
+                FromCurrencyId = dto.FromCurrencyId,
+                ToCurrencyId = dto.ToCurrencyId,
+                FromAmount = dto.FromAmount,
+                Rate = dto.Rate,
+                ToAmount = toAmount,
+                FromCurrency = fromCurrency,
+                ToCurrency = toCurrency
+            };
+
+            var effects = await _centralFinancialService.PreviewOrderEffectsAsync(order);
+
+            // Add currency codes and names for client display
+            var result = new {
+                effects.CustomerId,
+                effects.FromCurrencyCode,
+                effects.ToCurrencyCode,
+                effects.OrderFromAmount,
+                effects.OrderToAmount,
+                effects.OldCustomerBalanceFrom,
+                effects.OldCustomerBalanceTo,
+                effects.NewCustomerBalanceFrom,
+                effects.NewCustomerBalanceTo,
+                effects.OldPoolBalanceFrom,
+                effects.OldPoolBalanceTo,
+                effects.NewPoolBalanceFrom,
+                effects.NewPoolBalanceTo,
+                FromCurrencyName = fromCurrency?.Name,
+                ToCurrencyName = toCurrency?.Name,
+                FromCurrencyId = fromCurrency?.Id,
+                ToCurrencyId = toCurrency?.Id
+            };
+            return Json(result);
+        }
+
+
+        // DTO for preview request
+        public class OrderPreviewRequestDto
+        {
+            public int CustomerId { get; set; }
+            public int FromCurrencyId { get; set; }
+            public int ToCurrencyId { get; set; }
+            public decimal FromAmount { get; set; }
+            public decimal Rate { get; set; }
+        }
+
 
 
 

@@ -11,31 +11,31 @@ namespace ForexExchange.Controllers
     [Authorize(Roles = "Admin,Manager,Staff")]
     public class CustomersController : Controller
     {
-    private readonly ForexDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly ILogger<CustomersController> _logger;
-    private readonly CustomerDebtCreditService _debtCreditService;
-    private readonly IShareableLinkService _shareableLinkService;
-    private readonly AdminNotificationService _adminNotificationService;
-    private readonly ICentralFinancialService _centralFinancialService;
+        private readonly ForexDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<CustomersController> _logger;
+        private readonly CustomerDebtCreditService _debtCreditService;
+        private readonly IShareableLinkService _shareableLinkService;
+        private readonly AdminNotificationService _adminNotificationService;
+        private readonly ICentralFinancialService _centralFinancialService;
 
-    public CustomersController(
-        ForexDbContext context,
-        UserManager<ApplicationUser> userManager,
-        ILogger<CustomersController> logger,
-        CustomerDebtCreditService debtCreditService,
-        IShareableLinkService shareableLinkService,
-        AdminNotificationService adminNotificationService,
-        ICentralFinancialService centralFinancialService)
-    {
-        _context = context;
-        _userManager = userManager;
-        _logger = logger;
-        _debtCreditService = debtCreditService;
-        _shareableLinkService = shareableLinkService;
-        _adminNotificationService = adminNotificationService;
-        _centralFinancialService = centralFinancialService;
-    }        // GET: Customers
+        public CustomersController(
+            ForexDbContext context,
+            UserManager<ApplicationUser> userManager,
+            ILogger<CustomersController> logger,
+            CustomerDebtCreditService debtCreditService,
+            IShareableLinkService shareableLinkService,
+            AdminNotificationService adminNotificationService,
+            ICentralFinancialService centralFinancialService)
+        {
+            _context = context;
+            _userManager = userManager;
+            _logger = logger;
+            _debtCreditService = debtCreditService;
+            _shareableLinkService = shareableLinkService;
+            _adminNotificationService = adminNotificationService;
+            _centralFinancialService = centralFinancialService;
+        }        // GET: Customers
         public async Task<IActionResult> Index()
         {
             var customers = await _context.Customers
@@ -307,13 +307,13 @@ namespace ForexExchange.Controllers
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new { c.Code, c.PersianName })
                 .ToList();
-                
+
             _logger.LogInformation($"GET Create: Loading {currencyOptions.Count} currency options");
             foreach (var currency in currencyOptions)
             {
                 _logger.LogInformation($"Currency option: {currency.Code} - {currency.PersianName}");
             }
-                
+
             ViewBag.CurrencyOptions = currencyOptions;
             return View(new CustomerCreateViewModel());
         }
@@ -325,7 +325,7 @@ namespace ForexExchange.Controllers
         {
             Console.WriteLine("\n=== CREATE CUSTOMER - SERVER SIDE ===");
             Console.WriteLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
-            
+
             // Log client debug info if available
             var clientDebugInfo = Request.Form["ClientDebugInfo"].FirstOrDefault();
             if (!string.IsNullOrEmpty(clientDebugInfo))
@@ -341,7 +341,7 @@ namespace ForexExchange.Controllers
 
             // Remove any email validation errors from ModelState first
             ModelState.Remove("Email");
-            
+
             // Custom email validation - validate format only if email is provided
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
@@ -367,7 +367,7 @@ namespace ForexExchange.Controllers
 
                 // Check if phone number already exists (normalize first)
                 string normalizedPhoneNumber = PhoneNumberService.NormalizePhoneNumber(model.PhoneNumber);
-                
+
                 // Validate normalized phone number
                 if (!PhoneNumberService.IsValidNormalizedPhoneNumber(normalizedPhoneNumber))
                 {
@@ -384,6 +384,7 @@ namespace ForexExchange.Controllers
                     return View(model);
                 }
 
+
                 // Create Customer entity
                 var customer = new Customer
                 {
@@ -398,6 +399,27 @@ namespace ForexExchange.Controllers
 
                 _context.Add(customer);
                 await _context.SaveChangesAsync();
+
+                // Add zero-balance records for all currencies for this customer
+                var allCurrencies = await _context.Currencies.ToListAsync();
+                int createdBalances = 0;
+                foreach (var currency in allCurrencies)
+                {
+                    bool exists = await _context.CustomerBalances.AnyAsync(cb => cb.CustomerId == customer.Id && cb.CurrencyCode == currency.Code);
+                    if (!exists)
+                    {
+                        _context.CustomerBalances.Add(new CustomerBalance
+                        {
+                            CustomerId = customer.Id,
+                            CurrencyCode = currency.Code,
+                            Balance = 0,
+                            Notes = "Created by system",
+                        });
+                        createdBalances++;
+                    }
+                }
+                if (createdBalances > 0)
+                    await _context.SaveChangesAsync();
 
                 // Create corresponding ApplicationUser
                 var user = new ApplicationUser
@@ -422,21 +444,21 @@ namespace ForexExchange.Controllers
                     // Extract and save initial balances using centralized service
                     var initialBalances = ExtractInitialBalancesFromForm();
                     _logger.LogInformation($"CREATE: Processing {initialBalances.Count} initial balances");
-                    
+
                     var currentUser = await _userManager.GetUserAsync(User);
                     var performedBy = currentUser?.UserName ?? "System";
-                    
+
                     foreach (var balance in initialBalances)
                     {
                         var code = balance.Key?.Trim().ToUpperInvariant();
                         var amount = balance.Value; // Initial balance amount
-                        
+
                         if (string.IsNullOrWhiteSpace(code) || code.Length != 3)
                         {
                             _logger.LogWarning($"CREATE: Skipping invalid currency code: '{code}'");
                             continue;
                         }
-                        
+
                         if (amount != 0)
                         {
                             _logger.LogInformation($"CREATE: Setting initial {code} balance = {amount}");
@@ -449,7 +471,7 @@ namespace ForexExchange.Controllers
                             );
                         }
                     }
-                    
+
                     if (initialBalances.Count > 0)
                     {
                         _logger.LogInformation($"CREATE: Successfully processed {initialBalances.Count} initial balances");
@@ -517,9 +539,9 @@ namespace ForexExchange.Controllers
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new { c.Code, c.PersianName })
                 .ToListAsync();
-            
+
             ViewBag.CurrencyOptions = currencies;
-            
+
             // Debug logging
             _logger.LogInformation($"EDIT: Loading {currencies.Count} currencies for customer {id}");
             foreach (var currency in currencies)
@@ -535,7 +557,7 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, CustomerEditViewModel model)
         {
-           
+
             if (id != model.Id)
             {
                 return NotFound();
@@ -549,7 +571,7 @@ namespace ForexExchange.Controllers
                 model.NationalId = null;
                 ModelState.Remove("NationalId");
             }
-            
+
             // Custom email validation - validate format only if email is provided
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
@@ -576,7 +598,7 @@ namespace ForexExchange.Controllers
 
                     // Normalize phone number for validation and storage
                     string normalizedPhoneNumber = PhoneNumberService.NormalizePhoneNumber(model.PhoneNumber);
-                    
+
                     // Validate normalized phone number
                     if (!PhoneNumberService.IsValidNormalizedPhoneNumber(normalizedPhoneNumber))
                     {
@@ -652,7 +674,7 @@ namespace ForexExchange.Controllers
                     // Extract and update CustomerBalances using centralized service
                     var providedBalances = ExtractInitialBalancesFromForm();
                     _logger.LogInformation($"EDIT: Processing {providedBalances.Count} initial balances");
-                    
+
                     var existingBalances = await _context.CustomerBalances
                         .Where(b => b.CustomerId == customer.Id)
                         .ToListAsync();
@@ -684,7 +706,7 @@ namespace ForexExchange.Controllers
                     {
                         var code = balance.Key?.Trim().ToUpperInvariant();
                         var targetAmount = balance.Value; // Target balance
-                        
+
                         if (string.IsNullOrWhiteSpace(code) || code.Length != 3)
                         {
                             _logger.LogWarning($"EDIT: Skipping invalid currency code: '{code}'");
@@ -753,12 +775,12 @@ namespace ForexExchange.Controllers
                 var form = Request?.Form ?? new Microsoft.AspNetCore.Http.FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
                 _logger.LogInformation($"=== EXTRACTING INITIAL BALANCES FROM FORM ===");
                 _logger.LogInformation($"Form has {form.Count} total keys: {string.Join(", ", form.Keys)}");
-                
+
                 // Method 1: Try dictionary-style inputs (InitialBalances[CODE])
                 _logger.LogInformation("Method 1: Looking for InitialBalances[CODE] inputs...");
                 var dictionaryInputs = form.Keys.Where(k => k.StartsWith("InitialBalances[")).ToList();
                 _logger.LogInformation($"Found {dictionaryInputs.Count} dictionary-style inputs: {string.Join(", ", dictionaryInputs)}");
-                
+
                 foreach (var name in dictionaryInputs)
                 {
                     if (name.StartsWith("InitialBalances[", StringComparison.Ordinal) && name.EndsWith("]", StringComparison.Ordinal))
@@ -767,8 +789,8 @@ namespace ForexExchange.Controllers
                         var code = inner.Substring(0, inner.Length - 1).Trim().ToUpperInvariant();
                         var raw = form[name].ToString().Trim();
                         _logger.LogInformation($"Processing dictionary input: {name} = '{raw}'");
-                        
-                        if (string.IsNullOrWhiteSpace(code)) 
+
+                        if (string.IsNullOrWhiteSpace(code))
                         {
                             _logger.LogWarning($"Skipping empty currency code from {name}");
                             continue;
@@ -786,7 +808,7 @@ namespace ForexExchange.Controllers
                         if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
                         {
                             // Preserve original value (including negative)
-                           
+
                             result[code] = amount;
                             _logger.LogInformation($"SUCCESS: Added {code} = {amount} from dictionary method");
                         }
@@ -801,7 +823,7 @@ namespace ForexExchange.Controllers
                 _logger.LogInformation("Method 2: Looking for ib_code/ib_amount arrays...");
                 var codes = form["ib_code"]; // multiple
                 var amounts = form["ib_amount"]; // multiple
-                
+
                 _logger.LogInformation($"Found {codes.Count} codes and {amounts.Count} amounts");
                 for (int i = 0; i < codes.Count && i < amounts.Count; i++)
                 {
@@ -814,26 +836,26 @@ namespace ForexExchange.Controllers
                     {
                         var code = codes[i]?.Trim().ToUpperInvariant();
                         var raw = amounts[i]?.Trim();
-                        
+
                         _logger.LogInformation($"Processing array item {i}: code='{code}', amount='{raw}'");
-                        
-                        if (string.IsNullOrWhiteSpace(code)) 
+
+                        if (string.IsNullOrWhiteSpace(code))
                         {
                             _logger.LogWarning($"Skipping empty currency code at index {i}");
                             continue;
                         }
-                        
+
                         if (string.IsNullOrWhiteSpace(raw))
                         {
                             _logger.LogWarning($"Skipping empty amount for currency {code} at index {i}");
                             continue;
                         }
-                        
+
                         raw = (raw ?? "").Replace("\u066C", "").Replace("\u066B", ".");
                         if (raw.Contains(',') && !raw.Contains('.')) raw = raw.Replace(',', '.');
                         else raw = raw.Replace(",", "");
                         raw = raw.Replace(" ", "");
-                        
+
                         if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var amount))
                         {
                             // Preserve original value (including negative)
@@ -860,8 +882,8 @@ namespace ForexExchange.Controllers
                     _logger.LogInformation($"Final: {kvp.Key} = {kvp.Value}");
                 }
             }
-            catch (Exception ex) 
-            { 
+            catch (Exception ex)
+            {
                 _logger.LogError(ex, "Error in ExtractInitialBalancesFromForm");
             }
             return result;
@@ -949,10 +971,10 @@ namespace ForexExchange.Controllers
                 };
 
                 var shareableLink = await _shareableLinkService.GenerateLinkAsync(
-                    customerId, 
-                    linkType, 
-                    expirationDays, 
-                    description, 
+                    customerId,
+                    linkType,
+                    expirationDays,
+                    description,
                     currentUser);
 
                 var baseUrl = $"{Request.Scheme}://{Request.Host}";
@@ -960,7 +982,7 @@ namespace ForexExchange.Controllers
 
                 TempData["SuccessMessage"] = $"لینک اشتراک با موفقیت ایجاد شد. لینک تا {expirationDays} روز آینده معتبر است.";
                 TempData["ShareableUrl"] = fullUrl;
-                
+
                 return RedirectToAction("ShareableLinks", new { id = customerId });
             }
             catch (Exception ex)
@@ -981,7 +1003,7 @@ namespace ForexExchange.Controllers
             }
 
             var links = await _shareableLinkService.GetCustomerLinksAsync(id, activeOnly: false);
-            
+
             ViewBag.Customer = customer;
             return View(links);
         }

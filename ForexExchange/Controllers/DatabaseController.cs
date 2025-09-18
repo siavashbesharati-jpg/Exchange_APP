@@ -1,3 +1,4 @@
+// ...existing code...
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ namespace ForexExchange.Controllers
         private readonly ICurrencyPoolService _currencyPoolService;
         private readonly ICentralFinancialService _centralFinancialService;
 
-        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment, 
+        public DatabaseController(ForexDbContext context, IWebHostEnvironment environment,
             ICurrencyPoolService currencyPoolService, ICentralFinancialService centralFinancialService)
         {
             _context = context;
@@ -81,8 +82,9 @@ namespace ForexExchange.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                return Json(new { 
-                    success = true, 
+                return Json(new
+                {
+                    success = true,
                     message = $"Fixed {fixedCount} CurrencyPoolHistory records",
                     totalBrokenRecords = brokenRecords.Count,
                     fixedCount = fixedCount
@@ -141,7 +143,8 @@ namespace ForexExchange.Controllers
                 var orderTransactions = await _context.CurrencyPoolHistory
                     .Where(h => h.TransactionType == CurrencyPoolTransactionType.Order)
                     .Take(10)
-                    .Select(h => new {
+                    .Select(h => new
+                    {
                         h.Id,
                         h.CurrencyCode,
                         h.TransactionType,
@@ -152,7 +155,8 @@ namespace ForexExchange.Controllers
                     })
                     .ToListAsync();
 
-                return Json(new { 
+                return Json(new
+                {
                     totalHistoryRecords = historyCount,
                     orderTransactions = orderTransactions,
                     orderCount = orderTransactions.Count
@@ -187,9 +191,9 @@ namespace ForexExchange.Controllers
             }
         }
 
-      
 
-        
+
+
 
         [HttpPost]
         public async Task<IActionResult> RestoreDatabase(IFormFile backupFile)
@@ -396,7 +400,7 @@ namespace ForexExchange.Controllers
             try
             {
                 var diagnostics = new List<string>();
-                
+
                 // Get all accounting documents
                 var allDocuments = await _context.AccountingDocuments
                     .Include(d => d.PayerCustomer)
@@ -448,7 +452,7 @@ namespace ForexExchange.Controllers
 
                 // Check for correction records already applied
                 var correctionRecords = await _context.CustomerBalanceHistory
-                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual && 
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual &&
                                h.CreatedBy != null && h.CreatedBy.Contains("Accounting Document Logic Correction"))
                     .ToListAsync();
 
@@ -541,13 +545,13 @@ namespace ForexExchange.Controllers
 
                 // Create a unified list of financial events sorted by date
                 var financialEvents = new List<(DateTime Date, string Type, object Item)>();
-                
+
                 // Add all orders with their creation date
                 foreach (var order in allOrders)
                 {
                     financialEvents.Add((order.CreatedAt, "Order", order));
                 }
-                
+
                 // Add all documents with their document date
                 foreach (var document in allDocuments)
                 {
@@ -571,14 +575,14 @@ namespace ForexExchange.Controllers
                     else if (eventItem.Type == "Document")
                     {
                         var document = (AccountingDocument)eventItem.Item;
-                        
+
                         // Mark as verified temporarily for processing
                         document.IsVerified = true;
                         document.VerifiedAt = document.DocumentDate;
                         document.VerifiedBy = "System - Reset Recalculation";
 
                         await _centralFinancialService.ProcessAccountingDocumentAsync(document, "System - Reset Recalculation");
-                        
+
                         resetLog.Add($"✅ {eventItem.Date:MM/dd HH:mm} | DOCUMENT {document.Id}: {document.Amount:N2} {document.CurrencyCode}");
                         resetLog.Add($"   - Payer: Customer {document.PayerCustomerId} gets +{document.Amount}");
                         resetLog.Add($"   - Receiver: Customer {document.ReceiverCustomerId} gets -{document.Amount}");
@@ -621,7 +625,7 @@ namespace ForexExchange.Controllers
                 // First, let's check the current status
                 var irrPool = await _context.CurrencyPools
                     .FirstOrDefaultAsync(cp => cp.CurrencyCode == "IRR");
-                
+
                 var irrOrders = await _context.Orders
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
@@ -641,11 +645,11 @@ namespace ForexExchange.Controllers
                 TempData["Info"] = $"Before: IRR Pool exists: {irrPool != null}, Balance: {irrPool?.Balance ?? 0}, IRR Orders: {irrOrders.Count}, Expected adjustment: {expectedAdjustment}";
 
                 await _centralFinancialService.RecalculateIRRPoolFromOrdersAsync();
-                
+
                 // Check after recalculation
                 var irrPoolAfter = await _context.CurrencyPools
                     .FirstOrDefaultAsync(cp => cp.CurrencyCode == "IRR");
-                    
+
                 TempData["Success"] = $"موجودی صندوق IRR با موفقیت بازمحاسبه شد. موجودی نهایی: {irrPoolAfter?.Balance ?? 0}";
             }
             catch (Exception ex)
@@ -802,7 +806,7 @@ namespace ForexExchange.Controllers
                 var customerBalanceCount = await _context.CustomerBalances.CountAsync();
                 var poolBalanceCount = await _context.CurrencyPools.CountAsync();
                 var bankBalanceCount = await _context.BankAccountBalances.CountAsync();
-                
+
                 var customerHistoryCount = await _context.CustomerBalanceHistory.CountAsync();
                 var poolHistoryCount = await _context.CurrencyPoolHistory.CountAsync();
                 var bankHistoryCount = await _context.BankAccountBalanceHistory.CountAsync();
@@ -851,13 +855,14 @@ namespace ForexExchange.Controllers
                 };
 
                 // Check if this is an AJAX request
-                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                                    Request.Headers["Accept"].ToString().Contains("application/json");
 
                 if (isAjaxRequest)
                 {
-                    return Json(new { 
-                        success = true, 
+                    return Json(new
+                    {
+                        success = true,
                         message = string.Join("\n", summary),
                         log = string.Join("\n", recalcLog)
                     });
@@ -871,13 +876,14 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 // Check if this is an AJAX request
-                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                                    Request.Headers["Accept"].ToString().Contains("application/json");
 
                 if (isAjaxRequest)
                 {
-                    return Json(new { 
-                        success = false, 
+                    return Json(new
+                    {
+                        success = false,
                         error = $"خطا در بازمحاسبه موجودی‌ها: {ex.Message}"
                     });
                 }
@@ -890,10 +896,10 @@ namespace ForexExchange.Controllers
 
         [HttpPost]
         public async Task<IActionResult> CreateManualCustomerBalanceHistory(
-            int customerId, 
-            string currencyCode, 
-            decimal amount, 
-            string reason, 
+            int customerId,
+            string currencyCode,
+            decimal amount,
+            string reason,
             DateTime transactionDate)
         {
             try
@@ -957,24 +963,73 @@ namespace ForexExchange.Controllers
                 {
                     return Json(new { success = false, error = $"خطا در ایجاد رکورد دستی: {ex.Message}" });
                 }
-                
+
                 TempData["Error"] = $"خطا در ایجاد رکورد دستی: {ex.Message}";
             }
 
             return RedirectToAction("Index");
         }
 
+
+
+        [HttpPost]
+        public async Task<IActionResult> FixAllCustomerBalances()
+        {
+            int createdCount = 0;
+            try
+            {
+                var allCustomers = await _context.Customers.Where(c => !c.IsSystem).ToListAsync();
+                var allCurrencies = await _context.Currencies.ToListAsync();
+                var existingBalances = await _context.CustomerBalances.ToListAsync();
+
+                var newBalances = new List<CustomerBalance>();
+                foreach (var customer in allCustomers)
+                {
+                    foreach (var currency in allCurrencies)
+                    {
+                        bool exists = existingBalances.Any(cb => cb.CustomerId == customer.Id && cb.CurrencyCode == currency.Code);
+                        if (!exists)
+                        {
+                            newBalances.Add(new CustomerBalance
+                            {
+                                CustomerId = customer.Id,
+                                CurrencyCode = currency.Code,
+                                Balance = 0,
+                                Notes = "Created by FixAllCustomerBalances admin action"
+                            });
+                            createdCount++;
+                        }
+                    }
+                }
+                if (newBalances.Count > 0)
+                {
+                    _context.CustomerBalances.AddRange(newBalances);
+                    await _context.SaveChangesAsync();
+                }
+                TempData["Success"] = $"تکمیل شد: {createdCount} رکورد جدید CustomerBalance ایجاد شد.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در ایجاد CustomerBalance: {ex.Message}";
+            }
+            return RedirectToAction("Index");
+        }
+
+
+
+
+
         [HttpPost]
         public async Task<IActionResult> UpdateTransactionNumbers()
         {
             try
             {
-                var updateScript = new UpdateTransactionNumbers(_context, 
+                var updateScript = new UpdateTransactionNumbers(_context,
                     LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<UpdateTransactionNumbers>());
 
                 // Generate initial report
                 var initialReport = await updateScript.GenerateTransactionNumberCoverageReportAsync();
-                
+
                 var initialLog = new List<string>
                 {
                     "📊 گزارش قبل از بروزرسانی:",
@@ -1026,13 +1081,14 @@ namespace ForexExchange.Controllers
                 }
 
                 // Check if this is an AJAX request
-                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                                    Request.Headers["Accept"].ToString().Contains("application/json");
 
                 if (isAjaxRequest)
                 {
-                    return Json(new { 
-                        success = true, 
+                    return Json(new
+                    {
+                        success = true,
                         message = "بروزرسانی شماره تراکنش‌ها با موفقیت انجام شد",
                         initialReport = initialReport,
                         finalReport = finalReport,
@@ -1045,13 +1101,14 @@ namespace ForexExchange.Controllers
             }
             catch (Exception ex)
             {
-                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                                    Request.Headers["Accept"].ToString().Contains("application/json");
 
                 if (isAjaxRequest)
                 {
-                    return Json(new { 
-                        success = false, 
+                    return Json(new
+                    {
+                        success = false,
                         error = $"خطا در بروزرسانی شماره تراکنش‌ها: {ex.Message}"
                     });
                 }
@@ -1067,21 +1124,23 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var updateScript = new UpdateTransactionNumbers(_context, 
+                var updateScript = new UpdateTransactionNumbers(_context,
                     LoggerFactory.Create(builder => builder.AddConsole()).CreateLogger<UpdateTransactionNumbers>());
 
                 var report = await updateScript.GenerateTransactionNumberCoverageReportAsync();
 
                 // Check if this is an AJAX request
-                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                                    Request.Headers["Accept"].ToString().Contains("application/json");
 
                 if (isAjaxRequest)
                 {
-                    return Json(new { 
-                        success = true, 
+                    return Json(new
+                    {
+                        success = true,
                         report = report,
-                        summary = new {
+                        summary = new
+                        {
                             customerCoverage = $"{report.CustomerBalanceHistoryWithTransactionNumber}/{report.CustomerBalanceHistoryTotal} ({report.CustomerBalanceHistoryCoveragePercentage:F1}%)",
                             bankCoverage = $"{report.BankAccountBalanceHistoryWithTransactionNumber}/{report.BankAccountBalanceHistoryTotal} ({report.BankAccountBalanceHistoryCoveragePercentage:F1}%)",
                             documentCoverage = $"{report.AccountingDocumentsWithReferenceNumber}/{report.AccountingDocumentsTotal} ({report.AccountingDocumentsCoveragePercentage:F1}%)"
@@ -1116,13 +1175,14 @@ namespace ForexExchange.Controllers
             }
             catch (Exception ex)
             {
-                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                                    Request.Headers["Accept"].ToString().Contains("application/json");
 
                 if (isAjaxRequest)
                 {
-                    return Json(new { 
-                        success = false, 
+                    return Json(new
+                    {
+                        success = false,
                         error = $"خطا در تولید گزارش: {ex.Message}"
                     });
                 }
@@ -1141,7 +1201,7 @@ namespace ForexExchange.Controllers
                 // WARNING: This is a destructive operation.
                 // It's recommended to secure this endpoint or remove it after use.
                 var resultSummary = await ForexExchange.Helpers.DatabaseRoundingHelper.ApplyRoundingToAllDataAsync(_context);
-                
+
                 return Json(new { success = true, message = "Database rounding process completed successfully.", summary = resultSummary });
             }
             catch (Exception ex)

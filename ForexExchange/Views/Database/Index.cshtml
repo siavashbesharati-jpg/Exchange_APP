@@ -1,3 +1,9 @@
+                    <form asp-action="FixAllCustomerBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید برای همه مشتریان، موجودی ارزهای ناقص را ایجاد کنید؟\nاین عملیات فقط رکوردهای مفقود را اضافه می‌کند و خطری ندارد.')">
+                        <button type="submit" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-plus-circle me-1"></i>
+                            ایجاد موجودی ارز برای همه مشتریان (تکمیل رکوردهای ناقص)
+                        </button>
+                    </form>
 @using ForexExchange.Models
 @model DatabaseManagementViewModel
 @{
@@ -279,6 +285,16 @@
                                             بروزرسانی شماره تراکنش‌ها
                                         </button>
                                     </form>
+
+
+                                <form asp-action="FixAllCustomerBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید برای همه مشتریان، موجودی ارزهای ناقص را ایجاد کنید؟\nاین عملیات فقط رکوردهای مفقود را اضافه می‌کند و خطری ندارد.')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-primary w-100 mb-2">
+                                        <i class="fas fa-plus-circle me-1"></i>
+                                        ایجاد موجودی ارز برای همه مشتریان (تکمیل رکوردهای ناقص)
+                                    </button>
+                                </form>
+
                                 </div>
                             </div>
                         </div>

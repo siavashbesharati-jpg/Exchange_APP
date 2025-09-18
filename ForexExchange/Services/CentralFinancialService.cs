@@ -1,3 +1,4 @@
+
 using ForexExchange.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -11,6 +12,86 @@ namespace ForexExchange.Services
     /// </summary>
     public class CentralFinancialService : ICentralFinancialService
     {
+        /// <summary>
+        /// Simulate the effects of an order on customer and pool balances (no DB changes)
+        /// </summary>
+        public async Task<OrderPreviewEffectsDto> PreviewOrderEffectsAsync(Order order)
+        {
+            _logger.LogInformation($"[PreviewOrderEffectsAsync] Called for CustomerId={order.CustomerId}, FromCurrencyId={order.FromCurrencyId}, ToCurrencyId={order.ToCurrencyId}, FromAmount={order.FromAmount}, Rate={order.Rate}, ToAmount={order.ToAmount}");
+
+            if (order.FromCurrency == null || string.IsNullOrWhiteSpace(order.FromCurrency.Code))
+            {
+                _logger.LogError($"FromCurrency or its Code is null for order preview (FromCurrencyId: {order.FromCurrencyId})");
+                throw new Exception($"FromCurrency or its Code is null for order preview (FromCurrencyId: {order.FromCurrencyId})");
+            }
+            _logger.LogInformation($"FromCurrency: {order.FromCurrency.Code}");
+
+            if (order.ToCurrency == null || string.IsNullOrWhiteSpace(order.ToCurrency.Code))
+            {
+                _logger.LogError($"ToCurrency or its Code is null for order preview (ToCurrencyId: {order.ToCurrencyId})");
+                throw new Exception($"ToCurrency or its Code is null for order preview (ToCurrencyId: {order.ToCurrencyId})");
+            }
+            _logger.LogInformation($"ToCurrency: {order.ToCurrency.Code}");
+
+            var customerBalanceFrom = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.FromCurrency.Code);
+            if (customerBalanceFrom == null)
+            {
+                _logger.LogError($"Customer balance not found for customer {order.CustomerId} and currency {order.FromCurrency.Code}");
+                throw new Exception($"Customer balance not found for customer {order.CustomerId} and currency {order.FromCurrency.Code}");
+            }
+            _logger.LogInformation($"CustomerBalanceFrom: {customerBalanceFrom.Balance}");
+
+            var customerBalanceTo = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.ToCurrency.Code);
+            if (customerBalanceTo == null)
+            {
+                _logger.LogError($"Customer balance not found for customer {order.CustomerId} and currency {order.ToCurrency.Code}");
+                throw new Exception($"Customer balance not found for customer {order.CustomerId} and currency {order.ToCurrency.Code}");
+            }
+            _logger.LogInformation($"CustomerBalanceTo: {customerBalanceTo.Balance}");
+
+            var poolBalanceFrom = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.FromCurrency.Code);
+            if (poolBalanceFrom == null)
+            {
+                _logger.LogError($"Currency pool not found for currency {order.FromCurrency.Code}");
+                throw new Exception($"Currency pool not found for currency {order.FromCurrency.Code}");
+            }
+            _logger.LogInformation($"PoolBalanceFrom: {poolBalanceFrom.Balance}");
+
+            var poolBalanceTo = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.ToCurrency.Code);
+            if (poolBalanceTo == null)
+            {
+                _logger.LogError($"Currency pool not found for currency {order.ToCurrency.Code}");
+                throw new Exception($"Currency pool not found for currency {order.ToCurrency.Code}");
+            }
+            _logger.LogInformation($"PoolBalanceTo: {poolBalanceTo.Balance}");
+
+            var newCustomerBalanceFrom = customerBalanceFrom.Balance - order.FromAmount;
+            var newCustomerBalanceTo = customerBalanceTo.Balance + order.ToAmount;
+            var newPoolBalanceFrom = poolBalanceFrom.Balance + order.FromAmount;
+            var newPoolBalanceTo = poolBalanceTo.Balance - order.ToAmount;
+
+            _logger.LogInformation($"NewCustomerBalanceFrom: {newCustomerBalanceFrom}");
+            _logger.LogInformation($"NewCustomerBalanceTo: {newCustomerBalanceTo}");
+            _logger.LogInformation($"NewPoolBalanceFrom: {newPoolBalanceFrom}");
+            _logger.LogInformation($"NewPoolBalanceTo: {newPoolBalanceTo}");
+
+            return new OrderPreviewEffectsDto
+            {
+                CustomerId = order.CustomerId,
+                FromCurrencyCode = order.FromCurrency.Code,
+                ToCurrencyCode = order.ToCurrency.Code,
+                OrderFromAmount = order.FromAmount,
+                OrderToAmount = order.ToAmount,
+                OldCustomerBalanceFrom = customerBalanceFrom.Balance,
+                OldCustomerBalanceTo = customerBalanceTo.Balance,
+                NewCustomerBalanceFrom = newCustomerBalanceFrom,
+                NewCustomerBalanceTo = newCustomerBalanceTo,
+                OldPoolBalanceFrom = poolBalanceFrom.Balance,
+                OldPoolBalanceTo = poolBalanceTo.Balance,
+                NewPoolBalanceFrom = newPoolBalanceFrom,
+                NewPoolBalanceTo = newPoolBalanceTo
+            };
+        }
         private readonly ForexDbContext _context;
         private readonly ILogger<CentralFinancialService> _logger;
 
