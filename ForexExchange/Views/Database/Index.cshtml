@@ -309,7 +309,7 @@
                                                 <label class="form-label">کد ارز:</label>
                                                 <select name="currencyCode" class="form-control" required>
                                                     <option value="">انتخاب ارز</option>
-                                                    <option value="IRR">IRR (ریال)</option>
+                                                    <option value="IRR">IRR (تومان)</option>
                                                     <option value="USD">USD (دلار)</option>
                                                     <option value="EUR">EUR (یورو)</option>
                                                     <option value="GBP">GBP (پوند)</option>
@@ -338,6 +338,86 @@
                                         <button type="submit" class="btn btn-warning w-100" onclick="return confirm('آیا مطمئن هستید که می‌خواهید این رکورد دستی را ایجاد کنید؟\n\n⚠️ بعد از ایجاد رکورد دستی، حتماً بازمحاسبه موجودی‌ها را انجام دهید.')">
                                             <i class="fas fa-plus me-2"></i>
                                             ایجاد رکورد دستی
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Database Actions -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary">عملیات پایگاه داده</h5>
+                        </div>
+
+                        <!-- Apply Rounding Card -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-coins me-2 text-warning"></i>
+                                        گرد کردن مقادیر پولی
+                                    </h6>
+                                    <p class="card-text small text-muted">
+                                        این عملیات تمام مقادیر پولی در پایگاه داده را بر اساس منطق جدید گرد می‌کند.
+                                        <strong class="text-danger">این عملیات غیرقابل بازگشت است.</strong>
+                                    </p>
+                                    <div class="mt-auto">
+                                        <button id="applyRoundingBtn" class="btn btn-warning w-100">
+                                            <i class="fas fa-play me-2"></i>
+                                            اجرای گرد کردن
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Backup Card -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-download me-2"></i>
+                                        پشتیبان‌گیری
+                                    </h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <p class="card-text small text-muted flex-grow-1">
+                                        از پایگاه داده خود پشتیبان‌گیری کنید تا در صورت نیاز به بازیابی، داده‌های خود را از دست ندهید.
+                                    </p>
+                                    <div>
+                                        <button type="button" class="btn btn-success w-100" onclick="createBackup()">
+                                            <i class="fas fa-download me-2"></i>
+                                            ایجاد پشتیبان (قابل دانلود)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Restore Card -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-upload me-2"></i>
+                                        بازیابی پایگاه داده
+                                    </h5>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <p class="card-text small text-muted flex-grow-1">
+                                        پایگاه داده خود را از یک فایل پشتیبان بازیابی کنید. اطمینان حاصل کنید که فایل پشتیبان صحیح است.
+                                    </p>
+                                    <form asp-action="RestoreDatabase" method="post" enctype="multipart/form-data" class="mt-auto">
+                                        @Html.AntiForgeryToken()
+                                        <div class="mb-3">
+                                            <label for="backupFile" class="form-label">فایل پشتیبان:</label>
+                                            <input type="file" class="form-control" id="backupFile" name="backupFile" accept=".db,.sql" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning w-100" onclick="return confirmRestore()">
+                                            <i class="fas fa-upload me-2"></i>
+                                            بازیابی پایگاه داده
                                         </button>
                                     </form>
                                 </div>
@@ -488,6 +568,106 @@
                     Swal.fire('خطا!', 'خطا در ارتباط با سرور: ' + error, 'error');
                 });
         }
+
+        $(document).ready(function() {
+            // Confirmation for dangerous actions
+            $('#cleanCustomersBtn, #cleanOrdersBtn, #cleanPoolsBtn, #restoreForm button[type=submit], #resetAccountingBtn, #recalculateBalancesBtn').click(function(e) {
+                var message = $(this).data('confirm');
+                if (!confirm(message)) {
+                    e.preventDefault();
+                }
+            });
+
+            // AJAX call for Recalculate All Balances
+            $('#recalculateBalancesBtn').click(function(e) {
+                e.preventDefault();
+                var form = $(this).closest('form');
+                var url = form.attr('action');
+                
+                // Show loading indicator
+                var originalButtonText = $(this).html();
+                $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال محاسبه...').prop('disabled', true);
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: form.serialize(),
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Create a success alert
+                            var alert = $('<div class="alert alert-success alert-dismissible fade show" role="alert"></div>');
+                            alert.html(response.message.replace(/\\n/g, '<br/>') + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
+                            $('.card-body').prepend(alert);
+                            // Optionally show log
+                            if(response.log) {
+                                var logAlert = $('<div class="alert alert-primary"><h6>لاگ بازمحاسبه:</h6><pre style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></pre></div>');
+                                logAlert.find('pre').text(response.log);
+                                $('.card-body').prepend(logAlert);
+                            }
+                        } else {
+                            var alert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>');
+                            alert.html(response.error + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
+                            $('.card-body').prepend(alert);
+                        }
+                    },
+                    error: function() {
+                        var alert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>');
+                        alert.html('خطای ناشناخته در ارتباط با سرور رخ داد.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
+                        $('.card-body').prepend(alert);
+                    },
+                    complete: function() {
+                        // Restore button
+                        $('#recalculateBalancesBtn').html(originalButtonText).prop('disabled', false);
+                    }
+                });
+            });
+
+            // AJAX call for Apply Rounding
+            $('#applyRoundingBtn').click(function(e) {
+                e.preventDefault();
+                if (!confirm('آیا از گرد کردن تمام مقادیر پولی در پایگاه داده مطمئن هستید؟ این عملیات غیرقابل بازگشت است.')) {
+                    return;
+                }
+
+                var button = $(this);
+                var originalButtonText = button.html();
+                button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال اجرا...').prop('disabled', true);
+
+                $.ajax({
+                    type: "POST",
+                    url: '@Url.Action("ApplyDatabaseRounding", "Database")',
+                    headers: {
+                        "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            var alert = $('<div class="alert alert-success alert-dismissible fade show" role="alert"></div>');
+                            alert.html(response.message.replace(/\\n/g, '<br/>') + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
+                            
+                            var summaryAlert = $('<div class="alert alert-info"><h6>خلاصه عملیات:</h6><pre style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></pre></div>');
+                            summaryAlert.find('pre').text(response.summary);
+
+                            $('.card-body').prepend(summaryAlert).prepend(alert);
+                        } else {
+                            var alert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>');
+                            alert.html(response.error + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
+                            $('.card-body').prepend(alert);
+                        }
+                    },
+                    error: function() {
+                        var alert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>');
+                        alert.html('خطای ناشناخته در ارتباط با سرور رخ داد.<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
+                        $('.card-body').prepend(alert);
+                    },
+                    complete: function() {
+                        button.html(originalButtonText).prop('disabled', false);
+                    }
+                });
+            });
+        });
     </script>
 }
 

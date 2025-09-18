@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -1132,6 +1131,23 @@ namespace ForexExchange.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ApplyDatabaseRounding()
+        {
+            try
+            {
+                // WARNING: This is a destructive operation.
+                // It's recommended to secure this endpoint or remove it after use.
+                var resultSummary = await ForexExchange.Helpers.DatabaseRoundingHelper.ApplyRoundingToAllDataAsync(_context);
+                
+                return Json(new { success = true, message = "Database rounding process completed successfully.", summary = resultSummary });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = $"An error occurred during the rounding process: {ex.Message}" });
+            }
         }
     }
 }

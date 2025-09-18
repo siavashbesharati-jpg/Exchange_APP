@@ -6,6 +6,7 @@ using ForexExchange.Services;
 using ForexExchange.Models;
 using Microsoft.AspNetCore.Identity;
 using ForexExchange.Services.Notifications;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
@@ -252,6 +253,13 @@ namespace ForexExchange.Controllers
             // Debug: Log received order data first
             _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, Amount: {order.FromAmount}, ManualRate: {order.Rate}");
 
+            // Round the FromAmount based on the currency
+            var fromCurrency = await _context.Currencies.FindAsync(order.FromCurrencyId);
+            if (fromCurrency != null)
+            {
+                order.FromAmount = order.FromAmount.RoundToCurrencyDefaults(fromCurrency.Code);
+            }
+
             // Remove Customer navigation property from validation as we only need CustomerId
             ModelState.Remove("Customer");
             ModelState.Remove("Transactions");
@@ -386,6 +394,13 @@ namespace ForexExchange.Controllers
                 order.Rate = finalExchangeRate;
                 var totalValue = order.FromAmount * order.Rate;
                 order.ToAmount = totalValue;
+
+                // Round the ToAmount based on the currency
+                var toCurrency = await _context.Currencies.FindAsync(order.ToCurrencyId);
+                if (toCurrency != null)
+                {
+                    order.ToAmount = order.ToAmount.RoundToCurrencyDefaults(toCurrency.Code);
+                }
 
                 _context.Add(order);
                 await _context.SaveChangesAsync();
