@@ -387,24 +387,39 @@
                 </div>
                 <div class="info-item">
                     <div class="info-label">کد مشتری:</div>
-                    <div class="info-value">@Model.CustomerId</div>
+                    <div class="info-value">@(Model.CustomerId + 100)</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">از تاریخ:</div>
-                    <div class="info-value">@(Model.FromDate.ToString("yyyy/MM/dd"))</div>
+                    <div class="info-value">
+                        @if (Model.Transactions != null && Model.Transactions.Any())
+                        {
+                            @(Model.Transactions.Min(t => t.TransactionDate).ToString("yyyy/MM/dd"))
+                        }
+                        else
+                        {
+                            @(Model.FromDate.ToString("yyyy/MM/dd"))
+                        }
+                    </div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">تا تاریخ:</div>
-                    <div class="info-value">@(Model.ToDate.ToString("yyyy/MM/dd"))</div>
+                    <div class="info-value">
+                        @if (Model.Transactions != null && Model.Transactions.Any())
+                        {
+                            @(Model.Transactions.Max(t => t.TransactionDate).ToString("yyyy/MM/dd"))
+                        }
+                        else
+                        {
+                            @(Model.ToDate.ToString("yyyy/MM/dd"))
+                        }
+                    </div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">تاریخ گزارش:</div>
                     <div class="info-value">@DateTime.Now.ToString("yyyy/MM/dd HH:mm")</div>
                 </div>
-                <div class="info-item">
-                    <div class="info-label">تعداد تراکنش:</div>
-                    <div class="info-value">@Model.TotalTransactions</div>
-                </div>
+             
             </div>
         </div>
 
@@ -462,7 +477,7 @@
                         <table class="transaction-table">
                             <thead>
                                 <tr class="currency-group-header">
-                                    <td colspan="5">تراکنش‌های @currencyGroup.Key (@currencyGroup.Count() تراکنش)</td>
+                                    <td colspan="5" style="font-weight:bold;">تراکنش‌های @currencyGroup.Key (@currencyGroup.Count() تراکنش)</td>
                                 </tr>
                                 <tr>
                                     <th width="15%">تاریخ</th>
