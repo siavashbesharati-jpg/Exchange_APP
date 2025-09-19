@@ -77,6 +77,12 @@ namespace ForexExchange.Controllers
             return View();
         }
 
+        // GET: Reports/AllCustomersBalances
+        public IActionResult AllCustomersBalances()
+        {
+            return View();
+        }
+
         // API Methods for Real Data
 
         // GET: Reports/GetCustomersData
@@ -126,6 +132,162 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error getting customers data");
                 return Json(new { error = "خطا در دریافت اطلاعات مشتریان" });
+            }
+        }
+
+        // GET: Reports/GetAllCustomersBalances
+        [HttpGet]
+        public async Task<IActionResult> GetAllCustomersBalances(string? currencyFilter = null)
+        {
+            try
+            {
+                _logger.LogInformation("Starting GetAllCustomersBalances with currency filter: {CurrencyFilter}", currencyFilter);
+
+                // First, let's test if basic customers query works
+                var customersCount = await _context.Customers
+                    .Where(c => c.IsActive && !c.IsSystem)
+                    .CountAsync();
+
+                _logger.LogInformation("Found {Count} active customers", customersCount);
+
+                // Test if CustomerBalances table exists and has data
+                var balancesCount = await _context.CustomerBalances.CountAsync();
+                _logger.LogInformation("Found {Count} customer balances", balancesCount);
+
+                // Now try the full query with better error handling
+                var query = _context.Customers
+                    .Include(c => c.Balances)
+                    .Where(c => c.IsActive && !c.IsSystem);
+
+                var customers = await query
+                    .Select(c => new
+                    {
+                        id = c.Id,
+                        fullName = c.FullName,
+                        phoneNumber = c.PhoneNumber,
+                        email = c.Email,
+                        createdAt = c.CreatedAt,
+                        isActive = c.IsActive,
+                        balances = c.Balances
+                            .Where(b => string.IsNullOrEmpty(currencyFilter) || b.CurrencyCode == currencyFilter)
+                            .Where(b => b.Balance != 0) // Only show non-zero balances
+                            .Select(b => new
+                            {
+                                currencyCode = b.CurrencyCode,
+                                balance = b.Balance,
+                                lastUpdated = b.LastUpdated,
+                                balanceStatus = b.Balance > 0 ? "اعتبار" : (b.Balance < 0 ? "بدهی" : "تسویه"),
+                                absoluteBalance = b.Balance < 0 ? -b.Balance : b.Balance // Use conditional instead of Math.Abs
+                            }).ToList(),
+                        hasBalances = c.Balances.Any(b => b.Balance != 0),
+                        totalDebt = c.Balances.Where(b => b.Balance < 0).Sum(b => -b.Balance), // Use negation instead of Math.Abs
+                        totalCredit = c.Balances.Where(b => b.Balance > 0).Sum(b => b.Balance)
+                    })
+                    .OrderBy(c => c.fullName)
+                    .ToListAsync();
+
+                _logger.LogInformation("Successfully retrieved {Count} customers", customers.Count);
+
+                // Apply currency filter and only include customers with balances
+                if (!string.IsNullOrEmpty(currencyFilter))
+                {
+                    customers = customers.Where(c => c.balances.Any()).ToList();
+                }
+                else
+                {
+                    customers = customers.Where(c => c.hasBalances).ToList();
+                }
+
+                _logger.LogInformation("After filtering, {Count} customers have balances", customers.Count);
+
+                // Get summary statistics
+                var totalCustomersWithBalances = customers.Count;
+                var totalCustomersWithDebt = customers.Count(c => c.totalDebt > 0);
+                var totalCustomersWithCredit = customers.Count(c => c.totalCredit > 0);
+                
+                // Currency-specific totals
+                var currencyTotals = new Dictionary<string, object>();
+                
+                try
+                {
+                    if (string.IsNullOrEmpty(currencyFilter))
+                    {
+                        // Get totals for all currencies
+                        var allCurrencies = await _context.CustomerBalances
+                            .Where(cb => cb.Balance != 0)
+                            .GroupBy(cb => cb.CurrencyCode)
+                            .Select(g => new
+                            {
+                                currencyCode = g.Key,
+                                totalCredit = g.Where(cb => cb.Balance > 0).Sum(cb => cb.Balance),
+                                totalDebt = g.Where(cb => cb.Balance < 0).Sum(cb => -cb.Balance), // Use negation instead of Math.Abs
+                                customerCount = g.Select(cb => cb.CustomerId).Distinct().Count()
+                            })
+                            .ToListAsync();
+
+                        foreach (var currency in allCurrencies)
+                        {
+                            currencyTotals[currency.currencyCode] = new
+                            {
+                                totalCredit = currency.totalCredit,
+                                totalDebt = currency.totalDebt,
+                                netBalance = currency.totalCredit - currency.totalDebt,
+                                customerCount = currency.customerCount
+                            };
+                        }
+                    }
+                    else
+                    {
+                        // Get totals for filtered currency
+                        var currencyTotal = await _context.CustomerBalances
+                            .Where(cb => cb.CurrencyCode == currencyFilter && cb.Balance != 0)
+                            .GroupBy(cb => cb.CurrencyCode)
+                            .Select(g => new
+                            {
+                                totalCredit = g.Where(cb => cb.Balance > 0).Sum(cb => cb.Balance),
+                                totalDebt = g.Where(cb => cb.Balance < 0).Sum(cb => -cb.Balance), // Use negation instead of Math.Abs
+                                customerCount = g.Select(cb => cb.CustomerId).Distinct().Count()
+                            })
+                            .FirstOrDefaultAsync();
+
+                        if (currencyTotal != null)
+                        {
+                            currencyTotals[currencyFilter] = new
+                            {
+                                totalCredit = currencyTotal.totalCredit,
+                                totalDebt = currencyTotal.totalDebt,
+                                netBalance = currencyTotal.totalCredit - currencyTotal.totalDebt,
+                                customerCount = currencyTotal.customerCount
+                            };
+                        }
+                    }
+                }
+                catch (Exception currencyEx)
+                {
+                    _logger.LogWarning(currencyEx, "Error calculating currency totals, continuing without them");
+                    // Continue without currency totals if there's an error
+                }
+
+                var result = new
+                {
+                    customers,
+                    stats = new
+                    {
+                        totalCustomersWithBalances,
+                        totalCustomersWithDebt,
+                        totalCustomersWithCredit,
+                        currencyFilter,
+                        currencyTotals
+                    }
+                };
+
+                _logger.LogInformation("Successfully completed GetAllCustomersBalances");
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all customers balances with currency filter: {CurrencyFilter}", currencyFilter);
+                return Json(new { error = $"خطا در دریافت موجودی مشتریان: {ex.Message}" });
             }
         }
 

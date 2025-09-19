@@ -1,0 +1,996 @@
+@{
+    ViewData["Title"] = "موجودی همه مشتریان";
+}
+
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@{
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+
+<input type="hidden" name="__RequestVerificationToken" value="@requestToken" />
+
+<div class="container-fluid">
+    <!-- Head            <div class="card shadow-sm border-3">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>موجودی ${currencyCode}</h5>
+                    <span class="text-muted small">${customers.length} مشتری</span>
+                </div>>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <h2><i class="fas fa-wallet text-primary me-2"></i>موجودی همه مشتریان</h2>
+                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-1"></i>بازگشت
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">فیلتر ارز</label>
+                            <select class="form-select" id="currencyFilter">
+                                <option value="">همه ارزها</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-primary w-100" onclick="loadCustomersBalances()">
+                                <i class="fas fa-search me-1"></i>جستجو
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-success w-100" onclick="exportData()">
+                                <i class="fas fa-file-excel me-1"></i>خروجی Excel
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-info w-100" onclick="refreshData()">
+                                <i class="fas fa-sync-alt me-1"></i>تازه‌سازی
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4" id="statsRow" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>خلاصه آمار</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="statsContent">
+                        <!-- Stats will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency Totals -->
+    <div class="row mb-4" id="currencyTotalsRow" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>خلاصه موجودی به تفکیک ارز</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="currencyTotalsContent">
+                        <!-- Currency totals will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Mode Toggle -->
+    <div class="row mb-4" id="viewModeToggleRow" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow-sm border">
+                <div class="card-header text-center">
+                    <h6 class="mb-0"><i class="fas fa-eye me-2"></i>نمایش جداول</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="btn-group" role="group" aria-label="View Mode Toggle">
+                        <input type="radio" class="btn-check" name="viewModeToggle" id="customerViewToggle" value="customer" checked>
+                        <label class="btn btn-outline-primary" for="customerViewToggle">
+                            <i class="fas fa-user me-1"></i>هر مشتری یک جدول
+                        </label>
+
+                        <input type="radio" class="btn-check" name="viewModeToggle" id="currencyViewToggle" value="currency">
+                        <label class="btn btn-outline-primary" for="currencyViewToggle">
+                            <i class="fas fa-coins me-1"></i>هر ارز یک جدول
+                        </label>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">انتخاب نوع نمایش جداول موجودی</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency Tables -->
+    <div class="row" id="currencyTablesRow" style="display: none;">
+        <div class="col-12">
+            <div id="currencyTablesContent">
+                <!-- Currency-specific tables will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- All Customers Table (when no currency filter) -->
+    <div class="row" id="allCustomersRow">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-header  d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>موجودی مشتریان</h5>
+                    <span id="resultsCount" class="text-muted small"></span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th style="width: 10%">#</th>
+                                    <th style="width: 40%">نام مشتری</th>
+                                    <th style="width: 50%">موجودی‌ها</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTableBody">
+                                <tr>
+                                    <td colspan="3" class="text-center py-5 text-muted">
+                                        <i class="fas fa-wallet fa-2x mb-2"></i>
+                                        <br>برای مشاهده موجودی مشتریان، دکمه جستجو را کلیک کنید
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div id="loadingIndicator" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">در حال بارگذاری...</span>
+                        </div>
+                        <div class="mt-2 text-muted">در حال بارگذاری اطلاعات...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Alert -->
+<div class="alert alert-danger alert-dismissible fade" role="alert" id="errorAlert" style="display: none;">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <span id="errorMessage"></span>
+    <button type="button" class="btn-close" onclick="hideError()"></button>
+</div>
+
+<!-- Success Alert -->
+<div class="alert alert-success alert-dismissible fade" role="alert" id="successAlert" style="display: none;">
+    <i class="fas fa-check-circle me-2"></i>
+    <span id="successMessage"></span>
+    <button type="button" class="btn-close" onclick="hideSuccess()"></button>
+</div>
+
+<script>
+let currentData = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('All Customers Balances page initialized');
+    
+    // Load currencies for filter
+    loadCurrencies();
+    
+    // Add toggle change event listener
+    const viewModeToggles = document.querySelectorAll('input[name="viewModeToggle"]');
+    viewModeToggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            if (currentData && currentData.customers) {
+                updateTableView();
+            }
+        });
+    });
+    
+    // Auto-load data on page load
+    setTimeout(() => {
+        loadCustomersBalances();
+    }, 500);
+});
+
+// Get current view mode from toggle
+function getCurrentViewMode() {
+    const checkedToggle = document.querySelector('input[name="viewModeToggle"]:checked');
+    return checkedToggle ? checkedToggle.value : 'customer';
+}
+
+// Update table view based on current toggle selection
+function updateTableView() {
+    if (!currentData || !currentData.customers) return;
+    
+    const selectedCurrency = document.getElementById('currencyFilter').value;
+    const viewMode = getCurrentViewMode();
+    
+    if (selectedCurrency) {
+        // Show specific currency table
+        renderCurrencySpecificTable(currentData.customers, selectedCurrency);
+    } else {
+        // Show tables based on view mode
+        if (viewMode === 'customer') {
+            renderCustomerBasedTables(currentData.customers);
+        } else {
+            renderCurrencyBasedTables(currentData.customers);
+        }
+    }
+}
+
+// Load currencies for filter dropdown
+async function loadCurrencies() {
+    try {
+        const response = await fetch('/api/currencies');
+        const currencies = await response.json();
+        
+        const currencyFilter = document.getElementById('currencyFilter');
+        currencyFilter.innerHTML = '<option value="">همه ارزها</option>';
+        
+        currencies.forEach(currency => {
+            const option = document.createElement('option');
+            option.value = currency.code;
+            option.textContent = `${currency.code} - ${currency.name}`;
+            currencyFilter.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading currencies:', error);
+        // Fallback currencies
+        const currencyFilter = document.getElementById('currencyFilter');
+        const fallbackCurrencies = [
+            { code: 'IRR', name: 'ریال ایران' },
+            { code: 'USD', name: 'دلار آمریکا' },
+            { code: 'EUR', name: 'یورو' },
+            { code: 'AED', name: 'درهم امارات' },
+            { code: 'OMR', name: 'ریال عمان' },
+            { code: 'TRY', name: 'لیر ترکیه' },
+            { code: 'CNY', name: 'یوان چین' }
+        ];
+        
+        currencyFilter.innerHTML = '<option value="">همه ارزها</option>';
+        fallbackCurrencies.forEach(currency => {
+            const option = document.createElement('option');
+            option.value = currency.code;
+            option.textContent = `${currency.code} - ${currency.name}`;
+            currencyFilter.appendChild(option);
+        });
+    }
+}
+
+// Load customers balances data
+async function loadCustomersBalances() {
+    console.log('Loading customers balances...');
+    
+    try {
+        // Show loading
+        showLoading();
+        
+        const selectedCurrencyFilter = document.getElementById('currencyFilter').value;
+        
+        // Build URL with parameters
+        let url = '/Reports/GetAllCustomersBalances';
+        if (selectedCurrencyFilter) {
+            url += `?currencyFilter=${encodeURIComponent(selectedCurrencyFilter)}`;
+        }
+        
+        console.log('Fetching from URL:', url);
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        console.log('Received data:', data);
+        
+        if (data.error) {
+            showError(data.error);
+            return;
+        }
+        
+        currentData = data;
+        
+        const selectedCurrency = document.getElementById('currencyFilter').value;
+        const viewMode = getCurrentViewMode();
+        
+        if (selectedCurrency) {
+            // Show specific currency table
+            renderCurrencySpecificTable(data.customers, selectedCurrency);
+            document.getElementById('allCustomersRow').style.display = 'none';
+            document.getElementById('currencyTablesRow').style.display = 'block';
+            document.getElementById('viewModeToggleRow').style.display = 'none';
+        } else {
+            // Show tables based on view mode
+            if (viewMode === 'customer') {
+                renderCustomerBasedTables(data.customers);
+            } else {
+                renderCurrencyBasedTables(data.customers);
+            }
+            document.getElementById('allCustomersRow').style.display = 'none';
+            document.getElementById('currencyTablesRow').style.display = 'block';
+            document.getElementById('viewModeToggleRow').style.display = 'block';
+        }
+        
+        renderStatistics(data.stats);
+        renderCurrencyTotals(data.stats.currencyTotals, selectedCurrency);
+        
+        showSuccess(`تعداد ${data.customers.length} مشتری با موجودی یافت شد`);
+        
+    } catch (error) {
+        console.error('Error loading customers balances:', error);
+        showError('خطا در بارگذاری اطلاعات موجودی مشتریان');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Render all customers table (when no currency filter)
+function renderAllCustomersTable(customers) {
+    console.log('Rendering all customers table with', customers.length, 'customers');
+    
+    const tbody = document.getElementById('customersTableBody');
+    const resultsCount = document.getElementById('resultsCount');
+    
+    resultsCount.textContent = `${customers.length} مشتری`;
+    
+    if (customers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center py-5 text-muted">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <br>هیچ مشتری با موجودی یافت نشد
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = customers.map((customer, index) => {
+        const balancesHtml = customer.balances.map(balance => {
+            const isPositive = balance.balance >= 0;
+            const statusClass = isPositive ? 'text-success' : 'text-danger';
+            const formattedAmount = formatCurrency(Math.abs(balance.balance), balance.currencyCode);
+            const statusSymbol = isPositive ? '+' : '-';
+            
+            return `
+                <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1" style="border-color: #f5f5f5 !important;">
+                    <span class="text-muted small fw-normal px-2 py-1 bg-light rounded">${balance.currencyCode}</span>
+                    <span class="${statusClass} fw-medium" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr">
+                        ${statusSymbol}${formattedAmount}
+                    </span>
+                </div>
+            `;
+        }).join('');
+        
+        return `
+            <tr>
+                <td class="text-center">${index + 1}</td>
+                <td class="text-center">
+                    <div class="fw-bold">${customer.fullName}</div>
+                </td>
+                <td>
+                    <div class="balances-container">
+                        ${balancesHtml || '<span class="text-muted">بدون موجودی</span>'}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Render currency-specific table
+function renderCurrencySpecificTable(customers, currencyCode) {
+    console.log('Rendering currency-specific table for', currencyCode, 'with', customers.length, 'customers');
+    
+    const currencyTablesContent = document.getElementById('currencyTablesContent');
+    
+    if (customers.length === 0) {
+        currencyTablesContent.innerHTML = `
+            <div class="card shadow-sm border-3">
+                <div class="card-header  d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>موجودی ${currencyCode}</h5>
+                    <span class="badge bg-primary">0 مشتری</span>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-search fa-2x mb-2"></i>
+                        <br>هیچ مشتری با موجودی ${currencyCode} یافت نشد
+                    </div>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    const tableRows = customers.map((customer, index) => {
+        const balance = customer.balances[0]; // Should only have one currency when filtered
+        const isPositive = balance.balance >= 0;
+        const statusClass = isPositive ? 'text-success' : 'text-danger';
+        const formattedAmount = formatCurrency(Math.abs(balance.balance), balance.currencyCode);
+        const statusSymbol = isPositive ? '+' : '-';
+        const statusText = isPositive ? 'بستانکار' : 'بدهکار';
+        
+        return `
+            <tr>
+                <td class="text-center">${index + 1}</td>
+                <td class="text-center">
+                    <div class="fw-bold">${customer.fullName}</div>
+                </td>
+                <td class="text-center">
+                    <span class="text-muted small">${statusText}</span>
+                </td>
+                <td class="text-center" dir="ltr">
+                    <span class="${statusClass} fw-medium" data-no-format="true" data-skip-format="true" class="skip-auto-format">
+                        ${statusSymbol}${formattedAmount}
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    currencyTablesContent.innerHTML = `
+        <div class="card shadow-sm border-3">
+            <div class="card-header  d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-coins me-2"></i>موجودی ${currencyCode}</h5>
+                <span class="badge bg-primary">${customers.length} مشتری</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 10%">#</th>
+                                <th style="width: 40%">نام مشتری</th>
+                                <th style="width: 20%">وضعیت</th>
+                                <th style="width: 30%" class="text-end">موجودی</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Render statistics
+function renderStatistics(stats) {
+    console.log('Rendering statistics:', stats);
+    
+    const statsContent = document.getElementById('statsContent');
+    const statsRow = document.getElementById('statsRow');
+    
+    statsContent.innerHTML = `
+        <div class="col-md-3">
+            <div class="text-center p-3 bg-light rounded border">
+                <div class="h5 text-dark mb-1">${stats.totalCustomersWithBalances}</div>
+                <div class="text-muted small">کل مشتریان با موجودی</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center p-3 bg-light rounded border">
+                <div class="h5 text-dark mb-1">${stats.totalCustomersWithCredit}</div>
+                <div class="text-muted small">مشتریان بستانکار</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center p-3 bg-light rounded border">
+                <div class="h5 text-dark mb-1">${stats.totalCustomersWithDebt}</div>
+                <div class="text-muted small">مشتریان بدهکار</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="text-center p-3 bg-light rounded border">
+                <div class="h5 text-dark mb-1">${stats.currencyFilter || 'همه'}</div>
+                <div class="text-muted small">فیلتر ارز فعال</div>
+            </div>
+        </div>
+    `;
+    
+    statsRow.style.display = 'block';
+}
+
+// Render currency totals
+function renderCurrencyTotals(currencyTotals, currencyFilter) {
+    console.log('Rendering currency totals:', currencyTotals);
+    
+    const currencyTotalsContent = document.getElementById('currencyTotalsContent');
+    const currencyTotalsRow = document.getElementById('currencyTotalsRow');
+    
+    if (!currencyTotals || Object.keys(currencyTotals).length === 0) {
+        currencyTotalsRow.style.display = 'none';
+        return;
+    }
+    
+    const totalsHtml = Object.entries(currencyTotals).map(([currency, totals]) => {
+        const isNetPositive = totals.netBalance >= 0;
+        const netBalanceClass = isNetPositive ? 'text-success' : 'text-danger';
+        const netBalanceSymbol = isNetPositive ? '+' : '-';
+        const netBalanceFormatted = formatCurrency(Math.abs(totals.netBalance), currency);
+        
+        return `
+            <div class="col-md-4 mb-3">
+                <div class="card border h-100">
+                    <div class="card-header text-center border-bottom">
+                        <h6 class="mb-0"><i class="fas fa-coins me-2"></i>${currency}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center g-2">
+                            <div class="col-6">
+                                <div class="text-success fw-medium fs-6" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr">
+                                    +${formatCurrency(totals.totalCredit, currency)}
+                                </div>
+                                <small class="text-muted d-block">کل اعتبار</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-danger fw-medium fs-6" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr">
+                                    -${formatCurrency(totals.totalDebt, currency)}
+                                </div>
+                                <small class="text-muted d-block">کل بدهی</small>
+                            </div>
+                            <div class="col-12">
+                                <hr class="my-2">
+                                <div class="text-center">
+                                    <div class="${netBalanceClass} fw-bold fs-4 text-center" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr" >
+                                        ${netBalanceSymbol}${netBalanceFormatted}
+                                    </div>
+                                    <small class="text-muted d-block mt-1">موجودی خالص</small>
+                                </div>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <span class="text-muted small bg-light px-2 py-1 rounded">${totals.customerCount} مشتری</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    currencyTotalsContent.innerHTML = totalsHtml;
+    currencyTotalsRow.style.display = 'block';
+}
+
+// Refresh data
+function refreshData() {
+    loadCustomersBalances();
+}
+
+// Export data (placeholder)
+function exportData() {
+    if (!currentData || !currentData.customers.length) {
+        showError('هیچ داده‌ای برای خروجی وجود ندارد');
+        return;
+    }
+    
+    showSuccess('قابلیت خروجی Excel در نسخه آینده اضافه خواهد شد');
+}
+
+// Render customer-based tables (each customer has a table with currencies as rows)
+function renderCustomerBasedTables(customers) {
+    console.log('Rendering customer-based tables for', customers.length, 'customers');
+    
+    const currencyTablesContent = document.getElementById('currencyTablesContent');
+    
+    if (customers.length === 0) {
+        currencyTablesContent.innerHTML = `
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-search fa-2x mb-2"></i>
+                <br>هیچ مشتری با موجودی یافت نشد
+            </div>
+        `;
+        return;
+    }
+    
+    const tablesHtml = customers.map((customer, customerIndex) => {
+        if (customer.balances.length === 0) return '';
+        
+        const customerBalancesRows = customer.balances.map((balance, balanceIndex) => {
+            const isPositive = balance.balance >= 0;
+            const statusClass = isPositive ? 'text-success' : 'text-danger';
+            const formattedAmount = formatCurrency(Math.abs(balance.balance), balance.currencyCode);
+            const statusSymbol = isPositive ? '+' : '-';
+            const statusText = isPositive ? 'بستانکار' : 'بدهکار';
+            
+            return `
+                <tr>
+                    <td class="text-center">${balanceIndex + 1}</td>
+                    <td class="text-center">
+                        <span class="text-muted small fw-medium px-2 py-1 bg-light rounded">${balance.currencyCode}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="text-muted small">${statusText}</span>
+                    </td>
+                    <td class="text-center" dir="ltr">
+                        <span class="${statusClass} fw-medium" data-no-format="true" data-skip-format="true" class="skip-auto-format">
+                            ${statusSymbol}${formattedAmount}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        return `
+            <div class="card shadow-sm border mb-4">
+                <div class="card-header text-center d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-dark"><i class="fas fa-user me-2"></i>${customer.fullName}</h6>
+                    <span class="text-muted small">${customer.balances.length} ارز</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th style="width: 10%">#</th>
+                                    <th style="width: 25%">ارز</th>
+                                    <th style="width: 25%">وضعیت</th>
+                                    <th style="width: 40%">موجودی</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${customerBalancesRows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).filter(html => html !== '').join('');
+    
+    currencyTablesContent.innerHTML = tablesHtml;
+}
+
+// Render currency-based tables (each currency has a table with customers as rows)
+function renderCurrencyBasedTables(customers) {
+    console.log('Rendering currency-based tables for', customers.length, 'customers');
+    
+    const currencyTablesContent = document.getElementById('currencyTablesContent');
+    
+    if (customers.length === 0) {
+        currencyTablesContent.innerHTML = `
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-search fa-2x mb-2"></i>
+                <br>هیچ مشتری با موجودی یافت نشد
+            </div>
+        `;
+        return;
+    }
+    
+    // Group customers by currency
+    const currencyGroups = {};
+    customers.forEach(customer => {
+        customer.balances.forEach(balance => {
+            if (!currencyGroups[balance.currencyCode]) {
+                currencyGroups[balance.currencyCode] = [];
+            }
+            currencyGroups[balance.currencyCode].push({
+                customer: customer,
+                balance: balance
+            });
+        });
+    });
+    
+    const tablesHtml = Object.entries(currencyGroups).map(([currency, customerBalances]) => {
+        const customerRows = customerBalances.map((item, index) => {
+            const isPositive = item.balance.balance >= 0;
+            const statusClass = isPositive ? 'text-success' : 'text-danger';
+            const formattedAmount = formatCurrency(Math.abs(item.balance.balance), item.balance.currencyCode);
+            const statusSymbol = isPositive ? '+' : '-';
+            const statusText = isPositive ? 'بستانکار' : 'بدهکار';
+            
+            return `
+                <tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td class="text-center">
+                        <div class="fw-bold">${item.customer.fullName}</div>
+                    </td>
+                    <td class="text-center">
+                        <span class="text-muted small">${statusText}</span>
+                    </td>
+                    <td class="text-center" dir="ltr">
+                        <span class="${statusClass} fw-medium" data-no-format="true" data-skip-format="true" class="skip-auto-format">
+                            ${statusSymbol}${formattedAmount}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        return `
+            <div class="card shadow-sm border mb-4">
+                <div class="card-header text-center d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-dark"><i class="fas fa-coins me-2"></i>ارز ${currency}</h6>
+                    <span class="text-muted small">${customerBalances.length} مشتری</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th style="width: 10%">#</th>
+                                    <th style="width: 40%">نام مشتری</th>
+                                    <th style="width: 20%">وضعیت</th>
+                                    <th style="width: 30%">موجودی</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${customerRows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    currencyTablesContent.innerHTML = tablesHtml;
+}
+
+// Utility functions
+function showLoading() {
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('customersTableBody').style.display = 'none';
+    document.getElementById('currencyTablesContent').innerHTML = '';
+}
+
+function hideLoading() {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('customersTableBody').style.display = '';
+}
+
+function showError(message) {
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.textContent = message;
+    errorAlert.style.display = 'block';
+    errorAlert.classList.add('show');
+    
+    // Auto hide after 5 seconds
+    setTimeout(hideError, 5000);
+}
+
+function hideError() {
+    const errorAlert = document.getElementById('errorAlert');
+    errorAlert.classList.remove('show');
+    setTimeout(() => {
+        errorAlert.style.display = 'none';
+    }, 300);
+}
+
+function showSuccess(message) {
+    const successAlert = document.getElementById('successAlert');
+    const successMessage = document.getElementById('successMessage');
+    successMessage.textContent = message;
+    successAlert.style.display = 'block';
+    successAlert.classList.add('show');
+    
+    // Auto hide after 3 seconds
+    setTimeout(hideSuccess, 3000);
+}
+
+function hideSuccess() {
+    const successAlert = document.getElementById('successAlert');
+    successAlert.classList.remove('show');
+    setTimeout(() => {
+        successAlert.style.display = 'none';
+    }, 300);
+}
+
+// Format currency with protection against auto-formatter
+function formatCurrency(amount, currencyCode = 'IRR') {
+    if (amount === null || amount === undefined || isNaN(amount)) return '0';
+    
+    try {
+        const numAmount = parseFloat(amount);
+        
+        // For IRR, show whole numbers
+        if (currencyCode === 'IRR') {
+            return new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(numAmount);
+        }
+        
+        // For other currencies, preserve up to 8 decimal places but remove trailing zeros
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 8
+        }).format(numAmount);
+        
+    } catch (error) {
+        console.error('Error formatting currency:', error);
+        return amount.toString();
+    }
+}
+</script>
+
+<style>
+.balances-container {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.balances-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.balances-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.balances-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
+}
+
+.balances-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.table th {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+    border: 1px solid #dee2e6 !important;
+    font-weight: 600;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.card-header {
+    border-bottom: 1px solid #e9ecef;
+    background-color: #1e3a8a !important;
+    color: white !important;
+    text-align: center !important;
+}
+
+.card-header h5, .card-header h6 {
+    color: white !important;
+}
+
+.badge {
+    font-size: 0.75em;
+    font-weight: normal;
+}
+
+.text-break {
+    word-break: break-all;
+    hyphens: auto;
+}
+
+/* LTR direction for amounts */
+[dir="ltr"] {
+    direction: ltr;
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 500;
+}
+
+/* Subtle card styling */
+.card:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Better spacing for currency totals */
+.currency-totals .col-md-4, 
+.currency-totals .col-md-6, 
+.currency-totals .col-md-12 {
+    margin-bottom: 1rem;
+}
+
+/* Improved table headers */
+.table th {
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.table td {
+    vertical-align: middle;
+    border-color: #f1f3f4;
+    text-align: center !important;
+}
+
+/* Better balance display */
+.balance-item {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.balance-item:last-child {
+    border-bottom: none;
+}
+
+/* Responsive improvements */
+@@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+    
+    .col-md-3, .col-md-4, .col-md-6, .col-md-12 {
+        margin-bottom: 1rem;
+    }
+    
+    .card-body .row .col-6 {
+        margin-bottom: 0.5rem;
+    }
+    
+    [dir="ltr"] {
+        font-size: 0.9rem;
+    }
+}
+
+/* Clean status styling */
+.status-positive {
+    color: #155724 !important;
+}
+
+.status-negative {
+    color: #721c24 !important;
+}
+
+/* Subtle borders and backgrounds */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.border {
+    border-color: #e9ecef !important;
+}
+
+/* Toggle button styling */
+.btn-group .btn-check:checked + .btn-outline-primary {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+    color: white;
+}
+
+.btn-group .btn-outline-primary {
+    border-color: #1e3a8a;
+    color: #1e3a8a;
+    transition: all 0.2s ease;
+}
+
+.btn-group .btn-outline-primary:hover {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+    color: white;
+}
+
+#viewModeToggleRow .card-header {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+}
+
+#viewModeToggleRow .card-header h6 {
+    color: #495057 !important;
+}
+</style>
