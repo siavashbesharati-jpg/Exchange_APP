@@ -100,6 +100,11 @@ Complete Financial Audit Trail
    - Financial transaction tracking
    - Error reporting and analysis
 
+5. **Single Responsibility Principle (SRP) Calculations**
+   - Dedicated calculation methods for financial effects
+   - Preview and actual processing use identical calculation logic
+   - Guaranteed consistency between UI previews and real transactions
+
 ### Database Entities Managed
 
 ```
@@ -144,7 +149,12 @@ Audit Trail:
 └── Complete transaction logging
 ```
 
-**Critical Consistency Rule**: The preview calculation (`PreviewOrderEffectsAsync`) must produce exactly the same numbers as the actual processing (`ProcessOrderCreationAsync`).
+**Critical Consistency Rule**: The service now uses **dedicated SRP calculation methods** that both preview and actual processing use to guarantee identical results:
+
+- `CalculateCustomerBalanceEffects()`: Pure calculation of customer balance impacts
+- `CalculateCurrencyPoolEffects()`: Pure calculation of institutional pool impacts
+
+Both `PreviewOrderEffectsAsync()` and `ProcessOrderCreationAsync()` use these same calculation methods to ensure preview calculations exactly match actual transaction results.
 
 ### 2. Accounting Document Processing
 
@@ -371,9 +381,9 @@ if (!isConsistent) {
    - Deleted history = lost compliance evidence
 
 3. **Maintain Preview-Actual Consistency**
-   - `PreviewOrderEffectsAsync` must match `ProcessOrderCreationAsync`
-   - Any change to one requires corresponding change to the other
-   - UI previews must accurately reflect actual results
+   - Both `PreviewOrderEffectsAsync` and `ProcessOrderCreationAsync` use shared SRP calculation methods
+   - `CalculateCustomerBalanceEffects()` and `CalculateCurrencyPoolEffects()` ensure identical calculations
+   - UI previews are guaranteed to match actual results through centralized calculation logic
 
 4. **Database Transaction Requirements**
    - All multi-step operations must be in database transactions
@@ -426,12 +436,21 @@ await service.RecalculateAllBalancesFromHistoryAsync();
 
 #### 2. Preview vs Actual Mismatch
 **Symptoms**: UI preview shows different amounts than actual transaction
+
+**Solution**: This issue is now **automatically prevented** by the SRP refactoring:
 ```
-Investigation Steps:
-1. Compare PreviewOrderEffectsAsync and ProcessOrderCreationAsync logic
-2. Check if both methods use same calculation formulas
-3. Verify both methods access same data sources
-4. Test with identical input data
+Both methods use shared calculation logic:
+├── CalculateCustomerBalanceEffects() - identical customer balance calculations
+├── CalculateCurrencyPoolEffects() - identical pool balance calculations
+└── Mathematical consistency guaranteed by Single Responsibility Principle
+```
+
+**Legacy Investigation Steps** (should no longer be needed):
+```
+1. Verify CalculateCustomerBalanceEffects logic matches business requirements
+2. Verify CalculateCurrencyPoolEffects logic matches business requirements  
+3. Check logging output for calculation step validation
+4. Test with identical input data to confirm consistency
 ```
 
 #### 3. Missing History Records
