@@ -91,6 +91,15 @@ This repository implements a **Forex Order Matching & Transaction Automation Sys
 - Log all transactions and OCR responses.  
 - Show order lifecycle clearly in dashboard.  
 
+### Number Formatting & Protection (IMPORTANT!)
+- **Global formatters**: The system has auto-currency-display-formatter.js that adds commas to numbers
+- **Reference numbers MUST NOT be formatted**: Use protection attributes to exclude them
+- **Protection methods**: 
+  - Data attributes: `data-no-format="true" data-protected="true" data-skip-format="true"`
+  - CSS classes: `no-format-number protected-reference skip-auto-format`
+- **Warning system**: Show "بهتر است تکمیل شود" for empty reference numbers
+- **Example**: `<span data-no-format="true" class="skip-auto-format">654456</span>` (not 65,456)
+
 ---
 
 # ✅ Copilot Task Management  
@@ -192,6 +201,14 @@ Copilot should:
    - Default admin user: admin@iranexpedia.com / Admin123!
    - Password policies and security features
 
+7. **Anti-Formatting Protection System** (September 19, 2025):
+   - Reference number display with warning for empty values
+   - Global formatter exclusion for protected elements
+   - Multiple protection methods: data attributes + CSS classes
+   - Prevents comma formatting on reference numbers (e.g., "654456" not "65,456")
+   - Smart warning system: "بهتر است تکمیل شود" when reference is empty
+   - Protected files: Upload.cshtml, auto-currency-display-formatter.js
+
 ### 📊 **System Architecture**
 - **Controllers**: 9 main controllers including Account, Reports, BankStatements, enhanced Settlements
 - **Services**: 7 service layers including OCR, Settlement, Notification, BankStatement, DataSeed
@@ -266,5 +283,44 @@ Update the API key in `appsettings.Development.json`:
   "ApiKey": "YOUR_ACTUAL_OPENROUTER_API_KEY_HERE"
 }
 ```
+
+---
+
+# 🤖 **COPILOT DEVELOPMENT GUIDELINES**
+
+## ⚠️ **CRITICAL: Number Formatting Protection**
+When working with reference numbers, tracking IDs, or any numeric identifiers:
+
+### ❌ **DON'T** let global formatters add commas:
+```html
+<!-- BAD: Will become "65,456" -->
+<span>65456</span>
+```
+
+### ✅ **DO** use protection attributes and classes:
+```html
+<!-- GOOD: Stays "65456" -->
+<span data-no-format="true" data-skip-format="true" class="skip-auto-format no-format-number">65456</span>
+```
+
+### 📋 **Protection Methods (Use ALL for maximum protection):**
+- **Data Attributes**: `data-no-format="true"` `data-protected="true"` `data-skip-format="true"`
+- **CSS Classes**: `no-format-number` `protected-reference` `skip-auto-format`
+
+### 🚨 **Warning Pattern for Empty Values:**
+```html
+<!-- Show warning when value is empty/null -->
+<div id="field-warning" class="alert alert-warning" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i> <strong>فیلد:</strong> بهتر است تکمیل شود
+</div>
+```
+
+### 📁 **Files to Update When Adding Protection:**
+1. **HTML/Razor**: Add protection attributes to elements
+2. **auto-currency-display-formatter.js**: Update `shouldSkipElement()` if needed
+3. **CSS**: Add styling for protected elements
+
+### 🎯 **Example Implementation:**
+See `/Views/AccountingDocuments/Upload.cshtml` lines 308-315 and 1210-1240 for complete reference.
 
 ---
