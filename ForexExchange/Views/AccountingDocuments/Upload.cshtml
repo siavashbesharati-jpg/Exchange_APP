@@ -276,32 +276,32 @@
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
+            <div class="modal-header bg-info text-white">
                 <h5 class="modal-title" id="confirmationModalLabel">
-                    <i class="fas fa-exclamation-triangle"></i> تأیید ثبت سند حسابداری
+                    <i class="fas fa-eye"></i> پیش‌نمایش تاثیر سند حسابداری
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="بستن"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> لطفاً اطلاعات زیر را بررسی کنید. این عملیات تأثیرات زیر را بر ترازها خواهد داشت:
+                    <i class="fas fa-info-circle"></i> لطفاً جزئیات سند و تأثیرات آن را بررسی کنید.
                 </div>
                 
                 <!-- Transaction Summary -->
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h6 class="mb-0"><i class="fas fa-file-invoice"></i> خلاصه تراکنش</h6>
+                        <h6 class="mb-0"><i class="fas fa-file-invoice"></i> خلاصه سند</h6>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-2"><strong>نوع سند:</strong> <span id="preview-type"></span></div>
-                                <div class="mb-2"><strong>عنوان:</strong> <span id="preview-title"></span></div>
-                                <div class="mb-2"><strong>مبلغ:</strong> <span id="preview-amount" class="text-primary fw-bold"></span></div>
+                                <div class="mb-2"><strong>نوع سند:</strong> <span id="preview-type" class="badge bg-info"></span></div>
+                                <div class="mb-2"><strong>عنوان:</strong> <span id="preview-title" class="text-primary"></span></div>
+                                <div class="mb-2"><strong>مبلغ:</strong> <span id="preview-amount" class="text-success fw-bold" dir="ltr"></span></div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-2"><strong>پرداخت‌کننده:</strong> <span id="preview-payer"></span></div>
-                                <div class="mb-2"><strong>دریافت‌کننده:</strong> <span id="preview-receiver"></span></div>
+                                <div class="mb-2"><strong>پرداخت‌کننده:</strong> <span id="preview-payer" class="text-primary"></span></div>
+                                <div class="mb-2"><strong>دریافت‌کننده:</strong> <span id="preview-receiver" class="text-primary"></span></div>
                                 <div class="mb-2"><strong>تاریخ:</strong> <span id="preview-date"></span></div>
                             </div>
                         </div>
@@ -322,25 +322,25 @@
                     </div>
                     <div class="card-body">
                         <div id="balance-effects-loading" class="text-center py-3">
-                            <i class="fas fa-spinner fa-spin"></i> در حال محاسبه تأثیرات...
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">در حال بارگذاری...</span>
+                            </div>
+                            <div class="mt-2">در حال محاسبه تأثیرات...</div>
                         </div>
                         <div id="balance-effects-content" style="display: none;">
                             <!-- Customer Balance Effects -->
                             <div id="customer-effects" style="display: none;">
-                                <h6 class="text-success"><i class="fas fa-user"></i> تأثیرات بر مشتریان:</h6>
-                                <div id="customer-effects-list"></div>
+                                <!-- Will be populated with beautiful table style -->
                             </div>
                             
                             <!-- Bank Account Effects -->
-                            <div id="bank-effects" style="display: none;" class="mt-3">
-                                <h6 class="text-info"><i class="fas fa-university"></i> تأثیرات بر حساب‌های بانکی:</h6>
-                                <div id="bank-effects-list"></div>
+                            <div id="bank-effects" style="display: none;">
+                                <!-- Will be populated with beautiful table style -->
                             </div>
                             
                             <!-- Currency Pool Effects -->
-                            <div id="pool-effects" style="display: none;" class="mt-3">
-                                <h6 class="text-warning"><i class="fas fa-coins"></i> تأثیرات بر صندوق ارزی:</h6>
-                                <div id="pool-effects-list"></div>
+                            <div id="pool-effects" style="display: none;">
+                                <!-- Will be populated with beautiful table style -->
                             </div>
                         </div>
                     </div>
@@ -349,8 +349,8 @@
                 <!-- Warning Messages -->
                 <div id="confirmation-warnings" style="display: none;">
                     <div class="alert alert-warning">
-                        <h6><i class="fas fa-exclamation-triangle"></i> هشدارها:</h6>
-                        <ul id="warnings-list" class="mb-0"></ul>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div id="warnings-list"></div>
                     </div>
                 </div>
             </div>
@@ -359,7 +359,7 @@
                     <i class="fas fa-times"></i> انصراف
                 </button>
                 <button type="button" id="confirmSubmitBtn" class="btn btn-primary">
-                    <i class="fas fa-check"></i> تأیید و ثبت سند
+                    <i class="fas fa-check"></i> تایید و ثبت نهایی
                 </button>
             </div>
         </div>
@@ -1334,73 +1334,109 @@
             console.log('Balance Effects Data:', effects); // Debug log
             let hasAnyEffects = false;
             
-            // Customer effects
+            // Customer effects with beautiful table styling
             if (effects.customerEffects && effects.customerEffects.length > 0) {
                 const customerDiv = document.getElementById('customer-effects');
-                const customerList = document.getElementById('customer-effects-list');
-                let customerHtml = '';
+                let customerHtml = `
+                    <div class="mb-3">
+                        <h6 class="text-primary"><i class="fas fa-user"></i> تأثیرات موجودی مشتری</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center">مشتری</th>
+                                        <th class="text-center">ارز</th>
+                                        <th class="text-center">موجودی قبل</th>
+                                        <th class="text-center">موجودی بعد</th>
+                                        <th class="text-center">تغییر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
                 
                 effects.customerEffects.forEach(effect => {
                     const changeClass = effect.change >= 0 ? 'text-success' : 'text-danger';
-                    const changeIcon = effect.change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
-                    const formattedChange = Math.abs(effect.change).toLocaleString('fa-IR');
+                    const changeIcon = effect.change >= 0 ? '+' : '';
+                    const formattedCurrentBalance = effect.currentBalance.toLocaleString('fa-IR');
                     const formattedNewBalance = effect.newBalance.toLocaleString('fa-IR');
+                    const formattedChange = effect.change.toLocaleString('fa-IR');
+                    const newBalanceColorClass = effect.newBalance >= 0 ? 'text-success' : 'text-danger';
                     
                     customerHtml += `
-                        <div class="border rounded p-2 mb-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong>${effect.customerName}</strong>
-                                <span class="badge bg-secondary">${effect.currency}</span>
-                            </div>
-                            <div class="small mt-1">
-                                <div>تراز فعلی: <span class="fw-bold">${effect.currentBalance.toLocaleString('fa-IR')} ${effect.currency}</span></div>
-                                <div>تغییر: <span class="${changeClass} fw-bold">
-                                    <i class="${changeIcon}"></i> ${formattedChange} ${effect.currency}
-                                </span></div>
-                                <div>تراز جدید: <span class="fw-bold text-primary">${formattedNewBalance} ${effect.currency}</span></div>
-                            </div>
-                        </div>
+                        <tr>
+                            <td class="text-center fw-bold">${effect.customerName}</td>
+                            <td class="text-center fw-bold">${effect.currency}</td>
+                            <td class="text-center" dir="ltr">${formattedCurrentBalance}</td>
+                            <td class="text-center fw-bold ${newBalanceColorClass}" dir="ltr">${formattedNewBalance}</td>
+                            <td class="text-center ${changeClass}" dir="ltr">${changeIcon}${formattedChange}</td>
+                        </tr>
                     `;
                 });
                 
-                customerList.innerHTML = customerHtml;
+                customerHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                customerDiv.innerHTML = customerHtml;
                 customerDiv.style.display = 'block';
                 hasAnyEffects = true;
             } else {
                 document.getElementById('customer-effects').style.display = 'none';
             }
             
-            // Bank account effects
+            // Bank account effects with beautiful table styling
             if (effects.bankAccountEffects && effects.bankAccountEffects.length > 0) {
                 console.log('Bank Account Effects Found:', effects.bankAccountEffects); // Debug log
                 const bankDiv = document.getElementById('bank-effects');
-                const bankList = document.getElementById('bank-effects-list');
-                let bankHtml = '';
+                let bankHtml = `
+                    <div class="mb-3">
+                        <h6 class="text-info"><i class="fas fa-university"></i> تأثیرات حساب‌های بانکی</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center">بانک</th>
+                                        <th class="text-center">شماره حساب</th>
+                                        <th class="text-center">ارز</th>
+                                        <th class="text-center">موجودی قبل</th>
+                                        <th class="text-center">موجودی بعد</th>
+                                        <th class="text-center">تغییر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
                 
                 effects.bankAccountEffects.forEach(effect => {
                     const changeClass = effect.change >= 0 ? 'text-success' : 'text-danger';
-                    const changeIcon = effect.change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
-                    const formattedChange = Math.abs(effect.change).toLocaleString('fa-IR');
+                    const changeIcon = effect.change >= 0 ? '+' : '';
+                    const formattedCurrentBalance = effect.currentBalance.toLocaleString('fa-IR');
                     const formattedNewBalance = effect.newBalance.toLocaleString('fa-IR');
+                    const formattedChange = effect.change.toLocaleString('fa-IR');
+                    const newBalanceColorClass = effect.newBalance >= 0 ? 'text-success' : 'text-danger';
                     
                     bankHtml += `
-                        <div class="border rounded p-2 mb-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong>${effect.bankName} - ${effect.accountNumber}</strong>
-                                <span class="badge bg-info">${effect.currency}</span>
-                            </div>
-                            <div class="small mt-1">
-                                <div>تراز فعلی: <span class="fw-bold">${effect.currentBalance.toLocaleString('fa-IR')} ${effect.currency}</span></div>
-                                <div>تغییر: <span class="${changeClass} fw-bold">
-                                    <i class="${changeIcon}"></i> ${formattedChange} ${effect.currency}
-                                </span></div>
-                                <div>تراز جدید: <span class="fw-bold text-primary">${formattedNewBalance} ${effect.currency}</span></div>
-                            </div>
-                        </div>
+                        <tr>
+                            <td class="text-center fw-bold">${effect.bankName}</td>
+                            <td class="text-center" dir="ltr">${effect.accountNumber}</td>
+                            <td class="text-center fw-bold">${effect.currency}</td>
+                            <td class="text-center" dir="ltr">${formattedCurrentBalance}</td>
+                            <td class="text-center fw-bold ${newBalanceColorClass}" dir="ltr">${formattedNewBalance}</td>
+                            <td class="text-center ${changeClass}" dir="ltr">${changeIcon}${formattedChange}</td>
+                        </tr>
                     `;
                 });
                 
-                bankList.innerHTML = bankHtml;
+                bankHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                bankDiv.innerHTML = bankHtml;
                 bankDiv.style.display = 'block';
                 hasAnyEffects = true;
             } else {
@@ -1408,36 +1444,51 @@
                 document.getElementById('bank-effects').style.display = 'none';
             }
             
-            // Currency pool effects
+            // Currency pool effects with beautiful table styling
             if (effects.poolEffects && effects.poolEffects.length > 0) {
                 const poolDiv = document.getElementById('pool-effects');
-                const poolList = document.getElementById('pool-effects-list');
-                let poolHtml = '';
+                let poolHtml = `
+                    <div class="mb-3">
+                        <h6 class="text-warning"><i class="fas fa-piggy-bank"></i> تأثیرات صندوق ارز</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center">ارز</th>
+                                        <th class="text-center">موجودی قبل</th>
+                                        <th class="text-center">موجودی بعد</th>
+                                        <th class="text-center">تغییر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
                 
                 effects.poolEffects.forEach(effect => {
                     const changeClass = effect.change >= 0 ? 'text-success' : 'text-danger';
-                    const changeIcon = effect.change >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
-                    const formattedChange = Math.abs(effect.change).toLocaleString('fa-IR');
+                    const changeIcon = effect.change >= 0 ? '+' : '';
+                    const formattedCurrentBalance = effect.currentBalance.toLocaleString('fa-IR');
                     const formattedNewBalance = effect.newBalance.toLocaleString('fa-IR');
+                    const formattedChange = effect.change.toLocaleString('fa-IR');
+                    const newBalanceColorClass = effect.newBalance >= 0 ? 'text-success' : 'text-danger';
                     
                     poolHtml += `
-                        <div class="border rounded p-2 mb-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong>صندوق ${effect.currencyName}</strong>
-                                <span class="badge bg-warning">${effect.currency}</span>
-                            </div>
-                            <div class="small mt-1">
-                                <div>تراز فعلی: <span class="fw-bold">${effect.currentBalance.toLocaleString('fa-IR')} ${effect.currency}</span></div>
-                                <div>تغییر: <span class="${changeClass} fw-bold">
-                                    <i class="${changeIcon}"></i> ${formattedChange} ${effect.currency}
-                                </span></div>
-                                <div>تراز جدید: <span class="fw-bold text-primary">${formattedNewBalance} ${effect.currency}</span></div>
-                            </div>
-                        </div>
+                        <tr>
+                            <td class="text-center fw-bold">${effect.currency}</td>
+                            <td class="text-center" dir="ltr">${formattedCurrentBalance}</td>
+                            <td class="text-center fw-bold ${newBalanceColorClass}" dir="ltr">${formattedNewBalance}</td>
+                            <td class="text-center ${changeClass}" dir="ltr">${changeIcon}${formattedChange}</td>
+                        </tr>
                     `;
                 });
                 
-                poolList.innerHTML = poolHtml;
+                poolHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                poolDiv.innerHTML = poolHtml;
                 poolDiv.style.display = 'block';
                 hasAnyEffects = true;
             } else {
@@ -1447,8 +1498,12 @@
             // Show message if no effects found
             if (!hasAnyEffects) {
                 document.getElementById('balance-effects-content').innerHTML = 
-                    '<div class="alert alert-info"><i class="fas fa-info-circle"></i> هیچ تأثیری بر ترازها یافت نشد. ممکن است تراکنش فقط بین حساب‌های یکسان باشد.</div>';
+                    '<div class="alert alert-warning">هیچ تأثیری بر ترازها محاسبه نشد.</div>';
             }
+
+            // Hide loading and show content
+            document.getElementById('balance-effects-loading').style.display = 'none';
+            document.getElementById('balance-effects-content').style.display = 'block';
         }
 
         function displayWarnings(warnings) {
