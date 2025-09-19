@@ -396,15 +396,6 @@
         exportTimelineData();
     }
 
-    function formatCurrency(amount, currencyCode) {
-        if (currencyCode === 'IRR') {
-            return new Intl.NumberFormat('fa-IR').format(amount) + ' تومان';
-        }
-        return new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 8
-        }).format(amount) + ' ' + currencyCode;
-    }
 
     function formatDate(dateString) {
         if (!dateString) return '-';
@@ -523,8 +514,8 @@
                     }
                     </td>
                     <td class="text-center">${currency}</td>
-                    <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(transaction.amount, currency)}</td>
-                    <td class="text-center ltr-direction fw-bold">${formatCurrency(transaction.runningBalance, currency)}</td>
+                    <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${transaction.amount, currency}</td>
+                    <td class="text-center ltr-direction fw-bold">${transaction.runningBalance}</td>
                     <td class="text-start"><small class="text-muted">${transaction.description || '-'}</small></td>
                 </tr>
             `;
