@@ -104,12 +104,12 @@
                 </div>
                 <div class="card-body text-center">
                     <div class="btn-group" role="group" aria-label="View Mode Toggle">
-                        <input type="radio" class="btn-check" name="viewModeToggle" id="customerViewToggle" value="customer" checked>
+                        <input type="radio" class="btn-check" name="viewModeToggle" id="customerViewToggle" value="customer">
                         <label class="btn btn-outline-primary" for="customerViewToggle">
                             <i class="fas fa-user me-1"></i>هر مشتری یک جدول
                         </label>
 
-                        <input type="radio" class="btn-check" name="viewModeToggle" id="currencyViewToggle" value="currency">
+                        <input type="radio" class="btn-check" name="viewModeToggle" id="currencyViewToggle" value="currency" checked>
                         <label class="btn btn-outline-primary" for="currencyViewToggle">
                             <i class="fas fa-coins me-1"></i>هر ارز یک جدول
                         </label>
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Get current view mode from toggle
 function getCurrentViewMode() {
     const checkedToggle = document.querySelector('input[name="viewModeToggle"]:checked');
-    return checkedToggle ? checkedToggle.value : 'customer';
+    return checkedToggle ? checkedToggle.value : 'currency';
 }
 
 // Update table view based on current toggle selection
@@ -691,6 +691,21 @@ function renderCurrencyBasedTables(customers) {
     });
     
     const tablesHtml = Object.entries(currencyGroups).map(([currency, customerBalances]) => {
+        // Calculate totals for this currency
+        let totalPositive = 0;
+        let totalNegative = 0;
+        let totalNet = 0;
+        
+        customerBalances.forEach(item => {
+            const amount = item.balance.balance;
+            totalNet += amount;
+            if (amount >= 0) {
+                totalPositive += amount;
+            } else {
+                totalNegative += Math.abs(amount);
+            }
+        });
+        
         const customerRows = customerBalances.map((item, index) => {
             const isPositive = item.balance.balance >= 0;
             const statusClass = isPositive ? 'text-success' : 'text-danger';
@@ -716,6 +731,30 @@ function renderCurrencyBasedTables(customers) {
             `;
         }).join('');
         
+        // Create summary row
+        const isNetPositive = totalNet >= 0;
+        const netClass = isNetPositive ? 'text-success' : 'text-danger';
+        const netSymbol = isNetPositive ? '+' : '-';
+        const netFormatted = formatCurrency(Math.abs(totalNet), currency);
+        
+        const summaryRow = `
+            <tr class="table-info border-top border-2">
+                <td class="text-center fw-bold">جمع</td>
+                <td class="text-center fw-bold">کل ${currency}</td>
+                <td class="text-center" dir="ltr">
+                    <small class="text-muted">
+                        <span class="text-success">+${formatCurrency(totalPositive, currency)}</span> | 
+                        <span class="text-danger">-${formatCurrency(totalNegative, currency)}</span>
+                    </small>
+                </td>
+                <td class="text-center" dir="ltr">
+                    <span class="${netClass} fw-bold fs-5" data-no-format="true" data-skip-format="true" class="skip-auto-format">
+                        ${netSymbol}${netFormatted}
+                    </span>
+                </td>
+            </tr>
+        `;
+        
         return `
             <div class="card shadow-sm border mb-4">
                 <div class="card-header text-center d-flex justify-content-between align-items-center">
@@ -735,6 +774,7 @@ function renderCurrencyBasedTables(customers) {
                             </thead>
                             <tbody>
                                 ${customerRows}
+                                ${summaryRow}
                             </tbody>
                         </table>
                     </div>
@@ -992,5 +1032,19 @@ function formatCurrency(amount, currencyCode = 'IRR') {
 
 #viewModeToggleRow .card-header h6 {
     color: #495057 !important;
+}
+
+/* Summary row styling */
+.table-info {
+    background-color: #e3f2fd !important;
+}
+
+.table-info td {
+    font-weight: 500;
+    border-top: 2px solid #1e3a8a !important;
+}
+
+.table-info .fw-bold {
+    font-weight: 600 !important;
 }
 </style>
