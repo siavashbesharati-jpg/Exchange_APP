@@ -515,9 +515,25 @@
         // Use jQuery event delegation for Select2 elements
         $(document).on('change', '[name="PayerBankAccountId"]', function() {
             validateCurrency();
+            // Auto-set PayerType to System when bank account is selected
+            if (this.value && this.value !== '') {
+                console.log('🔄 Auto-setting PayerType to System due to bank account selection:', this.value);
+                $('#payerType').val('@ForexExchange.Models.PayerType.System').trigger('change');
+                setTimeout(() => {
+                    console.log('✅ PayerType set to:', document.getElementById('payerType').value);
+                }, 50);
+            }
         });
         $(document).on('change', '[name="ReceiverBankAccountId"]', function() {
             validateCurrency();
+            // Auto-set ReceiverType to System when bank account is selected
+            if (this.value && this.value !== '') {
+                console.log('🔄 Auto-setting ReceiverType to System due to bank account selection:', this.value);
+                $('#receiverType').val('@ForexExchange.Models.ReceiverType.System').trigger('change');
+                setTimeout(() => {
+                    console.log('✅ ReceiverType set to:', document.getElementById('receiverType').value);
+                }, 50);
+            }
         });
 
         // Auto-generate title function (Select2 compatible)
@@ -606,6 +622,22 @@
         // Add auto-title generation to other field changes (Select2 compatible)
         $(document).on('change', '[name="PayerCustomerId"]', autoGenerateTitle);
         $(document).on('change', '[name="ReceiverCustomerId"]', autoGenerateTitle);
+        
+        // Auto-set PayerType/ReceiverType when customers are selected
+        $(document).on('change', '[name="PayerCustomerId"]', function() {
+            // Auto-set PayerType to Customer when customer is selected
+            if (this.value && this.value !== '') {
+                console.log('🔄 Auto-setting PayerType to Customer due to customer selection:', this.value);
+                $('#payerType').val('@ForexExchange.Models.PayerType.Customer').trigger('change');
+            }
+        });
+        $(document).on('change', '[name="ReceiverCustomerId"]', function() {
+            // Auto-set ReceiverType to Customer when customer is selected
+            if (this.value && this.value !== '') {
+                console.log('🔄 Auto-setting ReceiverType to Customer due to customer selection:', this.value);
+                $('#receiverType').val('@ForexExchange.Models.ReceiverType.Customer').trigger('change');
+            }
+        });
         $(document).on('change', '[name="PayerBankAccountId"]', autoGenerateTitle);
         $(document).on('change', '[name="ReceiverBankAccountId"]', autoGenerateTitle);
         document.querySelector('[name="Amount"]').addEventListener('input', autoGenerateTitle);
@@ -1254,18 +1286,53 @@
             console.log(`  Date: "${document.getElementById('preview-date').textContent}"`);
         }
 
+        function ensureCorrectTypes() {
+            console.log('🔍 Checking and correcting PayerType/ReceiverType...');
+            
+            const payerCustomerId = document.querySelector('[name="PayerCustomerId"]').value;
+            const payerBankAccountId = document.querySelector('[name="PayerBankAccountId"]').value;
+            const receiverCustomerId = document.querySelector('[name="ReceiverCustomerId"]').value;
+            const receiverBankAccountId = document.querySelector('[name="ReceiverBankAccountId"]').value;
+            
+            // Fix PayerType
+            if (payerCustomerId && payerCustomerId !== '') {
+                console.log('🔧 Setting PayerType to Customer due to PayerCustomerId:', payerCustomerId);
+                $('#payerType').val('@ForexExchange.Models.PayerType.Customer').trigger('change');
+            } else if (payerBankAccountId && payerBankAccountId !== '') {
+                console.log('🔧 Setting PayerType to System due to PayerBankAccountId:', payerBankAccountId);
+                $('#payerType').val('@ForexExchange.Models.PayerType.System').trigger('change');
+            }
+            
+            // Fix ReceiverType
+            if (receiverCustomerId && receiverCustomerId !== '') {
+                console.log('🔧 Setting ReceiverType to Customer due to ReceiverCustomerId:', receiverCustomerId);
+                $('#receiverType').val('@ForexExchange.Models.ReceiverType.Customer').trigger('change');
+            } else if (receiverBankAccountId && receiverBankAccountId !== '') {
+                console.log('🔧 Setting ReceiverType to System due to ReceiverBankAccountId:', receiverBankAccountId);
+                $('#receiverType').val('@ForexExchange.Models.ReceiverType.System').trigger('change');
+            }
+            
+            // Wait a moment for Select2 to update
+            setTimeout(() => {
+                console.log('✅ Types corrected - PayerType:', document.getElementById('payerType').value, 'ReceiverType:', document.getElementById('receiverType').value);
+            }, 100);
+        }
+
         function fetchBalanceEffects() {
             const form = document.querySelector('form');
+            
+            // Safety check: Ensure types are correct before sending
+            ensureCorrectTypes();
             
             // Create a structured object instead of FormData for better model binding
             const transactionData = {
                 Type: parseInt(form.querySelector('[name="Type"]').value) || 0,
                 PayerType: parseInt(form.querySelector('[name="PayerType"]').value) || 0,
                 ReceiverType: parseInt(form.querySelector('[name="ReceiverType"]').value) || 0,
-                PayerCustomerId: form.querySelector('[name="PayerCustomerId"]').value || null,
-                ReceiverCustomerId: form.querySelector('[name="ReceiverCustomerId"]').value || null,
-                PayerBankAccountId: form.querySelector('[name="PayerBankAccountId"]').value || null,
-                ReceiverBankAccountId: form.querySelector('[name="ReceiverBankAccountId"]').value || null,
+                PayerCustomerId: form.querySelector('[name="PayerCustomerId"]').value ? parseInt(form.querySelector('[name="PayerCustomerId"]').value) : null,
+                ReceiverCustomerId: form.querySelector('[name="ReceiverCustomerId"]').value ? parseInt(form.querySelector('[name="ReceiverCustomerId"]').value) : null,
+                PayerBankAccountId: form.querySelector('[name="PayerBankAccountId"]').value ? parseInt(form.querySelector('[name="PayerBankAccountId"]').value) : null,
+                ReceiverBankAccountId: form.querySelector('[name="ReceiverBankAccountId"]').value ? parseInt(form.querySelector('[name="ReceiverBankAccountId"]').value) : null,
                 Amount: parseFloat(form.querySelector('[name="Amount"]').value) || 0,
                 CurrencyCode: form.querySelector('[name="CurrencyCode"]').value || '',
                 Title: form.querySelector('[name="Title"]').value || '',
@@ -1279,10 +1346,28 @@
                 if (transactionData[key] === '' || transactionData[key] === 'null') {
                     transactionData[key] = null;
                 }
+                // Also convert 0 values for ID fields to null (except for enum fields)
+                if ((key.includes('Id') || key.includes('CustomerId') || key.includes('BankAccountId')) && transactionData[key] === 0) {
+                    transactionData[key] = null;
+                }
             });
             
             // Debug: Log transaction data being sent
             console.log('Sending transaction data for balance effects:', transactionData);
+            console.log('PayerType:', transactionData.PayerType, 'ReceiverType:', transactionData.ReceiverType);
+            console.log('PayerBankAccountId:', transactionData.PayerBankAccountId, 'ReceiverBankAccountId:', transactionData.ReceiverBankAccountId);
+            console.log('PayerCustomerId:', transactionData.PayerCustomerId, 'ReceiverCustomerId:', transactionData.ReceiverCustomerId);
+            console.log('Final cleaned data:', JSON.stringify(transactionData, null, 2));
+            
+            // Final verification
+            if (transactionData.ReceiverBankAccountId && transactionData.ReceiverType === 0) {
+                console.warn('⚠️ WARNING: ReceiverBankAccountId exists but ReceiverType is still Customer! Forcing to System...');
+                transactionData.ReceiverType = 1;
+            }
+            if (transactionData.PayerBankAccountId && transactionData.PayerType === 0) {
+                console.warn('⚠️ WARNING: PayerBankAccountId exists but PayerType is still Customer! Forcing to System...');
+                transactionData.PayerType = 1;
+            }
             
             // Get anti-forgery token
             const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
