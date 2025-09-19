@@ -1410,17 +1410,10 @@
             // Hide modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
             modal.hide();
-            
-            // Submit form
+
+            // Submit the original form directly (preserves all values)
             const form = document.querySelector('form');
-            const submitButton = form.querySelector('button[type="submit"]');
-            
-            // Temporarily remove the event listener to allow actual submission
-            const newForm = form.cloneNode(true);
-            form.parentNode.replaceChild(newForm, form);
-            
-            // Submit the new form
-            newForm.submit();
+            form.submit();
         });
         
         } // End of initializePageScripts function

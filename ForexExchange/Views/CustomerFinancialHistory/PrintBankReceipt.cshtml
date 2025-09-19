@@ -2,6 +2,13 @@
 @{
     ViewData["Title"] = "صورتحساب - " + Model.CustomerName;
     Layout = null; // No layout for print-friendly page
+    System.Console.WriteLine($"from date : {Model.FromDate}");
+    System.Console.WriteLine($"TO date : {Model.ToDate}");
+    System.Console.WriteLine($"Min date : {DateTime.MinValue}");
+    System.Console.WriteLine($"max date : {DateTime.MaxValue}");
+
+
+
 }
 
 <!DOCTYPE html>
@@ -392,9 +399,17 @@
                 <div class="info-item">
                     <div class="info-label">از تاریخ:</div>
                     <div class="info-value">
-                        @if (Model.Transactions != null && Model.Transactions.Any())
+                        @* If FromDate.Date is MinValue.Date, use first transaction date; otherwise, use FromDate *@
+                        @if (Model.FromDate.Date == DateTime.MinValue.Date)
                         {
-                            @(Model.Transactions.Min(t => t.TransactionDate).ToString("yyyy/MM/dd"))
+                            if (Model.Transactions != null && Model.Transactions.Any())
+                            {
+                                @(Model.Transactions.Min(t => t.TransactionDate).ToString("yyyy/MM/dd"))
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
                         }
                         else
                         {
@@ -405,14 +420,23 @@
                 <div class="info-item">
                     <div class="info-label">تا تاریخ:</div>
                     <div class="info-value">
-                        @if (Model.Transactions != null && Model.Transactions.Any())
+                        @* If ToDate.Date is MaxValue.Date, use last transaction date; otherwise, use ToDate *@
+                        @if (Model.ToDate.Date == DateTime.MaxValue.Date)
                         {
-                            @(Model.Transactions.Max(t => t.TransactionDate).ToString("yyyy/MM/dd"))
+                            if (Model.Transactions != null && Model.Transactions.Any())
+                            {
+                                @(Model.Transactions.Max(t => t.TransactionDate).ToString("yyyy/MM/dd"))
+                            }
+                            else
+                            {
+                                <span>-</span>
+                            }
                         }
                         else
                         {
                             @(Model.ToDate.ToString("yyyy/MM/dd"))
                         }
+                        
                     </div>
                 </div>
                 <div class="info-item">
