@@ -861,126 +861,99 @@ namespace ForexExchange.Controllers
                 // Payer Bank Account Effect
                 if (accountingDocument.PayerType == PayerType.System && accountingDocument.PayerBankAccountId.HasValue)
                 {
-                    var payerBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.PayerBankAccountId.Value);
-                    if (payerBankAccount != null)
+                    try
                     {
-                        // Validate currency match
-                        if (payerBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                        var payerBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.PayerBankAccountId.Value);
+                        if (payerBankAccount != null)
                         {
-                            warnings.Add($"ارز حساب بانکی پرداخت کننده ({payerBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                            // Validate currency match
+                            if (payerBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                            {
+                                warnings.Add($"ارز حساب بانکی پرداخت کننده ({payerBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                            }
+                            else
+                            {
+                                // Get current balance
+                                var currentBalances = await _bankAccountBalanceService.GetBankAccountBalancesAsync(accountingDocument.PayerBankAccountId.Value);
+                                var currentBalance = currentBalances.FirstOrDefault(b => b.CurrencyCode == accountingDocument.CurrencyCode)?.Balance ?? 0;
+
+                                // Calculate new balance (Bank account pays out, so -amount)
+                                var newBalance = currentBalance - accountingDocument.Amount;
+
+                                bankAccountEffectsList.Add(new
+                                {
+                                    bankName = payerBankAccount.BankName,
+                                    accountNumber = payerBankAccount.AccountNumber,
+                                    currency = accountingDocument.CurrencyCode,
+                                    currentBalance = currentBalance,
+                                    change = -accountingDocument.Amount, // Negative for paying bank
+                                    newBalance = newBalance
+                                });
+
+                                // Warning if balance becomes negative
+                                if (newBalance < 0)
+                                {
+                                    warnings.Add($"تراز حساب بانکی {payerBankAccount.BankName} - {payerBankAccount.AccountNumber} منفی خواهد شد ({newBalance:N2}).");
+                                }
+                            }
                         }
                         else
                         {
-                            // Get current balance
-                            var currentBalances = await _bankAccountBalanceService.GetBankAccountBalancesAsync(accountingDocument.PayerBankAccountId.Value);
-                            var currentBalance = currentBalances.FirstOrDefault(b => b.CurrencyCode == accountingDocument.CurrencyCode)?.Balance ?? 0;
-
-                            // Calculate new balance (Bank account pays out, so -amount)
-                            var newBalance = currentBalance - accountingDocument.Amount;
-
-                            bankAccountEffectsList.Add(new
-                            {
-                                bankName = payerBankAccount.BankName,
-                                accountNumber = payerBankAccount.AccountNumber,
-                                currency = accountingDocument.CurrencyCode,
-                                currentBalance = currentBalance,
-                                change = -accountingDocument.Amount, // Negative for paying bank
-                                newBalance = newBalance
-                            });
-
-                            // Warning if balance becomes negative
-                            if (newBalance < 0)
-                            {
-                                warnings.Add($"تراز حساب بانکی {payerBankAccount.BankName} - {payerBankAccount.AccountNumber} منفی خواهد شد ({newBalance:N2}).");
-                            }
+                            warnings.Add($"حساب بانکی پرداخت کننده با شناسه {accountingDocument.PayerBankAccountId.Value} یافت نشد.");
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error calculating payer bank account effects for account ID {AccountId}", accountingDocument.PayerBankAccountId.Value);
+                        warnings.Add("خطا در محاسبه تأثیرات حساب بانکی پرداخت کننده.");
                     }
                 }
 
                 // Receiver Bank Account Effect
                 if (accountingDocument.ReceiverType == ReceiverType.System && accountingDocument.ReceiverBankAccountId.HasValue)
                 {
-                    var receiverBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.ReceiverBankAccountId.Value);
-                    if (receiverBankAccount != null)
+                    try
                     {
-                        // Validate currency match
-                        if (receiverBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                        var receiverBankAccount = await _context.BankAccounts.FindAsync(accountingDocument.ReceiverBankAccountId.Value);
+                        if (receiverBankAccount != null)
                         {
-                            warnings.Add($"ارز حساب بانکی دریافت کننده ({receiverBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                            // Validate currency match
+                            if (receiverBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
+                            {
+                                warnings.Add($"ارز حساب بانکی دریافت کننده ({receiverBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.");
+                            }
+                            else
+                            {
+                                // Get current balance
+                                var currentBalances = await _bankAccountBalanceService.GetBankAccountBalancesAsync(accountingDocument.ReceiverBankAccountId.Value);
+                                var currentBalance = currentBalances.FirstOrDefault(b => b.CurrencyCode == accountingDocument.CurrencyCode)?.Balance ?? 0;
+
+                                // Calculate new balance (Bank account receives, so +amount)
+                                var newBalance = currentBalance + accountingDocument.Amount;
+
+                                bankAccountEffectsList.Add(new
+                                {
+                                    bankName = receiverBankAccount.BankName,
+                                    accountNumber = receiverBankAccount.AccountNumber,
+                                    currency = accountingDocument.CurrencyCode,
+                                    currentBalance = currentBalance,
+                                    change = accountingDocument.Amount, // Positive for receiving bank
+                                    newBalance = newBalance
+                                });
+                            }
                         }
                         else
                         {
-                            // Get current balance
-                            var currentBalances = await _bankAccountBalanceService.GetBankAccountBalancesAsync(accountingDocument.ReceiverBankAccountId.Value);
-                            var currentBalance = currentBalances.FirstOrDefault(b => b.CurrencyCode == accountingDocument.CurrencyCode)?.Balance ?? 0;
-
-                            // Calculate new balance (Bank account receives, so +amount)
-                            var newBalance = currentBalance + accountingDocument.Amount;
-
-                            bankAccountEffectsList.Add(new
-                            {
-                                bankName = receiverBankAccount.BankName,
-                                accountNumber = receiverBankAccount.AccountNumber,
-                                currency = accountingDocument.CurrencyCode,
-                                currentBalance = currentBalance,
-                                change = accountingDocument.Amount, // Positive for receiving bank
-                                newBalance = newBalance
-                            });
+                            warnings.Add($"حساب بانکی دریافت کننده با شناسه {accountingDocument.ReceiverBankAccountId.Value} یافت نشد.");
                         }
                     }
-                }
-
-                // Calculate Currency Pool Effects
-                var poolEffectsList = new List<object>();
-
-                // Check if this transaction affects currency pools
-                // Currency pools are affected when there's a system-to-customer or customer-to-system transaction
-                bool affectsPools = false;
-                decimal poolChange = 0;
-
-                if (accountingDocument.PayerType == PayerType.System && accountingDocument.ReceiverType == ReceiverType.Customer)
-                {
-                    // System paying customer - pool decreases
-                    affectsPools = true;
-                    poolChange = -accountingDocument.Amount;
-                }
-                else if (accountingDocument.PayerType == PayerType.Customer && accountingDocument.ReceiverType == ReceiverType.System)
-                {
-                    // Customer paying system - pool increases
-                    affectsPools = true;
-                    poolChange = accountingDocument.Amount;
-                }
-
-                if (affectsPools)
-                {
-                    var currencyPool = await _context.CurrencyPools
-                        .Include(p => p.Currency)
-                        .FirstOrDefaultAsync(p => p.CurrencyCode == accountingDocument.CurrencyCode);
-
-                    if (currencyPool != null)
+                    catch (Exception ex)
                     {
-                        var newPoolBalance = currencyPool.Balance + poolChange;
-
-                        poolEffectsList.Add(new
-                        {
-                            currencyName = currencyPool.Currency?.PersianName ?? accountingDocument.CurrencyCode,
-                            currency = accountingDocument.CurrencyCode,
-                            currentBalance = currencyPool.Balance,
-                            change = poolChange,
-                            newBalance = newPoolBalance
-                        });
-
-                        // Warning if pool balance becomes negative
-                        if (newPoolBalance < 0)
-                        {
-                            warnings.Add($"تراز صندوق ارز {currencyPool.Currency?.PersianName ?? accountingDocument.CurrencyCode} منفی خواهد شد ({newPoolBalance:N2}).");
-                        }
-                    }
-                    else
-                    {
-                        warnings.Add($"صندوق ارز {accountingDocument.CurrencyCode} یافت نشد. این تراکنش ممکن است صندوق جدیدی ایجاد کند.");
+                        _logger.LogError(ex, "Error calculating receiver bank account effects for account ID {AccountId}", accountingDocument.ReceiverBankAccountId.Value);
+                        warnings.Add("خطا در محاسبه تأثیرات حساب بانکی دریافت کننده.");
                     }
                 }
+
 
                 // Additional validations
                 if (accountingDocument.PayerType == PayerType.Customer && accountingDocument.ReceiverType == ReceiverType.Customer)
@@ -1005,8 +978,7 @@ namespace ForexExchange.Controllers
                     effects = new
                     {
                         customerEffects = customerEffectsList,
-                        bankAccountEffects = bankAccountEffectsList,
-                        poolEffects = poolEffectsList
+                        bankAccountEffects = bankAccountEffectsList
                     },
                     warnings = warnings
                 });

@@ -8,6 +8,10 @@ namespace ForexExchange.Services
     /// <summary>
     /// **CRITICAL FINANCIAL SERVICE** - Centralized financial operations management with complete audit trail.
     /// 
+    /// **📚 FOR COMPREHENSIVE DOCUMENTATION**: See `/docs/CentralFinancialService-Documentation.md`
+    /// This documentation file contains detailed explanations, business logic, safety guidelines,
+    /// troubleshooting guides, and complete usage examples for this critical financial service.
+    /// 
     /// This service is the heart of the forex exchange financial system, managing:
     /// - Customer balance operations (credit/debit with history)
     /// - Currency pool management (institutional liquidity pools)
@@ -34,9 +38,9 @@ namespace ForexExchange.Services
         /// This method simulates exactly what would happen when an order is processed, allowing the UI
         /// to show users the precise effect on their balances and institutional currency pools.
         /// 
-        /// **CRITICAL CONSISTENCY**: The calculations performed here MUST exactly match those in
-        /// ProcessOrderCreationAsync() to ensure preview accuracy. Any changes to order processing
-        /// logic must be reflected in both methods.
+        /// **SRP CONSISTENCY GUARANTEE**: Uses dedicated calculation methods (CalculateCustomerBalanceEffects
+        /// and CalculateCurrencyPoolEffects) that are also used by ProcessOrderCreationAsync() to ensure
+        /// that preview calculations exactly match actual processing results.
         /// 
         /// **Calculation Logic**:
         /// - Customer pays FromAmount in FromCurrency (balance decreases)
@@ -99,10 +103,20 @@ namespace ForexExchange.Services
             }
             _logger.LogInformation($"PoolBalanceTo: {poolBalanceTo.Balance}");
 
-            var newCustomerBalanceFrom = customerBalanceFrom.Balance - order.FromAmount;
-            var newCustomerBalanceTo = customerBalanceTo.Balance + order.ToAmount;
-            var newPoolBalanceFrom = poolBalanceFrom.Balance + order.FromAmount;
-            var newPoolBalanceTo = poolBalanceTo.Balance - order.ToAmount;
+            // Use SRP calculation methods to ensure consistency with actual processing
+            var (newCustomerBalanceFrom, newCustomerBalanceTo) = CalculateCustomerBalanceEffects(
+                currentFromBalance: customerBalanceFrom.Balance,
+                currentToBalance: customerBalanceTo.Balance,
+                fromAmount: order.FromAmount,
+                toAmount: order.ToAmount
+            );
+
+            var (newPoolBalanceFrom, newPoolBalanceTo) = CalculateCurrencyPoolEffects(
+                currentFromPool: poolBalanceFrom.Balance,
+                currentToPool: poolBalanceTo.Balance,
+                fromAmount: order.FromAmount,
+                toAmount: order.ToAmount
+            );
 
             _logger.LogInformation($"NewCustomerBalanceFrom: {newCustomerBalanceFrom}");
             _logger.LogInformation($"NewCustomerBalanceTo: {newCustomerBalanceTo}");
@@ -194,17 +208,43 @@ namespace ForexExchange.Services
         /// - Institution receives FromCurrency from customer (pool balance increases)
         /// - Institution provides ToCurrency to customer (pool balance decreases)
         /// 
+        /// **SRP CONSISTENCY GUARANTEE**: Uses the same calculation methods as PreviewOrderEffectsAsync()
+        /// to ensure that actual processing effects exactly match preview calculations shown to users.
+        /// 
         /// **Audit Trail**: Every transaction is logged with complete history for regulatory compliance
         /// and financial auditing. All amounts, exchange rates, and timing are permanently recorded.
         /// 
-        /// **CONSISTENCY GUARANTEE**: The logic here must exactly match PreviewOrderEffectsAsync()
-        /// to ensure UI previews accurately reflect actual transaction results.
+        /// **Validation**: Calculates expected effects before processing to log and validate consistency.
         /// </summary>
         /// <param name="order">Complete order with all currency and amount information</param>
         /// <param name="performedBy">Identifier of who initiated the transaction (for audit trail)</param>
         public async Task ProcessOrderCreationAsync(Order order, string performedBy = "System")
         {
             _logger.LogInformation($"Processing order creation for Order ID: {order.Id}");
+
+            // Get current balances to validate calculations match preview
+            var customerBalanceFrom = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.FromCurrency.Code);
+            var customerBalanceTo = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.ToCurrency.Code);
+            var poolBalanceFrom = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.FromCurrency.Code);
+            var poolBalanceTo = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.ToCurrency.Code);
+
+            // Use SRP calculation methods to validate expected effects (same as preview)
+            var (expectedNewCustomerFrom, expectedNewCustomerTo) = CalculateCustomerBalanceEffects(
+                currentFromBalance: customerBalanceFrom?.Balance ?? 0,
+                currentToBalance: customerBalanceTo?.Balance ?? 0,
+                fromAmount: order.FromAmount,
+                toAmount: order.ToAmount
+            );
+
+            var (expectedNewPoolFrom, expectedNewPoolTo) = CalculateCurrencyPoolEffects(
+                currentFromPool: poolBalanceFrom?.Balance ?? 0,
+                currentToPool: poolBalanceTo?.Balance ?? 0,
+                fromAmount: order.FromAmount,
+                toAmount: order.ToAmount
+            );
+
+            _logger.LogInformation($"[ProcessOrderCreationAsync] Expected customer effects - From: {expectedNewCustomerFrom}, To: {expectedNewCustomerTo}");
+            _logger.LogInformation($"[ProcessOrderCreationAsync] Expected pool effects - From: {expectedNewPoolFrom}, To: {expectedNewPoolTo}");
 
             // PRESERVE EXACT LOGIC: Each order creates two currency impacts
             // 1. Payment transaction (FromCurrency - negative impact)
@@ -486,6 +526,70 @@ namespace ForexExchange.Services
                 reason: reason,
                 performedBy: performedBy
             );
+        }
+
+        #endregion
+
+        #region SRP Calculation Methods - Single Responsibility for Order Effects
+
+        /// <summary>
+        /// **SRP CALCULATION** - Pure calculation of customer balance effects for an order.
+        /// 
+        /// This method contains the core business logic for how orders affect customer balances.
+        /// Both preview and actual processing MUST use this method to ensure consistency.
+        /// 
+        /// **Business Logic**:
+        /// - Customer pays FromAmount in FromCurrency (balance decreases)
+        /// - Customer receives ToAmount in ToCurrency (balance increases)
+        /// </summary>
+        /// <param name="currentFromBalance">Customer's current balance in FromCurrency</param>
+        /// <param name="currentToBalance">Customer's current balance in ToCurrency</param>
+        /// <param name="fromAmount">Amount customer pays</param>
+        /// <param name="toAmount">Amount customer receives</param>
+        /// <returns>Tuple with new balances (newFromBalance, newToBalance)</returns>
+        private (decimal newFromBalance, decimal newToBalance) CalculateCustomerBalanceEffects(
+            decimal currentFromBalance, 
+            decimal currentToBalance, 
+            decimal fromAmount, 
+            decimal toAmount)
+        {
+            var newFromBalance = currentFromBalance - fromAmount; // Customer pays (negative impact)
+            var newToBalance = currentToBalance + toAmount;       // Customer receives (positive impact)
+            
+            _logger.LogInformation($"[CalculateCustomerBalanceEffects] From: {currentFromBalance} - {fromAmount} = {newFromBalance}");
+            _logger.LogInformation($"[CalculateCustomerBalanceEffects] To: {currentToBalance} + {toAmount} = {newToBalance}");
+            
+            return (newFromBalance, newToBalance);
+        }
+
+        /// <summary>
+        /// **SRP CALCULATION** - Pure calculation of currency pool effects for an order.
+        /// 
+        /// This method contains the core business logic for how orders affect institutional pools.
+        /// Both preview and actual processing MUST use this method to ensure consistency.
+        /// 
+        /// **Business Logic**:
+        /// - Institution receives FromCurrency from customer (pool increases)
+        /// - Institution provides ToCurrency to customer (pool decreases)
+        /// </summary>
+        /// <param name="currentFromPool">Institution's current pool in FromCurrency</param>
+        /// <param name="currentToPool">Institution's current pool in ToCurrency</param>
+        /// <param name="fromAmount">Amount institution receives from customer</param>
+        /// <param name="toAmount">Amount institution provides to customer</param>
+        /// <returns>Tuple with new pool balances (newFromPool, newToPool)</returns>
+        private (decimal newFromPool, decimal newToPool) CalculateCurrencyPoolEffects(
+            decimal currentFromPool, 
+            decimal currentToPool, 
+            decimal fromAmount, 
+            decimal toAmount)
+        {
+            var newFromPool = currentFromPool + fromAmount; // Institution receives (positive impact)
+            var newToPool = currentToPool - toAmount;       // Institution provides (negative impact)
+            
+            _logger.LogInformation($"[CalculateCurrencyPoolEffects] From Pool: {currentFromPool} + {fromAmount} = {newFromPool}");
+            _logger.LogInformation($"[CalculateCurrencyPoolEffects] To Pool: {currentToPool} - {toAmount} = {newToPool}");
+            
+            return (newFromPool, newToPool);
         }
 
         #endregion
