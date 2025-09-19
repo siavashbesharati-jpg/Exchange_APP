@@ -314,7 +314,7 @@
             </div>
             <div class="col-md-6">
                 <div class="mb-2"><strong> پرداخت می کنیم : </strong> <span class="text-primary fw-bold" dir="ltr">${formatCurrency(order.rate * order.fromAmount, toCurrencyCode)} ${toCurrencyCode}</span></div>
-                <div class="mb-2"><strong>نرخ تبدیل:</strong> <span class="text-warning fw-bold" dir="ltr">${formatCurrency(order.rate, 'IRR')}</span></div>
+                <div class="mb-2"><strong>نرخ تبدیل:</strong> <span class="text-warning fw-bold" dir="ltr">${order.rate}</span></div>
                 <div class="mb-2"><strong>تاریخ:</strong> <span>${formattedDate}</span></div>
             </div>
         `;
@@ -364,7 +364,7 @@
         if (getProp(eff, 'OldPoolBalanceFrom') !== undefined) {
             poolEffectsHtml = `
                 <div class="mb-3">
-                    <h6 class="text-warning"><i class="fas fa-swimming-pool"></i> تأثیرات صندوق ارز</h6>
+                    <h6 class="text-warning"><i class="fas fa-piggy-bank"></i> تأثیرات صندوق ارز</h6>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered">
                             <thead class="table-light">
