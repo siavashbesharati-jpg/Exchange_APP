@@ -290,7 +290,7 @@
                 ${formatReferenceNumber(doc.referenceNumber)}
             </td>
             <td><span class="badge bg-primary">${doc.currencyCode || 'N/A'}</span></td>
-            <td>${formatNumber(doc.amount)}</td>
+            <td data-no-format="true" data-skip-format="true" class="skip-auto-format">${formatCurrency(doc.amount, doc.currencyCode)}</td>
             <td>${doc.description}</td>
             <td>
                 <span class="badge bg-success">

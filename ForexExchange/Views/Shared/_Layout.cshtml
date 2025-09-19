@@ -711,8 +711,8 @@
                     <div class="${colClass} ${firstItemClass} text-center border-end currency-pool-item">
                         <div class="currency-pool-flag" style="font-size: 1.5rem; margin-bottom: 2px;" title="${pool.currencyCode}">${flagEmoji}</div>
                         <div class="currency-pool-code text-muted small">${pool.currencyCode}</div>
-                        <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}">
-                            ${formatNumber(pool.balance)}
+                        <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}" data-no-format="true" data-skip-format="true" class="skip-auto-format">
+                            ${formatCurrency(pool.balance, pool.currencyCode)}
                         </div>
                     </div>
                 `;
@@ -725,8 +725,8 @@
                     <div class="currency-pool-mobile-item text-center">
                         <div class="currency-pool-flag" title="${pool.currencyCode}">${flagEmoji}</div>
                         <div class="currency-pool-code text-muted">${pool.currencyCode}</div>
-                        <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}">
-                            ${formatNumber(pool.balance)}
+                        <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}" data-no-format="true" data-skip-format="true" class="skip-auto-format">
+                            ${formatCurrency(pool.balance, pool.currencyCode)}
                         </div>
                     </div>
                 `;
@@ -743,8 +743,8 @@
                         <div class="col-4 text-center border-end currency-pool-item">
                             <div class="currency-pool-flag" style="font-size: 1.2rem; margin-bottom: 2px;" title="${pool.currencyCode}">${flagEmoji}</div>
                             <div class="currency-pool-code text-muted small">${pool.currencyCode}</div>
-                            <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}" style="font-size: 0.8rem;">
-                                ${formatNumber(pool.balance)}
+                            <div class="currency-pool-balance ${pool.balance >= 0 ? 'text-success' : 'text-danger'}" style="font-size: 0.8rem;" data-no-format="true" data-skip-format="true" class="skip-auto-format">
+                                ${formatCurrency(pool.balance, pool.currencyCode)}
                             </div>
                         </div>
                     `;
