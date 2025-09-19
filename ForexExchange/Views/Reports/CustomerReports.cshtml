@@ -482,6 +482,16 @@
 
             // Add transaction rows
             transactions.forEach(transaction => {
+                // DEBUGGING: Log raw values from server
+                console.log('🔍 DEBUG - Raw transaction data:', {
+                    amount: transaction.amount,
+                    amountType: typeof transaction.amount,
+                    runningBalance: transaction.runningBalance,
+                    runningBalanceType: typeof transaction.runningBalance,
+                    currency: currency,
+                    transactionId: transaction.referenceId || 'manual'
+                });
+
                 // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4
                 const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
                 const isManualTransaction = !transaction.referenceId; // Manual transactions have no referenceId
@@ -504,6 +514,17 @@
                     cursorStyle = 'cursor: pointer;';
                 }
 
+                // DEBUGGING: Log formatted values
+                const formattedAmount = formatCurrency(transaction.amount, currency);
+                const formattedBalance = formatCurrency(transaction.runningBalance, currency);
+                console.log('🎯 DEBUG - Formatted values:', {
+                    originalAmount: transaction.amount,
+                    formattedAmount: formattedAmount,
+                    originalBalance: transaction.runningBalance,
+                    formattedBalance: formattedBalance,
+                    currency: currency
+                });
+
                 timelineHtml += `
                 <tr class="transaction-row" style="${cursorStyle}" ${clickHandler}>
                     <td class="text-center">${formatDate(transaction.transactionDate)}</td>
@@ -514,8 +535,8 @@
                     }
                     </td>
                     <td class="text-center">${currency}</td>
-                    <td class="text-center ltr-direction ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">${transaction.amount, currency}</td>
-                    <td class="text-center ltr-direction fw-bold">${transaction.runningBalance}</td>
+                    <td class="text-center ltr-direction skip-auto-format ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}" data-debug-amount="${transaction.amount}" data-debug-formatted="${formattedAmount}" data-no-format="true" data-skip-format="true">${formattedAmount}</td>
+                    <td class="text-center ltr-direction skip-auto-format fw-bold" data-debug-balance="${transaction.runningBalance}" data-debug-formatted="${formattedBalance}" data-no-format="true" data-skip-format="true">${formattedBalance}</td>
                     <td class="text-start"><small class="text-muted">${transaction.description || '-'}</small></td>
                 </tr>
             `;
@@ -526,6 +547,47 @@
         });
 
         tbody.innerHTML = timelineHtml;
+        
+        // DEBUGGING: Check what's actually in the DOM after rendering
+        console.log('🎪 DEBUG - DOM after render:');
+        const amountCells = tbody.querySelectorAll('td[data-debug-amount]');
+        amountCells.forEach((cell, index) => {
+            console.log(`🎪 Cell ${index}:`, {
+                originalAmount: cell.getAttribute('data-debug-amount'),
+                formattedAmount: cell.getAttribute('data-debug-formatted'),
+                actualTextContent: cell.textContent,
+                innerHTML: cell.innerHTML
+            });
+        });
+        
+        // DEBUGGING: Set up a mutation observer to catch any changes
+        setTimeout(() => {
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                        console.log('🚨 DOM MUTATION DETECTED:', {
+                            target: mutation.target,
+                            type: mutation.type,
+                            oldValue: mutation.oldValue,
+                            newValue: mutation.target.textContent,
+                            targetElement: mutation.target
+                        });
+                    }
+                });
+            });
+            
+            amountCells.forEach(cell => {
+                observer.observe(cell, { 
+                    childList: true, 
+                    characterData: true, 
+                    subtree: true,
+                    characterDataOldValue: true 
+                });
+            });
+            
+            console.log('🎪 Mutation observer set up for', amountCells.length, 'cells');
+        }, 100);
+
         renderBalanceSummary(timeline.finalBalances);
     }
 

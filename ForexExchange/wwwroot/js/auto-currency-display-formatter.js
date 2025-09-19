@@ -100,6 +100,15 @@ class AutoCurrencyDisplayFormatter {
         // Skip elements that should not be formatted
         if (this.shouldSkipElement(element)) return;
 
+        // DEBUGGING: Log what we're about to process
+        console.log('🤖 auto-formatter - Processing element:', {
+            element: element,
+            textContent: textContent,
+            tagName: element.tagName,
+            className: element.className,
+            parentElement: element.parentElement?.tagName
+        });
+
         // Pattern to match numbers that might be currency values
         // Matches: 1234567, 1234567.89, 1,234,567.89, but not phone numbers, dates, etc.
         const currencyPattern = /^\s*-?\s*(\d{1,3}(?:,\d{3})*|\d+)(?:\.\d{1,8})?\s*$/;
@@ -145,7 +154,20 @@ class AutoCurrencyDisplayFormatter {
         }
 
         if (isLikelyCurrency) {
+            console.log('🤖 auto-formatter - WILL FORMAT:', {
+                element: element,
+                textContent: textContent,
+                numericValue: numericValue,
+                currencyCode: parentContext.currencyCode,
+                parentContext: parentContext
+            });
             this.formatElementContent(element, numericValue, parentContext.currencyCode);
+        } else {
+            console.log('🤖 auto-formatter - SKIPPING (not likely currency):', {
+                element: element,
+                textContent: textContent,
+                numericValue: numericValue
+            });
         }
 
         this.processedElements.add(element);
@@ -184,6 +206,13 @@ class AutoCurrencyDisplayFormatter {
             element.classList.contains('no-format-number') ||
             element.classList.contains('protected-reference') ||
             element.classList.contains('skip-auto-format')) {
+            console.log('🤖 auto-formatter - SKIPPING DUE TO PROTECTION:', {
+                element: element,
+                hasDataNoFormat: element.hasAttribute('data-no-format'),
+                hasDataSkipFormat: element.hasAttribute('data-skip-format'),
+                hasSkipClass: element.classList.contains('skip-auto-format'),
+                textContent: element.textContent
+            });
             return true;
         }
         
@@ -270,6 +299,13 @@ class AutoCurrencyDisplayFormatter {
      * @param {string} currencyCode - Currency code if available
      */
     formatElementContent(element, numericValue, currencyCode) {
+        console.log('🤖 auto-formatter - formatElementContent called:', {
+            element: element,
+            originalTextContent: element.textContent,
+            numericValue: numericValue,
+            currencyCode: currencyCode
+        });
+
         if (isNaN(numericValue)) return;
 
         // Determine decimal places based on currency
@@ -281,18 +317,31 @@ class AutoCurrencyDisplayFormatter {
                 maximumFractionDigits: 0
             }).format(numericValue);
         } else {
-            // 2 decimal places for other currencies
+            // Preserve up to 8 decimal places for other currencies - NO FORCED ROUNDING
             formattedValue = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
-                maximumFractionDigits: 2
+                maximumFractionDigits: 8
             }).format(numericValue);
         }
+
+        console.log('🤖 auto-formatter - Formatting result:', {
+            originalValue: numericValue,
+            formattedValue: formattedValue,
+            currencyCode: currencyCode
+        });
 
         // Update the element content
         const originalText = element.textContent;
         const newText = originalText.replace(/^\s*-?\s*[\d,]+(?:\.\d+)?\s*$/, formattedValue);
         
         if (newText !== originalText) {
+            console.log('🤖 auto-formatter - CHANGING TEXT:', {
+                element: element,
+                originalText: originalText,
+                newText: newText,
+                formattedValue: formattedValue
+            });
+            
             element.textContent = newText;
             
             // Add a subtle animation to indicate the change
@@ -302,6 +351,11 @@ class AutoCurrencyDisplayFormatter {
             setTimeout(() => {
                 element.style.color = originalColor;
             }, 300);
+        } else {
+            console.log('🤖 auto-formatter - NO CHANGE NEEDED:', {
+                element: element,
+                text: originalText
+            });
         }
     }
 

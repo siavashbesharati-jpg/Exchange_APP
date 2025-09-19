@@ -21,28 +21,44 @@ window.ForexCurrencyFormatter = (function() {
      * @returns {string} Formatted currency string
      */
     function formatCurrency(amount, currencyCode = '') {
+        // DEBUGGING: Log all inputs and processing
+        console.log('🔧 formatCurrency - INPUT:', {
+            amount: amount,
+            amountType: typeof amount,
+            currencyCode: currencyCode,
+            isNaN: isNaN(amount)
+        });
+
         // Handle edge cases
         if (amount === null || amount === undefined || isNaN(amount)) {
+            console.log('🔧 formatCurrency - Edge case, returning 0');
             return '0';
         }
 
         // Convert to number if string
         const numAmount = parseFloat(amount);
+        console.log('🔧 formatCurrency - Parsed amount:', numAmount);
         
         // Check if currency is IRR
         const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
+        console.log('🔧 formatCurrency - Currency check:', { currencyCode, isIRR });
         
+        let result;
         if (isIRR) {
             // IRR: display value as-is with thousand separators (no division)
-            return new Intl.NumberFormat('en-US').format(Math.round(numAmount));
+            result = new Intl.NumberFormat('en-US').format(Math.round(numAmount));
+            console.log('🔧 formatCurrency - IRR result:', result);
         } else {
-            // Non-IRR: 3 decimal places with proper rounding, remove trailing zeros
-            const rounded = Math.round(numAmount * 1000) / 1000; // Round to 3 decimals
-            return new Intl.NumberFormat('en-US', {
+            // Non-IRR: NO ROUNDING - preserve exact precision with up to 8 decimal places
+            result = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
-                maximumFractionDigits: 3
-            }).format(rounded);
+                maximumFractionDigits: 8
+            }).format(numAmount);
+            console.log('🔧 formatCurrency - Non-IRR result:', result);
         }
+
+        console.log('🔧 formatCurrency - FINAL OUTPUT:', result);
+        return result;
     }
 
     /**
