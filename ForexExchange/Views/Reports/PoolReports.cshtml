@@ -229,7 +229,6 @@ async function loadCurrencies() {
             });
         }
     } catch (error) {
-        console.error('Error loading currencies:', error);
     }
 }
 
@@ -256,10 +255,7 @@ async function loadPoolTimeline() {
         const response = await fetch(`@Url.Action("GetPoolTimeline", "Reports")?${params}`);
         const data = await response.json();
         
-        console.log('Pool Timeline API Response:', data);
         if (data.timeline && data.timeline.length > 0) {
-            console.log('First timeline item:', data.timeline[0]);
-            console.log('Timeline items with canNavigate:', data.timeline.filter(item => item.canNavigate));
         }
         
         if (data.success) {
@@ -270,7 +266,6 @@ async function loadPoolTimeline() {
             showError('خطا در بارگذاری اطلاعات: ' + (data.error || 'نامشخص'));
         }
     } catch (error) {
-        console.error('Error loading pool timeline:', error);
         showError('خطا در ارتباط با سرور');
     }
 }
@@ -299,7 +294,7 @@ function renderTimeline(timeline) {
         let transactionElement;
         if (item.canNavigate && item.referenceId) {
             transactionElement = `
-                <a href="#" class="transaction-link" onclick="navigateToTransaction('${item.transactionType}', ${item.referenceId})" title="کلیک کنید تا جزئیات سفارش را مشاهده کنید">
+                <a href="#" class="transaction-link" onclick="navigateToTransaction('${item.transactionType}', ${item.referenceId})" title="کلیک کنید تا جزئیات معامله را مشاهده کنید">
                     <i class="fas fa-external-link-alt me-1"></i>${item.description}
                 </a>
             `;
@@ -392,7 +387,7 @@ function renderSummaryCards(summary) {
 function navigateToTransaction(type, referenceId) {
     if (type === 'Order') {
         // Show a brief loading indication
-        showNotification('در حال باز کردن جزئیات سفارش...', 'info');
+        showNotification('در حال باز کردن جزئیات معامله...', 'info');
         
         // Open order details in new tab
         const url = `@Url.Action("Details", "Orders")/${referenceId}`;

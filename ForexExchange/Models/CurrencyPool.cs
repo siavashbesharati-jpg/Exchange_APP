@@ -69,16 +69,16 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Number of active buy orders (non-cancelled)
-        /// تعداد معاملهات خرید فعال (غیرلغو شده)
+        /// تعداد معاملات  خرید فعال (غیرلغو شده)
         /// </summary>
-        [Display(Name = "Active Buy Orders - معاملهات خرید فعال")]
+        [Display(Name = "Active Buy Orders - معاملات  خرید فعال")]
         public int ActiveBuyOrderCount { get; set; }
 
         /// <summary>
         /// Number of active sell orders (non-cancelled)
-        /// تعداد معاملهات فروش فعال (غیرلغو شده)
+        /// تعداد معاملات  فروش فعال (غیرلغو شده)
         /// </summary>
-        [Display(Name = "Active Sell Orders - معاملهات فروش فعال")]
+        [Display(Name = "Active Sell Orders - معاملات  فروش فعال")]
         public int ActiveSellOrderCount { get; set; }
 
         /// <summary>

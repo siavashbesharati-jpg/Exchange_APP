@@ -288,57 +288,45 @@
 
 
     function loadCurrencies() {
-        console.log('Loading currencies...');
         fetch('@Url.Action("GetCurrencies", "Api")')
             .then(response => {
-                console.log('Currency response status:', response.status);
                 return response.json();
             })
             .then(currencies => {
-                console.log('Currency data received:', currencies);
                 const select = document.getElementById('currencyFilter');
                 select.innerHTML = '<option value="">همه ارزها</option>';
 
                 if (Array.isArray(currencies)) {
-                    console.log('Number of currencies:', currencies.length);
                     currencies.forEach(currency => {
                         select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
                     });
                 } else {
-                    console.log('Invalid currency data structure');
                 }
             })
             .catch(error => {
-                console.error('Error loading currencies:', error);
                 const select = document.getElementById('currencyFilter');
                 select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
             });
     }
 
     function loadCustomers() {
-        console.log('Loading customers...');
         fetch('@Url.Action("GetCustomersData", "Reports")')
             .then(response => {
-                console.log('Customer response status:', response.status);
                 return response.json();
             })
             .then(data => {
-                console.log('Customer data received:', data);
                 const select = document.getElementById('customerFilter');
                 select.innerHTML = '<option value="">انتخاب مشتری</option>';
 
                 // The API returns customers directly in the data.customers array
                 if (data.customers && Array.isArray(data.customers)) {
-                    console.log('Number of customers:', data.customers.length);
                     data.customers.forEach(customer => {
                         select.innerHTML += `<option value="${customer.id}">${customer.fullName}</option>`;
                     });
                 } else {
-                    console.log('No customers found or invalid data structure');
                 }
             })
             .catch(error => {
-                console.error('Error loading customers:', error);
                 const select = document.getElementById('customerFilter');
                 select.innerHTML = '<option value="">خطا در بارگذاری مشتریان</option>';
             });
@@ -483,7 +471,6 @@
             // Add transaction rows
             transactions.forEach(transaction => {
                 // DEBUGGING: Log raw values from server
-                console.log('🔍 DEBUG - Raw transaction data:', {
                     amount: transaction.amount,
                     amountType: typeof transaction.amount,
                     runningBalance: transaction.runningBalance,
@@ -517,7 +504,6 @@
                 // DEBUGGING: Log formatted values
                 const formattedAmount = formatCurrency(transaction.amount, currency);
                 const formattedBalance = formatCurrency(transaction.runningBalance, currency);
-                console.log('🎯 DEBUG - Formatted values:', {
                     originalAmount: transaction.amount,
                     formattedAmount: formattedAmount,
                     originalBalance: transaction.runningBalance,
@@ -549,10 +535,8 @@
         tbody.innerHTML = timelineHtml;
         
         // DEBUGGING: Check what's actually in the DOM after rendering
-        console.log('🎪 DEBUG - DOM after render:');
         const amountCells = tbody.querySelectorAll('td[data-debug-amount]');
         amountCells.forEach((cell, index) => {
-            console.log(`🎪 Cell ${index}:`, {
                 originalAmount: cell.getAttribute('data-debug-amount'),
                 formattedAmount: cell.getAttribute('data-debug-formatted'),
                 actualTextContent: cell.textContent,
@@ -565,7 +549,6 @@
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                        console.log('🚨 DOM MUTATION DETECTED:', {
                             target: mutation.target,
                             type: mutation.type,
                             oldValue: mutation.oldValue,
@@ -585,7 +568,6 @@
                 });
             });
             
-            console.log('🎪 Mutation observer set up for', amountCells.length, 'cells');
         }, 100);
 
         renderBalanceSummary(timeline.finalBalances);
@@ -844,29 +826,22 @@
     }
 
     function loadCurrenciesForModal() {
-        console.log('Loading currencies for modal...');
         fetch('@Url.Action("GetCurrencies", "Api")')
             .then(response => {
-                console.log('Modal currency response status:', response.status);
                 return response.json();
             })
             .then(currencies => {
-                console.log('Modal currency data received:', currencies);
                 const select = document.getElementById('modalCurrencyCode');
                 select.innerHTML = '<option value="">انتخاب ارز</option>';
 
                 if (Array.isArray(currencies)) {
-                    console.log('Number of currencies for modal:', currencies.length);
                     currencies.forEach(currency => {
                         select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
                     });
-                    console.log('Modal currency options populated');
                 } else {
-                    console.log('Invalid modal currency data structure');
                 }
             })
             .catch(error => {
-                console.error('Error loading currencies for modal:', error);
                 const select = document.getElementById('modalCurrencyCode');
                 select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
             });
@@ -943,7 +918,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error submitting manual balance:', error);
                 alert('خطا در ارسال اطلاعات: ' + error.message);
             })
             .finally(() => {
@@ -978,8 +952,6 @@
             body: '__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
         })
             .then(response => {
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers.get('content-type'));
 
                 // Check if response is JSON
                 const contentType = response.headers.get('content-type');
@@ -988,7 +960,6 @@
                 } else {
                     // If not JSON, read as text to see what we got
                     return response.text().then(text => {
-                        console.log('Response text:', text);
                         throw new Error('Server returned HTML instead of JSON. Possibly redirected to error page.');
                     });
                 }
@@ -1006,7 +977,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error during recalculation:', error);
                 alert('خطا در ارسال درخواست بازمحاسبه: ' + error.message);
             })
             .finally(() => {

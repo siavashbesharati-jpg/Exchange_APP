@@ -357,7 +357,7 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting orders data");
-                return Json(new { error = "خطا در دریافت اطلاعات سفارشات" });
+                return Json(new { error = "خطا در دریافت اطلاعات معاملات " });
             }
         }
 
@@ -515,7 +515,7 @@ namespace ForexExchange.Controllers
                         time = o.CreatedAt,
                         user = o.Customer.FullName,
                         type = "معامله",
-                        description = $"ایجاد سفارش {o.FromCurrency.Code} به {o.ToCurrency.Code}",
+                        description = $"ایجاد معامله {o.FromCurrency.Code} به {o.ToCurrency.Code}",
                         ip = "192.168.1.100", // You might want to store this in your model
                         status = "موفق" // All orders are successful since FilledAmount is removed
                     })

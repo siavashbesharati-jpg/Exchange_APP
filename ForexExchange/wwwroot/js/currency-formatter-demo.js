@@ -11,7 +11,6 @@
          * Test the Persian number converter with sample values
          */
         testConverter() {
-            console.log('🧪 Testing Persian Number Converter...\n');
             
             const testValues = [
                 0, 1, 12, 123, 1234, 12345, 123456, 1234567, 12345678,
@@ -25,7 +24,6 @@
                 const persian = window.PersianNumberConverter ? 
                     new window.PersianNumberConverter().convertToPersianWords(value) : 'Converter not loaded';
                 
-                console.log(`${value} → ${formatted} → ${persian}`);
             });
         },
 
@@ -33,7 +31,6 @@
          * Create a test form with various input types
          */
         createTestForm() {
-            console.log('🔧 Creating optimized test form...');
             
             // Remove existing test form
             const existingForm = document.getElementById('currency-test-form');
@@ -129,14 +126,12 @@
             form.appendChild(closeBtn);
             document.body.appendChild(form);
 
-            console.log('✅ تست فرم بهینه شده ساخته شد! اعداد را تایپ کنید و سرعت را ببینید.');
         },
 
         /**
          * Check if all scripts are loaded
          */
         checkStatus() {
-            console.log('🔍 Checking Currency Formatter Status...\n');
             
             const checks = [
                 {
@@ -163,17 +158,13 @@
 
             checks.forEach(check => {
                 const status = check.status ? '✅' : '❌';
-                console.log(`${status} ${check.name}: ${check.description}`);
             });
 
             // Count formatted inputs
             const formattedInputs = document.querySelectorAll('input[data-currency-formatter="true"]');
-            console.log(`\n📊 Found ${formattedInputs.length} formatted input(s) on page`);
 
             if (formattedInputs.length > 0) {
-                console.log('Formatted inputs:');
                 formattedInputs.forEach((input, index) => {
-                    console.log(`  ${index + 1}. ${input.tagName}[${input.type}] - ${input.name || input.id || 'unnamed'}`);
                 });
             }
         },
@@ -183,16 +174,11 @@
          */
         runAllTests() {
             console.clear();
-            console.log('🚀 Currency Formatter Demo & Test Suite\n');
             
             this.checkStatus();
-            console.log('\n' + '='.repeat(50) + '\n');
             this.testConverter();
-            console.log('\n' + '='.repeat(50) + '\n');
             this.createTestForm();
             
-            console.log('\n🎯 Demo completed! Check the test form on the right side of the page.');
-            console.log('💡 Try typing numbers like: 545000, 1234567, 123.45');
         },
 
         /**
@@ -203,13 +189,10 @@
 🔧 Currency Formatter Demo Commands:
 
 demo.runAllTests()     - Run complete test suite
-demo.checkStatus()     - Check if formatter is loaded
+demo.checkStatus()     - Check if formatter is loaded  
 demo.testConverter()   - Test number conversion
 demo.createTestForm()  - Create test inputs
 demo.help()           - Show this help
-
-Example usage:
-demo.runAllTests();
             `);
         }
     };
@@ -219,10 +202,10 @@ demo.runAllTests();
 
     // Auto-run if called directly
     if (document.readyState === 'complete') {
-        console.log('💡 Currency Formatter Demo loaded! Type "currencyFormatterDemo.help()" for commands.');
+        // Already loaded
     } else {
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('💡 Currency Formatter Demo loaded! Type "currencyFormatterDemo.help()" for commands.');
+            // DOM ready
         });
     }
 

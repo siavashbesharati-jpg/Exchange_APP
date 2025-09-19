@@ -156,7 +156,7 @@ namespace ForexExchange.Services
         {
             return transactionType switch
             {
-                CustomerBalanceTransactionType.Order => $"سفارش #{referenceId}",
+                CustomerBalanceTransactionType.Order => $"معامله #{referenceId}",
                 CustomerBalanceTransactionType.AccountingDocument => $"سند #{referenceId}",
                 CustomerBalanceTransactionType.Manual => "تعدیل دستی",
                 _ => "تراکنش"

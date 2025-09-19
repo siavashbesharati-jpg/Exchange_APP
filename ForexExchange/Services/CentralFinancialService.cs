@@ -922,7 +922,7 @@ namespace ForexExchange.Services
                 {
                     Date = order.CreatedAt,
                     Type = "Order",
-                    Description = $"سفارش {order.Id}: پرداخت {order.FromAmount:N0} {order.FromCurrency.PersianName}",
+                    Description = $"معامله {order.Id}: پرداخت {order.FromAmount:N0} {order.FromCurrency.PersianName}",
                     CurrencyCode = order.FromCurrency.Code,
                     Amount = -order.FromAmount, // Negative for payment
                     OrderId = order.Id,
@@ -934,7 +934,7 @@ namespace ForexExchange.Services
                 {
                     Date = order.CreatedAt,
                     Type = "Order",
-                    Description = $"سفارش {order.Id}: دریافت {order.ToAmount:N0} {order.ToCurrency.PersianName}",
+                    Description = $"معامله {order.Id}: دریافت {order.ToAmount:N0} {order.ToCurrency.PersianName}",
                     CurrencyCode = order.ToCurrency.Code,
                     Amount = order.ToAmount, // Positive for receipt
                     OrderId = order.Id,

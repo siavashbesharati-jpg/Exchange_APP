@@ -164,7 +164,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error loading customers:', error);
             });
     }
 
@@ -257,7 +256,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error loading documents table:', error);
                 tbody.innerHTML = `
                 <tr>
                     <td colspan="9" class="text-center py-5 text-danger">

@@ -192,8 +192,6 @@ let currentData = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('All Customers Balances page initialized');
-    
     // Load currencies for filter
     loadCurrencies();
     
@@ -255,11 +253,10 @@ async function loadCurrencies() {
             currencyFilter.appendChild(option);
         });
     } catch (error) {
-        console.error('Error loading currencies:', error);
         // Fallback currencies
         const currencyFilter = document.getElementById('currencyFilter');
         const fallbackCurrencies = [
-            { code: 'IRR', name: 'ریال ایران' },
+            { code: 'IRR', name: 'تومان'},
             { code: 'USD', name: 'دلار آمریکا' },
             { code: 'EUR', name: 'یورو' },
             { code: 'AED', name: 'درهم امارات' },
@@ -280,8 +277,6 @@ async function loadCurrencies() {
 
 // Load customers balances data
 async function loadCustomersBalances() {
-    console.log('Loading customers balances...');
-    
     try {
         // Show loading
         showLoading();
@@ -294,12 +289,8 @@ async function loadCustomersBalances() {
             url += `?currencyFilter=${encodeURIComponent(selectedCurrencyFilter)}`;
         }
         
-        console.log('Fetching from URL:', url);
-        
         const response = await fetch(url);
         const data = await response.json();
-        
-        console.log('Received data:', data);
         
         if (data.error) {
             showError(data.error);
@@ -335,7 +326,6 @@ async function loadCustomersBalances() {
         showSuccess(`تعداد ${data.customers.length} مشتری با موجودی یافت شد`);
         
     } catch (error) {
-        console.error('Error loading customers balances:', error);
         showError('خطا در بارگذاری اطلاعات موجودی مشتریان');
     } finally {
         hideLoading();
@@ -344,8 +334,6 @@ async function loadCustomersBalances() {
 
 // Render all customers table (when no currency filter)
 function renderAllCustomersTable(customers) {
-    console.log('Rendering all customers table with', customers.length, 'customers');
-    
     const tbody = document.getElementById('customersTableBody');
     const resultsCount = document.getElementById('resultsCount');
     
@@ -398,8 +386,6 @@ function renderAllCustomersTable(customers) {
 
 // Render currency-specific table
 function renderCurrencySpecificTable(customers, currencyCode) {
-    console.log('Rendering currency-specific table for', currencyCode, 'with', customers.length, 'customers');
-    
     const currencyTablesContent = document.getElementById('currencyTablesContent');
     
     if (customers.length === 0) {
@@ -475,8 +461,6 @@ function renderCurrencySpecificTable(customers, currencyCode) {
 
 // Render statistics
 function renderStatistics(stats) {
-    console.log('Rendering statistics:', stats);
-    
     const statsContent = document.getElementById('statsContent');
     const statsRow = document.getElementById('statsRow');
     
@@ -512,8 +496,6 @@ function renderStatistics(stats) {
 
 // Render currency totals
 function renderCurrencyTotals(currencyTotals, currencyFilter) {
-    console.log('Rendering currency totals:', currencyTotals);
-    
     const currencyTotalsContent = document.getElementById('currencyTotalsContent');
     const currencyTotalsRow = document.getElementById('currencyTotalsRow');
     
@@ -588,8 +570,6 @@ function exportData() {
 
 // Render customer-based tables (each customer has a table with currencies as rows)
 function renderCustomerBasedTables(customers) {
-    console.log('Rendering customer-based tables for', customers.length, 'customers');
-    
     const currencyTablesContent = document.getElementById('currencyTablesContent');
     
     if (customers.length === 0) {
@@ -662,8 +642,6 @@ function renderCustomerBasedTables(customers) {
 
 // Render currency-based tables (each currency has a table with customers as rows)
 function renderCurrencyBasedTables(customers) {
-    console.log('Rendering currency-based tables for', customers.length, 'customers');
-    
     const currencyTablesContent = document.getElementById('currencyTablesContent');
     
     if (customers.length === 0) {
@@ -858,7 +836,6 @@ function formatCurrency(amount, currencyCode = 'IRR') {
         }).format(numAmount);
         
     } catch (error) {
-        console.error('Error formatting currency:', error);
         return amount.toString();
     }
 }

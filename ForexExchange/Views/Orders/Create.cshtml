@@ -260,9 +260,9 @@
 
     // Show preview modal with order and effect details - Beautiful Styling
     function showPreviewModal(order, effects) {
-        console.log('🔥 Order Preview Modal - Showing order and effects');
-        console.log('Order:', order);
-        console.log('Effects:', effects);
+        
+        
+        
         
         // Helper to get property in both PascalCase and camelCase
         function getProp(obj, name) {
@@ -408,7 +408,7 @@
         var modal = new bootstrap.Modal(document.getElementById('previewModal'));
         modal.show();
         
-        console.log('✅ Order Preview Modal displayed successfully');
+        
     }
 
     document.getElementById('previewEffectsBtn').addEventListener('click', function(e) {
@@ -430,7 +430,7 @@
                 document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>${msg}</div>`;
                 var modal = new bootstrap.Modal(document.getElementById('previewModal'));
                 modal.show();
-                console.error(msg);
+                
                 return;
             }
             return res.json();
@@ -443,7 +443,7 @@
             document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>خطای ارتباط با سرور: ${err}</div>`;
             var modal = new bootstrap.Modal(document.getElementById('previewModal'));
             modal.show();
-            console.error('AJAX error:', err);
+            
         });
     });
 
@@ -924,10 +924,10 @@
             }
 
             // Debug logs
-            console.log('currencyPools:', currencyPools);
-            console.log('fromCode:', fromCode, 'toCode:', toCode);
-            console.log('fromPoolValue:', currencyPools[fromCode]);
-            console.log('toPoolValue:', currencyPools[toCode]);
+            
+            
+            
+            
             let html = '';
             if (fromCode && currencyPools.hasOwnProperty(fromCode)) {
                 const fromVal = currencyPools[fromCode];
@@ -988,7 +988,6 @@
 
             const hasValidCurrencies = fromCurrency && toCurrency && fromCurrency !== toCurrency;
 
-            console.log('updateButtonStates - fromCurrency:', fromCurrency, 'toCurrency:', toCurrency, 'hasValidCurrencies:', hasValidCurrencies);
 
             // Enable/disable buttons based on currency selection
             const loadSuggestedBtn = document.getElementById('loadSuggestedRateBtn');
@@ -1005,7 +1004,6 @@
 
         // Initialize inline calculator with current currency selection
         function initializeInlineCalculator() {
-            console.log('=== initializeInlineCalculator called ===');
 
             // Get current selections from main form
             let fromSelect, toSelect, fromData, toData;
@@ -1028,10 +1026,8 @@
                 }
             }
 
-            console.log('Currency data:', fromData, toData);
 
             if (!fromData || !toData) {
-                console.log('Missing currency data, aborting initialization');
                 return;
             }
 
@@ -1041,8 +1037,6 @@
             const fromName = fromData.text.split(' - ')[1] ? fromData.text.split(' - ')[1].trim() : fromCode;
             const toName = toData.text.split(' - ')[1] ? toData.text.split(' - ')[1].trim() : toCode;
 
-            console.log('Extracted codes:', fromCode, toCode);
-            console.log('Extracted names:', fromName, toName);
 
             // Store for later use
             calcFromCurrencyCode = fromCode;
@@ -1072,7 +1066,6 @@
             // Reset rate inversion flag
             window.calcRateInverted = false;
 
-            console.log('Cleared calculator inputs');
 
             // Automatically load and set the rate
             if (typeof $.fn.select2 !== 'undefined' && $('#fromCurrencySelect').hasClass('select2-hidden-accessible')) {
@@ -1084,22 +1077,17 @@
 
         // Load rate automatically for calculator
         function loadRateForCalculator(fromCurrencyId, toCurrencyId) {
-            console.log('=== loadRateForCalculator called ===');
-            console.log('Loading rate for fromCurrencyId:', fromCurrencyId, 'toCurrencyId:', toCurrencyId);
 
             const url = `/Orders/GetExchangeRate?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}&orderType=Buy`;
-            console.log('Fetching rate from URL:', url);
 
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Rate response received:', data);
                     if (data.success && data.rate > 0) {
                         // Get currency codes for rate formatting
                         const fromCode = calcFromCurrencyCode;
                         const toCode = calcToCurrencyCode;
 
-                        console.log('Processing rate for currencies:', fromCode, 'to', toCode);
 
                         let displayRate = data.rate;
                         let isRateInverted = false;
@@ -1123,7 +1111,6 @@
                                 // Inverse rate is larger, so display it (swap the direction conceptually)
                                 displayRate = inverseRate;
                                 isRateInverted = true;
-                                console.log(`Using inverted rate ${displayRate.toFixed(4)} instead of ${directRate.toFixed(4)} for better UX`);
                             } else {
                                 // Direct rate is larger or equal, use it
                                 displayRate = directRate;
@@ -1139,7 +1126,6 @@
                             // If both currencies are non-IRR, preserve 2 decimal places
                             displayRate = Math.round(displayRate * 100) / 100;
                         }
-                        console.log('Setting calculator rate to:', displayRate, 'isRateInverted:', isRateInverted);
 
                         // Store whether the rate was inverted for calculation purposes
                         window.calcRateInverted = isRateInverted;
@@ -1155,28 +1141,21 @@
 
                         // Auto-calculate if amount is already entered
                         const existingAmount = document.getElementById('calcFromAmountInput').value;
-                        console.log('Existing fromAmount:', existingAmount);
                         if (existingAmount) {
                             calculateFromAmountChange();
                         }
                     } else {
-                        console.log('Failed to load rate:', data);
                     }
                 })
                 .catch(error => {
-                    console.error('Error loading rate for calculator:', error);
                 });
         }
 
         // Calculate when FROM amount changes
         function calculateFromAmountChange() {
-            console.log('=== calculateFromAmountChange called ===');
             const fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value);
             const rate = parseFloat(document.getElementById('calcRateInput').value);
 
-            console.log('From amount:', fromAmount, 'Rate:', rate);
-            console.log('calcFromCurrencyCode:', calcFromCurrencyCode, 'calcToCurrencyCode:', calcToCurrencyCode);
-            console.log('calcRateInverted:', window.calcRateInverted);
 
             if (fromAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
                 const fromCode = calcFromCurrencyCode;
@@ -1205,14 +1184,12 @@
                     toAmount = Math.round(toAmount * 1000) / 1000;
                 }
 
-                console.log('Calculated toAmount:', toAmount);
                 document.getElementById('calcToAmountInput').value = toAmount;
                 showInlineCalculationResult(fromAmount, toAmount, rate);
 
                 // Update main form with the correct rate direction for backend
                 updateMainFormFromCalculator(fromAmount, rate);
             } else {
-                console.log('Clearing toAmount - invalid inputs');
                 document.getElementById('calcToAmountInput').value = '';
                 clearMainForm();
             }
@@ -1220,13 +1197,9 @@
 
         // Calculate when TO amount changes
         function calculateToAmountChange() {
-            console.log('=== calculateToAmountChange called ===');
             const toAmount = parseFloat(document.getElementById('calcToAmountInput').value);
             const rate = parseFloat(document.getElementById('calcRateInput').value);
 
-            console.log('To amount:', toAmount, 'Rate:', rate);
-            console.log('calcFromCurrencyCode:', calcFromCurrencyCode, 'calcToCurrencyCode:', calcToCurrencyCode);
-            console.log('calcRateInverted:', window.calcRateInverted);
 
             if (toAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
                 const fromCode = calcFromCurrencyCode;
@@ -1255,14 +1228,12 @@
                     fromAmount = Math.round(fromAmount * 1000) / 1000;
                 }
 
-                console.log('Calculated fromAmount:', fromAmount);
                 document.getElementById('calcFromAmountInput').value = fromAmount;
                 showInlineCalculationResult(fromAmount, toAmount, rate);
 
                 // Update main form with the correct rate direction for backend
                 updateMainFormFromCalculator(fromAmount, rate);
             } else {
-                console.log('Clearing fromAmount - invalid inputs');
                 document.getElementById('calcFromAmountInput').value = '';
                 clearMainForm();
             }
@@ -1270,11 +1241,9 @@
 
         // Calculate when rate changes
         function calculateRateChange() {
-            console.log('=== calculateRateChange called ===');
             const rate = parseFloat(document.getElementById('calcRateInput').value);
             const fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value);
 
-            console.log('Rate changed to:', rate, 'FromAmount:', fromAmount);
 
             // Sync the hidden rateInput for main form compatibility
             const hiddenRateInput = document.getElementById('rateInput');
@@ -1287,25 +1256,18 @@
                 calculateFromAmountChange();
             } else if (rate && rate > 0) {
                 // Just clear TO amount if no FROM amount
-                console.log('Rate valid but no fromAmount, clearing toAmount');
                 document.getElementById('calcToAmountInput').value = '';
             } else {
-                console.log('Invalid rate, clearing everything');
                 clearMainForm();
             }
         }
 
         // Update main form immediately from calculator values
         function updateMainFormFromCalculator(fromAmount, rate) {
-            console.log('=== updateMainFormFromCalculator called ===');
-            console.log('Updating main form with fromAmount:', fromAmount, 'rate:', rate);
-            console.log('calcFromCurrencyCode:', calcFromCurrencyCode, 'calcToCurrencyCode:', calcToCurrencyCode);
-            console.log('calcRateInverted:', window.calcRateInverted);
 
             if (fromAmount && rate && rate > 0 && calcFromCurrencyCode) {
                 // Set amount in main form
                 document.getElementById('amountInput').value = fromAmount;
-                console.log('Set amountInput to:', fromAmount);
 
                 // Convert calculator rate back to main form format (backend expects direct rate)
                 const fromCode = calcFromCurrencyCode;
@@ -1329,44 +1291,35 @@
                     }
                 }
 
-                console.log('Setting main form rate to:', mainFormRate, '(fromCode:', fromCode, ', toCode:', toCode, ')');
                 document.getElementById('rateInput').value = mainFormRate;
                 document.getElementById('hiddenRate').value = mainFormRate;
 
                 // Calculate total amount
                 const totalAmount = fromAmount * mainFormRate;
                 document.getElementById('hiddenTotalAmount').value = totalAmount;
-                console.log('Set hiddenTotalAmount to:', totalAmount);
 
                 // Trigger main form calculation update
                 updateCalculation();
-                console.log('Main form updated successfully');
             }
         }
 
         // Clear main form when calculator is invalid
         function clearMainForm() {
-            console.log('=== clearMainForm called ===');
             document.getElementById('amountInput').value = '';
             document.getElementById('rateInput').value = '';
             document.getElementById('hiddenRate').value = '0';
             document.getElementById('hiddenTotalAmount').value = '0';
             document.getElementById('calculationResult').style.display = 'none';
-            console.log('Main form cleared');
         }
 
         // Show calculation result
         function showInlineCalculationResult(fromAmount, toAmount, rate) {
-            console.log('=== showInlineCalculationResult called ===');
-            console.log('Parameters:', fromAmount, toAmount, rate);
-            console.log('Currency codes:', calcFromCurrencyCode, calcToCurrencyCode);
 
             const fromCode = calcFromCurrencyCode;
             const toCode = calcToCurrencyCode;
 
             // Check if currency codes are defined
             if (!fromCode || !toCode) {
-                console.error('Currency codes not defined:', fromCode, toCode);
                 return;
             }
 
@@ -1377,7 +1330,6 @@
             const formula = `${formattedFromAmount} ${fromCode} → ${formattedToAmount} ${toCode}`;
             const details = `نرخ: ۱ ${fromCode.toUpperCase() === 'IRR' ? toCode : fromCode} = ${formattedRate} IRR`;
 
-            console.log('Calculation result:', formula, details);
 
             // Note: Display elements removed - calculation result only logged
         }
@@ -1389,34 +1341,26 @@
 
         // Add event listeners - Use Select2 events since Select2 replaces the original elements
         $('#fromCurrencySelect').on('select2:select', function (e) {
-            console.log('From currency changed via Select2');
             var fromCurrency = $('#fromCurrencySelect').val();
             var toCurrency = $('#toCurrencySelect').val();
-            console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
             updateButtonStates(); // Update button states
 
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-                console.log('Loading exchange rate...');
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
-                console.log('Hiding rate display - invalid currencies');
                 document.getElementById('calculationResult').style.display = 'none';
                 document.getElementById('currencyPoolInfo').style.display = 'none';
             }
         });
 
         $('#toCurrencySelect').on('select2:select', function (e) {
-            console.log('To currency changed via Select2');
             var fromCurrency = $('#fromCurrencySelect').val();
             var toCurrency = $('#toCurrencySelect').val();
-            console.log('From currency:', fromCurrency, 'To currency:', toCurrency);
             updateButtonStates(); // Update button states
 
             if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-                console.log('Loading exchange rate...');
                 showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
-                console.log('Hiding rate display - invalid currencies');
                 document.getElementById('calculationResult').style.display = 'none';
                 document.getElementById('currencyPoolInfo').style.display = 'none';
             }
@@ -1461,10 +1405,8 @@
             loadSuggestedRateBtn.addEventListener('click', function () {
                 var fromCurrency = $('#fromCurrencySelect').val();
                 var toCurrency = $('#toCurrencySelect').val();
-                console.log('Load suggested rate clicked - From:', fromCurrency, 'To:', toCurrency);
                 if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
                     // Note: Exchange rate loading functionality has been removed
-                    console.log('Exchange rate loading is no longer available');
                 } else {
                     alert('لطفاً ابتدا ارز مبدأ و مقصد را انتخاب کنید.');
                 }
@@ -1508,15 +1450,12 @@
 
             // Initialize Select2 if available
             if (typeof $.fn.select2 !== 'undefined') {
-                console.log('Initializing Select2...');
                 $('#fromCurrencySelect').select2();
                 $('#toCurrencySelect').select2();
                 $('#customerSelect').select2();
             } else {
-                console.log('Select2 not available, using regular select events');
                 // Add fallback event listeners for regular select change
                 document.getElementById('fromCurrencySelect').addEventListener('change', function () {
-                    console.log('From currency changed via regular event');
                     updateButtonStates();
                     var fromCurrency = this.value;
                     var toCurrency = document.getElementById('toCurrencySelect').value;
@@ -1526,7 +1465,6 @@
                 });
 
                 document.getElementById('toCurrencySelect').addEventListener('change', function () {
-                    console.log('To currency changed via regular event');
                     updateButtonStates();
                     var fromCurrency = document.getElementById('fromCurrencySelect').value;
                     var toCurrency = this.value;

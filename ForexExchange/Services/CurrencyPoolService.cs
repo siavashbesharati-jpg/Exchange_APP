@@ -294,7 +294,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for a currency pool
-        /// بروزرسانی تعداد معاملهات برای صندوق  ارزی
+        /// بروزرسانی تعداد معاملات  برای صندوق  ارزی
         /// </summary>
         public async Task UpdateOrderCountsAsync(int currencyId)
         {
@@ -323,7 +323,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for all currency pools
-        /// بروزرسانی تعداد معاملهات برای همه صندوق های ارزی
+        /// بروزرسانی تعداد معاملات  برای همه صندوق های ارزی
         /// </summary>
         public async Task UpdateAllOrderCountsAsync()
         {

@@ -46,7 +46,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Average buy rate for this currency pair (weighted average of buy orders)
-        /// میانگین نرخ خرید برای این جفت ارز (میانگین وزنی معاملهات خرید)
+        /// میانگین نرخ خرید برای این جفت ارز (میانگین وزنی معاملات  خرید)
         /// </summary>
         [Column(TypeName = "decimal(18,8)")]
         [Display(Name = "Average Buy Rate - میانگین نرخ خرید")]
@@ -54,7 +54,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Average sell rate for this currency pair (weighted average of sell orders)
-        /// میانگین نرخ فروش برای این جفت ارز (میانگین وزنی معاملهات فروش)
+        /// میانگین نرخ فروش برای این جفت ارز (میانگین وزنی معاملات  فروش)
         /// </summary>
         [Column(TypeName = "decimal(18,8)")]
         [Display(Name = "Average Sell Rate - میانگین نرخ فروش")]
@@ -62,7 +62,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Total volume of buy orders for this pair
-        /// حجم کل معاملهات خرید برای این جفت ارز
+        /// حجم کل معاملات  خرید برای این جفت ارز
         /// </summary>
         [Column(TypeName = "decimal(18,8)")]
         [Display(Name = "Total Buy Volume - حجم کل خرید")]
@@ -70,7 +70,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Total volume of sell orders for this pair
-        /// حجم کل معاملهات فروش برای این جفت ارز
+        /// حجم کل معاملات  فروش برای این جفت ارز
         /// </summary>
         [Column(TypeName = "decimal(18,8)")]
         [Display(Name = "Total Sell Volume - حجم کل فروش")]

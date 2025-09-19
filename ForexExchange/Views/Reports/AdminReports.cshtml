@@ -227,7 +227,6 @@ function loadAdminStats() {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                console.error('Error:', data.error);
                 return;
             }
 
@@ -238,7 +237,6 @@ function loadAdminStats() {
             document.getElementById('securityEvents').textContent = formatNumber(stats.securityEvents);
         })
         .catch(error => {
-            console.error('Error loading admin stats:', error);
             document.getElementById('totalUsers').textContent = 'خطا';
             document.getElementById('todayLogins').textContent = 'خطا';
             document.getElementById('adminActions').textContent = 'خطا';
@@ -336,7 +334,6 @@ function loadActivityTable() {
             }
         })
         .catch(error => {
-            console.error('Error loading activity table:', error);
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="text-center py-5 text-danger">

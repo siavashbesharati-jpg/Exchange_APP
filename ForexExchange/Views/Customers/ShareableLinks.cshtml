@@ -310,7 +310,6 @@
                 navigator.clipboard.writeText(fullUrl).then(function() {
                     showCopySuccess(button, originalText);
                 }).catch(function(err) {
-                    console.log('Clipboard API failed, trying fallback:', err);
                     fallbackCopyToClipboard(fullUrl, button, originalText);
                 });
             } else {
@@ -338,7 +337,6 @@
                     alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید:\n' + text);
                 }
             } catch (err) {
-                console.log('Fallback copy failed:', err);
                 alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید:\n' + text);
             } finally {
                 document.body.removeChild(textArea);
@@ -375,7 +373,6 @@
                 navigator.clipboard.writeText(urlInput.value).then(function() {
                     showModalCopySuccess(button, originalText);
                 }).catch(function(err) {
-                    console.log('Clipboard API failed in modal, trying fallback:', err);
                     fallbackModalCopy(urlInput, button, originalText);
                 });
             } else {
@@ -396,7 +393,6 @@
                     alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید.');
                 }
             } catch (err) {
-                console.log('Fallback copy failed in modal:', err);
                 alert('خطا در کپی کردن لینک. لطفاً لینک را به صورت دستی کپی کنید.');
             }
         }

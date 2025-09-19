@@ -21,8 +21,8 @@ This repository implements a **Forex Order Matching & Transaction Automation Sys
 - Rates displayed in dashboard.  
 - All amounts internally stored in **تومان**.  
 
-### 2. ثبت سفارش (Order Placement)  
-- Customer opens "ثبت سفارش" form.  
+### 2. ثبت معامله (Order Placement)  
+- Customer opens "ثبت معامله" form.  
 - Example: `۵۰,۰۰۰ درهم` → system calculates conversion in تومان.  
 - System stores both the **requested currency** and **calculated تومان equivalent**.  
 
@@ -33,7 +33,7 @@ This repository implements a **Forex Order Matching & Transaction Automation Sys
   - Stores both **image BLOB** and **structured metadata** in DB.  
 - If customer skips upload, manual confirmation is allowed.  
 
-### 4. مچینگ سفارش‌ها (Matching Engine)  
+### 4. مچینگ معامله‌ها (Matching Engine)  
 - System checks all open orders.  
 - Splits large orders into smaller parts if needed.  
 - Finds counterpart orders (buyer vs seller).  
@@ -49,10 +49,10 @@ This repository implements a **Forex Order Matching & Transaction Automation Sys
 ### 6. داشبورد و گزارش‌دهی (Dashboard & Reporting)  
 - Every transaction, message, receipt, and گردش stored in DB.  
 - Admin dashboard:  
-  - مشاهده سفارش‌های باز، بسته، نیمه‌تمام، لغو شده  
+  - مشاهده معامله‌های باز، بسته، نیمه‌تمام، لغو شده  
   - گزارش‌های مالی  
 - Customer dashboard:  
-  - پروفایل شخصی + تاریخچه سفارش‌ها  
+  - پروفایل شخصی + تاریخچه معامله‌ها  
   - وضعیت تراکنش‌ها با شفافیت کامل  
 
 ---
@@ -76,8 +76,8 @@ This repository implements a **Forex Order Matching & Transaction Automation Sys
 - Use **Bootstrap 5** for UI and responsive design.  
 - All layouts should be **RTL** (`dir="rtl"`) and localized in **Farsi**.  
 - Include basic pages:  
-  - Dashboard (نمای کلی سفارش‌ها)  
-  - Order placement form (ثبت سفارش)  
+  - Dashboard (نمای کلی معامله‌ها)  
+  - Order placement form (ثبت معامله)  
   - Receipt upload/confirmation page (آپلود رسید)  
   - Profile/history page (پروفایل مشتری)  
 
@@ -117,8 +117,8 @@ Copilot should:
 ## ✅ **COMPLETED TASKS**
 - [x] **Setup Project Skeleton**: ASP.NET Core MVC + SQLite + Bootstrap RTL (Farsi UI) ✅  
 - [x] **Create Models**: Orders, Transactions, Customers, Receipts (with BLOB storage) ✅  
-- [x] **Implement Dashboard** (نمای کلی سفارش‌ها): Full Persian dashboard with statistics ✅  
-- [x] **Implement Order Placement Form** (ثبت سفارش): Complete form with real-time calculation ✅  
+- [x] **Implement Dashboard** (نمای کلی معامله‌ها): Full Persian dashboard with statistics ✅  
+- [x] **Implement Order Placement Form** (ثبت معامله): Complete form with real-time calculation ✅  
 - [x] **Implement Matching Engine for Orders**: Basic buy/sell order matching ✅  
 - [x] **Implement Exchange Rate Management**: Admin panel for live rate updates ✅  
 - [x] **Implement Customer Management**: CRUD operations for customer registration ✅  
@@ -241,9 +241,9 @@ The **Forex Order Matching & Transaction Automation System** for **IranExpedia**
 
 ### 🏆 **Completed System Features**
 1. **نرخ ارز و داشبورد** (Exchange Rate & Dashboard) ✅
-2. **ثبت سفارش** (Order Placement) ✅  
+2. **ثبت معامله** (Order Placement) ✅  
 3. **پردازش رسید** (Receipt Processing - OCR + Metadata) ✅
-4. **مچینگ سفارش‌ها** (Matching Engine) ✅
+4. **مچینگ معامله‌ها** (Matching Engine) ✅
 5. **تأیید و تسویه** (Confirmation & Settlement) ✅
 6. **داشبورد و گزارش‌دهی** (Dashboard & Reporting) ✅
 7. **پردازش گردش حساب** (Bank Statement Processing) ✅

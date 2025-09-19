@@ -7,7 +7,7 @@ Multi-Currency Cross-Trading Exchange System — سیستم معاملات  چن
 - ویژگی‌ها و فناوری‌ها
 - نقش‌ها و دسترسی‌ها (Orders فقط برای Admin/Manager/Staff)
 - معماری و موجودیت‌های اصلی
-- گردش‌کار: از سفارش تا تسویه (Business Flow)
+- گردش‌کار: از معامله تا تسویه (Business Flow)
 - استخرهای ارزی و مدیریت ریسک
 - ساختار پروژه
 - نصب، راه‌اندازی و پیکربندی
@@ -37,10 +37,10 @@ Multi-Currency Cross-Trading Exchange System — سیستم معاملات  چن
 - اعلان‌ها، احراز هویت و کنترل دسترسی مبتنی بر نقش
 
 ## نقش‌ها و دسترسی‌ها
-- Admin, Manager, Staff: ایجاد/مدیریت سفارش‌ها، رسیدها، تسویه‌ها، گزارش‌ها؛ مدیریت ارزها و نرخ‌ها.
-- Customer: مشاهده پروفایل و تراکنش‌های خود؛ ایجاد یا مدیریت سفارش مجاز نیست.
+- Admin, Manager, Staff: ایجاد/مدیریت معامله‌ها، رسیدها، تسویه‌ها، گزارش‌ها؛ مدیریت ارزها و نرخ‌ها.
+- Customer: مشاهده پروفایل و تراکنش‌های خود؛ ایجاد یا مدیریت معامله مجاز نیست.
 
-نکته: ورودی‌های UI برای ثبت سفارش فقط برای Admin/Manager/Staff نمایش داده می‌شوند.
+نکته: ورودی‌های UI برای ثبت معامله فقط برای Admin/Manager/Staff نمایش داده می‌شوند.
 
 ## معماری و موجودیت‌های اصلی
 - Currency (DB): Code, PersianName, Symbol, IsActive, IsBaseCurrency(=IRR), DisplayOrder
@@ -48,11 +48,11 @@ Multi-Currency Cross-Trading Exchange System — سیستم معاملات  چن
 - Transaction: BuyOrderId, SellOrderId، Amount, Rate, Status, TotalInToman, timestamps
 - Receipt: تصویر + فیلدهای OCR (مبلغ/مرجع/تاریخ)، IsVerified
 
-نرخ‌گذاری در ایجاد سفارش: مستقیم (From→To)، معکوس (۱/To→From) یا Cross از طریق IRR وقتی دو ساقه فعال باشند.
+نرخ‌گذاری در ایجاد معامله: مستقیم (From→To)، معکوس (۱/To→From) یا Cross از طریق IRR وقتی دو ساقه فعال باشند.
 
-## گردش‌کار: از سفارش تا تسویه (خلاصه)
+## گردش‌کار: از معامله تا تسویه (خلاصه)
 1) آماده‌سازی سیستم: Seed و مدیریت ارزها؛ IRR تنها ارز پایه. تنظیمات کمیسیون/کارمزد و حدود عملیاتی.
-2) ایجاد سفارش (Admin/Manager/Staff): انتخاب مشتری و جفت‌ارز، تعیین نرخ (مستقیم/معکوس/از طریق IRR). ذخیره با Status=Open.
+2) ایجاد معامله (Admin/Manager/Staff): انتخاب مشتری و جفت‌ارز، تعیین نرخ (مستقیم/معکوس/از طریق IRR). ذخیره با Status=Open.
 3) مچینگ: انتخاب بهترین تطبیق‌ها با پشتیبانی Partial Fill؛ ساخت Transaction و به‌روزرسانی FilledAmount/Status؛ بروزرسانی استخرها.
 4) تسویه: آپلود رسید (OCR اختیاری) → تأیید رسید → تأیید پرداخت‌ها → تکمیل یا Fail با Rollback.
 5) کارمزد: از SettingsService خوانده می‌شود (درصد → نسبت اعشاری) و در Settlement لحاظ می‌گردد.
@@ -108,7 +108,7 @@ dotnet run
 
 ## گزارش‌ها، رسیدها (OCR) و ماژول‌ها
 - Reports: مالی، کمیسیون، OrderBook، فعالیت مشتری + CSV
-- Receipts: آپلود تصویر، OCR (AI)، تأیید و پیوست به تراکنش/سفارش
+- Receipts: آپلود تصویر، OCR (AI)، تأیید و پیوست به تراکنش/معامله
 - Settlements: PaymentUploaded → ReceiptConfirmed → Completed/Failed
 - ExchangeRates: مدیریت نرخ‌های مستقیم/معکوس/از طریق IRR
 - Currencies: مدیریت ارزها (بدون حذف؛ فعال/غیرفعال؛ IRR غیرقابل غیرفعال)
@@ -130,7 +130,7 @@ dotnet run
 - حذف Enum قدیمی و مهاجرت به موجودیت Currency در پایگاه داده.
 - Orders/Transactions اکنون FromCurrency/ToCurrency دارند؛ نمایش بر اساس PersianName/Code از DB.
 - Seed ارزها: IRR (پایه) + USD/EUR/AED/OMR/TRY؛ جلوگیری از چند پایه و حذف.
-- کنترلرها/ویوها به تدریج به مدل جدید به‌روزرسانی شده‌اند؛ سفارش‌سازی UI طبق نقش‌ها.
+- کنترلرها/ویوها به تدریج به مدل جدید به‌روزرسانی شده‌اند؛ معامله‌سازی UI طبق نقش‌ها.
 
 ## پشتیبانی و اطلاعات نسخه
 - Issues را در مخزن ثبت کنید.

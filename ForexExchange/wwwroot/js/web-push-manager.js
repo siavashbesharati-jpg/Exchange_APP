@@ -19,7 +19,6 @@ class WebPushManager {
         if (this.isSupported) {
             this.init();
         } else {
-            console.warn('Push notifications not supported in this browser');
         }
     }
 
@@ -34,9 +33,7 @@ class WebPushManager {
             await this.checkExistingSubscription();
             this.setupEventListeners();
             
-            console.log('Web Push Manager initialized successfully');
         } catch (error) {
-            console.error('Error initializing Web Push Manager:', error);
         }
     }
 
@@ -50,7 +47,6 @@ class WebPushManager {
                 scope: '/'
             });
 
-            console.log('Service Worker registered successfully');
 
             // Handle service worker updates
             this.serviceWorkerRegistration.addEventListener('updatefound', () => {
@@ -58,7 +54,6 @@ class WebPushManager {
                 if (newWorker) {
                     newWorker.addEventListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            console.log('New service worker available');
                             this.showUpdateAvailable();
                         }
                     });
@@ -66,7 +61,6 @@ class WebPushManager {
             });
 
         } catch (error) {
-            console.error('Service Worker registration failed:', error);
             throw error;
         }
     }
@@ -82,12 +76,10 @@ class WebPushManager {
                 const data = await response.json();
                 this.publicKey = data.publicKey;
             } else {
-                console.warn('Could not get VAPID public key from server');
                 // Use default public key for development
                 this.publicKey = 'YOUR_VAPID_PUBLIC_KEY_HERE';
             }
         } catch (error) {
-            console.error('Error getting public key:', error);
             // Fallback to default key
             this.publicKey = 'YOUR_VAPID_PUBLIC_KEY_HERE';
         }
@@ -103,12 +95,10 @@ class WebPushManager {
             this.isSubscribed = this.subscription !== null;
             
             if (this.isSubscribed) {
-                console.log('Existing push subscription found');
                 // Only sync with server silently, don't show success message
                 await this.syncSubscriptionWithServer(this.subscription);
             }
         } catch (error) {
-            console.error('Error checking existing subscription:', error);
         }
     }
 
@@ -125,15 +115,12 @@ class WebPushManager {
                 await this.subscribeToPush();
                 return true;
             } else if (permission === 'denied') {
-                console.warn('Notification permission denied');
                 this.showPermissionDeniedMessage();
                 return false;
             } else {
-                console.warn('Notification permission dismissed');
                 return false;
             }
         } catch (error) {
-            console.error('Error requesting permission:', error);
             return false;
         }
     }
@@ -152,7 +139,6 @@ class WebPushManager {
             });
 
             this.isSubscribed = true;
-            console.log('Successfully subscribed to push notifications');
 
             // Send subscription to server
             await this.sendSubscriptionToServer(this.subscription);
@@ -161,7 +147,6 @@ class WebPushManager {
             this.showSubscriptionSuccess();
 
         } catch (error) {
-            console.error('Error subscribing to push notifications:', error);
             this.showSubscriptionError();
         }
     }
@@ -179,11 +164,9 @@ class WebPushManager {
                 this.subscription = null;
                 this.isSubscribed = false;
                 
-                console.log('Successfully unsubscribed from push notifications');
                 this.showUnsubscriptionSuccess();
             }
         } catch (error) {
-            console.error('Error unsubscribing from push notifications:', error);
         }
     }
 
@@ -193,11 +176,6 @@ class WebPushManager {
      */
     async sendSubscriptionToServer(subscription, showSuccessMessage = true) {
         try {
-            console.log('Sending subscription to server:', {
-                endpoint: subscription.endpoint,
-                keys: subscription.keys
-            });
-
             const response = await fetch('/api/push/subscribe', {
                 method: 'POST',
                 headers: {
@@ -219,20 +197,17 @@ class WebPushManager {
                 } catch (e) {
                     errorMessage = `HTTP ${response.status}: ${response.statusText}`;
                 }
-                console.error('Subscription error:', errorMessage);
                 this.showNotificationMessage(`❌ خطا در ثبت اشتراک: ${errorMessage}`, 'error');
                 throw new Error(errorMessage);
             }
 
             const result = await response.json();
-            console.log('Subscription sent to server successfully:', result);
             
             // Only show success message if explicitly requested (not for silent syncs)
             if (showSuccessMessage) {
                 this.showNotificationMessage('✅ اشتراک اعلان‌ها با موفقیت ثبت شد', 'success');
             }
         } catch (error) {
-            console.error('Error sending subscription to server:', error);
             this.showNotificationMessage(`❌ خطا در ارسال اشتراک: ${error.message}`, 'error');
             throw error;
         }
@@ -259,9 +234,7 @@ class WebPushManager {
                 throw new Error('Failed to remove subscription from server');
             }
 
-            console.log('Subscription removed from server successfully');
         } catch (error) {
-            console.error('Error removing subscription from server:', error);
         }
     }
 
@@ -296,15 +269,12 @@ class WebPushManager {
                 } catch (e) {
                     errorMessage = `HTTP ${response.status}: ${response.statusText}`;
                 }
-                console.error('Subscription sync error:', errorMessage);
                 throw new Error(errorMessage);
             }
 
             const result = await response.json();
-            console.log('Subscription synced with server successfully:', result);
             // Note: No success message shown for silent sync
         } catch (error) {
-            console.error('Error syncing subscription with server:', error);
             throw error;
         }
     }
@@ -341,7 +311,6 @@ class WebPushManager {
                 await this.sendSubscriptionToServer(this.subscription, false); // Don't show success message for sync
             }
         } catch (error) {
-            console.error('Error syncing subscription status:', error);
         }
     }
 
@@ -520,12 +489,10 @@ class WebPushManager {
      */
     async forceResubscribe() {
         try {
-            console.log('Force re-subscribing...');
             
             // First unsubscribe if already subscribed
             if (this.subscription) {
                 await this.subscription.unsubscribe();
-                console.log('Unsubscribed from existing subscription');
             }
 
             // Request permission if needed
@@ -541,14 +508,12 @@ class WebPushManager {
             });
 
             this.isSubscribed = true;
-            console.log('New subscription created:', this.subscription);
 
             // Send to server
             await this.sendSubscriptionToServer(this.subscription);
             
             this.showNotificationMessage('✅ اشتراک مجدد با موفقیت انجام شد', 'success');
         } catch (error) {
-            console.error('Error in force resubscribe:', error);
             this.showNotificationMessage(`❌ خطا در اشتراک مجدد: ${error.message}`, 'error');
         }
     }
@@ -566,14 +531,11 @@ class WebPushManager {
 
             if (response.ok) {
                 const status = await response.json();
-                console.log('Server subscription status:', status);
                 return status;
             } else {
-                console.error('Failed to get subscription status from server');
                 return null;
             }
         } catch (error) {
-            console.error('Error checking server subscription status:', error);
             return null;
         }
     }
@@ -584,7 +546,6 @@ class WebPushManager {
      */
     async testPushNotification() {
         if (!this.isSubscribed) {
-            console.warn('Not subscribed to push notifications, attempting to subscribe...');
             try {
                 await this.forceResubscribe();
                 if (!this.isSubscribed) {
@@ -600,7 +561,6 @@ class WebPushManager {
         // Check server subscription status first
         const serverStatus = await this.checkServerSubscriptionStatus();
         if (serverStatus && !serverStatus.hasActiveSubscriptions) {
-            console.warn('No active subscriptions on server, re-subscribing...');
             await this.forceResubscribe();
         }
 
@@ -620,7 +580,6 @@ class WebPushManager {
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('Test push notification sent:', result);
                 // Show success message to user
                 this.showNotificationMessage('✅ اعلان تست با موفقیت ارسال شد', 'success');
             } else {
@@ -632,11 +591,9 @@ class WebPushManager {
                 } catch (e) {
                     errorMessage = `HTTP ${response.status}: ${response.statusText}`;
                 }
-                console.error('Failed to send test push notification:', errorMessage);
                 this.showNotificationMessage(`❌ خطا در ارسال اعلان تست: ${errorMessage}`, 'error');
             }
         } catch (error) {
-            console.error('Error sending test push notification:', error);
             this.showNotificationMessage(`❌ خطا در ارسال اعلان تست: ${error.message}`, 'error');
         }
     }
@@ -673,8 +630,6 @@ document.addEventListener('DOMContentLoaded', () => {
         checkStatus: () => window.webPushManager?.checkServerSubscriptionStatus(),
         testNotification: () => window.webPushManager?.testPushNotification(),
         getSubscription: () => {
-            console.log('Current subscription:', window.webPushManager?.subscription);
-            console.log('Is subscribed:', window.webPushManager?.isSubscribed);
             return window.webPushManager?.subscription;
         }
     };

@@ -30,7 +30,6 @@ class AdminNotificationManager {
     setupSignalR() {
         // Check if SignalR is available
         if (typeof signalR === 'undefined') {
-            console.warn('SignalR is not loaded. Real-time notifications will not work.');
             return;
         }
 
@@ -54,17 +53,14 @@ class AdminNotificationManager {
         });
 
         this.connection.onreconnecting(() => {
-            console.log('Reconnecting to notification hub...');
             this.showConnectionStatus('در حال اتصال مجدد...', 'warning');
         });
 
         this.connection.onreconnected(() => {
-            console.log('Reconnected to notification hub');
             this.showConnectionStatus('اتصال برقرار شد', 'success');
         });
 
         this.connection.onclose(() => {
-            console.log('Connection closed');
             this.isConnected = false;
             this.showConnectionStatus('اتصال قطع شد', 'error');
         });
@@ -78,10 +74,8 @@ class AdminNotificationManager {
         try {
             await this.connection.start();
             this.isConnected = true;
-            console.log('Connected to notification hub');
             this.showConnectionStatus('اتصال برقرار شد', 'success');
         } catch (err) {
-            console.error('Error connecting to notification hub:', err);
             this.showConnectionStatus('خطا در اتصال', 'error');
             // Retry connection after 5 seconds
             setTimeout(() => this.startConnection(), 5000);
@@ -123,10 +117,8 @@ class AdminNotificationManager {
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 // Page is hidden, reduce notification frequency if needed
-                console.log('Page hidden, notifications paused');
             } else {
                 // Page is visible, resume notifications
-                console.log('Page visible, notifications resumed');
                 this.processNotificationQueue();
             }
         });
@@ -141,11 +133,9 @@ class AdminNotificationManager {
         // Handle service worker messages (for notification click navigation)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
-                console.log('AdminNotifications: Service worker message received:', event.data);
                 
                 if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
                     const url = event.data.url;
-                    console.log('AdminNotifications: Navigating to URL from notification click:', url);
                     
                     if (url && url !== '/') {
                         // Navigate to the URL
@@ -161,9 +151,6 @@ class AdminNotificationManager {
      * مدیریت اعلان ورودی
      */
     handleNotification(notification) {
-        console.log('Received notification:', notification);
-        console.log('Notification URL:', notification.url);
-        console.log('Notification type:', notification.type);
 
         // Add to queue if page is not visible
         if (document.hidden) {
@@ -189,13 +176,10 @@ class AdminNotificationManager {
 
         Swal.fire(config).then((result) => {
             if (result.isConfirmed) {
-                console.log('Notification click confirmed. URL:', notification.url);
                 // Navigate to detail page if URL is provided, otherwise refresh
                 if (notification.url && notification.url !== '/') {
-                    console.log('Navigating to URL:', notification.url);
                     this.navigateToUrl(notification.url);
                 } else {
-                    console.log('No specific URL, refreshing page');
                     // Smooth page refresh with loading animation
                     this.showLoadingOverlay();
                     setTimeout(() => {
@@ -211,8 +195,6 @@ class AdminNotificationManager {
      * دریافت تنظیمات اعلان بر اساس نوع
      */
     getNotificationConfig(notification) {
-        console.log('Getting config for notification with URL:', notification.url);
-        console.log('URL check result:', notification.url && notification.url !== '/');
         
         const baseConfig = {
             title: this.createModernTitle(notification),
@@ -589,7 +571,6 @@ class AdminNotificationManager {
             oscillator.stop(audioContext.currentTime + 0.3);
         } catch (error) {
             // Silently fail if audio is not supported
-            console.log('Notification sound not supported:', error);
         }
     }
 
@@ -601,9 +582,7 @@ class AdminNotificationManager {
         if (this.connection && this.isConnected) {
             try {
                 await this.connection.invoke('JoinGroup', groupName);
-                console.log(`Joined notification group: ${groupName}`);
             } catch (err) {
-                console.error(`Error joining group ${groupName}:`, err);
             }
         }
     }
@@ -616,9 +595,7 @@ class AdminNotificationManager {
         if (this.connection && this.isConnected) {
             try {
                 await this.connection.invoke('LeaveGroup', groupName);
-                console.log(`Left notification group: ${groupName}`);
             } catch (err) {
-                console.error(`Error leaving group ${groupName}:`, err);
             }
         }
     }
@@ -704,7 +681,7 @@ class AdminNotificationManager {
      */
     getDataLabel(key) {
         const labels = {
-            'orderId': 'شماره سفارش',
+            'orderId': 'شماره معامله',
             'customerId': 'شناسه مشتری',
             'customerName': 'نام مشتری',
             'amount': 'مبلغ',
@@ -773,7 +750,6 @@ class AdminNotificationManager {
             oscillator.start(audioCtx.currentTime);
             oscillator.stop(audioCtx.currentTime + 0.3);
         } catch (e) {
-            console.log('Audio not supported');
         }
     }
 

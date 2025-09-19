@@ -512,10 +512,8 @@
             validateCurrency();
             // Auto-set PayerType to System when bank account is selected
             if (this.value && this.value !== '') {
-                console.log('🔄 Auto-setting PayerType to System due to bank account selection:', this.value);
                 $('#payerType').val('@ForexExchange.Models.PayerType.System').trigger('change');
                 setTimeout(() => {
-                    console.log('✅ PayerType set to:', document.getElementById('payerType').value);
                 }, 50);
             }
         });
@@ -523,10 +521,8 @@
             validateCurrency();
             // Auto-set ReceiverType to System when bank account is selected
             if (this.value && this.value !== '') {
-                console.log('🔄 Auto-setting ReceiverType to System due to bank account selection:', this.value);
                 $('#receiverType').val('@ForexExchange.Models.ReceiverType.System').trigger('change');
                 setTimeout(() => {
-                    console.log('✅ ReceiverType set to:', document.getElementById('receiverType').value);
                 }, 50);
             }
         });
@@ -622,14 +618,12 @@
         $(document).on('change', '[name="PayerCustomerId"]', function() {
             // Auto-set PayerType to Customer when customer is selected
             if (this.value && this.value !== '') {
-                console.log('🔄 Auto-setting PayerType to Customer due to customer selection:', this.value);
                 $('#payerType').val('@ForexExchange.Models.PayerType.Customer').trigger('change');
             }
         });
         $(document).on('change', '[name="ReceiverCustomerId"]', function() {
             // Auto-set ReceiverType to Customer when customer is selected
             if (this.value && this.value !== '') {
-                console.log('🔄 Auto-setting ReceiverType to Customer due to customer selection:', this.value);
                 $('#receiverType').val('@ForexExchange.Models.ReceiverType.Customer').trigger('change');
             }
         });
@@ -675,7 +669,6 @@
 
         // Form validation and confirmation
         document.querySelector('form').addEventListener('submit', function(e) {
-            console.log('🚨 ULTIMATE DEBUG: Form submit event triggered!');
             e.preventDefault(); // Always prevent initial submission
             
             const requiredFields = document.querySelectorAll('input[required], select[required]');
@@ -691,12 +684,10 @@
             });
 
             if (!isValid) {
-                console.log('❌ Form validation failed');
                 alert('لطفاً تمامی فیلدهای اجباری را پر کنید.');
                 return;
             }
 
-            console.log('✅ Form validation passed, showing confirmation modal...');
             // Show confirmation modal
             showConfirmationModal();
         });
@@ -840,7 +831,6 @@
                             dateField.value = miladiDate;
                         }
                     } catch (e) {
-                        console.log('Could not parse Shamsi date:', ocrData.date);
                     }
                 }
             }
@@ -889,7 +879,6 @@
                 
                 return `${year}-${month}-${day}T12:00`;
             } catch (e) {
-                console.error('Error converting Shamsi date:', e);
                 return null;
             }
         }
@@ -900,7 +889,6 @@
 
         // Transaction Confirmation Modal Functions
         function showConfirmationModal() {
-            console.log('🚨 ULTIMATE DEBUG: showConfirmationModal() called!');
             
             // Populate transaction preview
             populateTransactionPreview();
@@ -918,14 +906,11 @@
         }
 
         function populateTransactionPreview() {
-            console.log('🔥 ULTIMATE DEBUG: populateTransactionPreview() STARTED');
             
             // Get form values directly from form elements (more reliable than FormData)
             const form = document.querySelector('form');
-            console.log('📝 Form element found:', !!form);
             
             if (!form) {
-                console.error('❌ CRITICAL: Form not found!');
                 return;
             }
             
@@ -935,19 +920,6 @@
                 return element ? element.value : '';
             };
             
-            console.log('📋 Reading form values directly:');
-            console.log(`  Type: "${getFormValue('Type')}"`);
-            console.log(`  PayerType: "${getFormValue('PayerType')}"`);
-            console.log(`  ReceiverType: "${getFormValue('ReceiverType')}"`);
-            console.log(`  Amount: "${getFormValue('Amount')}"`);
-            console.log(`  CurrencyCode: "${getFormValue('CurrencyCode')}"`);
-            console.log(`  Title: "${getFormValue('Title')}"`);
-            console.log(`  DocumentDate: "${getFormValue('DocumentDate')}"`);
-            console.log(`  ReferenceNumber: "${getFormValue('ReferenceNumber')}"`);
-            console.log(`  PayerCustomerId: "${getFormValue('PayerCustomerId')}"`);
-            console.log(`  ReceiverCustomerId: "${getFormValue('ReceiverCustomerId')}"`);
-            console.log(`  PayerBankAccountId: "${getFormValue('PayerBankAccountId')}"`);
-            console.log(`  ReceiverBankAccountId: "${getFormValue('ReceiverBankAccountId')}"`);
             
             // Create a formData-like object for backward compatibility
             const formData = {
@@ -956,19 +928,14 @@
             
             // Document type - Handle both string and numeric values
             const typeValue = formData.get('Type');
-            console.log('🏷️ Document Type Value:', typeValue, typeof typeValue);
             let typeName = 'نامشخص';
             if (typeValue === '0' || typeValue === 'Cash') {
                 typeName = 'نقدی';
-                console.log('✅ Type set to: نقدی');
             } else if (typeValue === '1' || typeValue === 'Havala') {
                 typeName = 'حواله';
-                console.log('✅ Type set to: حواله');
             } else {
-                console.log('⚠️ Unknown type value:', typeValue);
             }
             document.getElementById('preview-type').textContent = typeName;
-            console.log('📄 Type displayed in modal:', typeName);
             
             // CRITICAL DEBUG: Check if modal elements exist
             const elements = {
@@ -980,12 +947,9 @@
                 'preview-date': document.getElementById('preview-date')
             };
             
-            console.log('🎯 MODAL ELEMENTS CHECK:');
             Object.keys(elements).forEach(id => {
                 const element = elements[id];
-                console.log(`  ${id}: ${!!element ? '✅ FOUND' : '❌ MISSING'}`);
                 if (element) {
-                    console.log(`    Current text: "${element.textContent}"`);
                 }
             });
             
@@ -1000,115 +964,83 @@
             
             // Payer - Enhanced Select2 support with ULTIMATE DEBUG
             const payerType = formData.get('PayerType');
-            console.log('👤 Payer Type Value:', payerType, typeof payerType);
             let payerName = 'نامشخص';
             
             if (payerType === '0' || payerType === 'Customer') { // Customer
-                console.log('🔍 Processing CUSTOMER payer...');
                 const payerCustomerId = formData.get('PayerCustomerId');
-                console.log('🆔 Payer Customer ID:', payerCustomerId);
                 
                 const payerSelect = document.querySelector('[name="PayerCustomerId"]');
-                console.log('🎯 Payer Select Element found:', !!payerSelect);
                 
                 if (payerSelect) {
-                    console.log('📋 Payer Select Options:', payerSelect.options.length);
                     for (let i = 0; i < payerSelect.options.length; i++) {
-                        console.log(`  Option ${i}: value="${payerSelect.options[i].value}", text="${payerSelect.options[i].text}"`);
                     }
                 }
                 
                 if (payerCustomerId && payerSelect) {
                     // Try Select2 first (more reliable for dynamically loaded options)
                     try {
-                        console.log('🔄 Trying Select2 data extraction...');
                         const select2Data = $(payerSelect).select2('data');
-                        console.log('📊 Select2 Data:', select2Data);
                         
                         if (select2Data && select2Data.length > 0 && select2Data[0].text && select2Data[0].text !== payerCustomerId) {
                             payerName = select2Data[0].text;
-                            console.log('✅ Got payer name from Select2:', payerName);
                         } else {
-                            console.log('⚠️ Select2 data not usable, trying native select...');
                             // Fallback to native select option
                             const selectedOption = payerSelect.querySelector(`option[value="${payerCustomerId}"]`);
-                            console.log('🎯 Selected Option found:', !!selectedOption);
                             if (selectedOption) {
-                                console.log('📝 Selected Option text:', selectedOption.textContent);
                             }
                             
                             if (selectedOption && selectedOption.textContent) {
                                 payerName = selectedOption.textContent;
-                                console.log('✅ Got payer name from native select:', payerName);
                             } else {
                                 payerName = 'مشتری (شناسه: ' + payerCustomerId + ')';
-                                console.log('🔄 Using fallback payer name:', payerName);
                             }
                         }
                     } catch (e) {
-                        console.error('❌ Select2 extraction failed:', e);
                         // Fallback if Select2 fails
                         const selectedOption = payerSelect.querySelector(`option[value="${payerCustomerId}"]`);
                         if (selectedOption && selectedOption.textContent) {
                             payerName = selectedOption.textContent;
-                            console.log('✅ Got payer name from fallback:', payerName);
                         } else {
                             payerName = 'مشتری (شناسه: ' + payerCustomerId + ')';
-                            console.log('🔄 Using ultimate fallback payer name:', payerName);
                         }
                     }
                 } else {
                     payerName = 'مشتری (انتخاب نشده)';
-                    console.log('⚠️ No payer customer selected');
                 }
             } else if (payerType === '1' || payerType === 'System') { // System
-                console.log('🏦 Processing SYSTEM payer...');
                 const payerBankId = formData.get('PayerBankAccountId');
-                console.log('🆔 Payer Bank ID:', payerBankId);
                 
                 const payerBankSelect = document.querySelector('[name="PayerBankAccountId"]');
-                console.log('🎯 Payer Bank Select found:', !!payerBankSelect);
                 
                 if (payerBankSelect) {
-                    console.log('📋 Payer Bank Options:', payerBankSelect.options.length);
                     for (let i = 0; i < Math.min(3, payerBankSelect.options.length); i++) {
-                        console.log(`  Bank Option ${i}: value="${payerBankSelect.options[i].value}", text="${payerBankSelect.options[i].text}"`);
                     }
                 }
                 
                 if (payerBankId && payerBankSelect) {
                     // Try Select2 first
                     try {
-                        console.log('🔄 Trying Select2 for bank data...');
                         const select2Data = $(payerBankSelect).select2('data');
-                        console.log('📊 Bank Select2 Data:', select2Data);
                         
                         if (select2Data && select2Data.length > 0 && select2Data[0].text && select2Data[0].text !== payerBankId) {
                             const bankText = select2Data[0].text;
-                            console.log('📝 Bank text from Select2:', bankText);
                             // Extract bank name from format: "AccountNumber - BankName (Currency)"
                             const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
                             const bankName = bankMatch ? bankMatch[1].trim() : bankText;
                             payerName = 'سیستم - ' + bankName;
-                            console.log('✅ Got payer bank name from Select2:', payerName);
                         } else {
-                            console.log('⚠️ Select2 bank data not usable, trying native...');
                             // Fallback to native select option
                             const selectedOption = payerBankSelect.querySelector(`option[value="${payerBankId}"]`);
                             if (selectedOption && selectedOption.textContent) {
                                 const bankText = selectedOption.textContent;
-                                console.log('📝 Bank text from native:', bankText);
                                 const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
                                 const bankName = bankMatch ? bankMatch[1].trim() : bankText;
                                 payerName = 'سیستم - ' + bankName;
-                                console.log('✅ Got payer bank name from native:', payerName);
                             } else {
                                 payerName = 'سیستم (حساب شناسه: ' + payerBankId + ')';
-                                console.log('🔄 Using bank fallback name:', payerName);
                             }
                         }
                     } catch (e) {
-                        console.error('❌ Bank Select2 failed:', e);
                         // Fallback if Select2 fails
                         const selectedOption = payerBankSelect.querySelector(`option[value="${payerBankId}"]`);
                         if (selectedOption && selectedOption.textContent) {
@@ -1116,22 +1048,17 @@
                             const bankMatch = bankText.match(/\s*-\s*([^(]+)/);
                             const bankName = bankMatch ? bankMatch[1].trim() : bankText;
                             payerName = 'سیستم - ' + bankName;
-                            console.log('✅ Got payer bank from ultimate fallback:', payerName);
                         } else {
                             payerName = 'سیستم (حساب شناسه: ' + payerBankId + ')';
-                            console.log('🔄 Using ultimate bank fallback:', payerName);
                         }
                     }
                 } else {
                     payerName = 'سیستم (حساب انتخاب نشده)';
-                    console.log('⚠️ No payer bank selected');
                 }
             } else {
-                console.log('❓ Unknown payer type:', payerType);
             }
             
             document.getElementById('preview-payer').textContent = payerName;
-            console.log('👤 Final payer name displayed:', payerName);
             
             // Receiver - Enhanced Select2 support
             const receiverType = formData.get('ReceiverType');
@@ -1271,18 +1198,9 @@
                 document.getElementById('preview-reference-warning').style.display = 'block';
             }
             
-            console.log('🎉 ULTIMATE DEBUG: populateTransactionPreview() COMPLETED!');
-            console.log('📊 FINAL SUMMARY:');
-            console.log(`  Type: "${document.getElementById('preview-type').textContent}"`);
-            console.log(`  Payer: "${document.getElementById('preview-payer').textContent}"`);
-            console.log(`  Receiver: "${document.getElementById('preview-receiver').textContent}"`);
-            console.log(`  Title: "${document.getElementById('preview-title').textContent}"`);
-            console.log(`  Amount: "${document.getElementById('preview-amount').textContent}"`);
-            console.log(`  Date: "${document.getElementById('preview-date').textContent}"`);
         }
 
         function ensureCorrectTypes() {
-            console.log('🔍 Checking and correcting PayerType/ReceiverType...');
             
             const payerCustomerId = document.querySelector('[name="PayerCustomerId"]').value;
             const payerBankAccountId = document.querySelector('[name="PayerBankAccountId"]').value;
@@ -1291,25 +1209,20 @@
             
             // Fix PayerType
             if (payerCustomerId && payerCustomerId !== '') {
-                console.log('🔧 Setting PayerType to Customer due to PayerCustomerId:', payerCustomerId);
                 $('#payerType').val('@ForexExchange.Models.PayerType.Customer').trigger('change');
             } else if (payerBankAccountId && payerBankAccountId !== '') {
-                console.log('🔧 Setting PayerType to System due to PayerBankAccountId:', payerBankAccountId);
                 $('#payerType').val('@ForexExchange.Models.PayerType.System').trigger('change');
             }
             
             // Fix ReceiverType
             if (receiverCustomerId && receiverCustomerId !== '') {
-                console.log('🔧 Setting ReceiverType to Customer due to ReceiverCustomerId:', receiverCustomerId);
                 $('#receiverType').val('@ForexExchange.Models.ReceiverType.Customer').trigger('change');
             } else if (receiverBankAccountId && receiverBankAccountId !== '') {
-                console.log('🔧 Setting ReceiverType to System due to ReceiverBankAccountId:', receiverBankAccountId);
                 $('#receiverType').val('@ForexExchange.Models.ReceiverType.System').trigger('change');
             }
             
             // Wait a moment for Select2 to update
             setTimeout(() => {
-                console.log('✅ Types corrected - PayerType:', document.getElementById('payerType').value, 'ReceiverType:', document.getElementById('receiverType').value);
             }, 100);
         }
 
@@ -1348,19 +1261,12 @@
             });
             
             // Debug: Log transaction data being sent
-            console.log('Sending transaction data for balance effects:', transactionData);
-            console.log('PayerType:', transactionData.PayerType, 'ReceiverType:', transactionData.ReceiverType);
-            console.log('PayerBankAccountId:', transactionData.PayerBankAccountId, 'ReceiverBankAccountId:', transactionData.ReceiverBankAccountId);
-            console.log('PayerCustomerId:', transactionData.PayerCustomerId, 'ReceiverCustomerId:', transactionData.ReceiverCustomerId);
-            console.log('Final cleaned data:', JSON.stringify(transactionData, null, 2));
             
             // Final verification
             if (transactionData.ReceiverBankAccountId && transactionData.ReceiverType === 0) {
-                console.warn('⚠️ WARNING: ReceiverBankAccountId exists but ReceiverType is still Customer! Forcing to System...');
                 transactionData.ReceiverType = 1;
             }
             if (transactionData.PayerBankAccountId && transactionData.PayerType === 0) {
-                console.warn('⚠️ WARNING: PayerBankAccountId exists but PayerType is still Customer! Forcing to System...');
                 transactionData.PayerType = 1;
             }
             
@@ -1376,17 +1282,14 @@
                 body: JSON.stringify(transactionData)
             })
             .then(response => {
-                console.log('Response status:', response.status);
                 if (!response.ok) {
                     return response.text().then(text => {
-                        console.error('Error response body:', text);
                         throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 200)}...`);
                     });
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Balance effects response:', data);
                 
                 document.getElementById('balance-effects-loading').style.display = 'none';
                 document.getElementById('balance-effects-content').style.display = 'block';
@@ -1400,7 +1303,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error fetching balance effects:', error);
                 
                 document.getElementById('balance-effects-loading').style.display = 'none';
                 document.getElementById('balance-effects-content').style.display = 'block';
@@ -1411,7 +1313,6 @@
         }
 
         function displayBalanceEffects(effects) {
-            console.log('Balance Effects Data:', effects); // Debug log
             let hasAnyEffects = false;
             
             // Customer effects with beautiful table styling
@@ -1469,7 +1370,6 @@
             
             // Bank account effects with beautiful table styling
             if (effects.bankAccountEffects && effects.bankAccountEffects.length > 0) {
-                console.log('Bank Account Effects Found:', effects.bankAccountEffects); // Debug log
                 const bankDiv = document.getElementById('bank-effects');
                 let bankHtml = `
                     <div class="mb-3">
@@ -1520,7 +1420,6 @@
                 bankDiv.style.display = 'block';
                 hasAnyEffects = true;
             } else {
-                console.log('No Bank Account Effects Found'); // Debug log
                 document.getElementById('bank-effects').style.display = 'none';
             }
             

@@ -113,7 +113,7 @@ namespace ForexExchange.Services
         {
             return record.TransactionType switch
             {
-                CurrencyPoolTransactionType.Order => $"سفارش شماره {record.ReferenceId}",
+                CurrencyPoolTransactionType.Order => $"معامله شماره {record.ReferenceId}",
                 CurrencyPoolTransactionType.ManualEdit => "ویرایش دستی موجودی",
                 _ => "تراکنش نامشخص"
             };

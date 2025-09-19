@@ -275,7 +275,6 @@ function refreshDebtCreditWidget() {
         $('#debt-credit-last-update').html('<i class="bi bi-clock-history me-1"></i>' + new Date().toLocaleTimeString('fa-IR'));
         showNotification('وضعیت بدهی و بستانکاری بروزرسانی شد', 'success');
     }).fail(function(xhr, status, error) {
-        console.error('خطا در بروزرسانی ویجت بدهی/بستانکاری:', error);
         showNotification('خطا در بروزرسانی وضعیت بدهی و بستانکاری', 'error');
     }).always(function() {
         container.removeClass('refreshing');

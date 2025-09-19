@@ -429,7 +429,6 @@
                 // Format as YYYY-MM-DD for HTML date input
                 return `${miladiYear}-${miladiMonth.toString().padStart(2, '0')}-${miladiDay.toString().padStart(2, '0')}`;
             } catch (e) {
-                console.error('Error converting Shamsi to Miladi:', e);
                 return null;
             }
         }

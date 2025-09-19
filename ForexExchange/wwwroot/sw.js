@@ -6,10 +6,8 @@ const NOTIFICATION_TAG = 'taban-notification';
 
 // Install service worker
 self.addEventListener('install', event => {
-    console.log('Service Worker: Install');
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            console.log('Service Worker: Caching files');
             return cache.addAll([
                 '/',
                 '/css/site.css',
@@ -24,13 +22,11 @@ self.addEventListener('install', event => {
 
 // Activate service worker
 self.addEventListener('activate', event => {
-    console.log('Service Worker: Activate');
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cache => {
                     if (cache !== CACHE_NAME) {
-                        console.log('Service Worker: Clearing old cache');
                         return caches.delete(cache);
                     }
                 })
@@ -41,7 +37,6 @@ self.addEventListener('activate', event => {
 
 // Handle push events
 self.addEventListener('push', event => {
-    console.log('Service Worker: Push received');
     
     let data = {
         title: 'سامانه معاملات تابان',
@@ -97,7 +92,6 @@ self.addEventListener('push', event => {
                 }
             }
         } catch (e) {
-            console.error('Service Worker: Error parsing push data:', e);
         }
     }
 
@@ -120,7 +114,6 @@ self.addEventListener('push', event => {
 
 // Handle notification click
 self.addEventListener('notificationclick', event => {
-    console.log('Service Worker: Notification click received');
     
     event.notification.close();
 
@@ -137,21 +130,16 @@ self.addEventListener('notificationclick', event => {
             type: 'window',
             includeUncontrolled: true
         }).then(clientList => {
-            console.log('Service Worker: Notification data received:', data);
-            console.log('Service Worker: Full event notification object:', event.notification);
             
             // Use URL from notification data (set by NotificationHub)
             let url = '/';
             if (data) {
-                console.log('Service Worker: Looking for URL in data.url:', data.url);
                 // First priority: use the explicit URL from notification context
                 if (data.url && data.url !== '/') {
                     url = data.url;
-                    console.log('Service Worker: Using data.url:', url);
                 }
                 // Fallback: determine URL based on entity data
                 else if (data.contextData) {
-                    console.log('Service Worker: Using contextData fallback:', data.contextData);
                     const contextData = data.contextData;
                     if (contextData.orderId) {
                         url = `/Orders/Details/${contextData.orderId}`;
@@ -165,7 +153,6 @@ self.addEventListener('notificationclick', event => {
                 }
                 // Legacy fallback for old notification format
                 else if (data.orderId) {
-                    console.log('Service Worker: Using legacy orderId fallback:', data.orderId);
                     url = `/Orders/Details/${data.orderId}`;
                 } else if (data.customerId) {
                     url = `/Customers/Details/${data.customerId}`;
@@ -176,9 +163,7 @@ self.addEventListener('notificationclick', event => {
                 }
             }
             
-            console.log('Service Worker: Final URL determined:', url);
 
-            console.log('Service Worker: Opening URL:', url, 'from data:', data);
 
             // Check if app is already open
             for (const client of clientList) {
@@ -198,7 +183,6 @@ self.addEventListener('notificationclick', event => {
             if (clients.openWindow) {
                 // Ensure URL is properly formatted
                 const fullUrl = url.startsWith('http') ? url : self.location.origin + url;
-                console.log('Service Worker: Opening window with full URL:', fullUrl);
                 return clients.openWindow(fullUrl);
             }
         })
@@ -207,7 +191,6 @@ self.addEventListener('notificationclick', event => {
 
 // Handle notification close
 self.addEventListener('notificationclose', event => {
-    console.log('Service Worker: Notification closed');
     
     // Optional: Track notification dismissal
     event.waitUntil(
@@ -227,7 +210,6 @@ self.addEventListener('notificationclose', event => {
 
 // Handle background sync (for offline support)
 self.addEventListener('sync', event => {
-    console.log('Service Worker: Background sync');
     
     if (event.tag === 'background-sync') {
         event.waitUntil(
@@ -239,7 +221,6 @@ self.addEventListener('sync', event => {
 
 // Handle messages from main thread
 self.addEventListener('message', event => {
-    console.log('Service Worker: Message received', event.data);
     
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();

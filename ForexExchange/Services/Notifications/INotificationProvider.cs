@@ -22,7 +22,7 @@ namespace ForexExchange.Services.Notifications
 
         /// <summary>
         /// Send notification for order events
-        /// ارسال اعلان برای رویدادهای سفارش
+        /// ارسال اعلان برای رویدادهای معامله
         /// </summary>
         Task SendOrderNotificationAsync(NotificationContext context);
 
@@ -46,7 +46,7 @@ namespace ForexExchange.Services.Notifications
 
         /// <summary>
         /// Send custom notification
-        /// ارسال اعلان سفارشی
+        /// ارسال اعلان معاملهی
         /// </summary>
         Task SendCustomNotificationAsync(NotificationContext context);
     }

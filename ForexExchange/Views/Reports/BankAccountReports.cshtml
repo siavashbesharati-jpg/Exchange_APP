@@ -222,7 +222,6 @@ async function loadBankAccounts() {
             });
         }
     } catch (error) {
-        console.error('Error loading bank accounts:', error);
     }
 }
 
@@ -257,7 +256,6 @@ async function loadBankAccountTimeline() {
             showError('خطا در بارگذاری اطلاعات: ' + (data.error || 'نامشخص'));
         }
     } catch (error) {
-        console.error('Error loading bank account timeline:', error);
         showError('خطا در ارتباط با سرور');
     }
 }
@@ -336,13 +334,10 @@ function renderSummaryCards(summary) {
         return;
     }
     
-    console.log('Summary data:', summary); // Debug line
     
     let balanceCards = '';
     if (summary.accountBalances) {
-        console.log('Account balances:', summary.accountBalances); // Debug line
         Object.entries(summary.accountBalances).forEach(([accountId, accountData]) => {
-            console.log('Account data:', accountData); // Debug line
             const balance = accountData.Balance || accountData.balance || 0;
             const name = accountData.Name || accountData.name || 'نامشخص';
             balanceCards += `

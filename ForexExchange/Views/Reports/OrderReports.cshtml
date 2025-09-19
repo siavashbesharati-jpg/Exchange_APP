@@ -206,7 +206,6 @@ function loadOrdersTable() {
         }
     })
     .catch(error => {
-        console.error('Error loading orders data:', error);
         tbody.innerHTML = `
             <tr>
                 <td colspan="10" class="text-center py-4 text-danger">

@@ -521,7 +521,6 @@
                 // If the content has been modified by global formatters, restore it
                 if (currentValue !== originalValue && (currentValue.includes(',') || currentValue.includes('٬'))) {
                     element.textContent = originalValue;
-                    console.log('Protected reference number from formatting:', originalValue);
                 }
                 
                 // Add additional protection attributes
@@ -535,7 +534,6 @@
                     get: function() { return originalValue; },
                     set: function(value) {
                         if (value.includes(',') || value.includes('٬')) {
-                            console.log('Blocked attempt to format reference number:', value);
                             return;
                         }
                         return originalInnerHTML;
@@ -555,7 +553,6 @@
                     window[funcName] = function(element, value) {
                         // Check if this element should be protected
                         if (element && (element.hasAttribute('data-no-format') || element.classList.contains('no-format-number'))) {
-                            console.log('Blocked global formatting on protected element');
                             return element.textContent || value;
                         }
                         return originalFunc.apply(this, arguments);
@@ -574,7 +571,6 @@
                     // Check if any element in the selection should be protected
                     return this.each(function() {
                         if (this.hasAttribute && this.hasAttribute('data-no-format')) {
-                            console.log('Blocked jQuery text formatting on protected element');
                             return;
                         }
                         originalText.call(jQuery(this), value);

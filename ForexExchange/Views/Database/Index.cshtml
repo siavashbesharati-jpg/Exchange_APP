@@ -195,7 +195,7 @@
                                             </button>
                                         </form>
                                     
-                                        <form asp-action="CleanOrders" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام سفارشات را پاک کنید؟')">
+                                        <form asp-action="CleanOrders" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام معاملات  را پاک کنید؟')">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn btn-outline-danger w-100 mb-2">
                                                 <i class="fas fa-shopping-cart me-2"></i>
@@ -257,7 +257,7 @@
                                         </button>
                                     </form>
 
-                                    <form asp-action="FixAllTransactionDates" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تاریخ همه تراکنش‌ها را اصلاح کنید؟\n\n📅 این عمل تاریخ تراکنش‌ها را به تاریخ واقعی معامله تغییر می‌دهد:\n• سفارشات: از Order.CreatedAt\n• اسناد: از Document.DocumentDate\n\nفقط رکوردهایی که TransactionDate = CreatedAt دارند اصلاح می‌شوند.')">
+                                    <form asp-action="FixAllTransactionDates" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تاریخ همه تراکنش‌ها را اصلاح کنید؟\n\n📅 این عمل تاریخ تراکنش‌ها را به تاریخ واقعی معامله تغییر می‌دهد:\n• معاملات : از Order.CreatedAt\n• اسناد: از Document.DocumentDate\n\nفقط رکوردهایی که TransactionDate = CreatedAt دارند اصلاح می‌شوند.')">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-outline-warning w-100 mb-2">
                                             <i class="fas fa-calendar-check me-2"></i>

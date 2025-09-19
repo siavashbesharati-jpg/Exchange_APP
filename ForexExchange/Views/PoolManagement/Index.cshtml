@@ -113,13 +113,13 @@
                                 <div class="row g-2 mb-3">
                                     <div class="col-6">
                                         <div class="text-center p-2 border rounded">
-                                            <small class="text-muted d-block">سفارش خرید</small>
+                                            <small class="text-muted d-block">معامله خرید</small>
                                             <strong class="text-info">@pool.ActiveBuyOrderCount</strong>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="text-center p-2 border rounded">
-                                            <small class="text-muted d-block">سفارش فروش</small>
+                                            <small class="text-muted d-block">معامله فروش</small>
                                             <strong class="text-warning">@pool.ActiveSellOrderCount</strong>
                                         </div>
                                     </div>
@@ -277,7 +277,6 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
                     showAlert('error', 'خطا در دریافت اطلاعات صندوق ');
                 });
         }
@@ -352,7 +351,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 showAlert('error', 'خطا در بروزرسانی موجودی');
             });
         });
@@ -385,7 +383,6 @@
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 showAlert('error', 'خطا در ریست آمار');
             });
         });

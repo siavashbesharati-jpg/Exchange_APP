@@ -11,7 +11,7 @@ namespace ForexExchange.Services.Notifications
     {
         /// <summary>
         /// Send notification for order events
-        /// ارسال اعلان برای رویدادهای سفارش
+        /// ارسال اعلان برای رویدادهای معامله
         /// </summary>
         Task SendOrderNotificationAsync(Order order, NotificationEventType eventType, string? userId = null, string? oldStatus = null, string? newStatus = null);
 
@@ -29,7 +29,7 @@ namespace ForexExchange.Services.Notifications
 
         /// <summary>
         /// Send custom notification
-        /// ارسال اعلان سفارشی
+        /// ارسال اعلان معاملهی
         /// </summary>
         Task SendCustomNotificationAsync(string title, string message, NotificationEventType eventType = NotificationEventType.Custom, string? userId = null, string? navigationUrl = null, NotificationPriority priority = NotificationPriority.Normal);
 
@@ -199,20 +199,20 @@ namespace ForexExchange.Services.Notifications
 
             var title = eventType switch
             {
-                NotificationEventType.OrderCreated => "🔔 سفارش جدید ثبت شد",
-                NotificationEventType.OrderUpdated => "🔄 تغییر وضعیت سفارش",
-                NotificationEventType.OrderCompleted => "✅ سفارش تکمیل شد",
-                NotificationEventType.OrderCancelled => "❌ سفارش لغو شد",
-                _ => "📋 رویداد سفارش"
+                NotificationEventType.OrderCreated => "🔔 معامله جدید ثبت شد",
+                NotificationEventType.OrderUpdated => "🔄 تغییر وضعیت معامله",
+                NotificationEventType.OrderCompleted => "✅ معامله تکمیل شد",
+                NotificationEventType.OrderCancelled => "❌ معامله لغو شد",
+                _ => "📋 رویداد معامله"
             };
 
             var message = eventType switch
             {
-                NotificationEventType.OrderCreated => $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}",
-                NotificationEventType.OrderUpdated when !string.IsNullOrEmpty(oldStatus) && !string.IsNullOrEmpty(newStatus) => $"سفارش #{order.Id} ({customer?.FullName}): {oldStatus} → {newStatus}",
-                NotificationEventType.OrderCompleted => $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"} با موفقیت تکمیل شد",
-                NotificationEventType.OrderCancelled => $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"} لغو شد",
-                _ => $"رویداد سفارش #{order.Id}"
+                NotificationEventType.OrderCreated => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}",
+                NotificationEventType.OrderUpdated when !string.IsNullOrEmpty(oldStatus) && !string.IsNullOrEmpty(newStatus) => $"معامله #{order.Id} ({customer?.FullName}): {oldStatus} → {newStatus}",
+                NotificationEventType.OrderCompleted => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"} با موفقیت تکمیل شد",
+                NotificationEventType.OrderCancelled => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"} لغو شد",
+                _ => $"رویداد معامله #{order.Id}"
             };
 
             var navigationUrl = $"/Orders/Details/{order.Id}";

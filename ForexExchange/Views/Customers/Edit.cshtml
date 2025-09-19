@@ -150,16 +150,12 @@
             const currencyOptions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrencyOptions ?? new object[0]));
             
             // Debug logging
-            console.log('Currency options loaded:', currencyOptions);
-            console.log('Number of currencies:', currencyOptions ? currencyOptions.length : 0);
             
             const addBtn = document.getElementById('add-balance');
             const rowsContainer = document.getElementById('balance-rows');
             const template = document.getElementById('balance-row-template');
 
             function buildOptions(selectEl, selectedCode) {
-                console.log('Building options for select element, selectedCode:', selectedCode);
-                console.log('Available currency options:', currencyOptions);
                 
                 // Clear and add placeholder
                 selectEl.innerHTML = '';
@@ -172,7 +168,6 @@
                 
                 // Add options
                 (currencyOptions || []).forEach(o => {
-                    console.log('Adding currency option:', o);
                     const opt = document.createElement('option');
                     opt.value = o.Code;
                     opt.textContent = `${o.PersianName} (${o.Code})`;
@@ -180,7 +175,6 @@
                     selectEl.appendChild(opt);
                 });
                 
-                console.log('Select element now has', selectEl.options.length, 'options');
             }
 
             function isDuplicateCode(selectEl) {

@@ -92,7 +92,7 @@
                     <div class="col-md-3">
                         <div class="card bg-info text-white">
                             <div class="card-body text-center">
-                                <h6>معاملهات</h6>
+                                <h6>معاملات </h6>
                                 <h3>@(ViewBag.ActivityStats?.GetValueOrDefault("OrderCreated", 0) ?? 0)</h3>
                             </div>
                         </div>
@@ -294,7 +294,6 @@
                     new bootstrap.Modal(document.getElementById('activityDetailsModal')).show();
                 })
                 .catch(error => {
-                    console.error('Error loading activity details:', error);
                     Swal.fire('خطا', 'خطا در بارگذاری جزئیات فعالیت', 'error');
                 });
         }

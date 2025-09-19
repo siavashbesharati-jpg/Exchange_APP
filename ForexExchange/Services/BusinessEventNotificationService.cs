@@ -55,7 +55,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Send push notification for new order creation
-        /// ارسال اعلان برای ایجاد سفارش جدید
+        /// ارسال اعلان برای ایجاد معامله جدید
         /// </summary>
         public async Task SendOrderCreatedNotificationAsync(Order order, string userId)
         {
@@ -65,8 +65,8 @@ namespace ForexExchange.Services
                 var fromCurrency = await _context.Currencies.FindAsync(order.FromCurrencyId);
                 var toCurrency = await _context.Currencies.FindAsync(order.ToCurrencyId);
 
-                var title = "🔔 سفارش جدید ثبت شد";
-                var body = $"سفارش #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}";
+                var title = "🔔 معامله جدید ثبت شد";
+                var body = $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}";
 
                 var payload = JsonSerializer.Serialize(new
                 {
@@ -145,7 +145,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Send push notification for order status change
-        /// ارسال اعلان برای تغییر وضعیت سفارش
+        /// ارسال اعلان برای تغییر وضعیت معامله
         /// </summary>
         public async Task SendOrderStatusChangedNotificationAsync(Order order, string oldStatus, string newStatus, string userId)
         {
@@ -153,8 +153,8 @@ namespace ForexExchange.Services
             {
                 var customer = await _context.Customers.FindAsync(order.CustomerId);
 
-                var title = "🔄 تغییر وضعیت سفارش";
-                var body = $"سفارش #{order.Id} ({customer?.FullName}): {oldStatus} → {newStatus}";
+                var title = "🔄 تغییر وضعیت معامله";
+                var body = $"معامله #{order.Id} ({customer?.FullName}): {oldStatus} → {newStatus}";
 
                 var payload = JsonSerializer.Serialize(new
                 {

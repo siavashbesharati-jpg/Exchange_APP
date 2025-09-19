@@ -5,11 +5,9 @@
  */
 
 $(document).ready(function() {
-    console.log('Select2 initialization script loaded');
     
     // Check if Select2 is disabled for this page
     if (window.disableSelect2 === true) {
-        console.log('Select2 disabled for this page');
         return;
     }
     
@@ -37,11 +35,9 @@ $(document).ready(function() {
 function initializeSelect2() {
     // Check if Select2 is disabled for this page
     if (window.disableSelect2 === true) {
-        console.log('Select2 initialization skipped - disabled for this page');
         return;
     }
     
-    console.log('Initializing Select2 on select elements...');
     
     $('select:not(.select2-hidden-accessible):not(.no-select2)').each(function() {
         var $select = $(this);
@@ -53,11 +49,9 @@ function initializeSelect2() {
         
         // Skip if marked to not use Select2
         if ($select.hasClass('no-select2')) {
-            console.log('Skipping Select2 for element with no-select2 class:', $select[0]);
             return;
         }
         
-        console.log('Initializing Select2 on:', $select[0]);
         
         // Default Select2 configuration
         var config = {
@@ -110,7 +104,6 @@ function initializeSelect2() {
         // Initialize Select2
         try {
             $select.select2(config);
-            console.log('Select2 initialized successfully for:', $select[0]);
             
             // For AccountingDocuments pages, trigger original change events after Select2 initialization
             if (window.location.pathname.includes('/AccountingDocuments/')) {
@@ -122,7 +115,6 @@ function initializeSelect2() {
             }
             
         } catch (error) {
-            console.warn('Select2 initialization failed for element:', $select, error);
         }
     });
 }

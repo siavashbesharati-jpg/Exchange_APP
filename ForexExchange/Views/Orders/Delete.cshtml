@@ -30,14 +30,14 @@
                 <div class="card-header bg-warning text-dark">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-exclamation-triangle"></i>
-                        لغو معامله با ایجاد سفارش معکوس
+                        لغو معامله با ایجاد معامله معکوس
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i>
-                        <strong>توجه:</strong> لغو این معامله نیازمند ایجاد یک سفارش معکوس است.
-                        شما می‌توانید نرخ سفارش معکوس را تعیین کنید.
+                        <strong>توجه:</strong> لغو این معامله نیازمند ایجاد یک معامله معکوس است.
+                        شما می‌توانید نرخ معامله معکوس را تعیین کنید.
                     </div>
 
                     <!-- Original Order Details -->
@@ -78,7 +78,7 @@
                     <!-- Reverse Order Preview -->
                     <div class="mb-4">
                         <h6 class="text-danger mb-3">
-                            <i class="fas fa-exchange-alt"></i> جزئیات سفارش معکوس
+                            <i class="fas fa-exchange-alt"></i> جزئیات معامله معکوس
                         </h6>
                         <div class="card border-danger">
                             <div class="card-body">
@@ -106,7 +106,7 @@
                                                 class="form-control" 
                                                 value="@(Model.ToCurrency?.Code == "IRR" ? Model.Rate.ToString("N0") : Model.Rate.ToString("N2"))" required>
                                             <div class="form-text">
-                                                نرخ سفارش معکوس را تعیین کنید
+                                                نرخ معامله معکوس را تعیین کنید
                                             </div>
                                         </div>
                                         <div class="mb-2">
@@ -127,7 +127,7 @@
                         <div>
                             <button type="button" class="btn btn-danger" data-bs-toggle="modal"
                                 data-bs-target="#confirmCancelModal">
-                                <i class="fas fa-times"></i> لغو با ایجاد سفارش معکوس
+                                <i class="fas fa-times"></i> لغو با ایجاد معامله معکوس
                             </button>
                         </div>
                     </div>
@@ -150,7 +150,7 @@
                     aria-label="بستن"></button>
             </div>
             <div class="modal-body">
-                <p>آیا از لغو این معامله و ایجاد سفارش معکوس اطمینان دارید؟</p>
+                <p>آیا از لغو این معامله و ایجاد معامله معکوس اطمینان دارید؟</p>
                 <div class="alert alert-warning">
                     <strong>توجه:</strong> این عملیات غیرقابل برگشت است.
                 </div>
@@ -162,7 +162,7 @@
                     <input type="hidden" name="id" value="@Model.Id" />
                     <input type="hidden" name="reverseRate" id="hiddenReverseRate" value="@Model.Rate" />
                     <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-check"></i> تأیید و ایجاد سفارش معکوس
+                        <i class="fas fa-check"></i> تأیید و ایجاد معامله معکوس
                     </button>
                 </form>
             </div>

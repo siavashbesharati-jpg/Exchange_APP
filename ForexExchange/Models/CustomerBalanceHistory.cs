@@ -9,7 +9,7 @@ namespace ForexExchange.Models
     /// </summary>
     public enum CustomerBalanceTransactionType
     {
-        [Display(Name = "Order - سفارش")]
+        [Display(Name = "Order - معامله")]
         Order = 1,
         
         [Display(Name = "Accounting Document - سند حسابداری")]

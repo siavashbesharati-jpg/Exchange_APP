@@ -993,7 +993,7 @@ namespace ForexExchange.Controllers
 
         /// <summary>
         /// Update average rates for a currency pair based on active orders
-        /// بروزرسانی نرخ‌های میانگین برای جفت ارز بر اساس معاملهات فعال
+        /// بروزرسانی نرخ‌های میانگین برای جفت ارز بر اساس معاملات  فعال
         /// </summary>
         private async Task UpdateAverageRatesForPairAsync(int fromCurrencyId, int toCurrencyId)
         {

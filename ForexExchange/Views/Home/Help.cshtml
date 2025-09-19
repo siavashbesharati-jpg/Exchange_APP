@@ -29,7 +29,7 @@
                                         <div class="col-md-3 mb-2">
                                             <a href="@Url.Action("Create", "Orders")" class="btn btn-light btn-sm">
                                                 <i class="fas fa-plus-circle me-1"></i>
-                                                ثبت سفارش جدید
+                                                ثبت معامله جدید
                                             </a>
                                         </div>
                                         <div class="col-md-3 mb-2">
@@ -71,7 +71,7 @@
                                         <div class="col-md-6">
                                             <ul class="list-unstyled">
                                                 <li><a href="#overview" class="text-decoration-none">📋 نمای کلی سیستم</a></li>
-                                                <li><a href="#order-management" class="text-decoration-none">📝 مدیریت سفارشات</a></li>
+                                                <li><a href="#order-management" class="text-decoration-none">📝 مدیریت معاملات </a></li>
                                                 <li><a href="#customer-management" class="text-decoration-none">� مدیریت مشتریان</a></li>
                                                 <li><a href="#ocr-processing" class="text-decoration-none">🤖 پردازش هوشمند OCR</a></li>
                                                 <li><a href="#currency-pools" class="text-decoration-none">🏦 مدیریت صندوق ارزها</a></li>
@@ -144,7 +144,7 @@
                     <section id="order-management" class="mb-5">
                         <h2 class="h3 mb-4 text-primary">
                             <i class="fas fa-clipboard-list me-2"></i>
-                            مدیریت سفارشات
+                            مدیریت معاملات 
                         </h2>
                         <div class="row">
                             <div class="col-12">
@@ -152,7 +152,7 @@
                                     <div class="card-header bg-primary text-white">
                                         <h5 class="mb-0">
                                             <i class="fas fa-plus-circle me-2"></i>
-                                            ثبت سفارش جدید
+                                            ثبت معامله جدید
                                         </h5>
                                     </div>
                                     <div class="card-body">
@@ -177,7 +177,7 @@
                                                     <h5 class="timeline-title">مرحله ۲: تعیین جزئیات معامله</h5>
                                                     <p>مشخص کردن نوع معامله و ارزهای مورد نظر:</p>
                                                     <ul>
-                                                        <li><strong>نوع سفارش:</strong> خرید یا فروش</li>
+                                                        <li><strong>نوع معامله:</strong> خرید یا فروش</li>
                                                         <li><strong>ارز مبدأ:</strong> ارزی که داده می‌شود</li>
                                                         <li><strong>ارز مقصد:</strong> ارزی که دریافت می‌شود</li>
                                                         <li><strong>مبلغ:</strong> مقدار مورد نظر</li>
@@ -228,13 +228,13 @@
                                             <div class="card-header bg-secondary text-white">
                                                 <h6 class="mb-0">
                                                     <i class="fas fa-list me-2"></i>
-                                                    مشاهده سفارشات
+                                                    مشاهده معاملات 
                                                 </h6>
                                             </div>
                                             <div class="card-body">
                                                 <p><strong>مسیر:</strong> <a href="@Url.Action("Index", "Orders")" target="_blank">@Url.Action("Index", "Orders")</a></p>
                                                 <ul class="list-unstyled">
-                                                    <li>📋 لیست کامل سفارشات</li>
+                                                    <li>📋 لیست کامل معاملات </li>
                                                     <li>🔍 جستجو و فیلتر پیشرفته</li>
                                                     <li>📊 آمار و خلاصه معاملات</li>
                                                     <li>📄 صادرات گزارشات</li>
@@ -247,14 +247,14 @@
                                             <div class="card-header bg-info text-white">
                                                 <h6 class="mb-0">
                                                     <i class="fas fa-edit me-2"></i>
-                                                    ویرایش سفارشات
+                                                    ویرایش معاملات 
                                                 </h6>
                                             </div>
                                             <div class="card-body">
                                                 <p><strong>مسیر:</strong> /Orders/Edit/{id}</p>
                                                 <ul class="list-unstyled">
                                                     <li>✏️ تغییر مبلغ و نرخ</li>
-                                                    <li>🔄 تغییر وضعیت سفارش</li>
+                                                    <li>🔄 تغییر وضعیت معامله</li>
                                                     <li>📝 افزودن توضیحات</li>
                                                     <li>✅ تایید نهایی</li>
                                                 </ul>
@@ -766,11 +766,11 @@
                                                 <h6 class="text-primary">🏦 مدیریت معاملات</h6>
                                                 <ul class="list-group list-group-flush mb-3">
                                                     <li class="list-group-item d-flex justify-content-between">
-                                                        ایجاد سفارش جدید
+                                                        ایجاد معامله جدید
                                                         <span class="badge bg-success">CREATE</span>
                                                     </li>
                                                     <li class="list-group-item d-flex justify-content-between">
-                                                        ویرایش سفارش
+                                                        ویرایش معامله
                                                         <span class="badge bg-info">EDIT</span>
                                                     </li>
                                                 </ul>
@@ -836,7 +836,7 @@
                                             <div class="col-md-6">
                                                 <div class="alert alert-success">
                                                     <h6><i class="fas fa-check-circle me-2"></i>اعلان موفقیت</h6>
-                                                    <small>برای ایجاد موفق سفارشات، مشتریان و حساب‌ها</small>
+                                                    <small>برای ایجاد موفق معاملات ، مشتریان و حساب‌ها</small>
                                                 </div>
                                                 <div class="alert alert-info">
                                                     <h6><i class="fas fa-info-circle me-2"></i>اعلان اطلاعاتی</h6>

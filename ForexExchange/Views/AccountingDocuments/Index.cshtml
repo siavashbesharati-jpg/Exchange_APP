@@ -276,7 +276,6 @@
                 // If the content has been modified by global formatters, restore it
                 if (currentValue !== originalValue && currentValue.includes(',')) {
                     element.textContent = originalValue;
-                    console.log('Protected reference number from formatting:', originalValue);
                 }
             });
         }
