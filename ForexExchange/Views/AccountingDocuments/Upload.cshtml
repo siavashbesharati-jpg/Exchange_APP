@@ -337,11 +337,6 @@
                             <div id="bank-effects" style="display: none;">
                                 <!-- Will be populated with beautiful table style -->
                             </div>
-                            
-                            <!-- Currency Pool Effects -->
-                            <div id="pool-effects" style="display: none;">
-                                <!-- Will be populated with beautiful table style -->
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1527,57 +1522,6 @@
             } else {
                 console.log('No Bank Account Effects Found'); // Debug log
                 document.getElementById('bank-effects').style.display = 'none';
-            }
-            
-            // Currency pool effects with beautiful table styling
-            if (effects.poolEffects && effects.poolEffects.length > 0) {
-                const poolDiv = document.getElementById('pool-effects');
-                let poolHtml = `
-                    <div class="mb-3">
-                        <h6 class="text-warning"><i class="fas fa-piggy-bank"></i> تأثیرات صندوق ارز</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="text-center">ارز</th>
-                                        <th class="text-center">موجودی قبل</th>
-                                        <th class="text-center">موجودی بعد</th>
-                                        <th class="text-center">تغییر</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                `;
-                
-                effects.poolEffects.forEach(effect => {
-                    const changeClass = effect.change >= 0 ? 'text-success' : 'text-danger';
-                    const changeIcon = effect.change >= 0 ? '+' : '';
-                    const formattedCurrentBalance = effect.currentBalance.toLocaleString('fa-IR');
-                    const formattedNewBalance = effect.newBalance.toLocaleString('fa-IR');
-                    const formattedChange = effect.change.toLocaleString('fa-IR');
-                    const newBalanceColorClass = effect.newBalance >= 0 ? 'text-success' : 'text-danger';
-                    
-                    poolHtml += `
-                        <tr>
-                            <td class="text-center fw-bold">${effect.currency}</td>
-                            <td class="text-center" dir="ltr">${formattedCurrentBalance}</td>
-                            <td class="text-center fw-bold ${newBalanceColorClass}" dir="ltr">${formattedNewBalance}</td>
-                            <td class="text-center ${changeClass}" dir="ltr">${changeIcon}${formattedChange}</td>
-                        </tr>
-                    `;
-                });
-                
-                poolHtml += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-                
-                poolDiv.innerHTML = poolHtml;
-                poolDiv.style.display = 'block';
-                hasAnyEffects = true;
-            } else {
-                document.getElementById('pool-effects').style.display = 'none';
             }
             
             // Show message if no effects found

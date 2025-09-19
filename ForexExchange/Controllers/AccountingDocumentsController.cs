@@ -954,57 +954,6 @@ namespace ForexExchange.Controllers
                     }
                 }
 
-                // Calculate Currency Pool Effects
-                var poolEffectsList = new List<object>();
-
-                // Check if this transaction affects currency pools
-                // Currency pools are affected when there's a system-to-customer or customer-to-system transaction
-                bool affectsPools = false;
-                decimal poolChange = 0;
-
-                if (accountingDocument.PayerType == PayerType.System && accountingDocument.ReceiverType == ReceiverType.Customer)
-                {
-                    // System paying customer - pool decreases
-                    affectsPools = true;
-                    poolChange = -accountingDocument.Amount;
-                }
-                else if (accountingDocument.PayerType == PayerType.Customer && accountingDocument.ReceiverType == ReceiverType.System)
-                {
-                    // Customer paying system - pool increases
-                    affectsPools = true;
-                    poolChange = accountingDocument.Amount;
-                }
-
-                if (affectsPools)
-                {
-                    var currencyPool = await _context.CurrencyPools
-                        .Include(p => p.Currency)
-                        .FirstOrDefaultAsync(p => p.CurrencyCode == accountingDocument.CurrencyCode);
-
-                    if (currencyPool != null)
-                    {
-                        var newPoolBalance = currencyPool.Balance + poolChange;
-
-                        poolEffectsList.Add(new
-                        {
-                            currencyName = currencyPool.Currency?.PersianName ?? accountingDocument.CurrencyCode,
-                            currency = accountingDocument.CurrencyCode,
-                            currentBalance = currencyPool.Balance,
-                            change = poolChange,
-                            newBalance = newPoolBalance
-                        });
-
-                        // Warning if pool balance becomes negative
-                        if (newPoolBalance < 0)
-                        {
-                            warnings.Add($"تراز صندوق ارز {currencyPool.Currency?.PersianName ?? accountingDocument.CurrencyCode} منفی خواهد شد ({newPoolBalance:N2}).");
-                        }
-                    }
-                    else
-                    {
-                        warnings.Add($"صندوق ارز {accountingDocument.CurrencyCode} یافت نشد. این تراکنش ممکن است صندوق جدیدی ایجاد کند.");
-                    }
-                }
 
                 // Additional validations
                 if (accountingDocument.PayerType == PayerType.Customer && accountingDocument.ReceiverType == ReceiverType.Customer)
@@ -1029,8 +978,7 @@ namespace ForexExchange.Controllers
                     effects = new
                     {
                         customerEffects = customerEffectsList,
-                        bankAccountEffects = bankAccountEffectsList,
-                        poolEffects = poolEffectsList
+                        bankAccountEffects = bankAccountEffectsList
                     },
                     warnings = warnings
                 });
