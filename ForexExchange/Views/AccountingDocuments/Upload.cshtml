@@ -305,8 +305,12 @@
                                 <div class="mb-2"><strong>تاریخ:</strong> <span id="preview-date"></span></div>
                             </div>
                         </div>
+                     
                         <div id="preview-reference" class="mt-2" style="display: none;">
                             <strong> شناسه رهگیری:</strong> <span id="preview-reference-number" class="no-format-number protected-reference" data-no-format="true" data-protected="true" data-no-comma="true"></span>
+                        </div>
+                        <div id="preview-reference-warning" class="mt-2 alert alert-warning py-2 px-3" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i> <strong>شناسه رهگیری:</strong> بهتر است تکمیل شود
                         </div>
                     </div>
                 </div>
@@ -377,6 +381,23 @@
         padding: 2px 4px !important;
         border-radius: 3px !important;
         border: 1px solid #dee2e6 !important;
+    }
+    
+    /* Prevent any formatting on protected elements */
+    .no-format-number,
+    .protected-reference,
+    .skip-auto-format,
+    [data-no-format="true"],
+    [data-protected="true"],
+    [data-skip-format="true"] {
+        /* Force original text display */
+        text-transform: none !important;
+    }
+    
+    /* Warning styling for empty reference number */
+    #preview-reference-warning {
+        font-size: 0.9rem;
+        border-left: 4px solid #ffc107;
     }
 </style>
 
@@ -872,7 +893,7 @@
         function populateTransactionPreview() {
             console.log('🔥 ULTIMATE DEBUG: populateTransactionPreview() STARTED');
             
-            // Get form values
+            // Get form values directly from form elements (more reliable than FormData)
             const form = document.querySelector('form');
             console.log('📝 Form element found:', !!form);
             
@@ -881,22 +902,39 @@
                 return;
             }
             
-            const formData = new FormData(form);
-            console.log('📋 FormData created, iterating through all values:');
+            // Get values directly from form elements instead of FormData
+            const getFormValue = (name) => {
+                const element = form.querySelector(`[name="${name}"]`);
+                return element ? element.value : '';
+            };
             
-            // Debug: Log all form data
-            for (let [key, value] of formData.entries()) {
-                console.log(`  ${key}: "${value}"`);
-            }
+            console.log('📋 Reading form values directly:');
+            console.log(`  Type: "${getFormValue('Type')}"`);
+            console.log(`  PayerType: "${getFormValue('PayerType')}"`);
+            console.log(`  ReceiverType: "${getFormValue('ReceiverType')}"`);
+            console.log(`  Amount: "${getFormValue('Amount')}"`);
+            console.log(`  CurrencyCode: "${getFormValue('CurrencyCode')}"`);
+            console.log(`  Title: "${getFormValue('Title')}"`);
+            console.log(`  DocumentDate: "${getFormValue('DocumentDate')}"`);
+            console.log(`  ReferenceNumber: "${getFormValue('ReferenceNumber')}"`);
+            console.log(`  PayerCustomerId: "${getFormValue('PayerCustomerId')}"`);
+            console.log(`  ReceiverCustomerId: "${getFormValue('ReceiverCustomerId')}"`);
+            console.log(`  PayerBankAccountId: "${getFormValue('PayerBankAccountId')}"`);
+            console.log(`  ReceiverBankAccountId: "${getFormValue('ReceiverBankAccountId')}"`);
             
-            // Document type - Fixed enum mapping (Cash=0, Havala=1)
+            // Create a formData-like object for backward compatibility
+            const formData = {
+                get: (name) => getFormValue(name)
+            };
+            
+            // Document type - Handle both string and numeric values
             const typeValue = formData.get('Type');
             console.log('🏷️ Document Type Value:', typeValue, typeof typeValue);
             let typeName = 'نامشخص';
-            if (typeValue === '0') {
+            if (typeValue === '0' || typeValue === 'Cash') {
                 typeName = 'نقدی';
                 console.log('✅ Type set to: نقدی');
-            } else if (typeValue === '1') {
+            } else if (typeValue === '1' || typeValue === 'Havala') {
                 typeName = 'حواله';
                 console.log('✅ Type set to: حواله');
             } else {
@@ -938,7 +976,7 @@
             console.log('👤 Payer Type Value:', payerType, typeof payerType);
             let payerName = 'نامشخص';
             
-            if (payerType === '0') { // Customer
+            if (payerType === '0' || payerType === 'Customer') { // Customer
                 console.log('🔍 Processing CUSTOMER payer...');
                 const payerCustomerId = formData.get('PayerCustomerId');
                 console.log('🆔 Payer Customer ID:', payerCustomerId);
@@ -996,7 +1034,7 @@
                     payerName = 'مشتری (انتخاب نشده)';
                     console.log('⚠️ No payer customer selected');
                 }
-            } else if (payerType === '1') { // System
+            } else if (payerType === '1' || payerType === 'System') { // System
                 console.log('🏦 Processing SYSTEM payer...');
                 const payerBankId = formData.get('PayerBankAccountId');
                 console.log('🆔 Payer Bank ID:', payerBankId);
@@ -1071,7 +1109,7 @@
             // Receiver - Enhanced Select2 support
             const receiverType = formData.get('ReceiverType');
             let receiverName = 'نامشخص';
-            if (receiverType === '0') { // Customer
+            if (receiverType === '0' || receiverType === 'Customer') { // Customer
                 const receiverCustomerId = formData.get('ReceiverCustomerId');
                 const receiverSelect = document.querySelector('[name="ReceiverCustomerId"]');
                 if (receiverCustomerId && receiverSelect) {
@@ -1101,7 +1139,7 @@
                 } else {
                     receiverName = 'مشتری (انتخاب نشده)';
                 }
-            } else if (receiverType === '1') { // System
+            } else if (receiverType === '1' || receiverType === 'System') { // System
                 const receiverBankId = formData.get('ReceiverBankAccountId');
                 const receiverBankSelect = document.querySelector('[name="ReceiverBankAccountId"]');
                 if (receiverBankId && receiverBankSelect) {
@@ -1160,25 +1198,50 @@
                 document.getElementById('preview-date').textContent = 'تاریخ انتخاب نشده';
             }
             
-            // Reference number
+            /* 
+             * Reference Number Handling with Anti-Formatting Protection
+             * ========================================================
+             * 
+             * This section implements a two-state display for reference numbers:
+             * 1. If reference number exists: Display it WITHOUT comma formatting (e.g., "654456" not "65,456")
+             * 2. If reference number is empty/null: Show warning "بهتر است تکمیل شود"
+             * 
+             * Anti-formatting Protection:
+             * - Multiple data attributes (data-no-format, data-protected, etc.) prevent global formatters
+             * - CSS classes (no-format-number, skip-auto-format) provide additional protection
+             * - The auto-currency-display-formatter.js has been updated to respect these attributes
+             * 
+             * Related files:
+             * - /wwwroot/js/auto-currency-display-formatter.js (shouldSkipElement function updated)
+             */
             const refNumber = formData.get('ReferenceNumber');
             if (refNumber && refNumber.trim()) {
+                // Show reference number
                 document.getElementById('preview-reference').style.display = 'block';
-                document.getElementById('preview-reference-number').textContent = refNumber;
+                document.getElementById('preview-reference-warning').style.display = 'none';
                 
-                // Apply reference number protection immediately
+                // Set the reference number WITHOUT comma formatting
+                const refElement = document.getElementById('preview-reference-number');
+                refElement.textContent = refNumber.trim();
+                
+                // Apply multiple protection methods to prevent global formatters
+                refElement.setAttribute('data-original-value', refNumber.trim());
+                refElement.setAttribute('data-no-format', 'true');
+                refElement.setAttribute('data-protected', 'true');
+                refElement.setAttribute('data-no-comma', 'true');
+                refElement.setAttribute('data-skip-format', 'true');
+                refElement.classList.add('no-format-number', 'protected-reference', 'skip-auto-format');
+                
+                // Protect against future changes
                 setTimeout(function() {
-                    const refElement = document.getElementById('preview-reference-number');
-                    if (refElement) {
-                        refElement.setAttribute('data-original-value', refNumber);
-                        refElement.classList.add('no-format-number', 'protected-reference');
-                        refElement.setAttribute('data-no-format', 'true');
-                        refElement.setAttribute('data-protected', 'true');
-                        refElement.setAttribute('data-no-comma', 'true');
+                    if (refElement.textContent !== refNumber.trim()) {
+                        refElement.textContent = refNumber.trim();
                     }
-                }, 50);
+                }, 100);
             } else {
+                // Show warning for empty reference number
                 document.getElementById('preview-reference').style.display = 'none';
+                document.getElementById('preview-reference-warning').style.display = 'block';
             }
             
             console.log('🎉 ULTIMATE DEBUG: populateTransactionPreview() COMPLETED!');

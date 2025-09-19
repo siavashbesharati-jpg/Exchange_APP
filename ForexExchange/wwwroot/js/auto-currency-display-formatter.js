@@ -163,6 +163,30 @@ class AutoCurrencyDisplayFormatter {
         // Skip script and style elements
         if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') return true;
         
+        /**
+         * Skip protected elements (reference numbers, etc.)
+         * =====================================================
+         * 
+         * These attributes and classes are used to protect elements from automatic formatting:
+         * - data-no-format: Legacy protection attribute
+         * - data-protected: Legacy protection attribute  
+         * - data-skip-format: Modern protection attribute
+         * - no-format-number: CSS class for styling + protection
+         * - protected-reference: CSS class specifically for reference numbers
+         * - skip-auto-format: Modern CSS class for protection
+         * 
+         * Usage: Add any of these to prevent comma formatting on numbers like reference IDs
+         * Example: <span data-no-format="true" class="skip-auto-format">654456</span>
+         */
+        if (element.hasAttribute('data-no-format') || 
+            element.hasAttribute('data-protected') || 
+            element.hasAttribute('data-skip-format') ||
+            element.classList.contains('no-format-number') ||
+            element.classList.contains('protected-reference') ||
+            element.classList.contains('skip-auto-format')) {
+            return true;
+        }
+        
         // Skip phone number links
         if (element.tagName === 'A' && element.href && element.href.startsWith('tel:')) return true;
         
