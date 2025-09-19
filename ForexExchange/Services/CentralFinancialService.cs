@@ -6,15 +6,49 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace ForexExchange.Services
 {
     /// <summary>
-    /// Centralized financial service that maintains complete audit trail through history tables
-    /// while preserving exact calculation logic from existing services.
-    /// ZERO LOGIC CHANGES - maintains compatibility with existing financial operations.
+    /// **CRITICAL FINANCIAL SERVICE** - Centralized financial operations management with complete audit trail.
+    /// 
+    /// This service is the heart of the forex exchange financial system, managing:
+    /// - Customer balance operations (credit/debit with history)
+    /// - Currency pool management (institutional liquidity pools)
+    /// - Bank account balance tracking (financial institution accounts)
+    /// - Complete audit trail through history tables (immutable transaction log)
+    /// - Balance consistency validation and reconciliation
+    /// - Smart deletion with soft-delete and recalculation capabilities
+    /// 
+    /// **SAFETY CRITICAL**: Every operation maintains complete audit trail and preserves
+    /// exact calculation logic from existing services. Zero logic changes were made during
+    /// centralization - only consolidation of previously scattered financial operations.
+    /// 
+    /// **DATA INTEGRITY**: All balance updates are transactional, logged, and historically tracked.
+    /// History tables provide event sourcing capabilities for complete financial audit trails.
+    /// 
+    /// **CONSISTENCY GUARANTEE**: The service ensures that preview calculations exactly match
+    /// real transaction effects, preventing discrepancies between UI previews and actual results.
     /// </summary>
     public class CentralFinancialService : ICentralFinancialService
     {
         /// <summary>
-        /// Simulate the effects of an order on customer and pool balances (no DB changes)
+        /// **PREVIEW SIMULATION** - Calculates the financial impact of an order without making database changes.
+        /// 
+        /// This method simulates exactly what would happen when an order is processed, allowing the UI
+        /// to show users the precise effect on their balances and institutional currency pools.
+        /// 
+        /// **CRITICAL CONSISTENCY**: The calculations performed here MUST exactly match those in
+        /// ProcessOrderCreationAsync() to ensure preview accuracy. Any changes to order processing
+        /// logic must be reflected in both methods.
+        /// 
+        /// **Calculation Logic**:
+        /// - Customer pays FromAmount in FromCurrency (balance decreases)
+        /// - Customer receives ToAmount in ToCurrency (balance increases)  
+        /// - Institution receives FromAmount in FromCurrency (pool increases)
+        /// - Institution pays ToAmount in ToCurrency (pool decreases)
+        /// 
+        /// **Validation**: Verifies all required customer balances and currency pools exist before calculation.
         /// </summary>
+        /// <param name="order">Order with populated FromCurrency and ToCurrency navigation properties</param>
+        /// <returns>Preview effects showing before/after balances for customer and pools</returns>
+        /// <exception cref="Exception">Thrown when required currencies or balances are not found</exception>
         public async Task<OrderPreviewEffectsDto> PreviewOrderEffectsAsync(Order order)
         {
             _logger.LogInformation($"[PreviewOrderEffectsAsync] Called for CustomerId={order.CustomerId}, FromCurrencyId={order.FromCurrencyId}, ToCurrencyId={order.ToCurrencyId}, FromAmount={order.FromAmount}, Rate={order.Rate}, ToAmount={order.ToAmount}");
@@ -92,8 +126,21 @@ namespace ForexExchange.Services
                 NewPoolBalanceTo = newPoolBalanceTo
             };
         }
+        /// <summary>
+        /// Database context for Entity Framework operations
+        /// </summary>
         private readonly ForexDbContext _context;
+        
+        /// <summary>
+        /// Logger for comprehensive financial operation tracking and debugging
+        /// </summary>
         private readonly ILogger<CentralFinancialService> _logger;
+
+        /// <summary>
+        /// **CONSTRUCTOR** - Initializes the central financial service with required dependencies.
+        /// </summary>
+        /// <param name="context">Entity Framework database context for data operations</param>
+        /// <param name="logger">Logger for operation tracking and debugging</param>
 
         public CentralFinancialService(ForexDbContext context, ILogger<CentralFinancialService> logger)
         {
@@ -103,6 +150,15 @@ namespace ForexExchange.Services
 
         #region Customer Balance Operations
 
+        /// <summary>
+        /// **BALANCE RETRIEVAL** - Gets current balance for a specific customer and currency.
+        /// 
+        /// Retrieves balance from the current balance table for optimal performance.
+        /// Returns zero if no balance record exists for the customer-currency combination.
+        /// </summary>
+        /// <param name="customerId">Unique identifier of the customer</param>
+        /// <param name="currencyCode">Currency code (e.g., "USD", "EUR", "IRR")</param>
+        /// <returns>Current balance amount, or 0 if no balance record exists</returns>
         public async Task<decimal> GetCustomerBalanceAsync(int customerId, string currencyCode)
         {
             // Get from current balance table for performance
@@ -112,6 +168,14 @@ namespace ForexExchange.Services
             return balance?.Balance ?? 0;
         }
 
+        /// <summary>
+        /// **MULTI-CURRENCY BALANCE RETRIEVAL** - Gets all currency balances for a specific customer.
+        /// 
+        /// Returns all active currency balances associated with the customer, enabling
+        /// comprehensive balance display and financial analysis.
+        /// </summary>
+        /// <param name="customerId">Unique identifier of the customer</param>
+        /// <returns>List of all currency balances for the customer</returns>
         public async Task<List<CustomerBalance>> GetCustomerBalancesAsync(int customerId)
         {
             return await _context.CustomerBalances
@@ -119,6 +183,25 @@ namespace ForexExchange.Services
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// **ORDER PROCESSING** - Processes the complete financial impact of a currency exchange order.
+        /// 
+        /// **CRITICAL DUAL-CURRENCY OPERATION**: Every order creates exactly two currency impacts:
+        /// 1. **Payment Transaction**: Customer pays FromAmount in FromCurrency (negative customer balance impact)
+        /// 2. **Receipt Transaction**: Customer receives ToAmount in ToCurrency (positive customer balance impact)
+        /// 
+        /// **Currency Pool Updates**:
+        /// - Institution receives FromCurrency from customer (pool balance increases)
+        /// - Institution provides ToCurrency to customer (pool balance decreases)
+        /// 
+        /// **Audit Trail**: Every transaction is logged with complete history for regulatory compliance
+        /// and financial auditing. All amounts, exchange rates, and timing are permanently recorded.
+        /// 
+        /// **CONSISTENCY GUARANTEE**: The logic here must exactly match PreviewOrderEffectsAsync()
+        /// to ensure UI previews accurately reflect actual transaction results.
+        /// </summary>
+        /// <param name="order">Complete order with all currency and amount information</param>
+        /// <param name="performedBy">Identifier of who initiated the transaction (for audit trail)</param>
         public async Task ProcessOrderCreationAsync(Order order, string performedBy = "System")
         {
             _logger.LogInformation($"Processing order creation for Order ID: {order.Id}");
@@ -174,6 +257,27 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Order {order.Id} processing completed - dual currency impact recorded");
         }
 
+        /// <summary>
+        /// **ACCOUNTING DOCUMENT PROCESSING** - Processes financial documents (deposits, withdrawals, transfers).
+        /// 
+        /// **Document Types Supported**:
+        /// - Customer deposits (increase customer balance)
+        /// - Customer withdrawals (decrease customer balance) 
+        /// - Inter-customer transfers
+        /// - Bank account transactions
+        /// 
+        /// **Multi-Party Logic**:
+        /// - **Payer**: Entity making the payment (balance increases for deposits, decreases for withdrawals)
+        /// - **Receiver**: Entity receiving payment (balance decreases for payments made to them)
+        /// - **Bank Accounts**: Institutional accounts affected by the document
+        /// 
+        /// **Verification Requirement**: Only processes verified documents to prevent unauthorized transactions.
+        /// 
+        /// **Complete Audit Trail**: Every document impact is logged with document reference numbers,
+        /// dates, amounts, and all parties involved for comprehensive financial auditing.
+        /// </summary>
+        /// <param name="document">Verified accounting document with all party and amount information</param>
+        /// <param name="performedBy">Identifier of who processed the document (for audit trail)</param>
         public async Task ProcessAccountingDocumentAsync(AccountingDocument document, string performedBy = "System")
         {
             _logger.LogInformation($"Processing accounting document ID: {document.Id}");
@@ -241,6 +345,25 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Document {document.Id} processing completed");
         }
 
+        /// <summary>
+        /// **MANUAL BALANCE ADJUSTMENT** - Allows manual correction of customer balances with full audit trail.
+        /// 
+        /// Used for administrative corrections, error fixes, or special adjustments that require
+        /// manual intervention. All adjustments are logged with detailed reasoning for audit purposes.
+        /// 
+        /// **Use Cases**:
+        /// - Correcting data entry errors
+        /// - Compensating customers for system issues
+        /// - Administrative adjustments per management decisions
+        /// - Balance corrections after system maintenance
+        /// 
+        /// **Audit Requirement**: Must provide clear reason for adjustment for regulatory compliance.
+        /// </summary>
+        /// <param name="customerId">Customer whose balance is being adjusted</param>
+        /// <param name="currencyCode">Currency being adjusted</param>
+        /// <param name="adjustmentAmount">Amount to adjust (positive for increase, negative for decrease)</param>
+        /// <param name="reason">Detailed reason for the adjustment (required for audit trail)</param>
+        /// <param name="performedBy">Administrator or system performing the adjustment</param>
         public async Task AdjustCustomerBalanceAsync(int customerId, string currencyCode, decimal adjustmentAmount,
             string reason, string performedBy)
         {
