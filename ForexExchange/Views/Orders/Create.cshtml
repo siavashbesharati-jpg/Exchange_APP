@@ -161,21 +161,66 @@
                                                         <button type="submit" class="btn btn-primary" id="finalSubmitBtn" style="display:none;">تایید و ثبت نهایی</button>
                                                 </div>
 
-                                                <!-- Preview Modal -->
+                                                <!-- Order Preview Modal - Beautiful Styling -->
                                                 <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
-                                                    <div class="modal-dialog">
+                                                    <div class="modal-dialog modal-lg">
                                                         <div class="modal-content">
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title" id="previewModalLabel">پیش‌نمایش تاثیر معامله</h5>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            <div class="modal-header bg-info text-white">
+                                                                <h5 class="modal-title" id="previewModalLabel">
+                                                                    <i class="fas fa-eye"></i> پیش‌نمایش تاثیر معامله
+                                                                </h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="بستن"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                <div id="previewOrderDetails"></div>
-                                                                <div id="previewOrderEffects"></div>
+                                                                <div class="alert alert-info">
+                                                                    <i class="fas fa-info-circle"></i> لطفاً جزئیات معامله و تأثیرات آن را بررسی کنید.
+                                                                </div>
+                                                                
+                                                                <!-- Order Summary -->
+                                                                <div class="card mb-3">
+                                                                    <div class="card-header">
+                                                                        <h6 class="mb-0"><i class="fas fa-exchange-alt"></i> خلاصه معامله</h6>
+                                                                    </div>
+                                                                    <div class="card-body">
+                                                                        <div id="previewOrderDetails" class="row">
+                                                                            <!-- Order details will be populated here -->
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Balance Effects -->
+                                                                <div class="card mb-3">
+                                                                    <div class="card-header">
+                                                                        <h6 class="mb-0"><i class="fas fa-balance-scale"></i> تأثیرات بر ترازها</h6>
+                                                                    </div>
+                                                                    <div class="card-body">
+                                                                        <div id="balance-effects-loading" class="text-center py-3" style="display: none;">
+                                                                            <div class="spinner-border text-primary" role="status">
+                                                                                <span class="visually-hidden">در حال بارگذاری...</span>
+                                                                            </div>
+                                                                            <div class="mt-2">در حال محاسبه تأثیرات...</div>
+                                                                        </div>
+                                                                        <div id="previewOrderEffects">
+                                                                            <!-- Balance effects will be populated here -->
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Warning Messages -->
+                                                                <div id="order-warnings" style="display: none;">
+                                                                    <div class="alert alert-warning">
+                                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                                        <div id="warning-messages"></div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                             <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
-                                                                <button type="button" class="btn btn-primary" id="confirmPreviewBtn">تایید و ثبت نهایی</button>
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                                    <i class="fas fa-times"></i> انصراف
+                                                                </button>
+                                                                <button type="button" id="confirmPreviewBtn" class="btn btn-primary">
+                                                                    <i class="fas fa-check"></i> تایید و ثبت نهایی
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -213,99 +258,158 @@
         };
     }
 
-    // Show preview modal with order and effect details
-
+    // Show preview modal with order and effect details - Beautiful Styling
     function showPreviewModal(order, effects) {
-                // Helper to get property in both PascalCase and camelCase
-                        function getProp(obj, name) {
-                                return obj[name] ?? obj[name.charAt(0).toLowerCase() + name.slice(1)];
-                        }
+        console.log('🔥 Order Preview Modal - Showing order and effects');
+        console.log('Order:', order);
+        console.log('Effects:', effects);
+        
+        // Helper to get property in both PascalCase and camelCase
+        function getProp(obj, name) {
+            return obj[name] ?? obj[name.charAt(0).toLowerCase() + name.slice(1)];
+        }
 
-                        // Get customer name from dropdown
-                        let customerSelect = document.getElementById('customerSelect');
-                        let customerName = '';
-                        if (customerSelect) {
-                                if (typeof $ !== 'undefined' && $(customerSelect).hasClass('select2-hidden-accessible')) {
-                                        let selected = $(customerSelect).select2('data')[0];
-                                        customerName = selected ? selected.text : '';
-                                } else {
-                                        let idx = customerSelect.selectedIndex;
-                                        customerName = idx > 0 ? customerSelect.options[idx].text : '';
-                                }
-                        }
+        // Get customer name from dropdown
+        let customerSelect = document.getElementById('customerSelect');
+        let customerName = 'نامشخص';
+        if (customerSelect) {
+            if (typeof $ !== 'undefined' && $(customerSelect).hasClass('select2-hidden-accessible')) {
+                let selected = $(customerSelect).select2('data')[0];
+                customerName = selected ? selected.text : 'نامشخص';
+            } else {
+                let idx = customerSelect.selectedIndex;
+                customerName = idx > 0 ? customerSelect.options[idx].text : 'نامشخص';
+            }
+        }
 
-                        // Get selected date
-                        let dateValue = document.getElementById('createdAtInput')?.value || '';
+        // Get selected date
+        let dateValue = document.getElementById('createdAtInput')?.value || '';
+        let formattedDate = 'نامشخص';
+        if (dateValue) {
+            const date = new Date(dateValue);
+            formattedDate = date.toLocaleDateString('fa-IR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
 
-                        // Currency labels
-                        let fromCurrency = getProp(effects, 'FromCurrencyName') ? `${getProp(effects, 'FromCurrencyName')} (${getProp(effects, 'FromCurrencyCode')})` : getProp(effects, 'FromCurrencyCode') || order.fromCurrencyId;
-                        let toCurrency = getProp(effects, 'ToCurrencyName') ? `${getProp(effects, 'ToCurrencyName')} (${getProp(effects, 'ToCurrencyCode')})` : getProp(effects, 'ToCurrencyCode') || order.toCurrencyId;
+        // Currency labels with better formatting
+        let fromCurrencyCode = getProp(effects, 'FromCurrencyCode') || '';
+        let toCurrencyCode = getProp(effects, 'ToCurrencyCode') || '';
+        let fromCurrencyName = getProp(effects, 'FromCurrencyName') || fromCurrencyCode;
+        let toCurrencyName = getProp(effects, 'ToCurrencyName') || toCurrencyCode;
+        
+        let fromCurrency = fromCurrencyName && fromCurrencyCode ? `${fromCurrencyName} (${fromCurrencyCode})` : (fromCurrencyCode || 'نامشخص');
+        let toCurrency = toCurrencyName && toCurrencyCode ? `${toCurrencyName} (${toCurrencyCode})` : (toCurrencyCode || 'نامشخص');
 
-                        // Order details table with improved UX
-                        let html = `
-                        <div class="mb-3">
-                            <h5 class="mb-3"><i class="bi bi-receipt"></i> جزئیات سفارش</h5>
-                            <table class="table table-bordered table-sm mb-0">
-                                <tbody>
-                                    <tr><th class="text-center">مشتری</th><td class="text-center">${customerName}</td></tr>
-                                    <tr><th class="text-center">دریافت می کنیم</th><td class="text-center">${fromCurrency}</td></tr>
-                                    <tr><th class="text-center">پرداخت می کنیم</th><td class="text-center">${toCurrency}</td></tr>
-                                    <tr><th class="text-center">مقدار</th><td class="text-center" dir="ltr"><span class="fw-bold">${order.fromAmount}</span></td></tr>
-                                    <tr><th class="text-center">نرخ</th><td class="text-center" dir="ltr">${order.rate}</td></tr>
-                                    <tr><th class="text-center">تاریخ</th><td class="text-center">${dateValue}</td></tr>
-                                </tbody>
-                            </table>
-                        </div>`;
-                        document.getElementById('previewOrderDetails').innerHTML = html;
+        // Order details with beautiful card layout matching Upload.cshtml
+        let orderDetailsHtml = `
+            <div class="col-md-6">
+                <div class="mb-2"><strong>مشتری:</strong> <span class="text-primary">${customerName}</span></div>
+                <div class="mb-2"><strong>نوع معامله:</strong> <span class="badge bg-info">خرید/فروش ارز</span></div>
+                <div class="mb-2"><strong>دریافت می کنیم : </strong> <span class="text-success fw-bold" dir="ltr">${formatCurrency(order.fromAmount, fromCurrencyCode)} ${fromCurrencyCode}</span></div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-2"><strong> پرداخت می کنیم : </strong> <span class="text-primary fw-bold" dir="ltr">${formatCurrency(order.rate * order.fromAmount, toCurrencyCode)} ${toCurrencyCode}</span></div>
+                <div class="mb-2"><strong>نرخ تبدیل:</strong> <span class="text-warning fw-bold" dir="ltr">${formatCurrency(order.rate, 'IRR')}</span></div>
+                <div class="mb-2"><strong>تاریخ:</strong> <span>${formattedDate}</span></div>
+            </div>
+        `;
+        document.getElementById('previewOrderDetails').innerHTML = orderDetailsHtml;
 
-                        // Effects table, all values text-center
-                        let eff = effects;
-                                let effHtml = `
-                                <div style="background: #fff7e6; border-radius: 8px; padding: 12px 8px 8px 8px;">
-                                    <h5 class="mb-3"><i class="bi bi-bar-chart"></i> تاثیر بر موجودی‌ها</h5>
-                                    <table class="table table-striped table-bordered table-sm mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th class="text-center">نوع</th>
-                                                <th class="text-center">ارز</th>
-                                                <th class="text-center">قبل</th>
-                                                <th class="text-center">بعد</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td class="text-center"><i class="bi bi-person"></i> مشتری</td>
-                                                <td class="text-center">${fromCurrency}</td>
-                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldCustomerBalanceFrom') ?? '-'}</td>
-                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewCustomerBalanceFrom') ?? '-'}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-center"><i class="bi bi-person"></i> مشتری</td>
-                                                <td class="text-center">${toCurrency}</td>
-                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldCustomerBalanceTo') ?? '-'}</td>
-                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewCustomerBalanceTo') ?? '-'}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-center"><i class="bi bi-cash-coin"></i> صندوق</td>
-                                                <td class="text-center">${fromCurrency}</td>
-                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldPoolBalanceFrom') ?? '-'}</td>
-                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewPoolBalanceFrom') ?? '-'}</td>
-                                            </tr>
-                                            <tr>
-                                                <td class="text-center"><i class="bi bi-cash-coin"></i> صندوق</td>
-                                                <td class="text-center">${toCurrency}</td>
-                                                <td class="text-center" dir="ltr">${getProp(eff, 'OldPoolBalanceTo') ?? '-'}</td>
-                                                <td class="text-center fw-bold" dir="ltr">${getProp(eff, 'NewPoolBalanceTo') ?? '-'}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>`;
-                        document.getElementById('previewOrderEffects').innerHTML = effHtml;
+        // Balance effects with beautiful styling matching Upload.cshtml
+        let eff = effects;
+        
+        // Customer Effects
+        let customerEffectsHtml = '';
+        if (getProp(eff, 'OldCustomerBalanceFrom') !== undefined) {
+            customerEffectsHtml = `
+                <div class="mb-3">
+                    <h6 class="text-primary"><i class="fas fa-user"></i> تأثیرات موجودی مشتری</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center">ارز</th>
+                                    <th class="text-center">موجودی قبل</th>
+                                    <th class="text-center">موجودی بعد</th>
+                                    <th class="text-center">تغییر</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center fw-bold">${fromCurrencyCode}</td>
+                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldCustomerBalanceFrom'), fromCurrencyCode)}</td>
+                                    <td class="text-center fw-bold text-${getProp(eff, 'NewCustomerBalanceFrom') >= 0 ? 'success' : 'danger'}" dir="ltr">${formatCurrency(getProp(eff, 'NewCustomerBalanceFrom'), fromCurrencyCode)}</td>
+                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(order.fromAmount, fromCurrencyCode)}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center fw-bold">${toCurrencyCode}</td>
+                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldCustomerBalanceTo'), toCurrencyCode)}</td>
+                                    <td class="text-center fw-bold text-success" dir="ltr">${formatCurrency(getProp(eff, 'NewCustomerBalanceTo'), toCurrencyCode)}</td>
+                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(order.rate * order.fromAmount, toCurrencyCode)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
 
-                        var modal = new bootstrap.Modal(document.getElementById('previewModal'));
-                        modal.show();
+        // Pool Effects
+        let poolEffectsHtml = '';
+        if (getProp(eff, 'OldPoolBalanceFrom') !== undefined) {
+            poolEffectsHtml = `
+                <div class="mb-3">
+                    <h6 class="text-warning"><i class="fas fa-swimming-pool"></i> تأثیرات صندوق ارز</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center">ارز</th>
+                                    <th class="text-center">موجودی قبل</th>
+                                    <th class="text-center">موجودی بعد</th>
+                                    <th class="text-center">تغییر</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center fw-bold">${fromCurrencyCode}</td>
+                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldPoolBalanceFrom'), fromCurrencyCode)}</td>
+                                    <td class="text-center fw-bold text-success" dir="ltr">${formatCurrency(getProp(eff, 'NewPoolBalanceFrom'), fromCurrencyCode)}</td>
+                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(order.fromAmount, fromCurrencyCode)}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center fw-bold">${toCurrencyCode}</td>
+                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldPoolBalanceTo'), toCurrencyCode)}</td>
+                                    <td class="text-center fw-bold text-${getProp(eff, 'NewPoolBalanceTo') >= 0 ? 'success' : 'danger'}" dir="ltr">${formatCurrency(getProp(eff, 'NewPoolBalanceTo'), toCurrencyCode)}</td>
+                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(order.rate * order.fromAmount, toCurrencyCode)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Combine all effects
+        let allEffectsHtml = customerEffectsHtml + poolEffectsHtml;
+        
+        if (!allEffectsHtml) {
+            allEffectsHtml = '<div class="alert alert-warning">هیچ تأثیری بر ترازها محاسبه نشد.</div>';
+        }
+
+        document.getElementById('previewOrderEffects').innerHTML = allEffectsHtml;
+
+        // Show the modal
+        var modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        modal.show();
+        
+        console.log('✅ Order Preview Modal displayed successfully');
     }
-
 
     document.getElementById('previewEffectsBtn').addEventListener('click', function(e) {
         e.preventDefault();
