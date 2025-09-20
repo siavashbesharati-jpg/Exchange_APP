@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Services.Interfaces;
 
 namespace ForexExchange.Services
 {
@@ -250,41 +251,17 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Calculate what the initial balances must have been based on current balances and all transactions
-        /// This works backwards from current state
-        /// DEPRECATED: This method is flawed for date-filtered timelines
-        /// </summary>
-        /// <summary>
-        /// Calculate what the initial balances must have been based on current balances and all transactions
-        /// This works backwards from current state
-        /// DEPRECATED: This method is flawed for date-filtered timelines
-        /// </summary>
-        private Task<Dictionary<string, decimal>> CalculateInitialBalancesAsync(
-            int customerId, 
-            List<CustomerTransactionHistory> transactions, 
-            Dictionary<string, decimal> currentBalances)
-        {
-            var initialBalances = new Dictionary<string, decimal>(currentBalances);
-
-            // Work backwards through all transactions to find initial state
-            foreach (var transaction in transactions.OrderByDescending(t => t.TransactionDate))
-            {
-                if (!initialBalances.ContainsKey(transaction.CurrencyCode))
-                    initialBalances[transaction.CurrencyCode] = 0;
-
-                // Reverse the transaction effect
-                initialBalances[transaction.CurrencyCode] -= transaction.Amount;
-            }
-
-            return Task.FromResult(initialBalances);
-        }
-
-        /// <summary>
         /// Get summary statistics for customer transactions
+        /// Refactored: Uses timeline data to eliminate duplication
         /// </summary>
         public async Task<Dictionary<string, object>> GetCustomerStatsAsync(int customerId, DateTime? fromDate = null, DateTime? toDate = null)
         {
             var timeline = await GetCustomerTimelineAsync(customerId, fromDate, toDate, null);
+
+            var totalVolume = timeline.Transactions
+                .Where(t => t.Amount > 0)
+                .GroupBy(t => t.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
 
             var stats = new Dictionary<string, object>
             {
@@ -292,10 +269,7 @@ namespace ForexExchange.Services
                 ["OrderTransactions"] = timeline.OrderCount,
                 ["DocumentTransactions"] = timeline.DocumentCount,
                 ["CurrenciesInvolved"] = timeline.CurrenciesInvolved.Count,
-                ["TotalVolume"] = timeline.Transactions
-                    .Where(t => t.Amount > 0)
-                    .GroupBy(t => t.CurrencyCode)
-                    .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount)),
+                ["TotalVolume"] = totalVolume,
                 ["NetChanges"] = timeline.NetChanges,
                 ["DateRange"] = new { From = timeline.FromDate, To = timeline.ToDate }
             };
@@ -305,6 +279,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get transaction summary grouped by currency
+        /// Refactored: Uses timeline data to eliminate duplication
         /// </summary>
         public async Task<Dictionary<string, CurrencyTransactionSummary>> GetCurrencyTransactionSummaryAsync(
             int customerId, DateTime? fromDate = null, DateTime? toDate = null)

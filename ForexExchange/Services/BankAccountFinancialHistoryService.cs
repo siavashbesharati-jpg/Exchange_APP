@@ -1,4 +1,5 @@
 using ForexExchange.Models;
+using ForexExchange.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
@@ -221,25 +222,27 @@ namespace ForexExchange.Services
     /// Bank Account Timeline Item for display
     /// آیتم جدول زمانی حساب بانکی برای نمایش
     /// </summary>
-    public class BankAccountTimelineItem
+    public class BankAccountTimelineItem : ITimelineItem
     {
         public string Date { get; set; } = string.Empty;
         public string Time { get; set; } = string.Empty;
         public string TransactionType { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public int BankAccountId { get; set; }
-        public string BankAccountName { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public decimal Balance { get; set; }
         public int? ReferenceId { get; set; }
         public bool CanNavigate { get; set; }
+
+        // Bank Account specific properties
+        public int BankAccountId { get; set; }
+        public string BankAccountName { get; set; } = string.Empty;
     }
 
     /// <summary>
     /// Bank Account Summary Statistics
     /// آمار خلاصه حساب بانکی
     /// </summary>
-    public class BankAccountSummary
+    public class BankAccountSummary : ISummaryStatistics
     {
         public int TotalTransactions { get; set; }
         public int TodayTransactions { get; set; }

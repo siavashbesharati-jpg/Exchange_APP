@@ -1,4 +1,5 @@
 using ForexExchange.Models;
+using ForexExchange.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
@@ -170,24 +171,30 @@ namespace ForexExchange.Services
     /// Pool Timeline Item for display
     /// آیتم جدول زمانی پول برای نمایش
     /// </summary>
-    public class PoolTimelineItem
+    /// <summary>
+    /// Pool Timeline Item for display
+    /// آیتم جدول زمانی پول برای نمایش
+    /// </summary>
+    public class PoolTimelineItem : ITimelineItem
     {
         public string Date { get; set; } = string.Empty;
         public string Time { get; set; } = string.Empty;
         public string TransactionType { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string CurrencyCode { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public decimal Balance { get; set; }
         public int? ReferenceId { get; set; }
         public bool CanNavigate { get; set; }
+
+        // Pool specific properties
+        public string CurrencyCode { get; set; } = string.Empty;
     }
 
     /// <summary>
     /// Pool Summary Statistics
     /// آمار خلاصه پول
     /// </summary>
-    public class PoolSummary
+    public class PoolSummary : ISummaryStatistics
     {
         public int TotalTransactions { get; set; }
         public int TodayTransactions { get; set; }
