@@ -780,7 +780,7 @@ namespace ForexExchange.Controllers
                 
                 return Json(new { 
                     success = true, 
-                    message = "قابلیت صدور فایل Excel در حال توسعه است",
+                    message = "قابلیت صدور فایل اکسل  در حال توسعه است",
                     downloadUrl = "#" 
                 });
             }

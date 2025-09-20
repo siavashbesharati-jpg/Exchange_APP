@@ -459,7 +459,7 @@ namespace ForexExchange.Controllers
 
         /// <summary>
         /// Export Admin Activities
-        /// صادرات فعالیت‌های ادمین
+        /// دریافت فعالیت‌های ادمین
         /// </summary>
         [HttpPost]
         [Authorize(Roles = "Admin")]

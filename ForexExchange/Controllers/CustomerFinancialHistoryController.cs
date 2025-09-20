@@ -159,7 +159,7 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error exporting timeline for customer {CustomerId}", customerId);
-                return Json(new { success = false, message = "خطا در صادرات فایل" });
+                return Json(new { success = false, message = "خطا در دریافت فایل" });
             }
         }
 

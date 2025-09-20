@@ -217,9 +217,9 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Data export
-        /// صادرات داده
+        /// دریافت داده
         /// </summary>
-        [Display(Name = "Data Export - صادرات داده")]
+        [Display(Name = "Data Export - دریافت داده")]
         DataExport = 10,
 
         /// <summary>

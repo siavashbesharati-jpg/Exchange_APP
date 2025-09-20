@@ -211,7 +211,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Log data export activity
-        /// لاگ کردن فعالیت صادرات داده
+        /// لاگ کردن فعالیت دریافت داده
         /// </summary>
         public async Task LogDataExportAsync(string adminUserId, string adminUsername, string exportType, int recordCount)
         {
@@ -226,7 +226,7 @@ namespace ForexExchange.Services
                 adminUserId,
                 adminUsername,
                 AdminActivityType.DataExport,
-                $"صادرات داده: {exportType} ({recordCount} رکورد)",
+                $"دریافت داده: {exportType} ({recordCount} رکورد)",
                 JsonSerializer.Serialize(details)
             );
         }

@@ -24,7 +24,7 @@
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-outline-primary" onclick="exportTimeline()">
                                 <i class="fas fa-file-excel me-1"></i>
-                                صادرات Excel
+                                دریافت اکسل 
                             </button>
                             <a href="@Url.Action("Details", "Customers", new { id = Model.Id })" class="btn btn-outline-secondary">
                                 <i class="fas fa-user me-1"></i>
@@ -424,7 +424,7 @@ function exportTimeline() {
     .done(function(response) {
         if (response.success) {
             // Handle Excel download
-            showSuccess('صادرات فایل در ادامه پیاده‌سازی خواهد شد');
+            showSuccess('دریافت فایل در ادامه پیاده‌سازی خواهد شد');
         } else {
             showError('خطا در صادرات: ' + response.message);
         }
