@@ -305,6 +305,19 @@
         let fromCurrency = fromCurrencyName && fromCurrencyCode ? `${fromCurrencyName} (${fromCurrencyCode})` : (fromCurrencyCode || 'نامشخص');
         let toCurrency = toCurrencyName && toCurrencyCode ? `${toCurrencyName} (${toCurrencyCode})` : (toCurrencyCode || 'نامشخص');
 
+        // Calculate the correct "to amount" based on currency direction
+        // Following same logic as calculator: if FROM is IRR, divide; if FROM is foreign, multiply
+        let toAmount;
+        if (fromCurrencyCode.toUpperCase() === 'IRR') {
+            // FROM is IRR, TO is foreign currency: toAmount = fromAmount / rate
+            toAmount = order.fromAmount / order.rate;
+            toAmount = Math.round(toAmount * 1000) / 1000; // Round to 3 decimal places for foreign currency
+        } else {
+            // FROM is foreign currency, TO is IRR: toAmount = fromAmount * rate
+            toAmount = order.fromAmount * order.rate;
+            toAmount = Math.round(toAmount * 1000) / 1000; // Round to 3 decimal places for IRR
+        }
+
         // Order details with beautiful card layout matching Upload.cshtml
         let orderDetailsHtml = `
             <div class="col-md-6">
@@ -313,7 +326,7 @@
                 <div class="mb-2"><strong>دریافت می کنیم : </strong> <span class="text-success fw-bold" dir="ltr">${formatCurrency(order.fromAmount, fromCurrencyCode)} ${fromCurrencyCode}</span></div>
             </div>
             <div class="col-md-6">
-                <div class="mb-2"><strong> پرداخت می کنیم : </strong> <span class="text-primary fw-bold" dir="ltr">${formatCurrency(order.rate * order.fromAmount, toCurrencyCode)} ${toCurrencyCode}</span></div>
+                <div class="mb-2"><strong> پرداخت می کنیم : </strong> <span class="text-primary fw-bold" dir="ltr">${formatCurrency(toAmount, toCurrencyCode)} ${toCurrencyCode}</span></div>
                 <div class="mb-2"><strong>نرخ تبدیل:</strong> <span class="text-warning fw-bold" dir="ltr">${order.rate}</span></div>
                 <div class="mb-2"><strong>تاریخ:</strong> <span>${formattedDate}</span></div>
             </div>
@@ -350,7 +363,7 @@
                                     <td class="text-center fw-bold">${toCurrencyCode}</td>
                                     <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldCustomerBalanceTo'), toCurrencyCode)}</td>
                                     <td class="text-center fw-bold text-success" dir="ltr">${formatCurrency(getProp(eff, 'NewCustomerBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(order.rate * order.fromAmount, toCurrencyCode)}</td>
+                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(toAmount, toCurrencyCode)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -386,7 +399,7 @@
                                     <td class="text-center fw-bold">${toCurrencyCode}</td>
                                     <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldPoolBalanceTo'), toCurrencyCode)}</td>
                                     <td class="text-center fw-bold text-${getProp(eff, 'NewPoolBalanceTo') >= 0 ? 'success' : 'danger'}" dir="ltr">${formatCurrency(getProp(eff, 'NewPoolBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(order.rate * order.fromAmount, toCurrencyCode)}</td>
+                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(toAmount, toCurrencyCode)}</td>
                                 </tr>
                             </tbody>
                         </table>
