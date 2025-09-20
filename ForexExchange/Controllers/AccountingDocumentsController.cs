@@ -344,7 +344,7 @@ namespace ForexExchange.Controllers
                 }
                 
                 TempData["SuccessMessage"] = "سند حسابداری با موفقیت ثبت شد.";
-                return RedirectToAction("Details",accountingDocument.Id)
+                return RedirectToAction(nameof(Index));
             }
 
             ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
