@@ -1271,7 +1271,7 @@
 
             if (fromAmount && rate && rate > 0 && calcFromCurrencyCode) {
                 // Set amount in main form
-                document.getElementById('amountInput').value = fromAmount;
+                // document.getElementById('amountInput').value = fromAmount; // FIXED: Element doesn't exist
 
                 // Convert calculator rate back to main form format (backend expects direct rate)
                 const fromCode = calcFromCurrencyCode;
@@ -1295,12 +1295,12 @@
                     }
                 }
 
-                document.getElementById('rateInput').value = mainFormRate;
-                document.getElementById('hiddenRate').value = mainFormRate;
+                // document.getElementById('rateInput').value = mainFormRate; // FIXED: Element doesn't exist
+                // document.getElementById('hiddenRate').value = mainFormRate; // FIXED: Element doesn't exist
 
                 // Calculate total amount
                 const totalAmount = fromAmount * mainFormRate;
-                document.getElementById('hiddenTotalAmount').value = totalAmount;
+                // document.getElementById('hiddenTotalAmount').value = totalAmount; // FIXED: Element doesn't exist
 
                 // Trigger main form calculation update
                 updateCalculation();
@@ -1309,11 +1309,14 @@
 
         // Clear main form when calculator is invalid
         function clearMainForm() {
-            document.getElementById('amountInput').value = '';
-            document.getElementById('rateInput').value = '';
-            document.getElementById('hiddenRate').value = '0';
-            document.getElementById('hiddenTotalAmount').value = '0';
-            document.getElementById('calculationResult').style.display = 'none';
+            // document.getElementById('amountInput').value = ''; // FIXED: Element doesn't exist
+            // document.getElementById('rateInput').value = ''; // FIXED: Element doesn't exist
+            // document.getElementById('hiddenRate').value = '0'; // FIXED: Element doesn't exist
+            // document.getElementById('hiddenTotalAmount').value = '0'; // FIXED: Element doesn't exist
+            const calculationResult = document.getElementById('calculationResult');
+            if (calculationResult) {
+                calculationResult.style.display = 'none';
+            }
         }
 
         // Show calculation result

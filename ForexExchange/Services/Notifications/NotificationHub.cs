@@ -142,22 +142,7 @@ namespace ForexExchange.Services.Notifications
         {
             try
             {
-                // Use explicit URL or default to /admin
-                var finalUrl = !string.IsNullOrEmpty(navigationUrl) ? navigationUrl : "/admin";
-                _logger.LogInformation("Custom notification URL: {NavigationUrl} -> {FinalUrl}", navigationUrl, finalUrl);
-
-                var context = new NotificationContext
-                {
-                    EventType = eventType,
-                    UserId = userId,
-                    Title = title,
-                    Message = message,
-                    NavigationUrl = finalUrl,
-                    Priority = priority,
-                    SendToAllAdmins = true, // Always send to all admins
-                    ExcludeUserIds = !string.IsNullOrEmpty(userId) ? new List<string> { userId } : new List<string>()
-                };
-
+                var context = await BuildManualAdjustmentNotificationContextAsync(title, message, eventType, userId, navigationUrl, priority);
                 await SendNotificationToProvidersAsync(context, provider => provider.SendCustomNotificationAsync(context));
             }
             catch (Exception ex)
@@ -355,6 +340,8 @@ namespace ForexExchange.Services.Notifications
                 Message = message,
                 NavigationUrl = navigationUrl,
                 Priority = NotificationPriority.Normal,
+                SendToAllAdmins = true, // Always send to all admins
+                ExcludeUserIds = !string.IsNullOrEmpty(userId) ? new List<string> { userId } : new List<string>(),
                 RelatedEntity = new RelatedEntity
                 {
                     EntityType = "Customer",
@@ -372,6 +359,44 @@ namespace ForexExchange.Services.Notifications
                     ["fullName"] = customer.FullName,
                     ["phoneNumber"] = customer.PhoneNumber,
                     ["isActive"] = customer.IsActive
+                }
+            });
+        }
+
+        private Task<NotificationContext> BuildManualAdjustmentNotificationContextAsync(string title, string message, NotificationEventType eventType, string? userId, string? navigationUrl, NotificationPriority priority)
+        {
+            // Use explicit URL or default to /admin
+            var finalUrl = !string.IsNullOrEmpty(navigationUrl) ? navigationUrl : "/admin";
+            _logger.LogInformation("Manual adjustment notification URL: {NavigationUrl} -> {FinalUrl}", navigationUrl, finalUrl);
+
+            return Task.FromResult(new NotificationContext
+            {
+                EventType = eventType,
+                UserId = userId,
+                Title = title,
+                Message = message,
+                NavigationUrl = finalUrl,
+                Priority = priority,
+                SendToAllAdmins = true, // Always send to all admins
+                ExcludeUserIds = !string.IsNullOrEmpty(userId) ? new List<string> { userId } : new List<string>(),
+                RelatedEntity = new RelatedEntity
+                {
+                    EntityType = "ManualAdjustment",
+                    EntityId = 0, // No specific entity for manual adjustment notifications
+                    EntityData = new Dictionary<string, object>
+                    {
+                        ["title"] = title,
+                        ["message"] = message,
+                        ["eventType"] = eventType.ToString()
+                    }
+                },
+                Data = new Dictionary<string, object>
+                {
+                    ["title"] = title,
+                    ["message"] = message,
+                    ["eventType"] = eventType.ToString(),
+                    ["priority"] = priority.ToString(),
+                    ["navigationUrl"] = finalUrl
                 }
             });
         }
