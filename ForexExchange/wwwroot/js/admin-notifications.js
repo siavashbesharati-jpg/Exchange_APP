@@ -151,6 +151,11 @@ class AdminNotificationManager {
      * مدیریت اعلان ورودی
      */
     handleNotification(notification) {
+        // Check if current user should be excluded from this notification
+        if (this.shouldExcludeCurrentUser(notification)) {
+            console.log('Notification excluded for current user:', notification.title);
+            return;
+        }
 
         // Add to queue if page is not visible
         if (document.hidden) {
@@ -160,6 +165,28 @@ class AdminNotificationManager {
 
         // Show notification immediately
         this.showNotification(notification);
+    }
+
+    /**
+     * Check if current user should be excluded from notification
+     * بررسی اینکه آیا کاربر فعلی باید از اعلان مستثنی شود
+     */
+    shouldExcludeCurrentUser(notification) {
+        // If no current user ID, don't exclude
+        if (!window.currentUserId) {
+            return false;
+        }
+
+        // Check if excludeUserIds exists and contains current user
+        if (notification.data && notification.data.excludeUserIds) {
+            const excludeUserIds = Array.isArray(notification.data.excludeUserIds)
+                ? notification.data.excludeUserIds
+                : [notification.data.excludeUserIds];
+
+            return excludeUserIds.includes(window.currentUserId);
+        }
+
+        return false;
     }
 
     /**
@@ -371,6 +398,12 @@ class AdminNotificationManager {
      * اضافه کردن اعلان به صف
      */
     addToQueue(notification) {
+        // Check if current user should be excluded from this notification
+        if (this.shouldExcludeCurrentUser(notification)) {
+            console.log('Notification excluded from queue for current user:', notification.title);
+            return;
+        }
+
         this.notificationQueue.push({
             ...notification,
             queuedAt: new Date()

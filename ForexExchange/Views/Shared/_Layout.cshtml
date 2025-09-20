@@ -872,6 +872,9 @@
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>
+        // Set current user ID for client-side notification filtering
+        window.currentUserId = '@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "")';
+
         document.addEventListener("DOMContentLoaded", function () {
             // Initialize push notifications after a short delay
             setTimeout(() => {
