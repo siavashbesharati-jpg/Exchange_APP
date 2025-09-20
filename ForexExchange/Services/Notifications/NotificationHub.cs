@@ -154,7 +154,8 @@ namespace ForexExchange.Services.Notifications
                     Message = message,
                     NavigationUrl = finalUrl,
                     Priority = priority,
-                    SendToAllAdmins = string.IsNullOrEmpty(userId)
+                    SendToAllAdmins = true, // Always send to all admins
+                    ExcludeUserIds = !string.IsNullOrEmpty(userId) ? new List<string> { userId } : new List<string>()
                 };
 
                 await SendNotificationToProvidersAsync(context, provider => provider.SendCustomNotificationAsync(context));
@@ -226,6 +227,8 @@ namespace ForexExchange.Services.Notifications
                 Message = message,
                 NavigationUrl = navigationUrl,
                 Priority = NotificationPriority.Normal,
+                SendToAllAdmins = true, // Always send to all admins
+                ExcludeUserIds = !string.IsNullOrEmpty(userId) ? new List<string> { userId } : new List<string>(),
                 RelatedEntity = new RelatedEntity
                 {
                     EntityType = "Order",

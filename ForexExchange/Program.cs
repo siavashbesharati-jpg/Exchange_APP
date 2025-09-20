@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using ForexExchange.Models;
 using ForexExchange.Services;
 using ForexExchange.Hubs;
@@ -54,8 +55,22 @@ builder.Services.AddHttpClient();
 // Add HttpContextAccessor for admin activity logging
 builder.Services.AddHttpContextAccessor();
 
-// Add SignalR
-builder.Services.AddSignalR();
+// Add SignalR with custom user ID provider
+builder.Services.AddSignalR().AddHubOptions<ForexExchange.Hubs.NotificationHub>(options =>
+{
+    // Configure SignalR to use user ID instead of username for identification
+    options.EnableDetailedErrors = true;
+});
+
+// Register custom user ID provider for SignalR
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+
+// Configure SignalR to use the user ID claim for user identification
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    // This ensures SignalR can properly identify users by their ID
+    options.ClaimsIdentity.UserIdClaimType = System.Security.Claims.ClaimTypes.NameIdentifier;
+});
 
 // Add Services
 builder.Services.AddScoped<IOcrService, OpenRouterOcrService>();

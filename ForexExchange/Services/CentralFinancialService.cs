@@ -1,5 +1,6 @@
 
 using ForexExchange.Models;
+using ForexExchange.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -151,15 +152,22 @@ namespace ForexExchange.Services
         private readonly ILogger<CentralFinancialService> _logger;
 
         /// <summary>
+        /// Notification hub for sending real-time notifications to admin users
+        /// </summary>
+        private readonly INotificationHub _notificationHub;
+
+        /// <summary>
         /// **CONSTRUCTOR** - Initializes the central financial service with required dependencies.
         /// </summary>
         /// <param name="context">Entity Framework database context for data operations</param>
         /// <param name="logger">Logger for operation tracking and debugging</param>
+        /// <param name="notificationHub">Notification hub for real-time admin notifications</param>
 
-        public CentralFinancialService(ForexDbContext context, ILogger<CentralFinancialService> logger)
+        public CentralFinancialService(ForexDbContext context, ILogger<CentralFinancialService> logger, INotificationHub notificationHub)
         {
             _context = context;
             _logger = logger;
+            _notificationHub = notificationHub;
         }
 
         #region Customer Balance Operations
@@ -1897,7 +1905,8 @@ namespace ForexExchange.Services
             string reason, 
             DateTime transactionDate, 
             string performedBy = "Manual Entry",
-            string? transactionNumber = null)
+            string? transactionNumber = null,
+            string? performingUserId = null)
         {
             _logger.LogInformation($"Creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}, Date {transactionDate:yyyy-MM-dd}");
 
@@ -1954,6 +1963,28 @@ namespace ForexExchange.Services
 
                 await transaction.CommitAsync();
                 _logger.LogInformation($"Successfully created manual transaction and recalculated balances for Customer {customerId}, Currency {currencyCode}");
+
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    var customerName = customer.FullName ?? $"مشتری {customerId}";
+                    
+                    await _notificationHub.SendCustomNotificationAsync(
+                        title: "تعدیل دستی موجودی ایجاد شد",
+                        message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode} | دلیل: {reason}",
+                        eventType: NotificationEventType.CustomerBalanceChanged,
+                        userId: performingUserId, // This will exclude the current user from SignalR notifications
+                        navigationUrl: $"/Reports/CustomerReports?customerId={customerId}",
+                        priority: NotificationPriority.Normal
+                    );
+                    
+                    _logger.LogInformation($"Notification sent for manual balance creation: Customer {customerId}, Amount {amount} {currencyCode}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual balance creation: Customer {customerId}, Amount {amount} {currencyCode}");
+                    // Don't fail the main operation due to notification errors
+                }
             }
             catch (Exception ex)
             {
@@ -1968,7 +1999,7 @@ namespace ForexExchange.Services
         /// Only manual transactions (TransactionType.Manual) can be deleted for safety.
         /// After deletion, balances are automatically recalculated to maintain coherence.
         /// </summary>
-        public async Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion")
+        public async Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null)
         {
             _logger.LogInformation($"Deleting manual customer balance history: Transaction ID {transactionId}");
 
@@ -1977,6 +2008,7 @@ namespace ForexExchange.Services
             {
                 // Find the manual transaction
                 var historyRecord = await _context.CustomerBalanceHistory
+                    .Include(h => h.Customer)
                     .FirstOrDefaultAsync(h => h.Id == transactionId);
 
                 if (historyRecord == null)
@@ -1994,6 +2026,7 @@ namespace ForexExchange.Services
                 var currencyCode = historyRecord.CurrencyCode;
                 var amount = historyRecord.TransactionAmount;
                 var transactionDate = historyRecord.TransactionDate;
+                var customerName = historyRecord.Customer?.FullName ?? $"مشتری {customerId}";
 
                 // Delete the manual transaction
                 _context.CustomerBalanceHistory.Remove(historyRecord);
@@ -2006,6 +2039,26 @@ namespace ForexExchange.Services
 
                 await transaction.CommitAsync();
                 _logger.LogInformation($"Successfully deleted manual transaction and recalculated balances for Customer {customerId}, Currency {currencyCode}");
+
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    await _notificationHub.SendCustomNotificationAsync(
+                        title: "تعدیل دستی موجودی حذف شد",
+                        message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode}",
+                        eventType: NotificationEventType.CustomerBalanceChanged,
+                        userId: performingUserId, // This will exclude the current user from SignalR notifications
+                        navigationUrl: $"/Reports/CustomerReports?customerId={customerId}",
+                        priority: NotificationPriority.Normal
+                    );
+                    
+                    _logger.LogInformation($"Notification sent for manual balance deletion: Customer {customerId}, Amount {amount} {currencyCode}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual balance deletion: Customer {customerId}, Amount {amount} {currencyCode}");
+                    // Don't fail the main operation due to notification errors
+                }
             }
             catch (Exception ex)
             {

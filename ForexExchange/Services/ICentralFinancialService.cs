@@ -168,16 +168,18 @@ namespace ForexExchange.Services
         /// Creates a manual customer balance history record with specified transaction date.
         /// This is useful for manual adjustments, corrections, or importing historical data.
         /// After creating manual records, use RecalculateAllBalancesFromTransactionDatesAsync to ensure coherence.
+        /// Automatically sends notifications to admin users (excluding the performing user).
         /// </summary>
         Task CreateManualCustomerBalanceHistoryAsync(int customerId, string currencyCode, decimal amount,
-            string reason, DateTime transactionDate, string performedBy = "Manual Entry", string? transactionNumber = null);
+            string reason, DateTime transactionDate, string performedBy = "Manual Entry", string? transactionNumber = null, string? performingUserId = null);
 
         /// <summary>
         /// Deletes a manual customer balance history record and recalculates balances from the transaction date.
         /// Only manual transactions (TransactionType.Manual) can be deleted for safety.
         /// After deletion, balances are automatically recalculated to maintain coherence.
+        /// Automatically sends notifications to admin users (excluding the performing user).
         /// </summary>
-        Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion");
+        Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null);
 
         /// <summary>
         /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders

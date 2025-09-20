@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using ForexExchange.Services.Notifications;
 
 namespace ForexExchange.Models
 {
@@ -17,7 +18,7 @@ namespace ForexExchange.Models
         [StringLength(1000)]
         public string Message { get; set; } = "";
         
-        public NotificationType Type { get; set; }
+        public NotificationEventType Type { get; set; }
         
         public int? RelatedEntityId { get; set; }
         
@@ -31,24 +32,5 @@ namespace ForexExchange.Models
 
         // Navigation property
         public Customer Customer { get; set; } = null!;
-    }
-
-    public enum NotificationType
-    {
-        OrderCreated,
-        OrderMatched,
-        TransactionStatusChanged,
-        AccountingDocumentUploaded,
-        AccountingDocumentVerified,
-        SystemAlert,
-        PaymentReminder
-    }
-
-    public enum NotificationPriority
-    {
-        Low,
-        Normal,
-        High,
-        Critical
     }
 }

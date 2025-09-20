@@ -76,6 +76,12 @@ namespace ForexExchange.Services.Notifications
         public List<string> TargetUserIds { get; set; } = new();
 
         /// <summary>
+        /// User IDs to exclude from notifications (e.g., the user who triggered the event)
+        /// شناسه‌های کاربرانی که از دریافت اعلان مستثنی هستند
+        /// </summary>
+        public List<string> ExcludeUserIds { get; set; } = new();
+
+        /// <summary>
         /// Whether to send to all admin users
         /// آیا به همه کاربران ادمین ارسال شود
         /// </summary>

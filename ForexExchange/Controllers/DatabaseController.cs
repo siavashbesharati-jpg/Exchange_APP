@@ -1,4 +1,3 @@
-// ...existing code...
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,8 +5,8 @@ using ForexExchange.Models;
 using ForexExchange.Services;
 using ForexExchange.Scripts;
 using DNTPersianUtils.Core;
-using Microsoft.AspNetCore.SignalR;
-using ForexExchange.Hubs;
+using ForexExchange.Services.Notifications;
+using Microsoft.AspNetCore.Identity;
 
 namespace ForexExchange.Controllers
 {
@@ -18,19 +17,19 @@ namespace ForexExchange.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly ICurrencyPoolService _currencyPoolService;
         private readonly ICentralFinancialService _centralFinancialService;
-        private readonly IPushNotificationService _pushNotificationService;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly INotificationHub _notificationHub;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public DatabaseController(ForexDbContext context, IWebHostEnvironment environment,
             ICurrencyPoolService currencyPoolService, ICentralFinancialService centralFinancialService,
-            IPushNotificationService pushNotificationService, IHubContext<NotificationHub> hubContext)
+            INotificationHub notificationHub, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _environment = environment;
             _currencyPoolService = currencyPoolService;
             _centralFinancialService = centralFinancialService;
-            _pushNotificationService = pushNotificationService;
-            _hubContext = hubContext;
+            _notificationHub = notificationHub;
+            _userManager = userManager;
         }
 
         public IActionResult Index()
@@ -934,14 +933,18 @@ namespace ForexExchange.Controllers
                 var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
                 var customerName = customer?.FullName ?? $"مشتری {customerId}";
 
-                // Create the manual history record
+                // Get current user for notification exclusion
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                // Create the manual history record with notification handling in service layer
                 await _centralFinancialService.CreateManualCustomerBalanceHistoryAsync(
                     customerId: customerId,
                     currencyCode: currencyCode,
                     amount: amount,
                     reason: reason,
                     transactionDate: transactionDate,
-                    performedBy: "Database Admin"
+                    performedBy: "Database Admin",
+                    performingUserId: currentUser?.Id
                 );
 
                 var summary = new[]
@@ -954,51 +957,6 @@ namespace ForexExchange.Controllers
                     "",
                     "⚠️ مهم: برای اطمینان از انسجام موجودی‌ها، حتماً دکمه 'بازمحاسبه بر اساس تاریخ تراکنش' را اجرا کنید"
                 };
-
-                // Send notifications
-                try
-                {
-                    var notificationTitle = "تعدیل دستی موجودی ایجاد شد";
-                    var notificationMessage = $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode} | دلیل: {reason}";
-                    
-                    // Send push notification to all admins
-                    await _pushNotificationService.SendToAllAdminsAsync(
-                        notificationTitle,
-                        notificationMessage,
-                        "manual_transaction",
-                        new { 
-                            type = "manual_transaction_created",
-                            customerId = customerId,
-                            customerName = customerName,
-                            amount = amount,
-                            currencyCode = currencyCode,
-                            reason = reason,
-                            transactionDate = transactionDate
-                        }
-                    );
-
-                    // Send SignalR notification (popup) to all admin users
-                    await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", new
-                    {
-                        title = notificationTitle,
-                        message = notificationMessage,
-                        type = "success",
-                        category = "manual_transaction",
-                        timestamp = DateTime.UtcNow,
-                        data = new {
-                            action = "created",
-                            customerId = customerId,
-                            customerName = customerName,
-                            amount = amount,
-                            currencyCode = currencyCode
-                        }
-                    });
-                }
-                catch (Exception notificationEx)
-                {
-                    // Log notification error but don't fail the main operation
-                    // You might want to inject ILogger<DatabaseController> for proper logging
-                }
 
                 // Check if this is an AJAX request
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
@@ -1049,51 +1007,11 @@ namespace ForexExchange.Controllers
                 var amount = transaction.TransactionAmount;
                 var currencyCode = transaction.CurrencyCode;
 
-                // Delete the transaction and recalculate balances
-                await _centralFinancialService.DeleteManualCustomerBalanceHistoryAsync(transactionId, "Database Admin");
+                // Get current user for notification exclusion
+                var currentUser = await _userManager.GetUserAsync(User);
 
-                // Send notifications
-                try
-                {
-                    var notificationTitle = "تعدیل دستی موجودی حذف شد";
-                    var notificationMessage = $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode}";
-                    
-                    // Send push notification to all admins
-                    await _pushNotificationService.SendToAllAdminsAsync(
-                        notificationTitle,
-                        notificationMessage,
-                        "manual_transaction",
-                        new { 
-                            type = "manual_transaction_deleted",
-                            transactionId = transactionId,
-                            customerName = customerName,
-                            amount = amount,
-                            currencyCode = currencyCode
-                        }
-                    );
-
-                    // Send SignalR notification (popup) to all admin users
-                    await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", new
-                    {
-                        title = notificationTitle,
-                        message = notificationMessage,
-                        type = "warning",
-                        category = "manual_transaction",
-                        timestamp = DateTime.UtcNow,
-                        data = new {
-                            action = "deleted",
-                            transactionId = transactionId,
-                            customerName = customerName,
-                            amount = amount,
-                            currencyCode = currencyCode
-                        }
-                    });
-                }
-                catch (Exception notificationEx)
-                {
-                    // Log notification error but don't fail the main operation
-                    // You might want to inject ILogger<DatabaseController> for proper logging
-                }
+                // Delete the transaction and recalculate balances with notification handling in service layer
+                await _centralFinancialService.DeleteManualCustomerBalanceHistoryAsync(transactionId, "Database Admin", currentUser?.Id);
 
                 var summary = new[]
                 {

@@ -38,7 +38,10 @@ namespace ForexExchange.Services.Notifications.Providers
                     message = context.Message,
                     type = "order",
                     eventType = context.EventType.ToString(),
-                    data = context.Data,
+                    data = new Dictionary<string, object>(context.Data)
+                    {
+                        ["excludeUserIds"] = context.ExcludeUserIds
+                    },
                     url = context.NavigationUrl,
                     priority = context.Priority.ToString(),
                     timestamp = DateTime.UtcNow
@@ -48,8 +51,17 @@ namespace ForexExchange.Services.Notifications.Providers
 
                 if (context.SendToAllAdmins)
                 {
+                    // Send to all admins - client-side filtering will handle user exclusion
                     await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", notificationData);
-                    _logger.LogDebug("SignalR order notification sent to all admins: {Title}", context.Title);
+                    
+                    if (context.ExcludeUserIds.Any())
+                    {
+                        _logger.LogDebug("SignalR order notification sent to all admins (client-side will exclude {ExcludeCount} users): {Title}", context.ExcludeUserIds.Count, context.Title);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("SignalR order notification sent to all admins: {Title}", context.Title);
+                    }
                 }
 
                 if (context.TargetUserIds.Any())
@@ -196,7 +208,10 @@ namespace ForexExchange.Services.Notifications.Providers
                     message = context.Message,
                     type = "custom",
                     eventType = context.EventType.ToString(),
-                    data = context.Data,
+                    data = new Dictionary<string, object>(context.Data)
+                    {
+                        ["excludeUserIds"] = context.ExcludeUserIds
+                    },
                     url = context.NavigationUrl,
                     priority = context.Priority.ToString(),
                     timestamp = DateTime.UtcNow
@@ -204,8 +219,17 @@ namespace ForexExchange.Services.Notifications.Providers
 
                 if (context.SendToAllAdmins)
                 {
+                    // Send to all admins - client-side filtering will handle user exclusion
                     await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", notificationData);
-                    _logger.LogDebug("SignalR custom notification sent to all admins: {Title}", context.Title);
+                    
+                    if (context.ExcludeUserIds.Any())
+                    {
+                        _logger.LogDebug("SignalR custom notification sent to all admins (client-side will exclude {ExcludeCount} users): {Title}", context.ExcludeUserIds.Count, context.Title);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("SignalR custom notification sent to all admins: {Title}", context.Title);
+                    }
                 }
 
                 if (context.TargetUserIds.Any())
