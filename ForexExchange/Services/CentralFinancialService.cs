@@ -87,7 +87,7 @@ namespace ForexExchange.Services
             }
             _logger.LogInformation($"CustomerBalanceTo: {customerBalanceTo.Balance}");
 
-            var poolBalanceFrom = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.FromCurrency.Code);
+            var poolBalanceFrom = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyId == order.FromCurrency.Id);
             if (poolBalanceFrom == null)
             {
                 _logger.LogError($"Currency pool not found for currency {order.FromCurrency.Code}");
@@ -95,7 +95,7 @@ namespace ForexExchange.Services
             }
             _logger.LogInformation($"PoolBalanceFrom: {poolBalanceFrom.Balance}");
 
-            var poolBalanceTo = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.ToCurrency.Code);
+            var poolBalanceTo = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyId == order.ToCurrency.Id);
             if (poolBalanceTo == null)
             {
                 _logger.LogError($"Currency pool not found for currency {order.ToCurrency.Code}");
@@ -225,8 +225,8 @@ namespace ForexExchange.Services
             // Get current balances to validate calculations match preview
             var customerBalanceFrom = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.FromCurrency.Code);
             var customerBalanceTo = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.ToCurrency.Code);
-            var poolBalanceFrom = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.FromCurrency.Code);
-            var poolBalanceTo = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == order.ToCurrency.Code);
+            var poolBalanceFrom = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyId == order.FromCurrency.Id);
+            var poolBalanceTo = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyId == order.ToCurrency.Id);
 
             // Use SRP calculation methods to validate expected effects (same as preview)
             var (expectedNewCustomerFrom, expectedNewCustomerTo) = CalculateCustomerBalanceEffects(
