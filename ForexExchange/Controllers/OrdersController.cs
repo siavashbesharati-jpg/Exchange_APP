@@ -89,7 +89,7 @@ namespace ForexExchange.Controllers
 
         // GET: Orders
         public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString,
-            string currencyFilter, string statusFilter, string customerFilter)
+            string currencyFilter, string statusFilter, string customerFilter, int? page)
         {
             ViewData["CurrentSort"] = sortOrder;
             ViewData["IdSortParm"] = String.IsNullOrEmpty(sortOrder) ? "id_desc" : "";
@@ -103,10 +103,14 @@ namespace ForexExchange.Controllers
 
             if (searchString != null)
             {
-                currentFilter = searchString;
+                page = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
             }
 
-            ViewData["CurrentFilter"] = currentFilter;
+            ViewData["CurrentFilter"] = searchString;
             // Removed OrderType filter
             ViewData["CurrencyFilter"] = currencyFilter;
             ViewData["StatusFilter"] = statusFilter;
@@ -211,7 +215,28 @@ namespace ForexExchange.Controllers
                     break;
             }
 
-            return View(orders);
+            // Pagination
+            int pageSize = 15; // 15 items per page
+            int pageNumber = (page ?? 1);
+            
+            // Get total count
+            int totalItems = orders.Count;
+            
+            // Apply pagination
+            var pagedOrders = orders
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            // Pass pagination info to view
+            ViewBag.CurrentPage = pageNumber;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            ViewBag.TotalItems = totalItems;
+            ViewBag.PageSize = pageSize;
+            ViewBag.HasPreviousPage = pageNumber > 1;
+            ViewBag.HasNextPage = pageNumber < ViewBag.TotalPages;
+
+            return View(pagedOrders);
         }
 
         // GET: Orders/Details/5
