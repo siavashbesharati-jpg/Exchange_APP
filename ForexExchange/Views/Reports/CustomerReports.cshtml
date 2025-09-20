@@ -470,15 +470,6 @@
 
             // Add transaction rows
             transactions.forEach(transaction => {
-                // DEBUGGING: Log raw values from server
-                    amount: transaction.amount,
-                    amountType: typeof transaction.amount,
-                    runningBalance: transaction.runningBalance,
-                    runningBalanceType: typeof transaction.runningBalance,
-                    currency: currency,
-                    transactionId: transaction.referenceId || 'manual'
-                });
-
                 // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4
                 const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
                 const isManualTransaction = !transaction.referenceId; // Manual transactions have no referenceId
@@ -504,12 +495,6 @@
                 // DEBUGGING: Log formatted values
                 const formattedAmount = formatCurrency(transaction.amount, currency);
                 const formattedBalance = formatCurrency(transaction.runningBalance, currency);
-                    originalAmount: transaction.amount,
-                    formattedAmount: formattedAmount,
-                    originalBalance: transaction.runningBalance,
-                    formattedBalance: formattedBalance,
-                    currency: currency
-                });
 
                 timelineHtml += `
                 <tr class="transaction-row" style="${cursorStyle}" ${clickHandler}>
@@ -534,27 +519,12 @@
 
         tbody.innerHTML = timelineHtml;
         
-        // DEBUGGING: Check what's actually in the DOM after rendering
-        const amountCells = tbody.querySelectorAll('td[data-debug-amount]');
-        amountCells.forEach((cell, index) => {
-                originalAmount: cell.getAttribute('data-debug-amount'),
-                formattedAmount: cell.getAttribute('data-debug-formatted'),
-                actualTextContent: cell.textContent,
-                innerHTML: cell.innerHTML
-            });
-        });
-        
         // DEBUGGING: Set up a mutation observer to catch any changes
         setTimeout(() => {
             const observer = new MutationObserver((mutations) => {
                 mutations.forEach((mutation) => {
                     if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                            target: mutation.target,
-                            type: mutation.type,
-                            oldValue: mutation.oldValue,
-                            newValue: mutation.target.textContent,
-                            targetElement: mutation.target
-                        });
+                        // Mutation detected but no logging
                     }
                 });
             });
