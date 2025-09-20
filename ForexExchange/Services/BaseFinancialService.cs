@@ -1,0 +1,86 @@
+using Microsoft.EntityFrameworkCore;
+using ForexExchange.Models;
+
+namespace ForexExchange.Services
+{
+    /// <summary>
+    /// Base class providing common functionality for financial services
+    /// کلاس پایه برای ارائه قابلیت‌های مشترک سرویس‌های مالی
+    /// </summary>
+    public abstract class BaseFinancialService
+    {
+        protected readonly ForexDbContext _context;
+
+        protected BaseFinancialService(ForexDbContext context)
+        {
+            _context = context;
+        }
+
+        #region Common Helper Methods
+
+        /// <summary>
+        /// Formats DateTime to Persian date string
+        /// تبدیل تاریخ به رشته تاریخ فارسی
+        /// </summary>
+        protected string FormatPersianDate(DateTime date)
+        {
+            var persianCalendar = new System.Globalization.PersianCalendar();
+            var year = persianCalendar.GetYear(date);
+            var month = persianCalendar.GetMonth(date);
+            var day = persianCalendar.GetDayOfMonth(date);
+            return $"{year:0000}/{month:00}/{day:00}";
+        }
+
+        /// <summary>
+        /// Formats DateTime to time string
+        /// تبدیل زمان به رشته زمان
+        /// </summary>
+        protected string FormatTime(DateTime dateTime)
+        {
+            return dateTime.ToString("HH:mm:ss");
+        }
+
+        /// <summary>
+        /// Validates and normalizes date range parameters
+        /// اعتبارسنجی و عادی‌سازی پارامترهای بازه تاریخ
+        /// </summary>
+        protected (DateTime fromDate, DateTime toDate) ValidateDateRange(DateTime? fromDate, DateTime? toDate)
+        {
+            var actualFromDate = fromDate ?? DateTime.MinValue;
+            var actualToDate = toDate ?? DateTime.MaxValue;
+
+            // Ensure toDate includes the entire day
+            if (toDate.HasValue && toDate.Value.TimeOfDay == TimeSpan.Zero)
+            {
+                actualToDate = toDate.Value.Date.AddDays(1).AddTicks(-1);
+            }
+
+            return (actualFromDate, actualToDate);
+        }
+
+        /// <summary>
+        /// Formats currency amount with proper formatting
+        /// قالب‌بندی مبلغ ارزی با فرمت مناسب
+        /// </summary>
+        protected string FormatCurrencyAmount(decimal amount)
+        {
+            return amount.ToString("N0");
+        }
+
+        /// <summary>
+        /// Calculates common transaction statistics
+        /// محاسبه آمار مشترک تراکنش‌ها
+        /// </summary>
+        protected (int totalTransactions, int todayTransactions) CalculateTransactionStatistics<T>(
+            IEnumerable<T> transactions, Func<T, DateTime> dateSelector)
+        {
+            var today = DateTime.Today;
+            var totalTransactions = transactions.Count();
+            var todayTransactions = transactions.Count(item => dateSelector(item).Date == today);
+            
+            return (totalTransactions, todayTransactions);
+        }
+
+        #endregion
+    }
+}

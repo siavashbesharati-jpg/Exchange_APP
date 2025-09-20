@@ -9,14 +9,13 @@ namespace ForexExchange.Services
     /// Reconstructs complete transaction timeline from existing Orders and AccountingDocuments
     /// NO DATABASE CHANGES NEEDED - Pure computation from existing data
     /// </summary>
-    public class CustomerFinancialHistoryService
+    public class CustomerFinancialHistoryService : BaseFinancialService
     {
-        private readonly ForexDbContext _context;
         private readonly ILogger<CustomerFinancialHistoryService> _logger;
 
-        public CustomerFinancialHistoryService(ForexDbContext context, ILogger<CustomerFinancialHistoryService> logger)
+        public CustomerFinancialHistoryService(ForexDbContext context, ILogger<CustomerFinancialHistoryService> logger) 
+            : base(context)
         {
-            _context = context;
             _logger = logger;
         }
 
@@ -33,43 +32,25 @@ namespace ForexExchange.Services
                 if (customer == null)
                     throw new ArgumentException($"Customer with ID {customerId} not found");
 
-                // Set default date range if not provided
+                // Use base class helper for date validation
+                var (validFromDate, validToDate) = ValidateDateRange(fromDate, toDate);
                 var isDateFiltered = fromDate.HasValue || toDate.HasValue;
-                
-                // Adjust dates to include full days
-                if (fromDate.HasValue)
-                {
-                    fromDate = fromDate.Value.Date; // Start of day (00:00:00)
-                }
-                else
-                {
-                    fromDate = DateTime.MinValue;
-                }
 
-                if (toDate.HasValue)
-                {
-                    toDate = toDate.Value.Date.AddDays(1).AddTicks(-1); // End of day (23:59:59.9999999)
-                }
-                else
-                {
-                    toDate = DateTime.MaxValue;
-                }
-
-                _logger.LogInformation($"Getting timeline for customer {customerId} from {fromDate} to {toDate}, DateFiltered: {isDateFiltered}");
+                _logger.LogInformation($"Getting timeline for customer {customerId} from {validFromDate} to {validToDate}, DateFiltered: {isDateFiltered}");
 
                 var timeline = new CustomerFinancialTimeline
                 {
                     CustomerId = customerId,
                     CustomerName = customer.FullName,
-                    FromDate = fromDate.Value,
-                    ToDate = toDate.Value
+                    FromDate = validFromDate,
+                    ToDate = validToDate
                 };
 
                 // NEW APPROACH: Use CustomerBalanceHistory table directly - EXCLUDE DELETED RECORDS
                 var historyQuery = _context.CustomerBalanceHistory
                     .Where(h => h.CustomerId == customerId && 
-                               h.TransactionDate >= fromDate && 
-                               h.TransactionDate <= toDate &&
+                               h.TransactionDate >= validFromDate && 
+                               h.TransactionDate <= validToDate &&
                                !h.IsDeleted); // EXCLUDE DELETED RECORDS
 
                 // Apply currency filter if specified

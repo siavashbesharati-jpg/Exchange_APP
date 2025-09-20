@@ -12,14 +12,137 @@ namespace ForexExchange.Services
     /// Uses BankAccountBalanceHistory table as the single source of truth
     /// از جدول BankAccountBalanceHistory به عنوان منبع واحد حقیقت استفاده می‌کند
     /// </summary>
-    public class BankAccountFinancialHistoryService
+    public class BankAccountFinancialHistoryService : BaseFinancialHistoryService<BankAccountTimelineItem, BankAccountSummary>
     {
-        private readonly ForexDbContext _context;
-
-        public BankAccountFinancialHistoryService(ForexDbContext context)
+        public BankAccountFinancialHistoryService(ForexDbContext context) : base(context)
         {
-            _context = context;
         }
+
+        #region Abstract Method Implementations
+
+        protected override async Task<List<BankAccountTimelineItem>> GetTimelineItemsAsync(DateTime fromDate, DateTime toDate, object? filter = null)
+        {
+            var bankAccountId = filter as int?;
+            
+            // Build query for BankAccountBalanceHistory - EXCLUDE DELETED RECORDS
+            var query = _context.BankAccountBalanceHistory.Where(h => !h.IsDeleted);
+
+            // Apply bank account filter
+            if (bankAccountId.HasValue)
+            {
+                query = query.Where(h => h.BankAccountId == bankAccountId.Value);
+            }
+
+            // Apply date filter
+            query = query.Where(h => h.TransactionDate >= fromDate && h.TransactionDate <= toDate);
+
+            var historyRecords = await query
+                .Include(h => h.BankAccount)
+                .OrderBy(h => h.TransactionDate)
+                .ThenBy(h => h.Id)
+                .ToListAsync();
+
+            if (!historyRecords.Any())
+                return new List<BankAccountTimelineItem>();
+
+            var timelineItems = new List<BankAccountTimelineItem>();
+
+            // Add initial balance entry (using BalanceBefore from first record)
+            var firstRecord = historyRecords.First();
+            timelineItems.Add(new BankAccountTimelineItem
+            {
+                Date = FormatPersianDate(firstRecord.TransactionDate),
+                Time = FormatTime(firstRecord.TransactionDate),
+                TransactionType = "Initial",
+                Description = "موجودی اولیه",
+                BankAccountId = firstRecord.BankAccountId,
+                BankAccountName = GetCleanBankAccountName(firstRecord.BankAccount),
+                Amount = 0,
+                Balance = firstRecord.BalanceBefore,
+                ReferenceId = null,
+                CanNavigate = false
+            });
+
+            // Convert history records to timeline items
+            foreach (var record in historyRecords)
+            {
+                var item = new BankAccountTimelineItem
+                {
+                    Date = FormatPersianDate(record.TransactionDate),
+                    Time = FormatTime(record.TransactionDate),
+                    TransactionType = record.TransactionType.ToString(),
+                    Description = record.Description ?? GenerateTransactionDescription(record),
+                    BankAccountId = record.BankAccountId,
+                    BankAccountName = GetCleanBankAccountName(record.BankAccount),
+                    Amount = record.TransactionAmount,
+                    Balance = record.BalanceAfter,
+                    ReferenceId = record.ReferenceId,
+                    CanNavigate = record.TransactionType == BankAccountTransactionType.Document && record.ReferenceId.HasValue
+                };
+
+                timelineItems.Add(item);
+            }
+
+            return timelineItems;
+        }
+
+        protected override async Task<BankAccountSummary> GetSummaryStatisticsAsync(object? filter = null)
+        {
+            var bankAccountId = filter as int?;
+            
+            var query = _context.BankAccountBalanceHistory.Where(h => !h.IsDeleted);
+
+            if (bankAccountId.HasValue)
+            {
+                query = query.Where(h => h.BankAccountId == bankAccountId.Value);
+            }
+
+            var today = DateTime.Today;
+            var totalTransactions = await query.CountAsync();
+            var todayTransactions = await query.CountAsync(h => h.TransactionDate.Date == today);
+
+            // Get current balance from latest record for each bank account
+            var latestBalances = await _context.BankAccountBalanceHistory
+                .Where(h => !h.IsDeleted && (!bankAccountId.HasValue || h.BankAccountId == bankAccountId.Value))
+                .Include(h => h.BankAccount)
+                .GroupBy(h => h.BankAccountId)
+                .Select(g => new
+                {
+                    BankAccountId = g.Key,
+                    BankAccountName = g.First().BankAccount!.AccountHolderName + " - " + g.First().BankAccount!.BankName,
+                    Balance = g.OrderByDescending(h => h.TransactionDate)
+                              .ThenByDescending(h => h.Id)
+                              .First().BalanceAfter
+                })
+                .ToListAsync();
+
+            return new BankAccountSummary
+            {
+                TotalTransactions = totalTransactions,
+                TodayTransactions = todayTransactions,
+                AccountBalances = latestBalances.ToDictionary(
+                    b => b.BankAccountId, 
+                    b => (dynamic)new { Name = b.BankAccountName, Balance = b.Balance }
+                ),
+                LastUpdateTime = DateTime.Now
+            };
+        }
+
+        protected override string GenerateTransactionDescription(object transactionRecord)
+        {
+            if (transactionRecord is BankAccountBalanceHistory record)
+            {
+                return record.TransactionType switch
+                {
+                    BankAccountTransactionType.Document => $"سند حسابداری شماره {record.ReferenceId}",
+                    BankAccountTransactionType.ManualEdit => "ویرایش دستی موجودی",
+                    _ => "تراکنش نامشخص"
+                };
+            }
+            return "نامشخص";
+        }
+
+        #endregion
 
         /// <summary>
         /// Gets bank account financial timeline from BankAccountBalanceHistory table
@@ -30,83 +153,7 @@ namespace ForexExchange.Services
             DateTime? fromDate = null,
             DateTime? toDate = null)
         {
-            try
-            {
-                // Build query for BankAccountBalanceHistory - EXCLUDE DELETED RECORDS
-                var query = _context.BankAccountBalanceHistory.Where(h => !h.IsDeleted);
-
-                // Apply bank account filter
-                if (bankAccountId.HasValue)
-                {
-                    query = query.Where(h => h.BankAccountId == bankAccountId.Value);
-                }
-
-                // Apply date filter
-                if (fromDate.HasValue)
-                {
-                    query = query.Where(h => h.TransactionDate >= fromDate.Value);
-                }
-
-                if (toDate.HasValue)
-                {
-                    var endDate = toDate.Value.Date.AddDays(1).AddTicks(-1);
-                    query = query.Where(h => h.TransactionDate <= endDate);
-                }
-
-                // Get history records ordered by date
-                var historyRecords = await query
-                    .Include(h => h.BankAccount)
-                    .OrderBy(h => h.TransactionDate)
-                    .ThenBy(h => h.Id)
-                    .ToListAsync();
-
-                if (!historyRecords.Any())
-                    return new List<BankAccountTimelineItem>();
-
-                var timelineItems = new List<BankAccountTimelineItem>();
-
-                // Add initial balance entry (using BalanceBefore from first record)
-                var firstRecord = historyRecords.First();
-                timelineItems.Add(new BankAccountTimelineItem
-                {
-                    Date = firstRecord.TransactionDate.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
-                    Time = firstRecord.TransactionDate.ToString("HH:mm", CultureInfo.InvariantCulture),
-                    TransactionType = "Initial",
-                    Description = "موجودی اولیه",
-                    BankAccountId = firstRecord.BankAccountId,
-                    BankAccountName = GetCleanBankAccountName(firstRecord.BankAccount),
-                    Amount = 0,
-                    Balance = firstRecord.BalanceBefore,
-                    ReferenceId = null,
-                    CanNavigate = false
-                });
-
-                // Convert history records to timeline items
-                foreach (var record in historyRecords)
-                {
-                    var item = new BankAccountTimelineItem
-                    {
-                        Date = record.TransactionDate.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture),
-                        Time = record.TransactionDate.ToString("HH:mm", CultureInfo.InvariantCulture),
-                        TransactionType = record.TransactionType.ToString(),
-                        Description = record.Description ?? GetTransactionDescription(record),
-                        BankAccountId = record.BankAccountId,
-                        BankAccountName = GetCleanBankAccountName(record.BankAccount),
-                        Amount = record.TransactionAmount,
-                        Balance = record.BalanceAfter,
-                        ReferenceId = record.ReferenceId,
-                        CanNavigate = record.TransactionType == BankAccountTransactionType.Document && record.ReferenceId.HasValue
-                    };
-
-                    timelineItems.Add(item);
-                }
-
-                return timelineItems;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error loading bank account timeline: {ex.Message}", ex);
-            }
+            return await GetTimelineAsync(fromDate, toDate, bankAccountId);
         }
 
         /// <summary>
@@ -144,49 +191,7 @@ namespace ForexExchange.Services
         /// </summary>
         public async Task<BankAccountSummary> GetBankAccountSummaryAsync(int? bankAccountId = null)
         {
-            try
-            {
-                var query = _context.BankAccountBalanceHistory.Where(h => !h.IsDeleted);
-
-                if (bankAccountId.HasValue)
-                {
-                    query = query.Where(h => h.BankAccountId == bankAccountId.Value);
-                }
-
-                var today = DateTime.Today;
-                var totalTransactions = await query.CountAsync();
-                var todayTransactions = await query.CountAsync(h => h.TransactionDate.Date == today);
-
-                // Get current balance from latest record for each bank account
-                var latestBalances = await _context.BankAccountBalanceHistory
-                    .Where(h => !h.IsDeleted && (!bankAccountId.HasValue || h.BankAccountId == bankAccountId.Value))
-                    .Include(h => h.BankAccount)
-                    .GroupBy(h => h.BankAccountId)
-                    .Select(g => new
-                    {
-                        BankAccountId = g.Key,
-                        BankAccountName = g.First().BankAccount!.AccountHolderName + " - " + g.First().BankAccount!.BankName,
-                        Balance = g.OrderByDescending(h => h.TransactionDate)
-                                  .ThenByDescending(h => h.Id)
-                                  .First().BalanceAfter
-                    })
-                    .ToListAsync();
-
-                return new BankAccountSummary
-                {
-                    TotalTransactions = totalTransactions,
-                    TodayTransactions = todayTransactions,
-                    AccountBalances = latestBalances.ToDictionary(
-                        b => b.BankAccountId, 
-                        b => (dynamic)new { Name = b.BankAccountName, Balance = b.Balance }
-                    ),
-                    LastUpdateTime = DateTime.Now
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Error loading bank account summary: {ex.Message}", ex);
-            }
+            return await GetSummaryAsync(bankAccountId);
         }
 
         /// <summary>
