@@ -6,6 +6,8 @@ using ForexExchange.Models;
 using ForexExchange.Services;
 using ForexExchange.Scripts;
 using DNTPersianUtils.Core;
+using Microsoft.AspNetCore.SignalR;
+using ForexExchange.Hubs;
 
 namespace ForexExchange.Controllers
 {
@@ -16,14 +18,19 @@ namespace ForexExchange.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly ICurrencyPoolService _currencyPoolService;
         private readonly ICentralFinancialService _centralFinancialService;
+        private readonly IPushNotificationService _pushNotificationService;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
         public DatabaseController(ForexDbContext context, IWebHostEnvironment environment,
-            ICurrencyPoolService currencyPoolService, ICentralFinancialService centralFinancialService)
+            ICurrencyPoolService currencyPoolService, ICentralFinancialService centralFinancialService,
+            IPushNotificationService pushNotificationService, IHubContext<NotificationHub> hubContext)
         {
             _context = context;
             _environment = environment;
             _currencyPoolService = currencyPoolService;
             _centralFinancialService = centralFinancialService;
+            _pushNotificationService = pushNotificationService;
+            _hubContext = hubContext;
         }
 
         public IActionResult Index()
@@ -948,6 +955,51 @@ namespace ForexExchange.Controllers
                     "⚠️ مهم: برای اطمینان از انسجام موجودی‌ها، حتماً دکمه 'بازمحاسبه بر اساس تاریخ تراکنش' را اجرا کنید"
                 };
 
+                // Send notifications
+                try
+                {
+                    var notificationTitle = "تعدیل دستی موجودی ایجاد شد";
+                    var notificationMessage = $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode} | دلیل: {reason}";
+                    
+                    // Send push notification to all admins
+                    await _pushNotificationService.SendToAllAdminsAsync(
+                        notificationTitle,
+                        notificationMessage,
+                        "manual_transaction",
+                        new { 
+                            type = "manual_transaction_created",
+                            customerId = customerId,
+                            customerName = customerName,
+                            amount = amount,
+                            currencyCode = currencyCode,
+                            reason = reason,
+                            transactionDate = transactionDate
+                        }
+                    );
+
+                    // Send SignalR notification (popup) to all admin users
+                    await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", new
+                    {
+                        title = notificationTitle,
+                        message = notificationMessage,
+                        type = "success",
+                        category = "manual_transaction",
+                        timestamp = DateTime.UtcNow,
+                        data = new {
+                            action = "created",
+                            customerId = customerId,
+                            customerName = customerName,
+                            amount = amount,
+                            currencyCode = currencyCode
+                        }
+                    });
+                }
+                catch (Exception notificationEx)
+                {
+                    // Log notification error but don't fail the main operation
+                    // You might want to inject ILogger<DatabaseController> for proper logging
+                }
+
                 // Check if this is an AJAX request
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
@@ -965,6 +1017,110 @@ namespace ForexExchange.Controllers
                 }
 
                 TempData["Error"] = $"خطا در ایجاد رکورد دستی: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteManualCustomerBalanceHistory(long transactionId)
+        {
+            try
+            {
+                // Find the manual transaction record
+                var transaction = await _context.CustomerBalanceHistory
+                    .Include(h => h.Customer)
+                    .FirstOrDefaultAsync(h => h.Id == transactionId && 
+                                           h.TransactionType == CustomerBalanceTransactionType.Manual);
+
+                if (transaction == null)
+                {
+                    // Check if this is an AJAX request
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, error = "تراکنش دستی یافت نشد یا این تراکنش قابل حذف نیست" });
+                    }
+
+                    TempData["Error"] = "تراکنش دستی یافت نشد یا این تراکنش قابل حذف نیست";
+                    return RedirectToAction("Index");
+                }
+
+                var customerName = transaction.Customer?.FullName ?? $"مشتری {transaction.CustomerId}";
+                var amount = transaction.TransactionAmount;
+                var currencyCode = transaction.CurrencyCode;
+
+                // Delete the transaction and recalculate balances
+                await _centralFinancialService.DeleteManualCustomerBalanceHistoryAsync(transactionId, "Database Admin");
+
+                // Send notifications
+                try
+                {
+                    var notificationTitle = "تعدیل دستی موجودی حذف شد";
+                    var notificationMessage = $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode}";
+                    
+                    // Send push notification to all admins
+                    await _pushNotificationService.SendToAllAdminsAsync(
+                        notificationTitle,
+                        notificationMessage,
+                        "manual_transaction",
+                        new { 
+                            type = "manual_transaction_deleted",
+                            transactionId = transactionId,
+                            customerName = customerName,
+                            amount = amount,
+                            currencyCode = currencyCode
+                        }
+                    );
+
+                    // Send SignalR notification (popup) to all admin users
+                    await _hubContext.Clients.Group("Admins").SendAsync("ReceiveNotification", new
+                    {
+                        title = notificationTitle,
+                        message = notificationMessage,
+                        type = "warning",
+                        category = "manual_transaction",
+                        timestamp = DateTime.UtcNow,
+                        data = new {
+                            action = "deleted",
+                            transactionId = transactionId,
+                            customerName = customerName,
+                            amount = amount,
+                            currencyCode = currencyCode
+                        }
+                    });
+                }
+                catch (Exception notificationEx)
+                {
+                    // Log notification error but don't fail the main operation
+                    // You might want to inject ILogger<DatabaseController> for proper logging
+                }
+
+                var summary = new[]
+                {
+                    "✅ تعدیل دستی با موفقیت حذف شد",
+                    $"👤 مشتری: {customerName}",
+                    $"💰 مبلغ حذف شده: {amount:N2} {currencyCode}",
+                    "",
+                    "🔄 موجودی‌ها بازمحاسبه شدند"
+                };
+
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تعدیل دستی با موفقیت حذف شد و موجودی‌ها بازمحاسبه شدند" });
+                }
+
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در حذف تعدیل دستی: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در حذف تعدیل دستی: {ex.Message}";
             }
 
             return RedirectToAction("Index");

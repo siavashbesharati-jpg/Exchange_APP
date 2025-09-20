@@ -173,6 +173,13 @@ namespace ForexExchange.Services
             string reason, DateTime transactionDate, string performedBy = "Manual Entry", string? transactionNumber = null);
 
         /// <summary>
+        /// Deletes a manual customer balance history record and recalculates balances from the transaction date.
+        /// Only manual transactions (TransactionType.Manual) can be deleted for safety.
+        /// After deletion, balances are automatically recalculated to maintain coherence.
+        /// </summary>
+        Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion");
+
+        /// <summary>
         /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders
         /// This method should be called once to fix missing IRR pool updates, then removed
         /// </summary>

@@ -1945,10 +1945,15 @@ namespace ForexExchange.Services
 
                 _context.CustomerBalanceHistory.Add(historyRecord);
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
                 _logger.LogInformation($"Manual customer balance history created: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
-                _logger.LogWarning("IMPORTANT: Run RecalculateAllBalancesFromTransactionDatesAsync() to ensure chronological balance coherence");
+
+                // Recalculate balances for this customer/currency from the transaction date onwards
+                // This ensures proper chronological balance coherence immediately after creation
+                await RecalculateCustomerCurrencyBalanceFromDateAsync(customerId, currencyCode, transactionDate);
+
+                await transaction.CommitAsync();
+                _logger.LogInformation($"Successfully created manual transaction and recalculated balances for Customer {customerId}, Currency {currencyCode}");
             }
             catch (Exception ex)
             {
@@ -1956,6 +1961,137 @@ namespace ForexExchange.Services
                 _logger.LogError(ex, $"Error creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Deletes a manual customer balance history record and recalculates balances from the transaction date.
+        /// Only manual transactions (TransactionType.Manual) can be deleted for safety.
+        /// After deletion, balances are automatically recalculated to maintain coherence.
+        /// </summary>
+        public async Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion")
+        {
+            _logger.LogInformation($"Deleting manual customer balance history: Transaction ID {transactionId}");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Find the manual transaction
+                var historyRecord = await _context.CustomerBalanceHistory
+                    .FirstOrDefaultAsync(h => h.Id == transactionId);
+
+                if (historyRecord == null)
+                {
+                    throw new ArgumentException($"Customer balance history with ID {transactionId} not found");
+                }
+
+                // Verify this is a manual transaction - only manual transactions can be deleted
+                if (historyRecord.TransactionType != CustomerBalanceTransactionType.Manual)
+                {
+                    throw new InvalidOperationException($"Only manual transactions can be deleted. Transaction ID {transactionId} is of type {historyRecord.TransactionType}");
+                }
+
+                var customerId = historyRecord.CustomerId;
+                var currencyCode = historyRecord.CurrencyCode;
+                var amount = historyRecord.TransactionAmount;
+                var transactionDate = historyRecord.TransactionDate;
+
+                // Delete the manual transaction
+                _context.CustomerBalanceHistory.Remove(historyRecord);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Manual customer balance history deleted: ID {transactionId}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+
+                // Recalculate balances for this customer/currency from the transaction date onwards
+                await RecalculateCustomerCurrencyBalanceFromDateAsync(customerId, currencyCode, transactionDate);
+
+                await transaction.CommitAsync();
+                _logger.LogInformation($"Successfully deleted manual transaction and recalculated balances for Customer {customerId}, Currency {currencyCode}");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error deleting manual customer balance history: Transaction ID {transactionId}");
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Helper Methods for Targeted Balance Recalculation
+
+        /// <summary>
+        /// Recalculates balance for a specific customer and currency from a given date onwards.
+        /// This is more efficient than recalculating all balances when only one customer/currency is affected.
+        /// </summary>
+        private async Task RecalculateCustomerCurrencyBalanceFromDateAsync(int customerId, string currencyCode, DateTime fromDate)
+        {
+            _logger.LogInformation($"Recalculating balance for Customer {customerId}, Currency {currencyCode} from date {fromDate:yyyy-MM-dd}");
+
+            // Get all transactions for this customer/currency from the specified date onwards, ordered by date
+            var transactions = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId && 
+                           h.CurrencyCode == currencyCode && 
+                           h.TransactionDate >= fromDate)
+                .OrderBy(h => h.TransactionDate)
+                .ThenBy(h => h.Id) // Secondary sort by ID for same-date transactions
+                .ToListAsync();
+
+            if (!transactions.Any())
+            {
+                _logger.LogInformation($"No transactions found for Customer {customerId}, Currency {currencyCode} from {fromDate:yyyy-MM-dd}");
+                return;
+            }
+
+            // Get the balance before the first transaction in our date range
+            var firstTransaction = transactions.First();
+            var balanceBeforeFirstTransaction = 0m;
+
+            // Find the last transaction before our date range to get the starting balance
+            var lastTransactionBeforeDate = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId && 
+                           h.CurrencyCode == currencyCode && 
+                           h.TransactionDate < fromDate)
+                .OrderByDescending(h => h.TransactionDate)
+                .ThenByDescending(h => h.Id)
+                .FirstOrDefaultAsync();
+
+            if (lastTransactionBeforeDate != null)
+            {
+                balanceBeforeFirstTransaction = lastTransactionBeforeDate.BalanceAfter;
+            }
+
+            // Recalculate balances for all transactions from the date onwards
+            var runningBalance = balanceBeforeFirstTransaction;
+            foreach (var transaction in transactions)
+            {
+                transaction.BalanceBefore = runningBalance;
+                runningBalance += transaction.TransactionAmount;
+                transaction.BalanceAfter = runningBalance;
+            }
+
+            // Update the current balance record
+            var currentBalance = await _context.CustomerBalances
+                .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
+
+            if (currentBalance != null)
+            {
+                currentBalance.Balance = runningBalance;
+                currentBalance.LastUpdated = DateTime.UtcNow;
+            }
+            else if (runningBalance != 0) // Only create balance record if there's a non-zero balance
+            {
+                currentBalance = new CustomerBalance
+                {
+                    CustomerId = customerId,
+                    CurrencyCode = currencyCode,
+                    Balance = runningBalance,
+                    LastUpdated = DateTime.UtcNow
+                };
+                _context.CustomerBalances.Add(currentBalance);
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"Recalculated {transactions.Count} transactions for Customer {customerId}, Currency {currencyCode}. Final balance: {runningBalance:N2}");
         }
 
         #endregion

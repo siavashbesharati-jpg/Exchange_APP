@@ -69,6 +69,7 @@ namespace ForexExchange.Services
                 // Convert history records to transaction history format
                 var allTransactions = historyRecords.Select(h => new CustomerTransactionHistory
                 {
+                    Id = (int)h.Id, // Set the CustomerBalanceHistory ID for deletion functionality (cast long to int)
                     CustomerId = h.CustomerId,
                     TransactionDate = h.TransactionDate,
                     Type = GetTransactionTypeFromEnum(h.TransactionType),
@@ -126,7 +127,7 @@ namespace ForexExchange.Services
             {
                 CustomerBalanceTransactionType.Order => TransactionType.OrderBuy, // Default to buy, could be refined
                 CustomerBalanceTransactionType.AccountingDocument => TransactionType.DocumentCredit, // Default to credit, could be refined
-                CustomerBalanceTransactionType.Manual => TransactionType.DocumentCredit, // Manual adjustments treated as credits
+                CustomerBalanceTransactionType.Manual => TransactionType.ManualAdjustment, // Manual adjustments have their own type
                 _ => TransactionType.DocumentCredit
             };
         }

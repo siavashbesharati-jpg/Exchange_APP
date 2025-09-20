@@ -470,9 +470,9 @@
 
             // Add transaction rows
             transactions.forEach(transaction => {
-                // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4
+                // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4, ManualAdjustment=5
                 const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
-                const isManualTransaction = !transaction.referenceId; // Manual transactions have no referenceId
+                const isManualTransaction = transaction.type === 5 || !transaction.referenceId; // ManualAdjustment type or no referenceId
 
                 let typeText, transactionId, clickHandler, cursorStyle;
 
@@ -508,7 +508,18 @@
                     <td class="text-center">${currency}</td>
                     <td class="text-center ltr-direction skip-auto-format ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}" data-debug-amount="${transaction.amount}" data-debug-formatted="${formattedAmount}" data-no-format="true" data-skip-format="true">${formattedAmount}</td>
                     <td class="text-center ltr-direction skip-auto-format fw-bold" data-debug-balance="${transaction.runningBalance}" data-debug-formatted="${formattedBalance}" data-no-format="true" data-skip-format="true">${formattedBalance}</td>
-                    <td class="text-start"><small class="text-muted">${transaction.description || '-'}</small></td>
+                    <td class="text-start">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">${transaction.description || '-'}</small>
+                            ${isManualTransaction ? 
+                                `<button type="button" class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteManualTransaction(${transaction.id}, '${currency}', ${transaction.amount})" 
+                                    title="حذف تعدیل دستی">
+                                    <i class="fas fa-trash fa-xs"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
                 </tr>
             `;
             });
@@ -519,27 +530,6 @@
 
         tbody.innerHTML = timelineHtml;
         
-        // DEBUGGING: Set up a mutation observer to catch any changes
-        setTimeout(() => {
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                        // Mutation detected but no logging
-                    }
-                });
-            });
-            
-            amountCells.forEach(cell => {
-                observer.observe(cell, { 
-                    childList: true, 
-                    characterData: true, 
-                    subtree: true,
-                    characterDataOldValue: true 
-                });
-            });
-            
-        }, 100);
-
         renderBalanceSummary(timeline.finalBalances);
     }
 
@@ -894,6 +884,57 @@
                 // Restore button state
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
+            });
+    }
+
+    // ========== DELETE MANUAL TRANSACTION FUNCTION ==========
+
+    function deleteManualTransaction(transactionId, currencyCode, amount) {
+        if (!confirm(`آیا از حذف این تعدیل دستی اطمینان دارید؟\n\nمبلغ: ${amount} ${currencyCode}\n\nاین عملیات غیرقابل بازگشت است و موجودی مشتری بازمحاسبه خواهد شد.`)) {
+            return;
+        }
+
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin fa-xs"></i>';
+        button.disabled = true;
+
+        fetch('@Url.Action("DeleteManualCustomerBalanceHistory", "Database")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: 'transactionId=' + encodeURIComponent(transactionId) + 
+                  '&__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Show success message
+                    alert('تعدیل دستی با موفقیت حذف شد و موجودی‌ها بازمحاسبه شدند');
+
+                    // Refresh customer timeline to show updated data
+                    if (document.getElementById('customerFilter').value) {
+                        loadCustomerTimeline();
+                    }
+                } else {
+                    alert('خطا در حذف تراکنش: ' + (result.error || result.message || 'خطای ناشناخته'));
+                    
+                    // Restore button state on error
+                    button.innerHTML = originalHtml;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                alert('خطا در ارسال درخواست: ' + error.message);
+                
+                // Restore button state on error
+                button.innerHTML = originalHtml;
+                button.disabled = false;
             });
     }
 
