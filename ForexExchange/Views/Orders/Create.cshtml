@@ -1072,17 +1072,15 @@
             // Reset rate inversion flag
             window.calcRateInverted = false;
 
-
-            // Automatically load and set the rate
-            if (typeof $.fn.select2 !== 'undefined' && $('#fromCurrencySelect').hasClass('select2-hidden-accessible')) {
-                loadRateForCalculator(fromSelect.val(), toSelect.val());
-            } else {
-                loadRateForCalculator(fromSelect.value, toSelect.value);
-            }
+            // Note: Removed automatic rate loading - users will enter their own rates
         }
 
-        // Load rate automatically for calculator
+        // Load rate automatically for calculator (DISABLED - users enter their own rates)
         function loadRateForCalculator(fromCurrencyId, toCurrencyId) {
+            // This function is disabled to improve UX - users always enter their own rates
+            // The rate calculation logic (inversion, etc.) remains intact in other functions
+            console.log('Auto rate loading disabled - users will enter their own rates');
+            return;
 
             const url = `/Orders/GetExchangeRate?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}&orderType=Buy`;
 

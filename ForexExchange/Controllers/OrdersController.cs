@@ -225,8 +225,6 @@ namespace ForexExchange.Controllers
                 .Include(o => o.Customer)
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
-                // .Include(o => o.Transactions)
-                // .Include(o => o.Receipts)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (order == null)
@@ -244,24 +242,7 @@ namespace ForexExchange.Controllers
                 _logger.LogWarning($"Order {id} has missing ToCurrency (ToCurrencyId: {order.ToCurrencyId})");
             }
 
-            // if (order.Transactions.Any())
-            // {
-                // TODO: Replace with AccountingDocument-based tracking for new architecture
-                /*
-                // Load the related customers and orders for transactions separately
-                var transactionIds = order.Transactions.Select(t => t.Id).ToList();
-
-                await _context.Transactions
-                    .Where(t => transactionIds.Contains(t.Id))
-                    .Include(t => t.BuyerCustomer)
-                    .Include(t => t.SellerCustomer)
-                    .Include(t => t.BuyOrder)
-                        .ThenInclude(bo => bo.Customer)
-                    .Include(t => t.SellOrder)
-                        .ThenInclude(so => so.Customer)
-                    .LoadAsync();
-                */
-            // }
+           
 
             return View(order);
         }
@@ -744,8 +725,7 @@ namespace ForexExchange.Controllers
                 .ToDictionary(g => g.Key, g => g.Sum(p => p.Balance));
             ViewBag.PoolData = poolDict;
 
-            // Don't load exchange rates here - they will be loaded via AJAX when needed
-            // This eliminates the heavy Include operations
+          
         }
 
         // New AJAX endpoint to get exchange rates for specific currency pair
@@ -835,10 +815,10 @@ namespace ForexExchange.Controllers
                 return Json(new
                 {
                     success = true,
-                    rate = rate,
-                    averageBuyRate = averageBuyRate,
-                    averageSellRate = averageSellRate,
-                    source = source
+                    rate,
+                    averageBuyRate,
+                    averageSellRate,
+                    source
                 });
             }
             catch (Exception ex)
