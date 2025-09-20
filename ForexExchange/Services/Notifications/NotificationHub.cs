@@ -307,7 +307,9 @@ namespace ForexExchange.Services.Notifications
                     ["currencyCode"] = document.CurrencyCode,
                     ["title"] = document.Title,
                     ["isVerified"] = document.IsVerified
-                }
+                },
+                SendToAllAdmins = true, // Always send to all admins
+                ExcludeUserIds = !string.IsNullOrEmpty(userId) ? new List<string> { userId } : new List<string>()
             };
         }
 
