@@ -421,8 +421,8 @@ class CurrencyAmountFormatter {
         </div>`;
         
         if (isIRR) {
-            // For IRR, show value as-is with Toman label (no division)
-            const tomanFormatted = new Intl.NumberFormat('en-US').format(Math.round(numericValue));
+            // For IRR, display value as-is with Toman label (no rounding - backend handles that)
+            const tomanFormatted = new Intl.NumberFormat('en-US').format(numericValue);
             const tomanWords = this.converter.convertToPersianWords(numericValue) + ' تومان';
 
             content += `<div class="formatted-number" style="color: #4CAF50; font-weight: bold; margin-bottom: 6px; padding: 20px 20px 4px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">

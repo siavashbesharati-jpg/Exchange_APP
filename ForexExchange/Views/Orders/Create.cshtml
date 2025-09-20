@@ -92,30 +92,27 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label">نرخ ارز</label>
-                                <input type="number" id="calcRateInput" class="form-control" step="any"
+                                <label asp-for="Rate" class="form-label">نرخ ارز</label>
+                                <input asp-for="Rate" type="number" id="calcRateInput" class="form-control" step="any"
                                     placeholder="نرخ ارز را وارد کنید">
+                                <span asp-validation-for="Rate" class="text-danger"></span>
                             </div>
 
-                            <div class="col-md-4" style="display: none;">
-                                <label asp-for="FromAmount" class="form-label">مقدار (ارز دریافتی)</label>
-                                <input asp-for="FromAmount" type="number" class="form-control" step="0.01"
-                                    id="amountInput" required />
-                                <span asp-validation-for="FromAmount" class="text-danger"></span>
-                            </div>
                         </div>
 
                         <!-- Amount Input Row -->
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label"> <span id="calcFromAmountLabel">---</span></label>
-                                <input type="number" id="calcFromAmountInput" class="form-control" step="any"
+                                <label asp-for="FromAmount" class="form-label"> <span id="calcFromAmountLabel">---</span></label>
+                                <input asp-for="FromAmount" type="number" id="calcFromAmountInput" class="form-control" step="any"
                                     placeholder="مقدار">
+                                <span asp-validation-for="FromAmount" class="text-danger"></span>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label"> <span id="calcToAmountLabel">---</span></label>
-                                <input type="number" id="calcToAmountInput" class="form-control" step="any"
+                                <label asp-for="ToAmount" class="form-label"> <span id="calcToAmountLabel">---</span></label>
+                                <input asp-for="ToAmount" type="number" id="calcToAmountInput" class="form-control" step="any"
                                     placeholder="مقدار">
+                                <span asp-validation-for="ToAmount" class="text-danger"></span>
                             </div>
                         </div>
 
@@ -128,8 +125,6 @@
                             <span id="calcFromCurrencyName">انتخاب نشده</span>
                             <span id="calcToCurrencyCode">---</span>
                             <span id="calcToCurrencyName">انتخاب نشده</span>
-                            <!-- Hidden inputs for main form compatibility -->
-                            <input type="number" id="rateInput" step="any">
                             <button type="button" id="loadSuggestedRateBtn">Load Rate</button>
                         </div>
 
@@ -226,9 +221,6 @@
                                                     </div>
                                                 </div>
 
-                        <!-- Hidden fields for calculated values -->
-                        <input type="hidden" asp-for="ToAmount" id="hiddenTotalAmount" value="0" />
-                        <input type="hidden" asp-for="Rate" id="hiddenRate" value="0" />
                     </form>
                 </div>
             </div>
@@ -247,15 +239,23 @@
 
     <script src="~/js/currency-formatter.js"></script>
     <script>
-    // Helper: get form values for preview
+    // Helper: get form values for preview - Use SAME data as real form submission
     function getOrderPreviewData() {
-        return {
+        const data = {
             customerId: parseInt(document.getElementById('customerSelect').value) || 0,
             fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
             toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
-            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,
-            rate: parseFloat(document.getElementById('calcRateInput').value) || 0
+            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,  // Use calculator input
+            toAmount: parseFloat(document.getElementById('calcToAmountInput').value) || 0,      // Use calculator input
+            rate: parseFloat(document.getElementById('calcRateInput').value) || 0,             // Use calculator input
+            createdAt: document.getElementById('createdAtInput')?.value || null,
+            notes: document.getElementById('Notes')?.value || null
         };
+        
+        // Debug: Log the form data being sent
+        console.log('Form data for preview:', data);
+        
+        return data;
     }
 
     // Show preview modal with order and effect details - Beautiful Styling
@@ -305,29 +305,22 @@
         let fromCurrency = fromCurrencyName && fromCurrencyCode ? `${fromCurrencyName} (${fromCurrencyCode})` : (fromCurrencyCode || 'نامشخص');
         let toCurrency = toCurrencyName && toCurrencyCode ? `${toCurrencyName} (${toCurrencyCode})` : (toCurrencyCode || 'نامشخص');
 
-        // Calculate the correct "to amount" based on currency direction
-        // Following same logic as calculator: if FROM is IRR, divide; if FROM is foreign, multiply
-        let toAmount;
-        if (fromCurrencyCode.toUpperCase() === 'IRR') {
-            // FROM is IRR, TO is foreign currency: toAmount = fromAmount / rate
-            toAmount = order.fromAmount / order.rate;
-            toAmount = Math.round(toAmount * 1000) / 1000; // Round to 3 decimal places for foreign currency
-        } else {
-            // FROM is foreign currency, TO is IRR: toAmount = fromAmount * rate
-            toAmount = order.fromAmount * order.rate;
-            toAmount = Math.round(toAmount * 1000) / 1000; // Round to 3 decimal places for IRR
-        }
+        // Use server-returned amounts and rate (not frontend calculations)
+        // This ensures preview shows exact same values as actual order creation
+        let displayFromAmount = getProp(effects, 'OrderFromAmount') || order.fromAmount;
+        let displayToAmount = getProp(effects, 'OrderToAmount') || order.toAmount;
+        let displayRate = order.rate; // Use the rate that was sent to server
 
-        // Order details with beautiful card layout matching Upload.cshtml
+        // Order details with beautiful card layout - using SERVER data
         let orderDetailsHtml = `
             <div class="col-md-6">
                 <div class="mb-2"><strong>مشتری:</strong> <span class="text-primary">${customerName}</span></div>
                 <div class="mb-2"><strong>نوع معامله:</strong> <span class="badge bg-info">خرید/فروش ارز</span></div>
-                <div class="mb-2"><strong>دریافت می کنیم : </strong> <span class="text-success fw-bold" dir="ltr">${formatCurrency(order.fromAmount, fromCurrencyCode)} ${fromCurrencyCode}</span></div>
+                <div class="mb-2"><strong>دریافت می کنیم : </strong> <span class="text-success fw-bold" dir="ltr">${formatCurrency(displayFromAmount, fromCurrencyCode)} ${fromCurrencyCode}</span></div>
             </div>
             <div class="col-md-6">
-                <div class="mb-2"><strong> پرداخت می کنیم : </strong> <span class="text-primary fw-bold" dir="ltr">${formatCurrency(toAmount, toCurrencyCode)} ${toCurrencyCode}</span></div>
-                <div class="mb-2"><strong>نرخ تبدیل:</strong> <span class="text-warning fw-bold" dir="ltr">${order.rate}</span></div>
+                <div class="mb-2"><strong> پرداخت می کنیم : </strong> <span class="text-primary fw-bold" dir="ltr">${formatCurrency(displayToAmount, toCurrencyCode)} ${toCurrencyCode}</span></div>
+                <div class="mb-2"><strong>نرخ تبدیل:</strong> <span class="text-warning fw-bold" dir="ltr">${displayRate}</span></div>
                 <div class="mb-2"><strong>تاریخ:</strong> <span>${formattedDate}</span></div>
             </div>
         `;
@@ -357,13 +350,13 @@
                                     <td class="text-center fw-bold">${fromCurrencyCode}</td>
                                     <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldCustomerBalanceFrom'), fromCurrencyCode)}</td>
                                     <td class="text-center fw-bold text-${getProp(eff, 'NewCustomerBalanceFrom') >= 0 ? 'success' : 'danger'}" dir="ltr">${formatCurrency(getProp(eff, 'NewCustomerBalanceFrom'), fromCurrencyCode)}</td>
-                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(order.fromAmount, fromCurrencyCode)}</td>
+                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(displayFromAmount, fromCurrencyCode)}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-center fw-bold">${toCurrencyCode}</td>
                                     <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldCustomerBalanceTo'), toCurrencyCode)}</td>
                                     <td class="text-center fw-bold text-success" dir="ltr">${formatCurrency(getProp(eff, 'NewCustomerBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(toAmount, toCurrencyCode)}</td>
+                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(displayToAmount, toCurrencyCode)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -393,13 +386,13 @@
                                     <td class="text-center fw-bold">${fromCurrencyCode}</td>
                                     <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldPoolBalanceFrom'), fromCurrencyCode)}</td>
                                     <td class="text-center fw-bold text-success" dir="ltr">${formatCurrency(getProp(eff, 'NewPoolBalanceFrom'), fromCurrencyCode)}</td>
-                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(order.fromAmount, fromCurrencyCode)}</td>
+                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(displayFromAmount, fromCurrencyCode)}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-center fw-bold">${toCurrencyCode}</td>
                                     <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldPoolBalanceTo'), toCurrencyCode)}</td>
                                     <td class="text-center fw-bold text-${getProp(eff, 'NewPoolBalanceTo') >= 0 ? 'success' : 'danger'}" dir="ltr">${formatCurrency(getProp(eff, 'NewPoolBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(toAmount, toCurrencyCode)}</td>
+                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(displayToAmount, toCurrencyCode)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -524,7 +517,7 @@
 
             // Get current values from main form
             const currentAmount = parseFloat(document.getElementById('amountInput').value) || '';
-            const currentRate = parseFloat(document.getElementById('rateInput').value) || '';
+            const currentRate = parseFloat(document.getElementById('calcRateInput').value) || '';
 
             // Pre-fill calculator with main form values
             if (currentAmount) {
@@ -961,8 +954,8 @@
         }
 
         function updateCalculation() {
-            var amount = document.getElementById('amountInput').value;
-            var rate = document.getElementById('rateInput').value;
+            var amount = document.getElementById('calcFromAmountInput').value;
+            var rate = document.getElementById('calcRateInput').value;
 
             // Get from currency code for formatting
             const fromSelect = document.getElementById('fromCurrencySelect');
@@ -976,13 +969,13 @@
                 document.getElementById('calculationResult').style.display = 'block';
 
                 // Update hidden total amount field
-                document.getElementById('hiddenTotalAmount').value = total;
-                // Update hidden rate field
-                document.getElementById('hiddenRate').value = rate;
+                document.getElementById('calcToAmountInput').value = total;
+                // Update rate field
+                document.getElementById('calcRateInput').value = rate;
             } else {
                 document.getElementById('calculationResult').style.display = 'none';
-                document.getElementById('hiddenTotalAmount').value = '0';
-                document.getElementById('hiddenRate').value = '0';
+                document.getElementById('calcToAmountInput').value = '0';
+                document.getElementById('calcRateInput').value = '0';
             }
         }
 

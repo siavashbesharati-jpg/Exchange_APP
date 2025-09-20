@@ -99,7 +99,7 @@ namespace ForexExchange.Extensions
 
         /// <summary>
         /// Rounds a decimal value based on currency-specific rules.
-        /// For IRR, rounds up to the nearest 1000. For others, rounds to 3 decimal places.
+        /// For IRR, rounds to the nearest 1000. For others, rounds to 3 decimal places.
         /// This affects the actual value, not just the display format.
         /// </summary>
         /// <param name="value">The decimal value to round.</param>
@@ -109,8 +109,8 @@ namespace ForexExchange.Extensions
         {
             if (currencyCode == "IRR")
             {
-                // For IRR, we round up to the nearest 1000.
-                return Math.Ceiling(value / 1000) * 1000;
+                // For IRR, round to the nearest 1000 using banker's rounding
+                return Math.Round(value / 1000, 0, MidpointRounding.AwayFromZero) * 1000;
             }
             else
             {

@@ -34,8 +34,8 @@ window.ForexCurrencyFormatter = (function() {
         
         let result;
         if (isIRR) {
-            // IRR: display value as-is with thousand separators (no division)
-            result = new Intl.NumberFormat('en-US').format(Math.round(numAmount));
+            // IRR: display value as-is with thousand separators (no rounding - backend handles that)
+            result = new Intl.NumberFormat('en-US').format(numAmount);
         } else {
             // Non-IRR: NO ROUNDING - preserve exact precision with up to 8 decimal places
             result = new Intl.NumberFormat('en-US', {
@@ -73,7 +73,8 @@ window.ForexCurrencyFormatter = (function() {
         const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
         
         if (isIRR) {
-            return Math.round(numAmount).toString();
+            // IRR: return value as-is (no rounding - backend handles that)
+            return numAmount.toString();
         } else {
             // For inputs, show up to 3 decimals but remove trailing zeros
             const rounded = Math.round(numAmount * 1000) / 1000;

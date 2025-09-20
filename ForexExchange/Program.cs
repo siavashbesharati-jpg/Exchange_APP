@@ -81,6 +81,8 @@ builder.Services.AddScoped<PoolFinancialHistoryService>();
 builder.Services.AddScoped<BankAccountFinancialHistoryService>();
 // Central Financial Service - Event Sourcing with Complete Audit Trail
 builder.Services.AddScoped<ICentralFinancialService, CentralFinancialService>();
+// Order data preparation service - SRP for shared order validation logic
+builder.Services.AddScoped<IOrderDataService, OrderDataService>();
 // Push notification services
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IVapidService, VapidService>();

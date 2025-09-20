@@ -21,6 +21,8 @@ namespace ForexExchange.Controllers
         private readonly ICustomerBalanceService _customerBalanceService;
         private readonly INotificationHub _notificationHub;
         private readonly ICentralFinancialService _centralFinancialService;
+        private readonly IRateCalculationService _rateCalculationService;
+        private readonly IOrderDataService _orderDataService;
 
         public OrdersController(
             ForexDbContext context,
@@ -30,7 +32,9 @@ namespace ForexExchange.Controllers
             UserManager<ApplicationUser> userManager,
             ICustomerBalanceService customerBalanceService,
             INotificationHub notificationHub,
-            ICentralFinancialService centralFinancialService)
+            ICentralFinancialService centralFinancialService,
+            IRateCalculationService rateCalculationService,
+            IOrderDataService orderDataService)
         {
             _context = context;
             _logger = logger;
@@ -40,45 +44,23 @@ namespace ForexExchange.Controllers
             _customerBalanceService = customerBalanceService;
             _notificationHub = notificationHub;
             _centralFinancialService = centralFinancialService;
+            _rateCalculationService = rateCalculationService;
+            _orderDataService = orderDataService;
         }
 
         // POST: Orders/PreviewOrderEffects
         [HttpPost]
         [Authorize(Roles = "Admin,Manager,Staff")]
-        public async Task<IActionResult> PreviewOrderEffects([FromBody] OrderPreviewRequestDto dto)
+        public async Task<IActionResult> PreviewOrderEffects([FromBody] OrderFormDataDto dto)
         {
-            // Validate required fields
-            if (dto.CustomerId == 0 || dto.FromCurrencyId == 0 || dto.ToCurrencyId == 0 || dto.FromAmount <= 0 || dto.Rate <= 0)
-                return BadRequest("اطلاعات ناقص یا نامعتبر است.");
+            // Use shared order data service for consistent validation and preparation
+            var orderResult = await _orderDataService.PrepareOrderFromFormDataAsync(dto);
+            
+            if (!orderResult.IsSuccess)
+                return BadRequest(orderResult.ErrorMessage);
 
-            // Fetch currencies
-            var fromCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Id == dto.FromCurrencyId);
-            var toCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Id == dto.ToCurrencyId);
-            if (fromCurrency == null || toCurrency == null)
-                return BadRequest("ارز انتخاب شده یافت نشد.");
-
-            // Calculate ToAmount (simulate server logic)
-            decimal toAmount = 0;
-            if (dto.Rate > 0)
-            {
-                // Use the same logic as in Create
-                toAmount = Math.Round(dto.FromAmount * dto.Rate, 2);
-            }
-
-            // Build order object for simulation
-            var order = new Order
-            {
-                CustomerId = dto.CustomerId,
-                FromCurrencyId = dto.FromCurrencyId,
-                ToCurrencyId = dto.ToCurrencyId,
-                FromAmount = dto.FromAmount,
-                Rate = dto.Rate,
-                ToAmount = toAmount,
-                FromCurrency = fromCurrency,
-                ToCurrency = toCurrency
-            };
-
-            var effects = await _centralFinancialService.PreviewOrderEffectsAsync(order);
+            // Use the prepared order for preview (same logic as Create method)
+            var effects = await _centralFinancialService.PreviewOrderEffectsAsync(orderResult.Order!);
 
             // Add currency codes and names for client display
             var result = new {
@@ -95,27 +77,13 @@ namespace ForexExchange.Controllers
                 effects.OldPoolBalanceTo,
                 effects.NewPoolBalanceFrom,
                 effects.NewPoolBalanceTo,
-                FromCurrencyName = fromCurrency?.Name,
-                ToCurrencyName = toCurrency?.Name,
-                FromCurrencyId = fromCurrency?.Id,
-                ToCurrencyId = toCurrency?.Id
+                FromCurrencyName = orderResult.FromCurrency?.Name,
+                ToCurrencyName = orderResult.ToCurrency?.Name,
+                FromCurrencyId = orderResult.FromCurrency?.Id,
+                ToCurrencyId = orderResult.ToCurrency?.Id
             };
             return Json(result);
         }
-
-
-        // DTO for preview request
-        public class OrderPreviewRequestDto
-        {
-            public int CustomerId { get; set; }
-            public int FromCurrencyId { get; set; }
-            public int ToCurrencyId { get; set; }
-            public decimal FromAmount { get; set; }
-            public decimal Rate { get; set; }
-        }
-
-
-
 
 
         // GET: Orders
@@ -323,14 +291,34 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Create(Order order)
         {
             // Debug: Log received order data first
-            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, Amount: {order.FromAmount}, ManualRate: {order.Rate}");
+            _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, FromAmount: {order.FromAmount}, ToAmount: {order.ToAmount}, Rate: {order.Rate}");
 
-            // Round the FromAmount based on the currency
-            var fromCurrency = await _context.Currencies.FindAsync(order.FromCurrencyId);
-            if (fromCurrency != null)
+            // Use shared order data service for consistent validation and preparation
+            var dto = new OrderFormDataDto
             {
-                order.FromAmount = order.FromAmount.RoundToCurrencyDefaults(fromCurrency.Code);
+                CustomerId = order.CustomerId,
+                FromCurrencyId = order.FromCurrencyId,
+                ToCurrencyId = order.ToCurrencyId,
+                FromAmount = order.FromAmount,
+                ToAmount = order.ToAmount,
+                Rate = order.Rate,
+                CreatedAt = order.CreatedAt,
+                Notes = order.Notes
+            };
+
+            var orderResult = await _orderDataService.PrepareOrderFromFormDataAsync(dto);
+            
+            if (!orderResult.IsSuccess)
+            {
+                ModelState.AddModelError("", orderResult.ErrorMessage!);
+                await LoadCreateViewDataOptimized();
+                return View(order);
             }
+
+            // Use the validated and prepared order from the service
+            order = orderResult.Order!;
+            var fromCurrency = orderResult.FromCurrency!;
+            var toCurrency = orderResult.ToCurrency!;
 
             // Remove Customer navigation property from validation as we only need CustomerId
             ModelState.Remove("Customer");
@@ -340,10 +328,8 @@ namespace ForexExchange.Controllers
             ModelState.Remove("ToCurrency");
             ModelState.Remove("TotalAmount"); // TotalAmount is calculated server-side
 
-            // Keep Rate in ModelState for manual rate validation
-            // ModelState.Remove("Rate"); // Removed - now we validate manual rates
-
-            // Debug: Log all ModelState errors
+            // Data validation is now handled by OrderDataService
+            // Proceed with ModelState validation for remaining fields
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("ModelState is invalid for order creation:");
@@ -356,30 +342,6 @@ namespace ForexExchange.Controllers
                 }
 
                 // Reload view data and return with errors
-                await LoadCreateViewDataOptimized();
-                return View(order);
-            }
-
-            // Admin/Staff must select a customer
-            if (order.CustomerId == 0)
-            {
-                ModelState.AddModelError("CustomerId", "انتخاب مشتری الزامی است.");
-                await LoadCreateViewDataOptimized();
-                return View(order);
-            }
-
-            // Validate currency pair
-            if (order.FromCurrencyId == order.ToCurrencyId)
-            {
-                ModelState.AddModelError("ToCurrencyId", "ارز مبدأ و مقصد نمی‌توانند یکسان باشند.");
-                await LoadCreateViewDataOptimized();
-                return View(order);
-            }
-
-            // Validate manual rate if provided
-            if (order.Rate <= 0)
-            {
-                ModelState.AddModelError("Rate", "نرخ ارز باید بزرگتر از صفر باشد.");
                 await LoadCreateViewDataOptimized();
                 return View(order);
             }
@@ -410,7 +372,7 @@ namespace ForexExchange.Controllers
 
                     if (reverseRate != null)
                     {
-                        systemExchangeRate = (1.0m / reverseRate.Rate);
+                        systemExchangeRate = 1.0m / reverseRate.Rate;
                         rateSource = "Reverse";
                     }
                     else
@@ -462,17 +424,8 @@ namespace ForexExchange.Controllers
                     finalRateSource = "Manual (No system rate)";
                 }
 
-                // Calculate total and set order properties
+                // Use the user-entered rate and amounts (already rounded above)
                 order.Rate = finalExchangeRate;
-                var totalValue = order.FromAmount * order.Rate;
-                order.ToAmount = totalValue;
-
-                // Round the ToAmount based on the currency
-                var toCurrency = await _context.Currencies.FindAsync(order.ToCurrencyId);
-                if (toCurrency != null)
-                {
-                    order.ToAmount = order.ToAmount.RoundToCurrencyDefaults(toCurrency.Code);
-                }
 
                 _context.Add(order);
                 await _context.SaveChangesAsync();
@@ -504,7 +457,7 @@ namespace ForexExchange.Controllers
                 // Update average rates for this currency pair
                 await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
 
-                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {finalExchangeRate} ({finalRateSource}), Total: {totalValue}");
+                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {finalExchangeRate} ({finalRateSource}), Total: {order.ToAmount}");
 
                 TempData["SuccessMessage"] = "معامله با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Details), new { id = order.Id });
