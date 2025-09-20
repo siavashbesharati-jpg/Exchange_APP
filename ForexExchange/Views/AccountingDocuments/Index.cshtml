@@ -1,4 +1,4 @@
-@model IEnumerable<ForexExchange.Models.AccountingDocument>
+@model IList<ForexExchange.Models.AccountingDocument>
 
 @{
     ViewData["Title"] = "مدیریت اسناد حسابداری";
@@ -61,8 +61,23 @@
     @if (Model.Any())
     {
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">لیست اسناد حسابداری</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="card-title mb-0">لیست اسناد حسابداری</h5>
+                    <small class="text-muted">
+                        @ViewBag.TotalItems سند حسابداری یافت شد
+                        @if (ViewBag.TotalPages > 1)
+                        {
+                            <span> - صفحه @ViewBag.CurrentPage از @ViewBag.TotalPages</span>
+                        }
+                    </small>
+                </div>
+                @if (ViewBag.TotalPages > 1)
+                {
+                    <small class="text-muted">
+                        @ViewBag.PageSize مورد در هر صفحه
+                    </small>
+                }
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -73,19 +88,19 @@
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["IdSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">#</a>
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">#</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["TitleSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">عنوان سند</a>
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">عنوان سند</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["TypeSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">نوع سند</a>
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">نوع سند</a>
                                 </th>
                                 
                                 
@@ -93,19 +108,19 @@
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["CustomerSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">مشتری</a>
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">مشتری</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["AmountSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">مبلغ</a>
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">مبلغ</a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["DateSortParm"]"
                                        asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
-                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]">تاریخ سند</a>
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">تاریخ سند</a>
                                 </th>
                                 <th>وضعیت</th>
                                 <th>عملیات</th>
@@ -187,13 +202,7 @@
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                            
-                                            @if (!item.IsVerified)
-                                            {
-                                                <button type="button" class="btn btn-sm btn-outline-success" title="تأیید سند"
-                                                        onclick="confirmDocument(@item.Id)">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                            }
+                                           
                                             @if (User.IsInRole("Admin"))
                                             {
                                                 <button type="button" class="btn btn-sm btn-outline-danger" title="حذف سند (ادمین)"
@@ -209,6 +218,117 @@
                     </table>
                 </div>
             </div>
+            
+            @if (ViewBag.TotalPages > 1)
+            {
+                <div class="card-footer">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                نمایش @(((ViewBag.CurrentPage - 1) * ViewBag.PageSize) + 1) تا 
+                                @(Math.Min(ViewBag.CurrentPage * ViewBag.PageSize, ViewBag.TotalItems)) از 
+                                @ViewBag.TotalItems مورد
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <nav aria-label="صفحه‌بندی اسناد">
+                                <ul class="pagination pagination-sm justify-content-end mb-0">
+                                    @if (ViewBag.HasPreviousPage)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-sortOrder="@ViewData["CurrentSort"]"
+                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-referenceNumber="@ViewData["ReferenceFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-typeFilter="@ViewData["TypeFilter"]"
+                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                               asp-route-page="@(ViewBag.CurrentPage - 1)">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    }
+                                    
+                                    @{
+                                        int startPage = Math.Max(1, ViewBag.CurrentPage - 2);
+                                        int endPage = Math.Min(ViewBag.TotalPages, ViewBag.CurrentPage + 2);
+                                    }
+                                    
+                                    @if (startPage > 1)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-sortOrder="@ViewData["CurrentSort"]"
+                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-referenceNumber="@ViewData["ReferenceFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-typeFilter="@ViewData["TypeFilter"]"
+                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                               asp-route-page="1">1</a>
+                                        </li>
+                                        @if (startPage > 2)
+                                        {
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        }
+                                    }
+                                    
+                                    @for (int i = startPage; i <= endPage; i++)
+                                    {
+                                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-sortOrder="@ViewData["CurrentSort"]"
+                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-referenceNumber="@ViewData["ReferenceFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-typeFilter="@ViewData["TypeFilter"]"
+                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                               asp-route-page="@i">@i</a>
+                                        </li>
+                                    }
+                                    
+                                    @if (endPage < ViewBag.TotalPages)
+                                    {
+                                        @if (endPage < ViewBag.TotalPages - 1)
+                                        {
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        }
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-sortOrder="@ViewData["CurrentSort"]"
+                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-referenceNumber="@ViewData["ReferenceFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-typeFilter="@ViewData["TypeFilter"]"
+                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                               asp-route-page="@ViewBag.TotalPages">@ViewBag.TotalPages</a>
+                                        </li>
+                                    }
+                                    
+                                    @if (ViewBag.HasNextPage)
+                                    {
+                                        <li class="page-item">
+                                            <a class="page-link" asp-action="Index" 
+                                               asp-route-sortOrder="@ViewData["CurrentSort"]"
+                                               asp-route-currentFilter="@ViewData["CurrentFilter"]"
+                                               asp-route-referenceNumber="@ViewData["ReferenceFilter"]"
+                                               asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-typeFilter="@ViewData["TypeFilter"]"
+                                               asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                               asp-route-page="@(ViewBag.CurrentPage + 1)">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
     else

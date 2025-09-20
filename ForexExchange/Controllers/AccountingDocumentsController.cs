@@ -45,7 +45,7 @@ namespace ForexExchange.Controllers
         }
 
         // GET: AccountingDocuments
-        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, string referenceNumber, int? customerFilter, DocumentType? typeFilter, bool? statusFilter)
+        public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString, string referenceNumber, int? customerFilter, DocumentType? typeFilter, bool? statusFilter, int? page)
         {
             ViewData["CurrentSort"] = sortOrder;
             ViewData["IdSortParm"] = String.IsNullOrEmpty(sortOrder) ? "id_desc" : "";
@@ -57,7 +57,7 @@ namespace ForexExchange.Controllers
 
             if (searchString != null)
             {
-                currentFilter = searchString;
+                page = 1;
             }
             else
             {
@@ -155,7 +155,28 @@ namespace ForexExchange.Controllers
                     break;
             }
 
-            return View(await documents.ToListAsync());
+            // Pagination
+            int pageSize = 6; // 6 items per page
+            int pageNumber = (page ?? 1);
+            
+            // Get total count before pagination
+            int totalItems = await documents.CountAsync();
+            
+            // Apply pagination
+            var pagedDocuments = await documents
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Pass pagination info to view
+            ViewBag.CurrentPage = pageNumber;
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+            ViewBag.TotalItems = totalItems;
+            ViewBag.PageSize = pageSize;
+            ViewBag.HasPreviousPage = pageNumber > 1;
+            ViewBag.HasNextPage = pageNumber < ViewBag.TotalPages;
+
+            return View(pagedDocuments);
         }
 
         // GET: AccountingDocuments/Details/5
@@ -323,7 +344,7 @@ namespace ForexExchange.Controllers
                 }
                 
                 TempData["SuccessMessage"] = "سند حسابداری با موفقیت ثبت شد.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Details",accountingDocument.Id)
             }
 
             ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
