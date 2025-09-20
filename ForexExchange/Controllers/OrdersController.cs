@@ -55,7 +55,7 @@ namespace ForexExchange.Controllers
         {
             // Use shared order data service for consistent validation and preparation
             var orderResult = await _orderDataService.PrepareOrderFromFormDataAsync(dto);
-            
+
             if (!orderResult.IsSuccess)
                 return BadRequest(orderResult.ErrorMessage);
 
@@ -63,7 +63,8 @@ namespace ForexExchange.Controllers
             var effects = await _centralFinancialService.PreviewOrderEffectsAsync(orderResult.Order!);
 
             // Add currency codes and names for client display
-            var result = new {
+            var result = new
+            {
                 effects.CustomerId,
                 effects.FromCurrencyCode,
                 effects.ToCurrencyCode,
@@ -242,8 +243,6 @@ namespace ForexExchange.Controllers
                 _logger.LogWarning($"Order {id} has missing ToCurrency (ToCurrencyId: {order.ToCurrencyId})");
             }
 
-           
-
             return View(order);
         }
 
@@ -288,7 +287,7 @@ namespace ForexExchange.Controllers
             };
 
             var orderResult = await _orderDataService.PrepareOrderFromFormDataAsync(dto);
-            
+
             if (!orderResult.IsSuccess)
             {
                 ModelState.AddModelError("", orderResult.ErrorMessage!);
@@ -426,7 +425,7 @@ namespace ForexExchange.Controllers
                 if (currentUser != null)
                 {
                     await _adminActivityService.LogOrderCreatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                    
+
                     // Send notifications through central hub (replaces individual notification calls)
                     await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCreated, currentUser.Id);
                 }
@@ -507,26 +506,26 @@ namespace ForexExchange.Controllers
             }
 
             if (ModelState.IsValid)
+            {
+                try
                 {
-                    try
+                    // Get the original order for balance reversal
+                    var originalOrder = await _context.Orders
+                        .Include(o => o.FromCurrency)
+                        .Include(o => o.ToCurrency)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(o => o.Id == id);
+
+                    if (originalOrder == null)
                     {
-                        // Get the original order for balance reversal
-                        var originalOrder = await _context.Orders
-                            .Include(o => o.FromCurrency)
-                            .Include(o => o.ToCurrency)
-                            .AsNoTracking()
-                            .FirstOrDefaultAsync(o => o.Id == id);
+                        return NotFound();
+                    }
 
-                        if (originalOrder == null)
-                        {
-                            return NotFound();
-                        }
+                    // Recompute totals on server for integrity
+                    var totalValue = order.FromAmount * order.Rate;
 
-                        // Recompute totals on server for integrity
-                        var totalValue = order.FromAmount * order.Rate;
-
-                        order.ToAmount = totalValue;
-                        order.UpdatedAt = DateTime.Now;                    _context.Update(order);
+                    order.ToAmount = totalValue;
+                    order.UpdatedAt = DateTime.Now; _context.Update(order);
                     await _context.SaveChangesAsync();
 
                     // Load related entities for notification
@@ -675,9 +674,9 @@ namespace ForexExchange.Controllers
             }
         }
 
-        
 
-      
+
+
         private bool OrderExists(int id)
         {
             return _context.Orders.Any(e => e.Id == id);
@@ -725,7 +724,7 @@ namespace ForexExchange.Controllers
                 .ToDictionary(g => g.Key, g => g.Sum(p => p.Balance));
             ViewBag.PoolData = poolDict;
 
-          
+
         }
 
         // New AJAX endpoint to get exchange rates for specific currency pair
