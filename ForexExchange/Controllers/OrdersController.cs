@@ -353,84 +353,7 @@ namespace ForexExchange.Controllers
 
             if (ModelState.IsValid)
             {
-                // Calculate system-suggested rate for comparison and fallback
-                var directRate = await _context.ExchangeRates
-                    .FirstOrDefaultAsync(r => r.FromCurrencyId == order.FromCurrencyId &&
-                                             r.ToCurrencyId == order.ToCurrencyId &&
-                                             r.IsActive);
-
-                decimal systemExchangeRate = 0;
-                string rateSource = "";
-
-                if (directRate != null)
-                {
-                    systemExchangeRate = directRate.Rate;
-                    rateSource = "Direct";
-                }
-                else
-                {
-                    // Try reverse rate
-                    var reverseRate = await _context.ExchangeRates
-                        .FirstOrDefaultAsync(r => r.FromCurrencyId == order.ToCurrencyId &&
-                                                 r.ToCurrencyId == order.FromCurrencyId &&
-                                                 r.IsActive);
-
-                    if (reverseRate != null)
-                    {
-                        systemExchangeRate = 1.0m / reverseRate.Rate;
-                        rateSource = "Reverse";
-                    }
-                    else
-                    {
-                        // Try cross-rate via IRR (base currency)
-                        var irrCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
-
-                        if (irrCurrency != null)
-                        {
-                            var fromRate = await _context.ExchangeRates
-                                .FirstOrDefaultAsync(r => r.FromCurrencyId == irrCurrency.Id &&
-                                                         r.ToCurrencyId == order.FromCurrencyId && r.IsActive);
-                            var toRate = await _context.ExchangeRates
-                                .FirstOrDefaultAsync(r => r.FromCurrencyId == irrCurrency.Id &&
-                                                         r.ToCurrencyId == order.ToCurrencyId && r.IsActive);
-
-                            if (fromRate != null && toRate != null)
-                            {
-                                var fromToIrrRate = fromRate.Rate;
-                                var irrToTargetRate = toRate.Rate;
-                                systemExchangeRate = irrToTargetRate / fromToIrrRate;
-                                rateSource = "Cross-rate";
-                            }
-                        }
-                    }
-                }
-
-                // Determine which rate to use
-                decimal finalExchangeRate;
-                string finalRateSource;
-
-                if (systemExchangeRate > 0)
-                {
-                    // Check if manual rate differs significantly from system rate (more than 10%)
-                    decimal rateDifference = Math.Abs(order.Rate - systemExchangeRate) / systemExchangeRate;
-                    if (rateDifference > 0.1m) // 10% difference
-                    {
-                        _logger.LogWarning($"Manual rate {order.Rate} differs significantly from system rate {systemExchangeRate} ({rateDifference:P2}) for order creation");
-                        // Still allow the manual rate but log the discrepancy
-                    }
-
-                    finalExchangeRate = order.Rate;
-                    finalRateSource = $"Manual (System: {systemExchangeRate} {rateSource})";
-                }
-                else
-                {
-                    // No system rate available, use manual rate
-                    finalExchangeRate = order.Rate;
-                    finalRateSource = "Manual (No system rate)";
-                }
-
-                // Use the user-entered rate and amounts (already rounded above)
-                order.Rate = finalExchangeRate;
+              
 
                 _context.Add(order);
                 await _context.SaveChangesAsync();
@@ -462,7 +385,7 @@ namespace ForexExchange.Controllers
                 // Update average rates for this currency pair
                 await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
 
-                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {finalExchangeRate} ({finalRateSource}), Total: {order.ToAmount}");
+                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {order.Rate} , Total: {order.ToAmount}");
 
                 TempData["SuccessMessage"] = "معامله با موفقیت ثبت شد.";
                 return RedirectToAction(nameof(Details), new { id = order.Id });
@@ -546,10 +469,8 @@ namespace ForexExchange.Controllers
                         return NotFound();
                     }
 
-                    // Recompute totals on server for integrity
-                    var totalValue = order.FromAmount * order.Rate;
+                
 
-                    order.ToAmount = totalValue;
                     order.UpdatedAt = DateTime.Now; _context.Update(order);
                     await _context.SaveChangesAsync();
 
