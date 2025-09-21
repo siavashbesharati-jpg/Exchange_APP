@@ -1283,5 +1283,76 @@ namespace ForexExchange.Controllers
                 return Json(new { success = false, error = $"An error occurred during the rounding process: {ex.Message}" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> FixIRROrdersEndingIn1000()
+        {
+            try
+            {
+                // Find all orders where ToCurrency is IRR and the fourth digit from right (thousands place) is 1
+                var ordersToFix = await _context.Orders
+                    .Include(o => o.ToCurrency)
+                    .Where(o => o.ToCurrency.Code == "IRR" && ((long)o.ToAmount / 1000) % 10 == 1)
+                    .ToListAsync();
+
+                if (!ordersToFix.Any())
+                {
+                    return Json(new { 
+                        success = true, 
+                        message = "هیچ معامله‌ای با رقم هزارگان برابر 1 در ارز IRR یافت نشد.", 
+                        fixedCount = 0 
+                    });
+                }
+
+                var fixLog = new List<string>();
+                int fixedCount = 0;
+
+                foreach (var order in ordersToFix)
+                {
+                    var originalAmount = order.ToAmount;
+                    // Set the thousands digit (4th from right) to 0
+                    // Example: 55,701,000 -> 55,700,000
+                    var thousandsDigit = ((long)originalAmount / 1000) % 10;
+                    if (thousandsDigit == 1)
+                    {
+                        var newAmount = originalAmount - 1000;
+                        order.ToAmount = newAmount;
+                        fixLog.Add($"Order ID {order.Id}: {originalAmount:N0} → {newAmount:N0}");
+                        fixedCount++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                var logText = string.Join("\n", fixLog);
+                
+                var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                if (isAjaxRequest)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = $"✅ {fixedCount} معامله IRR با رقم هزارگان برابر 1 اصلاح شد",
+                        log = logText,
+                        fixedCount = fixedCount
+                    });
+                }
+
+                TempData["Success"] = $"✅ {fixedCount} معامله IRR با رقم هزارگان برابر 1 اصلاح شد";
+                TempData["FixLog"] = logText;
+            }
+            catch (Exception ex)
+            {
+                var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                if (isAjaxRequest)
+                {
+                    return Json(new { success = false, error = $"خطا در اصلاح معاملات IRR: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در اصلاح معاملات IRR: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
     }
 }
