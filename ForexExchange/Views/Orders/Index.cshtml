@@ -161,12 +161,7 @@
                                     <td>@(item.FromCurrency?.Code == "IRR" ? item.FromAmount.ToString("N0") :
                                                                         item.FromAmount.ToString("N2")) @item.FromCurrency?.Code</td>
                                     <td>
-                                        @if (item.FromCurrency?.Code == "IRR")
-                                        {
-                                            @* Show reversed rate when FromCurrency is IRR *@
-                                            @((1 / item.Rate).ToString("N0"))
-                                        }
-                                        else if (item.ToCurrency?.Code == "IRR")
+                                        @if (item.ToCurrency?.Code == "IRR")
                                         {
                                             @item.Rate.ToString("N0")
                                         }

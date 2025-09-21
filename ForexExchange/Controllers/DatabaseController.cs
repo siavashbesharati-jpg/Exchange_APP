@@ -1289,40 +1289,190 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                // Find all orders where ToCurrency is IRR and the fourth digit from right (thousands place) is 1
+                var fixLog = new List<string>();
+                int ordersFixed = 0;
+                int customerHistoryFixed = 0;
+                int poolHistoryFixed = 0;
+                int bankHistoryFixed = 0;
+
+                fixLog.Add("🔧 اصلاح جامع رقم هزارگان برابر 1 در ارز IRR");
+                fixLog.Add("این عملیات تمام جداول مالی را برای رفع مشکل رگرد ریال بررسی و اصلاح می‌کند");
+                fixLog.Add(""); 
+
+                // 1. Fix Orders with IRR amounts ending in 1000 (thousands digit = 1)
                 var ordersToFix = await _context.Orders
                     .Include(o => o.ToCurrency)
-                    .Where(o => o.ToCurrency.Code == "IRR" && ((long)o.ToAmount / 1000) % 10 == 1)
+                    .Include(o => o.FromCurrency)
+                    .Where(o => (o.ToCurrency.Code == "IRR" && ((long)o.ToAmount / 1000) % 10 == 1) ||
+                               (o.FromCurrency.Code == "IRR" && ((long)o.FromAmount / 1000) % 10 == 1))
                     .ToListAsync();
 
-                if (!ordersToFix.Any())
-                {
-                    return Json(new { 
-                        success = true, 
-                        message = "هیچ معامله‌ای با رقم هزارگان برابر 1 در ارز IRR یافت نشد.", 
-                        fixedCount = 0 
-                    });
-                }
-
-                var fixLog = new List<string>();
-                int fixedCount = 0;
-
+                fixLog.Add("🔧 اصلاح معاملات (Orders):");
                 foreach (var order in ordersToFix)
                 {
-                    var originalAmount = order.ToAmount;
-                    // Set the thousands digit (4th from right) to 0
-                    // Example: 55,701,000 -> 55,700,000
-                    var thousandsDigit = ((long)originalAmount / 1000) % 10;
-                    if (thousandsDigit == 1)
+                    bool orderFixed = false;
+                    
+                    // Fix ToAmount if IRR
+                    if (order.ToCurrency.Code == "IRR" && ((long)order.ToAmount / 1000) % 10 == 1)
                     {
+                        var originalAmount = order.ToAmount;
                         var newAmount = originalAmount - 1000;
                         order.ToAmount = newAmount;
-                        fixLog.Add($"Order ID {order.Id}: {originalAmount:N0} → {newAmount:N0}");
-                        fixedCount++;
+                        fixLog.Add($"  Order ID {order.Id} (ToAmount): {originalAmount:N0} → {newAmount:N0}");
+                        orderFixed = true;
+                    }
+                    
+                    // Fix FromAmount if IRR
+                    if (order.FromCurrency.Code == "IRR" && ((long)order.FromAmount / 1000) % 10 == 1)
+                    {
+                        var originalAmount = order.FromAmount;
+                        var newAmount = originalAmount - 1000;
+                        order.FromAmount = newAmount;
+                        fixLog.Add($"  Order ID {order.Id} (FromAmount): {originalAmount:N0} → {newAmount:N0}");
+                        orderFixed = true;
+                    }
+                    
+                    if (orderFixed) ordersFixed++;
+                }
+
+                // 2. Fix CustomerBalanceHistory with IRR amounts ending in 1000
+                var customerHistoryToFix = await _context.CustomerBalanceHistory
+                    .Where(h => h.CurrencyCode == "IRR" && 
+                               (((long)h.TransactionAmount / 1000) % 10 == 1 || 
+                                ((long)h.TransactionAmount / 1000) % 10 == -1))
+                    .ToListAsync();
+
+                fixLog.Add("");
+                fixLog.Add("👥 اصلاح تاریخچه موجودی مشتریان (CustomerBalanceHistory):");
+                foreach (var history in customerHistoryToFix)
+                {
+                    var originalAmount = history.TransactionAmount;
+                    var absAmount = originalAmount >= 0 ? originalAmount : -originalAmount;
+                    var thousandsDigit = ((long)absAmount / 1000) % 10;
+                    
+                    if (thousandsDigit == 1)
+                    {
+                        var newAbsAmount = absAmount - 1000;
+                        var newAmount = originalAmount >= 0 ? newAbsAmount : -newAbsAmount;
+                        
+                        history.TransactionAmount = newAmount;
+                        fixLog.Add($"  History ID {history.Id}: {originalAmount:N0} → {newAmount:N0}");
+                        customerHistoryFixed++;
                     }
                 }
 
+                // 3. Fix CurrencyPoolHistory with IRR amounts ending in 1000
+                var poolHistoryToFix = await _context.CurrencyPoolHistory
+                    .Where(h => h.CurrencyCode == "IRR" && 
+                               (((long)h.TransactionAmount / 1000) % 10 == 1 || 
+                                ((long)h.TransactionAmount / 1000) % 10 == -1))
+                    .ToListAsync();
+
+                fixLog.Add("");
+                fixLog.Add("🏊 اصلاح تاریخچه استخر ارز (CurrencyPoolHistory):");
+                foreach (var poolHistory in poolHistoryToFix)
+                {
+                    var originalAmount = poolHistory.TransactionAmount;
+                    var absAmount = originalAmount >= 0 ? originalAmount : -originalAmount;
+                    var thousandsDigit = ((long)absAmount / 1000) % 10;
+                    
+                    if (thousandsDigit == 1)
+                    {
+                        var newAbsAmount = absAmount - 1000;
+                        var newAmount = originalAmount >= 0 ? newAbsAmount : -newAbsAmount;
+                        
+                        poolHistory.TransactionAmount = newAmount;
+                        fixLog.Add($"  PoolHistory ID {poolHistory.Id}: {originalAmount:N0} → {newAmount:N0}");
+                        poolHistoryFixed++;
+                    }
+                }
+
+                // 4. Fix BankAccountBalanceHistory with IRR amounts ending in 1000
+                var bankHistoryToFix = await _context.BankAccountBalanceHistory
+                    .Include(h => h.BankAccount)
+                    .Where(h => h.BankAccount.CurrencyCode == "IRR" && 
+                               (((long)h.TransactionAmount / 1000) % 10 == 1 || 
+                                ((long)h.TransactionAmount / 1000) % 10 == -1 ||
+                                ((long)h.BalanceBefore / 1000) % 10 == 1 ||
+                                ((long)h.BalanceBefore / 1000) % 10 == -1 ||
+                                ((long)h.BalanceAfter / 1000) % 10 == 1 ||
+                                ((long)h.BalanceAfter / 1000) % 10 == -1))
+                    .ToListAsync();
+
+                fixLog.Add("");
+                fixLog.Add("🏦 اصلاح تاریخچه موجودی حساب‌های بانکی (BankAccountBalanceHistory):");
+                foreach (var bankHistory in bankHistoryToFix)
+                {
+                    bool recordFixed = false;
+                    var changes = new List<string>();
+                    
+                    // Fix TransactionAmount
+                    var originalTransactionAmount = bankHistory.TransactionAmount;
+                    var absTransactionAmount = originalTransactionAmount >= 0 ? originalTransactionAmount : -originalTransactionAmount;
+                    var transactionThousandsDigit = ((long)absTransactionAmount / 1000) % 10;
+                    
+                    if (transactionThousandsDigit == 1)
+                    {
+                        var newAbsAmount = absTransactionAmount - 1000;
+                        var newTransactionAmount = originalTransactionAmount >= 0 ? newAbsAmount : -newAbsAmount;
+                        bankHistory.TransactionAmount = newTransactionAmount;
+                        changes.Add($"TransactionAmount: {originalTransactionAmount:N0} → {newTransactionAmount:N0}");
+                        recordFixed = true;
+                    }
+                    
+                    // Fix BalanceBefore
+                    var originalBalanceBefore = bankHistory.BalanceBefore;
+                    var absBalanceBefore = originalBalanceBefore >= 0 ? originalBalanceBefore : -originalBalanceBefore;
+                    var beforeThousandsDigit = ((long)absBalanceBefore / 1000) % 10;
+                    
+                    if (beforeThousandsDigit == 1)
+                    {
+                        var newAbsAmount = absBalanceBefore - 1000;
+                        var newBalanceBefore = originalBalanceBefore >= 0 ? newAbsAmount : -newAbsAmount;
+                        bankHistory.BalanceBefore = newBalanceBefore;
+                        changes.Add($"BalanceBefore: {originalBalanceBefore:N0} → {newBalanceBefore:N0}");
+                        recordFixed = true;
+                    }
+                    
+                    // Fix BalanceAfter
+                    var originalBalanceAfter = bankHistory.BalanceAfter;
+                    var absBalanceAfter = originalBalanceAfter >= 0 ? originalBalanceAfter : -originalBalanceAfter;
+                    var afterThousandsDigit = ((long)absBalanceAfter / 1000) % 10;
+                    
+                    if (afterThousandsDigit == 1)
+                    {
+                        var newAbsAmount = absBalanceAfter - 1000;
+                        var newBalanceAfter = originalBalanceAfter >= 0 ? newAbsAmount : -newAbsAmount;
+                        bankHistory.BalanceAfter = newBalanceAfter;
+                        changes.Add($"BalanceAfter: {originalBalanceAfter:N0} → {newBalanceAfter:N0}");
+                        recordFixed = true;
+                    }
+                    
+                    if (recordFixed)
+                    {
+                        fixLog.Add($"  BankHistory ID {bankHistory.Id}: {string.Join(", ", changes)}");
+                        bankHistoryFixed++;
+                    }
+                }
+
+                // Save all changes
                 await _context.SaveChangesAsync();
+
+                var totalFixed = ordersFixed + customerHistoryFixed + poolHistoryFixed + bankHistoryFixed;
+                var summaryMessage = $"✅ اصلاح کامل رقم هزارگان برابر 1 در ارز IRR: {totalFixed} رکورد کل اصلاح شد";
+                
+                if (totalFixed == 0)
+                {
+                    summaryMessage = "ℹ️ هیچ رکوردی با رقم هزارگان برابر 1 در ارز IRR یافت نشد";
+                }
+
+                fixLog.Insert(0, "📊 خلاصه نتایج:");
+                fixLog.Insert(1, $"- معاملات: {ordersFixed} رکورد");
+                fixLog.Insert(2, $"- تاریخچه مشتری: {customerHistoryFixed} رکورد");
+                fixLog.Insert(3, $"- تاریخچه استخر: {poolHistoryFixed} رکورد");
+                fixLog.Insert(4, $"- تاریخچه بانک: {bankHistoryFixed} رکورد");
+                fixLog.Insert(5, $"- مجموع: {totalFixed} رکورد");
+                fixLog.Insert(6, "");
 
                 var logText = string.Join("\n", fixLog);
                 
@@ -1332,13 +1482,20 @@ namespace ForexExchange.Controllers
                     return Json(new
                     {
                         success = true,
-                        message = $"✅ {fixedCount} معامله IRR با رقم هزارگان برابر 1 اصلاح شد",
+                        message = summaryMessage,
                         log = logText,
-                        fixedCount = fixedCount
+                        summary = new
+                        {
+                            ordersFixed = ordersFixed,
+                            customerHistoryFixed = customerHistoryFixed,
+                            poolHistoryFixed = poolHistoryFixed,
+                            bankHistoryFixed = bankHistoryFixed,
+                            totalFixed = totalFixed
+                        }
                     });
                 }
 
-                TempData["Success"] = $"✅ {fixedCount} معامله IRR با رقم هزارگان برابر 1 اصلاح شد";
+                TempData["Success"] = summaryMessage;
                 TempData["FixLog"] = logText;
             }
             catch (Exception ex)
@@ -1350,6 +1507,114 @@ namespace ForexExchange.Controllers
                 }
 
                 TempData["Error"] = $"خطا در اصلاح معاملات IRR: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> FixIRROrdersWithReversedRates()
+        {
+            try
+            {
+                var fixLog = new List<string>();
+                int ordersFixed = 0;
+                const decimal RATE_THRESHOLD = 0.001m; // Rates below this are likely reversed
+
+                fixLog.Add("🔄 اصلاح معاملات با نرخ معکوس IRR");
+                fixLog.Add($"جستجو برای معاملات با FromCurrency=IRR و نرخ کمتر از {RATE_THRESHOLD}");
+                fixLog.Add(""); 
+
+                // Find orders where FromCurrency is IRR and rate is suspiciously low (likely reversed)
+                var ordersToFix = await _context.Orders
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .Where(o => o.FromCurrency.Code == "IRR" && o.Rate < RATE_THRESHOLD && o.Rate > 0)
+                    .ToListAsync();
+
+                fixLog.Add($"🔍 یافت شد: {ordersToFix.Count} معامله با نرخ مشکوک");
+                fixLog.Add("");
+
+                if (!ordersToFix.Any())
+                {
+                    var noResultMessage = "هیچ معامله‌ای با FromCurrency=IRR و نرخ معکوس یافت نشد";
+                    fixLog.Add($"ℹ️ {noResultMessage}");
+                    
+                    var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                    if (isAjaxRequest)
+                    {
+                        return Json(new { 
+                            success = true, 
+                            message = noResultMessage,
+                            fixedCount = 0,
+                            log = string.Join("\n", fixLog)
+                        });
+                    }
+
+                    TempData["Info"] = noResultMessage;
+                    return RedirectToAction("Index");
+                }
+
+                fixLog.Add("🔧 اصلاح نرخ‌های معکوس:");
+
+                foreach (var order in ordersToFix)
+                {
+                    var originalRate = order.Rate;
+                    var newRate = 1 / originalRate; // Reverse the rate
+                    
+                    // Update the rate
+                    order.Rate = newRate;
+                    
+                    // Log the change with currency pair info
+                    var currencyPair = $"{order.FromCurrency?.Code}/{order.ToCurrency?.Code}";
+                    fixLog.Add($"  Order ID {order.Id} ({currencyPair}): Rate {originalRate:F15} → {newRate:F2}");
+                    ordersFixed++;
+                }
+
+                // Save all changes
+                await _context.SaveChangesAsync();
+
+                var summaryMessage = ordersFixed > 0 
+                    ? $"✅ {ordersFixed} معامله IRR با نرخ معکوس اصلاح شد"
+                    : "ℹ️ هیچ معامله‌ای نیاز به اصلاح نداشت";
+
+                fixLog.Insert(6, "📊 خلاصه نتایج:");
+                fixLog.Insert(7, $"- معاملات اصلاح شده: {ordersFixed} رکورد");
+                fixLog.Insert(8, $"- آستانه نرخ: کمتر از {RATE_THRESHOLD}");
+                fixLog.Insert(9, "- منطق: نرخ جدید = 1 ÷ نرخ قدیمی");
+                fixLog.Insert(10, "");
+
+                var logText = string.Join("\n", fixLog);
+                
+                var isAjaxRequestFinal = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                if (isAjaxRequestFinal)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = summaryMessage,
+                        log = logText,
+                        summary = new
+                        {
+                            ordersFixed = ordersFixed,
+                            rateThreshold = RATE_THRESHOLD,
+                            totalFound = ordersToFix.Count
+                        }
+                    });
+                }
+
+                TempData["Success"] = summaryMessage;
+                TempData["FixLog"] = logText;
+            }
+            catch (Exception ex)
+            {
+                var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                if (isAjaxRequest)
+                {
+                    return Json(new { success = false, error = $"خطا در اصلاح نرخ‌های معکوس IRR: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در اصلاح نرخ‌های معکوس IRR: {ex.Message}";
             }
 
             return RedirectToAction("Index");
