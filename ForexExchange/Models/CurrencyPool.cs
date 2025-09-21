@@ -139,7 +139,7 @@ namespace ForexExchange.Models
         
         /// <summary>
         /// Legacy method for backward compatibility - calculates value in IRR/Toman
-        /// روش قدیمی برای سازگاری - ارزش را به ریال/تومان محاسبه می‌کند
+        /// روش قدیمی برای سازگاری - ارزش را به تومان محاسبه می‌کند
         /// </summary>
         /// <param name="currentRate">Current rate to IRR/Toman</param>
         /// <returns>Current position value in IRR/Toman</returns>

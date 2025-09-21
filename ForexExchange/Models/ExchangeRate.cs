@@ -96,7 +96,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Check if this is a cross-currency rate (not involving IRR)
-        /// بررسی آیا این نرخ متقابل است (شامل ریال نمی‌شود)
+        /// بررسی آیا این نرخ متقابل است (شامل تومان نمی‌شود)
         /// </summary>
         public bool IsCrossCurrency => FromCurrency?.Code != "IRR" && ToCurrency?.Code != "IRR";
 

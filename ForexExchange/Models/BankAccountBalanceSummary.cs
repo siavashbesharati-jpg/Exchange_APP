@@ -44,9 +44,9 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Total balance in IRR (simplified calculation)
-        /// مجموع موجودی به ریال (محاسبه ساده‌سازی شده)
+        /// مجموع موجودی به تومان (محاسبه ساده‌سازی شده)
         /// </summary>
-        [Display(Name = "Total Balance (IRR) - مجموع موجودی (ریال)")]
+        [Display(Name = "Total Balance (IRR) - مجموع موجودی (تومان)")]
         public decimal TotalBalanceInIRR { get; set; }
     }
 }

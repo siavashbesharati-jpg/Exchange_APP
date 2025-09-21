@@ -331,7 +331,7 @@ namespace ForexExchange.Controllers
 
             if (baseCurrency == null)
             {
-                TempData["ErrorMessage"] = "ارز پایه (ریال) در پایگاه داده یافت نشد";
+                TempData["ErrorMessage"] = "ارز پایه (تومان) در پایگاه داده یافت نشد";
                 return RedirectToAction(nameof(Manage));
             }
 

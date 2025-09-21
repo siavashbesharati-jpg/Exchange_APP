@@ -803,7 +803,7 @@
                     // Extract numeric value from amount
                     let numericAmount = ocrData.amount.replace(/[^\d]/g, '');
                     if (numericAmount) {
-                        // Check if currency is IRR (Iranian Rial)
+                        // Check if currency is IRR (Iranian Toman)
                         const currencyField = document.querySelector('[name="CurrencyCode"]');
                         if (currencyField && currencyField.value === 'IRR') {
                             // Drop one zero for IRR currency (convert from Rial to Toman)

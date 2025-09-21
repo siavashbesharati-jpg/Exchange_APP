@@ -308,7 +308,7 @@ namespace ForexExchange.Models
             
             // Seed initial currency pools - now using Currency IDs instead of CurrencyType enum
             modelBuilder.Entity<CurrencyPool>().HasData(
-                new CurrencyPool { Id = 1, CurrencyId = 1, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Iranian Rial pool - initial setup" },
+                new CurrencyPool { Id = 1, CurrencyId = 1, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Iranian Toman pool - initial setup" },
                 new CurrencyPool { Id = 2, CurrencyId = 2, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "US Dollar pool - initial setup" },
                 new CurrencyPool { Id = 3, CurrencyId = 3, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Euro pool - initial setup" },
                 new CurrencyPool { Id = 4, CurrencyId = 4, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "UAE Dirham pool - initial setup" },
@@ -518,7 +518,7 @@ namespace ForexExchange.Models
 
             // Seed currencies
             modelBuilder.Entity<Currency>().HasData(
-                new Currency { Id = 1, Code = "IRR", Name = "Iranian Rial", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = seedDate },
+                new Currency { Id = 1, Code = "IRR", Name = "Iranian Toman", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = seedDate },
                 new Currency { Id = 2, Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = seedDate },
                 new Currency { Id = 3, Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = seedDate },
                 new Currency { Id = 4, Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = seedDate },
