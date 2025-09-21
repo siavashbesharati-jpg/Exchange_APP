@@ -62,15 +62,18 @@ namespace ForexExchange.Services.Notifications
         private readonly ILogger<NotificationHub> _logger;
         private readonly List<INotificationProvider> _providers;
         private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _environment;
 
         public NotificationHub(
             ForexDbContext context,
             ILogger<NotificationHub> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
+            _environment = environment;
             _providers = new List<INotificationProvider>();
         }
 
@@ -84,6 +87,16 @@ namespace ForexExchange.Services.Notifications
         }
 
         public IEnumerable<INotificationProvider> GetProviders() => _providers.AsReadOnly();
+
+        /// <summary>
+        /// Check if notifications should be disabled in development mode
+        /// بررسی اینکه آیا اعلان‌ها در حالت توسعه غیرفعال شوند
+        /// </summary>
+        private bool ShouldSkipNotification()
+        {
+            var disableInDevelopment = _configuration.GetValue<bool>("Notifications:DisableInDevelopment", false);
+            return disableInDevelopment && _environment.IsDevelopment();
+        }
 
         public Task SetProviderEnabledAsync(string providerName, bool enabled)
         {
@@ -101,6 +114,12 @@ namespace ForexExchange.Services.Notifications
 
         public async Task SendOrderNotificationAsync(Order order, NotificationEventType eventType, string? userId = null, string? oldStatus = null, string? newStatus = null)
         {
+            if (ShouldSkipNotification())
+            {
+                _logger.LogDebug("Skipping order notification in development mode for order {OrderId}, event {EventType}", order.Id, eventType);
+                return;
+            }
+
             try
             {
                 var context = await BuildOrderNotificationContextAsync(order, eventType, userId, oldStatus, newStatus);
@@ -114,6 +133,12 @@ namespace ForexExchange.Services.Notifications
 
         public async Task SendAccountingDocumentNotificationAsync(AccountingDocument document, NotificationEventType eventType, string? userId = null)
         {
+            if (ShouldSkipNotification())
+            {
+                _logger.LogDebug("Skipping document notification in development mode for document {DocumentId}, event {EventType}", document.Id, eventType);
+                return;
+            }
+
             try
             {
                 var context = await BuildAccountingDocumentNotificationContextAsync(document, eventType, userId);
@@ -127,6 +152,12 @@ namespace ForexExchange.Services.Notifications
 
         public async Task SendCustomerNotificationAsync(Customer customer, NotificationEventType eventType, string? userId = null)
         {
+            if (ShouldSkipNotification())
+            {
+                _logger.LogDebug("Skipping customer notification in development mode for customer {CustomerId}, event {EventType}", customer.Id, eventType);
+                return;
+            }
+
             try
             {
                 var context = await BuildCustomerNotificationContextAsync(customer, eventType, userId);
@@ -140,6 +171,12 @@ namespace ForexExchange.Services.Notifications
 
         public async Task SendCustomNotificationAsync(string title, string message, NotificationEventType eventType = NotificationEventType.Custom, string? userId = null, string? navigationUrl = null, NotificationPriority priority = NotificationPriority.Normal)
         {
+            if (ShouldSkipNotification())
+            {
+                _logger.LogDebug("Skipping custom notification in development mode: {Title}", title);
+                return;
+            }
+
             try
             {
                 var context = await BuildManualAdjustmentNotificationContextAsync(title, message, eventType, userId, navigationUrl, priority);
