@@ -108,8 +108,9 @@ builder.Services.AddScoped<INotificationHub>(serviceProvider =>
     var context = serviceProvider.GetRequiredService<ForexDbContext>();
     var logger = serviceProvider.GetRequiredService<ILogger<ForexExchange.Services.Notifications.NotificationHub>>();
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var environment = serviceProvider.GetRequiredService<IWebHostEnvironment>();
     
-    var hub = new ForexExchange.Services.Notifications.NotificationHub(context, logger, configuration);
+    var hub = new ForexExchange.Services.Notifications.NotificationHub(context, logger, configuration, environment);
     
     // Register providers
     var signalRProvider = serviceProvider.GetRequiredService<SignalRNotificationProvider>();

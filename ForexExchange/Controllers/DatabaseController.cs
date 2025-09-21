@@ -1649,5 +1649,154 @@ namespace ForexExchange.Controllers
 
             return RedirectToAction("Index");
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CleanCustomerBalances()
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                var userId = user?.Id;
+
+                // Get all customer balances
+                var customerBalances = await _context.CustomerBalances.ToListAsync();
+                
+                if (customerBalances.Any())
+                {
+                    // Set all balances to zero
+                    foreach (var balance in customerBalances)
+                    {
+                        balance.Balance = 0;
+                        balance.LastUpdated = DateTime.Now;
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    // Send notification
+                    await _notificationHub.SendCustomNotificationAsync(
+                        "🔄 پاک‌سازی موجودی مشتریان",
+                        $"تمام موجودی‌های مشتریان ({customerBalances.Count} رکورد) به صفر تنظیم شد",
+                        NotificationEventType.SystemMaintenance,
+                        userId,
+                        "/Database"
+                    );
+
+                    var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                    if (isAjaxRequest)
+                    {
+                        return Json(new { success = true, message = $"موجودی {customerBalances.Count} مشتری با موفقیت پاک شد" });
+                    }
+
+                    TempData["Success"] = $"موجودی {customerBalances.Count} مشتری با موفقیت پاک شد";
+                }
+                else
+                {
+                    var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                    if (isAjaxRequest)
+                    {
+                        return Json(new { success = true, message = "هیچ موجودی مشتری برای پاک کردن یافت نشد" });
+                    }
+
+                    TempData["Info"] = "هیچ موجودی مشتری برای پاک کردن یافت نشد";
+                }
+            }
+            catch (Exception ex)
+            {
+                var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                if (isAjaxRequest)
+                {
+                    return Json(new { success = false, error = $"خطا در پاک‌سازی موجودی مشتریان: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در پاک‌سازی موجودی مشتریان: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CleanBankAccountBalances()
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                var userId = user?.Id;
+
+                // Get all bank accounts
+                var bankAccounts = await _context.BankAccounts.ToListAsync();
+                
+                // Get all bank account balances (separate table)
+                var bankAccountBalances = await _context.BankAccountBalances.ToListAsync();
+                
+                int totalCleaned = 0;
+
+                if (bankAccounts.Any())
+                {
+                    // Set all AccountBalance properties to zero
+                    foreach (var account in bankAccounts)
+                    {
+                        account.AccountBalance = 0;
+                        totalCleaned++;
+                    }
+                }
+
+                if (bankAccountBalances.Any())
+                {
+                    // Set all BankAccountBalance records to zero
+                    foreach (var balance in bankAccountBalances)
+                    {
+                        balance.Balance = 0;
+                        balance.LastUpdated = DateTime.Now;
+                        totalCleaned++;
+                    }
+                }
+
+                if (totalCleaned > 0)
+                {
+                    await _context.SaveChangesAsync();
+
+                    // Send notification
+                    await _notificationHub.SendCustomNotificationAsync(
+                        "🔄 پاک‌سازی موجودی حساب‌های بانکی",
+                        $"تمام موجودی‌های حساب‌های بانکی پاک شد - {bankAccounts.Count} حساب بانکی و {bankAccountBalances.Count} رکورد موجودی به صفر تنظیم شد",
+                        NotificationEventType.SystemMaintenance,
+                        userId,
+                        "/Database"
+                    );
+
+                    var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                    if (isAjaxRequest)
+                    {
+                        return Json(new { success = true, message = $"موجودی {bankAccounts.Count} حساب بانکی و {bankAccountBalances.Count} رکورد موجودی با موفقیت پاک شد" });
+                    }
+
+                    TempData["Success"] = $"موجودی {bankAccounts.Count} حساب بانکی و {bankAccountBalances.Count} رکورد موجودی با موفقیت پاک شد";
+                }
+                else
+                {
+                    var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                    if (isAjaxRequest)
+                    {
+                        return Json(new { success = true, message = "هیچ حساب بانکی یا رکورد موجودی برای پاک کردن یافت نشد" });
+                    }
+
+                    TempData["Info"] = "هیچ حساب بانکی یا رکورد موجودی برای پاک کردن یافت نشد";
+                }
+            }
+            catch (Exception ex)
+            {
+                var isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+                if (isAjaxRequest)
+                {
+                    return Json(new { success = false, error = $"خطا در پاک‌سازی موجودی حساب‌های بانکی: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در پاک‌سازی موجودی حساب‌های بانکی: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
     }
 }

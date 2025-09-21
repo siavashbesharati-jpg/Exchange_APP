@@ -51,7 +51,7 @@ namespace ForexExchange.Services
             var firstRecord = historyRecords.First();
             timelineItems.Add(new BankAccountTimelineItem
             {
-                Date = FormatPersianDate(firstRecord.TransactionDate),
+                Date = FormatGregorianDate(firstRecord.TransactionDate),
                 Time = FormatTime(firstRecord.TransactionDate),
                 TransactionType = "Initial",
                 Description = "موجودی اولیه",
@@ -68,7 +68,7 @@ namespace ForexExchange.Services
             {
                 var item = new BankAccountTimelineItem
                 {
-                    Date = FormatPersianDate(record.TransactionDate),
+                    Date = FormatGregorianDate(record.TransactionDate),
                     Time = FormatTime(record.TransactionDate),
                     TransactionType = record.TransactionType.ToString(),
                     Description = record.Description ?? GenerateTransactionDescription(record),

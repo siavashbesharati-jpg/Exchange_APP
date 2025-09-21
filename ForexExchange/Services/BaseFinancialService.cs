@@ -19,16 +19,12 @@ namespace ForexExchange.Services
         #region Common Helper Methods
 
         /// <summary>
-        /// Formats DateTime to Persian date string
-        /// تبدیل تاریخ به رشته تاریخ فارسی
+        /// Formats DateTime to Gregorian date string
+        /// تبدیل تاریخ به رشته تاریخ میلادی
         /// </summary>
-        protected string FormatPersianDate(DateTime date)
+        protected string FormatGregorianDate(DateTime date)
         {
-            var persianCalendar = new System.Globalization.PersianCalendar();
-            var year = persianCalendar.GetYear(date);
-            var month = persianCalendar.GetMonth(date);
-            var day = persianCalendar.GetDayOfMonth(date);
-            return $"{year:0000}/{month:00}/{day:00}";
+            return date.ToString("yyyy/MM/dd");
         }
 
         /// <summary>

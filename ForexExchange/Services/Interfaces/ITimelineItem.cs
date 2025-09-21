@@ -7,8 +7,8 @@ namespace ForexExchange.Services.Interfaces
     public interface ITimelineItem
     {
         /// <summary>
-        /// Date in yyyy/MM/dd format
-        /// تاریخ در فرمت yyyy/MM/dd
+        /// Date in yyyy/MM/dd format (Gregorian)
+        /// تاریخ در فرمت yyyy/MM/dd (میلادی)
         /// </summary>
         string Date { get; set; }
 

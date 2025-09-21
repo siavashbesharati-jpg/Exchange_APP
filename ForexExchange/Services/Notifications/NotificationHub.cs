@@ -94,7 +94,7 @@ namespace ForexExchange.Services.Notifications
         /// </summary>
         private bool ShouldSkipNotification()
         {
-            var disableInDevelopment = _configuration.GetValue<bool>("Notifications:DisableInDevelopment", false);
+            var disableInDevelopment = _configuration.GetValue("Notifications:DisableInDevelopment", false);
             return disableInDevelopment && _environment.IsDevelopment();
         }
 

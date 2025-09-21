@@ -200,9 +200,25 @@
                                     
                                         <form asp-action="CleanPools" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام صندوق های ارز را پاک کنید؟')">
                                             @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-danger w-100">
+                                            <button type="submit" class="btn btn-outline-danger w-100 mb-2">
                                                 <i class="fas fa-coins me-2"></i>
                                                 پاکسازی صندوق های ارز
+                                            </button>
+                                        </form>
+
+                                        <form asp-action="CleanCustomerBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام موجودی‌های مشتریان را به صفر تنظیم کنید؟')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-warning w-100 mb-2">
+                                                <i class="fas fa-wallet me-2"></i>
+                                                پاک‌سازی موجودی مشتریان
+                                            </button>
+                                        </form>
+
+                                        <form asp-action="CleanBankAccountBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام موجودی‌های حساب‌های بانکی را به صفر تنظیم کنید؟')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-warning w-100">
+                                                <i class="fas fa-university me-2"></i>
+                                                پاک‌سازی موجودی حساب‌های بانکی
                                             </button>
                                         </form>
                                 </div>
