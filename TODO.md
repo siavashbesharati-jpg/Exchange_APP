@@ -13,6 +13,8 @@
   - **فایل مرجع**: `REFACTOR_SUMMARY.md` - جزئیات کامل
   - **زمان تخمینی**: 10-16 ساعت کار سیستماتیک
 
+  
+
   #### **Sub-tasks - زیروظایف:**
   - [ ] **DataSeedService.cs** - اولویت اول (2-3 ساعت)
     - حذف مراجع hardcoded CurrencyType
