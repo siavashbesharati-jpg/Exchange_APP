@@ -137,11 +137,11 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/GetAllCustomersBalances
         [HttpGet]
-        public async Task<IActionResult> GetAllCustomersBalances(string? currencyFilter = null)
+        public async Task<IActionResult> GetAllCustomersBalances(string? currencyFilter = null, string? customerFilter = null)
         {
             try
             {
-                _logger.LogInformation("Starting GetAllCustomersBalances with currency filter: {CurrencyFilter}", currencyFilter);
+                _logger.LogInformation("Starting GetAllCustomersBalances with currency filter: {CurrencyFilter}, customer filter: {CustomerFilter}", currencyFilter, customerFilter);
 
                 // First, let's test if basic customers query works
                 var customersCount = await _context.Customers
@@ -158,6 +158,12 @@ namespace ForexExchange.Controllers
                 var query = _context.Customers
                     .Include(c => c.Balances)
                     .Where(c => c.IsActive && !c.IsSystem);
+                
+                // Apply customer filter if provided
+                if (!string.IsNullOrEmpty(customerFilter) && int.TryParse(customerFilter, out int customerId))
+                {
+                    query = query.Where(c => c.Id == customerId);
+                }
 
                 var customers = await query
                     .Select(c => new
@@ -286,7 +292,7 @@ namespace ForexExchange.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting all customers balances with currency filter: {CurrencyFilter}", currencyFilter);
+                _logger.LogError(ex, "Error getting all customers balances with currency filter: {CurrencyFilter}, customer filter: {CustomerFilter}", currencyFilter, customerFilter);
                 return Json(new { error = $"خطا در دریافت موجودی مشتریان: {ex.Message}" });
             }
         }

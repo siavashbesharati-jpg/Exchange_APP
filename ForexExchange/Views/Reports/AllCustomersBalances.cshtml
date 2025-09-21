@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "موجودی همه مشتریان";
+    ViewData["Title"] = "تراز همه مشتریان";
 }
 
 @using Microsoft.AspNetCore.Antiforgery
@@ -13,13 +13,13 @@
 <div class="container-fluid">
     <!-- Head            <div class="card shadow-sm border-3">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>موجودی ${currencyCode}</h5>
+                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>تراز ${currencyCode}</h5>
                     <span class="text-muted small">${customers.length} مشتری</span>
                 </div>>
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between">
-                <h2><i class="fas fa-wallet text-primary me-2"></i>موجودی همه مشتریان</h2>
+                <h2><i class="fas fa-wallet text-primary me-2"></i>تراز همه مشتریان</h2>
                 <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-right me-1"></i>بازگشت
                 </a>
@@ -33,7 +33,13 @@
             <div class="card shadow-sm border-3">
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label">انتخاب مشتری</label>
+                            <select class="form-select" id="customerFilter">
+                                <option value="">همه مشتریان</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label">فیلتر ارز</label>
                             <select class="form-select" id="currencyFilter">
                                 <option value="">همه ارزها</option>
@@ -84,7 +90,7 @@
         <div class="col-12">
             <div class="card shadow-sm border-3">
                 <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>خلاصه موجودی به تفکیک ارز</h5>
+                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>خلاصه تراز به تفکیک ارز</h5>
                 </div>
                 <div class="card-body">
                     <div class="row" id="currencyTotalsContent">
@@ -115,7 +121,7 @@
                         </label>
                     </div>
                     <div class="mt-2">
-                        <small class="text-muted">انتخاب نوع نمایش جداول موجودی</small>
+                        <small class="text-muted">انتخاب نوع نمایش جداول تراز</small>
                     </div>
                 </div>
             </div>
@@ -136,7 +142,7 @@
         <div class="col-12">
             <div class="card shadow-sm border-3">
                 <div class="card-header  d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>موجودی مشتریان</h5>
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>تراز مشتریان</h5>
                     <span id="resultsCount" class="text-muted small"></span>
                 </div>
                 <div class="card-body p-0">
@@ -146,14 +152,14 @@
                                 <tr>
                                     <th style="width: 10%">#</th>
                                     <th style="width: 40%">نام مشتری</th>
-                                    <th style="width: 50%">موجودی‌ها</th>
+                                    <th style="width: 50%">تراز‌ها</th>
                                 </tr>
                             </thead>
                             <tbody id="customersTableBody">
                                 <tr>
                                     <td colspan="3" class="text-center py-5 text-muted">
                                         <i class="fas fa-wallet fa-2x mb-2"></i>
-                                        <br>برای مشاهده موجودی مشتریان، دکمه جستجو را کلیک کنید
+                                        <br>برای مشاهده تراز مشتریان، دکمه جستجو را کلیک کنید
                                     </td>
                                 </tr>
                             </tbody>
@@ -195,6 +201,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load currencies for filter
     loadCurrencies();
     
+    // Load customers for filter
+    loadCustomers();
+    
     // Add toggle change event listener
     const viewModeToggles = document.querySelectorAll('input[name="viewModeToggle"]');
     viewModeToggles.forEach(toggle => {
@@ -203,6 +212,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateTableView();
             }
         });
+    });
+    
+    // Add customer filter change event listener
+    document.getElementById('customerFilter').addEventListener('change', function() {
+        loadCustomersBalances();
+    });
+    
+    // Add currency filter change event listener
+    document.getElementById('currencyFilter').addEventListener('change', function() {
+        loadCustomersBalances();
     });
     
     // Auto-load data on page load
@@ -275,6 +294,30 @@ async function loadCurrencies() {
     }
 }
 
+// Load customers for filter dropdown
+async function loadCustomers() {
+    try {
+        const response = await fetch('@Url.Action("GetCustomersData", "Reports")');
+        const data = await response.json();
+        
+        const customerFilter = document.getElementById('customerFilter');
+        customerFilter.innerHTML = '<option value="">همه مشتریان</option>';
+        
+        if (data.customers && Array.isArray(data.customers)) {
+            data.customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customer.fullName;
+                customerFilter.appendChild(option);
+            });
+        }
+    } catch (error) {
+        const customerFilter = document.getElementById('customerFilter');
+        customerFilter.innerHTML = '<option value="">خطا در بارگذاری مشتریان</option>';
+        console.error('Error loading customers:', error);
+    }
+}
+
 // Load customers balances data
 async function loadCustomersBalances() {
     try {
@@ -282,11 +325,21 @@ async function loadCustomersBalances() {
         showLoading();
         
         const selectedCurrencyFilter = document.getElementById('currencyFilter').value;
+        const selectedCustomerFilter = document.getElementById('customerFilter').value;
         
         // Build URL with parameters
         let url = '/Reports/GetAllCustomersBalances';
+        const params = new URLSearchParams();
+        
         if (selectedCurrencyFilter) {
-            url += `?currencyFilter=${encodeURIComponent(selectedCurrencyFilter)}`;
+            params.append('currencyFilter', selectedCurrencyFilter);
+        }
+        if (selectedCustomerFilter) {
+            params.append('customerFilter', selectedCustomerFilter);
+        }
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
         }
         
         const response = await fetch(url);
@@ -300,6 +353,7 @@ async function loadCustomersBalances() {
         currentData = data;
         
         const selectedCurrency = document.getElementById('currencyFilter').value;
+        const selectedCustomer = document.getElementById('customerFilter').value;
         const viewMode = getCurrentViewMode();
         
         if (selectedCurrency) {
@@ -323,10 +377,19 @@ async function loadCustomersBalances() {
         renderStatistics(data.stats);
         renderCurrencyTotals(data.stats.currencyTotals, selectedCurrency);
         
-        showSuccess(`تعداد ${data.customers.length} مشتری با موجودی یافت شد`);
+        // Update success message based on filters
+        let successMessage = `تعداد ${data.customers.length} مشتری با تراز یافت شد`;
+        if (selectedCustomer && selectedCurrency) {
+            successMessage = `تراز مشتری انتخاب شده در ارز ${selectedCurrency} یافت شد`;
+        } else if (selectedCustomer) {
+            successMessage = `تراز مشتری انتخاب شده در همه ارزها یافت شد`;
+        } else if (selectedCurrency) {
+            successMessage = `تعداد ${data.customers.length} مشتری با تراز ${selectedCurrency} یافت شد`;
+        }
+        showSuccess(successMessage);
         
     } catch (error) {
-        showError('خطا در بارگذاری اطلاعات موجودی مشتریان');
+        showError('خطا در بارگذاری اطلاعات تراز مشتریان');
     } finally {
         hideLoading();
     }
@@ -344,7 +407,7 @@ function renderAllCustomersTable(customers) {
             <tr>
                 <td colspan="3" class="text-center py-5 text-muted">
                     <i class="fas fa-search fa-2x mb-2"></i>
-                    <br>هیچ مشتری با موجودی یافت نشد
+                    <br>هیچ مشتری با تراز یافت نشد
                 </td>
             </tr>
         `;
@@ -356,7 +419,7 @@ function renderAllCustomersTable(customers) {
             const isPositive = balance.balance >= 0;
             const statusClass = isPositive ? 'text-success' : 'text-danger';
             const formattedAmount = formatCurrency(Math.abs(balance.balance), balance.currencyCode);
-            const statusSymbol = isPositive ? '+' : '-';
+            const statusSymbol = isPositive ? '' : '-';
             
             return `
                 <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1" style="border-color: #f5f5f5 !important;">
@@ -376,7 +439,7 @@ function renderAllCustomersTable(customers) {
                 </td>
                 <td>
                     <div class="balances-container">
-                        ${balancesHtml || '<span class="text-muted">بدون موجودی</span>'}
+                        ${balancesHtml || '<span class="text-muted">بدون تراز</span>'}
                     </div>
                 </td>
             </tr>
@@ -392,13 +455,13 @@ function renderCurrencySpecificTable(customers, currencyCode) {
         currencyTablesContent.innerHTML = `
             <div class="card shadow-sm border-3">
                 <div class="card-header  d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>موجودی ${currencyCode}</h5>
+                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>تراز ${currencyCode}</h5>
                     <span class="badge bg-primary">0 مشتری</span>
                 </div>
                 <div class="card-body">
                     <div class="text-center py-5 text-muted">
                         <i class="fas fa-search fa-2x mb-2"></i>
-                        <br>هیچ مشتری با موجودی ${currencyCode} یافت نشد
+                        <br>هیچ مشتری با تراز ${currencyCode} یافت نشد
                     </div>
                 </div>
             </div>
@@ -411,7 +474,7 @@ function renderCurrencySpecificTable(customers, currencyCode) {
         const isPositive = balance.balance >= 0;
         const statusClass = isPositive ? 'text-success' : 'text-danger';
         const formattedAmount = formatCurrency(Math.abs(balance.balance), balance.currencyCode);
-        const statusSymbol = isPositive ? '+' : '-';
+        const statusSymbol = isPositive ? '' : '-';
         const statusText = isPositive ? 'بستانکار' : 'بدهکار';
         
         return `
@@ -435,7 +498,7 @@ function renderCurrencySpecificTable(customers, currencyCode) {
     currencyTablesContent.innerHTML = `
         <div class="card shadow-sm border-3">
             <div class="card-header  d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-coins me-2"></i>موجودی ${currencyCode}</h5>
+                <h5 class="mb-0"><i class="fas fa-coins me-2"></i>تراز ${currencyCode}</h5>
                 <span class="badge bg-primary">${customers.length} مشتری</span>
             </div>
             <div class="card-body p-0">
@@ -446,7 +509,7 @@ function renderCurrencySpecificTable(customers, currencyCode) {
                                 <th style="width: 10%">#</th>
                                 <th style="width: 40%">نام مشتری</th>
                                 <th style="width: 20%">وضعیت</th>
-                                <th style="width: 30%" class="text-end">موجودی</th>
+                                <th style="width: 30%" class="text-end">تراز</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -468,7 +531,7 @@ function renderStatistics(stats) {
         <div class="col-md-3">
             <div class="text-center p-3 bg-light rounded border">
                 <div class="h5 text-dark mb-1">${stats.totalCustomersWithBalances}</div>
-                <div class="text-muted small">کل مشتریان با موجودی</div>
+                <div class="text-muted small">کل مشتریان با تراز</div>
             </div>
         </div>
         <div class="col-md-3">
@@ -507,7 +570,7 @@ function renderCurrencyTotals(currencyTotals, currencyFilter) {
     const totalsHtml = Object.entries(currencyTotals).map(([currency, totals]) => {
         const isNetPositive = totals.netBalance >= 0;
         const netBalanceClass = isNetPositive ? 'text-success' : 'text-danger';
-        const netBalanceSymbol = isNetPositive ? '+' : '-';
+        const netBalanceSymbol = isNetPositive ? '' : '-';
         const netBalanceFormatted = formatCurrency(Math.abs(totals.netBalance), currency);
         
         return `
@@ -520,15 +583,15 @@ function renderCurrencyTotals(currencyTotals, currencyFilter) {
                         <div class="row text-center g-2">
                             <div class="col-6">
                                 <div class="text-success fw-medium fs-6" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr">
-                                    +${formatCurrency(totals.totalCredit, currency)}
+                                    ${formatCurrency(totals.totalCredit, currency)}
                                 </div>
-                                <small class="text-muted d-block">کل اعتبار</small>
+                                <small class="text-muted d-block">بستانکار</small>
                             </div>
                             <div class="col-6">
                                 <div class="text-danger fw-medium fs-6" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr">
                                     -${formatCurrency(totals.totalDebt, currency)}
                                 </div>
-                                <small class="text-muted d-block">کل بدهی</small>
+                                <small class="text-muted d-block">بدهکار</small>
                             </div>
                             <div class="col-12">
                                 <hr class="my-2">
@@ -536,7 +599,7 @@ function renderCurrencyTotals(currencyTotals, currencyFilter) {
                                     <div class="${netBalanceClass} fw-bold fs-4 text-center" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr" >
                                         ${netBalanceSymbol}${netBalanceFormatted}
                                     </div>
-                                    <small class="text-muted d-block mt-1">موجودی خالص</small>
+                                    <small class="text-muted d-block mt-1">تراز</small>
                                 </div>
                             </div>
                             <div class="col-12 mt-2">
@@ -576,7 +639,7 @@ function renderCustomerBasedTables(customers) {
         currencyTablesContent.innerHTML = `
             <div class="text-center py-5 text-muted">
                 <i class="fas fa-search fa-2x mb-2"></i>
-                <br>هیچ مشتری با موجودی یافت نشد
+                <br>هیچ مشتری با تراز یافت نشد
             </div>
         `;
         return;
@@ -589,7 +652,7 @@ function renderCustomerBasedTables(customers) {
             const isPositive = balance.balance >= 0;
             const statusClass = isPositive ? 'text-success' : 'text-danger';
             const formattedAmount = formatCurrency(Math.abs(balance.balance), balance.currencyCode);
-            const statusSymbol = isPositive ? '+' : '-';
+            const statusSymbol = isPositive ? '' : '-';
             const statusText = isPositive ? 'بستانکار' : 'بدهکار';
             
             return `
@@ -624,7 +687,7 @@ function renderCustomerBasedTables(customers) {
                                     <th style="width: 10%">#</th>
                                     <th style="width: 25%">ارز</th>
                                     <th style="width: 25%">وضعیت</th>
-                                    <th style="width: 40%">موجودی</th>
+                                    <th style="width: 40%">تراز</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -648,7 +711,7 @@ function renderCurrencyBasedTables(customers) {
         currencyTablesContent.innerHTML = `
             <div class="text-center py-5 text-muted">
                 <i class="fas fa-search fa-2x mb-2"></i>
-                <br>هیچ مشتری با موجودی یافت نشد
+                <br>هیچ مشتری با تراز یافت نشد
             </div>
         `;
         return;
@@ -688,7 +751,7 @@ function renderCurrencyBasedTables(customers) {
             const isPositive = item.balance.balance >= 0;
             const statusClass = isPositive ? 'text-success' : 'text-danger';
             const formattedAmount = formatCurrency(Math.abs(item.balance.balance), item.balance.currencyCode);
-            const statusSymbol = isPositive ? '+' : '-';
+            const statusSymbol = isPositive ? '' : '-';
             const statusText = isPositive ? 'بستانکار' : 'بدهکار';
             
             return `
@@ -712,7 +775,7 @@ function renderCurrencyBasedTables(customers) {
         // Create summary row
         const isNetPositive = totalNet >= 0;
         const netClass = isNetPositive ? 'text-success' : 'text-danger';
-        const netSymbol = isNetPositive ? '+' : '-';
+        const netSymbol = isNetPositive ? '' : '-';
         const netFormatted = formatCurrency(Math.abs(totalNet), currency);
         
         const summaryRow = `
@@ -747,7 +810,7 @@ function renderCurrencyBasedTables(customers) {
                                     <th style="width: 10%">#</th>
                                     <th style="width: 40%">نام مشتری</th>
                                     <th style="width: 20%">وضعیت</th>
-                                    <th style="width: 30%">موجودی</th>
+                                    <th style="width: 30%">تراز</th>
                                 </tr>
                             </thead>
                             <tbody>
