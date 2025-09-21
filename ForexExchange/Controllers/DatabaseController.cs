@@ -495,16 +495,26 @@ namespace ForexExchange.Controllers
                 var resetLog = new List<string>();
 
                 // Step 1: Find all verified accounting documents (but keep them - just unverify them)
+                // EXCLUDE deleted documents from processing
                 var verifiedDocuments = await _context.AccountingDocuments
-                    .Where(d => d.IsVerified)
+                    .Where(d => d.IsVerified && !d.IsDeleted)
                     .ToListAsync();
 
-                resetLog.Add($"Found {verifiedDocuments.Count} verified accounting documents");
+                resetLog.Add($"Found {verifiedDocuments.Count} verified accounting documents (excluding deleted)");
 
-                // Step 2: COMPLETELY RESET all customer balance history (Orders + Documents)
-                var allCustomerHistory = await _context.CustomerBalanceHistory.ToListAsync();
-                _context.CustomerBalanceHistory.RemoveRange(allCustomerHistory);
-                resetLog.Add($"Removed {allCustomerHistory.Count} customer balance history records");
+                // Step 2: RESET customer balance history (Orders + Documents) 
+                // BUT PRESERVE Manual transaction records
+                var manualCustomerHistory = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual)
+                    .ToListAsync();
+
+                var nonManualCustomerHistory = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType != CustomerBalanceTransactionType.Manual)
+                    .ToListAsync();
+
+                _context.CustomerBalanceHistory.RemoveRange(nonManualCustomerHistory);
+                resetLog.Add($"Removed {nonManualCustomerHistory.Count} non-manual customer balance history records");
+                resetLog.Add($"Preserved {manualCustomerHistory.Count} manual customer balance history records");
 
                 // Step 3: RESET all customer balances to zero
                 var allCustomerBalances = await _context.CustomerBalances.ToListAsync();
@@ -516,7 +526,7 @@ namespace ForexExchange.Controllers
                 }
                 resetLog.Add($"Reset {allCustomerBalances.Count} customer balances to zero");
 
-                // Step 4: Reset bank account history and balances
+                // Step 4: Reset bank account history and balances (YES - will be regenerated)
                 var allBankHistory = await _context.BankAccountBalanceHistory.ToListAsync();
                 _context.BankAccountBalanceHistory.RemoveRange(allBankHistory);
                 resetLog.Add($"Removed {allBankHistory.Count} bank account balance history records");
@@ -528,6 +538,19 @@ namespace ForexExchange.Controllers
                     balance.LastUpdated = DateTime.UtcNow;
                 }
                 resetLog.Add($"Reset {allBankBalances.Count} bank account balances to zero");
+
+                // Step 4.5: Reset currency pool history and balances (YES - will be regenerated)
+                var allPoolHistory = await _context.CurrencyPoolHistory.ToListAsync();
+                _context.CurrencyPoolHistory.RemoveRange(allPoolHistory);
+                resetLog.Add($"Removed {allPoolHistory.Count} currency pool history records");
+
+                var allPools = await _context.CurrencyPools.ToListAsync();
+                foreach (var pool in allPools)
+                {
+                    pool.Balance = 0;
+                    pool.LastUpdated = DateTime.UtcNow;
+                }
+                resetLog.Add($"Reset {allPools.Count} currency pool balances to zero");
 
                 // Step 5: Set all accounting documents to unverified (but keep the documents)
                 foreach (var document in verifiedDocuments)
@@ -541,12 +564,15 @@ namespace ForexExchange.Controllers
                 await _context.SaveChangesAsync();
 
                 // Step 6: Recalculate chronologically - MIXED BY DATE (Orders + Documents together)
+                // EXCLUDE deleted orders and documents from recalculation
                 var allOrders = await _context.Orders
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
+                    .Where(o => !o.IsDeleted)
                     .ToListAsync();
 
                 var allDocuments = await _context.AccountingDocuments
+                    .Where(d => !d.IsDeleted)
                     .ToListAsync();
 
                 // Create a unified list of financial events sorted by date
@@ -600,16 +626,20 @@ namespace ForexExchange.Controllers
                 // Step 7: Prepare summary
                 var summary = new[]
                 {
-                    $"🔄 سوابق مشتری حذف شده: {allCustomerHistory.Count}",
+                    $"🔄 سوابق مشتری حذف شده: {nonManualCustomerHistory.Count} (حفظ شده: {manualCustomerHistory.Count} دستی)",
                     $"🔄 سوابق بانک حذف شده: {allBankHistory.Count}",
+                    $"🔄 سوابق صندوق ارز حذف شده: {allPoolHistory.Count}",
                     $"🔄 موجودی مشتریان صفر شده: {allCustomerBalances.Count}",
                     $"🔄 موجودی بانک‌ها صفر شده: {allBankBalances.Count}",
-                    $"✅ معاملات  مجدداً محاسبه شده: {allOrders.Count}",
-                    $"✅ اسناد مجدداً محاسبه شده: {allDocuments.Count}",
+                    $"🔄 موجودی صندوق‌های ارز صفر شده: {allPools.Count}",
+                    $"✅ معاملات مجدداً محاسبه شده: {allOrders.Count} (حذف شده‌ها نادیده گرفته شد)",
+                    $"✅ اسناد مجدداً محاسبه شده: {allDocuments.Count} (حذف شده‌ها نادیده گرفته شد)",
                     "",
                     "✅ همه سوابق مالی با منطق صحیح و به ترتیب زمانی بازسازی شدند",
                     "📅 ترتیب: اول معاملات ، سپس اسناد حسابداری",
-                    "🎯 منطق صحیح: پرداخت کننده = +مبلغ، دریافت کننده = -مبلغ"
+                    "🎯 منطق صحیح: پرداخت کننده = +مبلغ، دریافت کننده = -مبلغ",
+                    "⚠️ رکوردهای دستی (Manual) حفظ شدند",
+                    "⚠️ معاملات و اسناد حذف شده (IsDeleted=true) نادیده گرفته شدند"
                 };
 
                 TempData["Success"] = string.Join("<br/>", summary);
