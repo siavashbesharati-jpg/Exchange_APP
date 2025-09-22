@@ -1,0 +1,21 @@
+-- database: ./ForexExchange.db
+
+UPDATE CustomerBalanceHistory set IsFrozen = 1;
+UPDATE CurrencyPoolHistory set IsFrozen = 1;
+UPDATE BankAccountBalanceHistory set IsFrozen = 1;
+
+
+-- Toggle IsFrozen status for CustomerBalanceHistory records created today
+UPDATE CustomerBalanceHistory 
+SET IsFrozen = NOT IsFrozen 
+WHERE DATE(CreatedAt) = '2025-09-22';
+
+-- Toggle IsFrozen status for CurrencyPoolHistory records created today
+UPDATE CurrencyPoolHistory 
+SET IsFrozen = NOT IsFrozen 
+WHERE DATE(CreatedAt) = '2025-09-22';
+
+-- Toggle IsFrozen status for BankAccountBalanceHistory records created today
+UPDATE BankAccountBalanceHistory 
+SET IsFrozen = NOT IsFrozen 
+WHERE DATE(CreatedAt) = '2025-09-22';

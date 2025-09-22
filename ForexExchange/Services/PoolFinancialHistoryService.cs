@@ -24,8 +24,8 @@ namespace ForexExchange.Services
         {
             var currencyCode = filter as string;
             
-            // Build query for CurrencyPoolHistory - EXCLUDE DELETED AND FROZEN RECORDS
-            var query = _context.CurrencyPoolHistory.Where(h => !h.IsDeleted && !h.IsFrozen);
+            // Build query for CurrencyPoolHistory - EXCLUDE ONLY DELETED RECORDS FOR REPORTING
+            var query = _context.CurrencyPoolHistory.Where(h => !h.IsDeleted);
 
             // Apply currency filter
             if (!string.IsNullOrEmpty(currencyCode))
@@ -88,7 +88,7 @@ namespace ForexExchange.Services
         {
             var currencyCode = filter as string;
             
-            var query = _context.CurrencyPoolHistory.Where(h => !h.IsDeleted && !h.IsFrozen);
+            var query = _context.CurrencyPoolHistory.Where(h => !h.IsDeleted);
 
             if (!string.IsNullOrEmpty(currencyCode))
             {
@@ -101,7 +101,7 @@ namespace ForexExchange.Services
 
             // Get current balance from latest record for each currency
             var latestBalances = await _context.CurrencyPoolHistory
-                .Where(h => !h.IsDeleted && !h.IsFrozen && (string.IsNullOrEmpty(currencyCode) || h.CurrencyCode == currencyCode))
+                .Where(h => !h.IsDeleted && (string.IsNullOrEmpty(currencyCode) || h.CurrencyCode == currencyCode))
                 .GroupBy(h => h.CurrencyCode)
                 .Select(g => new
                 {

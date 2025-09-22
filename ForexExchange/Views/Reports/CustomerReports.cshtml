@@ -88,13 +88,7 @@
                                 <i class="fas fa-plus me-1"></i>تعدیل دستی
                             </button>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <button id="recalculateBtn" class="btn btn-warning w-100" onclick="recalculateAllBalances()"
-                                title="بازمحاسبه همه موجودی‌ها بر اساس تاریخ تراکنش‌ها">
-                                <i class="fas fa-sync-alt me-1"></i>بازمحاسبه
-                            </button>
-                        </div>
+                      
                     </div>
                 </div>
             </div>
@@ -938,64 +932,8 @@
             });
     }
 
-    // ========== RECALCULATE BALANCES FUNCTION ==========
 
-    function recalculateAllBalances() {
-        if (!confirm('آیا مطمئن هستید که می‌خواهید همه موجودی‌ها را بر اساس تاریخ تراکنش‌ها بازمحاسبه کنید؟\n\nاین عملیات ممکن است چند دقیقه طول بکشد.')) {
-            return;
-        }
-
-        const recalculateBtn = document.getElementById('recalculateBtn');
-        const originalText = recalculateBtn.innerHTML;
-
-        // Show loading state
-        recalculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        recalculateBtn.disabled = true;
-
-        fetch('@Url.Action("RecalculateAllBalancesFromTransactionDates", "Database")', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: '__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
-        })
-            .then(response => {
-
-                // Check if response is JSON
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json();
-                } else {
-                    // If not JSON, read as text to see what we got
-                    return response.text().then(text => {
-                        throw new Error('Server returned HTML instead of JSON. Possibly redirected to error page.');
-                    });
-                }
-            })
-            .then(result => {
-                if (result.success) {
-                    alert('بازمحاسبه موجودی‌ها با موفقیت انجام شد!\n\n' + (result.message || 'همه موجودی‌ها بازمحاسبه شدند.'));
-
-                    // Refresh customer timeline if it's loaded
-                    if (document.getElementById('customerFilter').value) {
-                        loadCustomerTimeline();
-                    }
-                } else {
-                    alert('خطا در بازمحاسبه موجودی‌ها: ' + (result.error || result.message || 'خطای ناشناخته'));
-                }
-            })
-            .catch(error => {
-                alert('خطا در ارسال درخواست بازمحاسبه: ' + error.message);
-            })
-            .finally(() => {
-                // Restore button state
-                recalculateBtn.innerHTML = originalText;
-                recalculateBtn.disabled = false;
-            });
-    }
+   
 </script>
 
 <style>

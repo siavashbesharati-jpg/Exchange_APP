@@ -830,6 +830,12 @@ namespace ForexExchange.Controllers
             return RedirectToAction("Index");
         }
 
+
+        /// <summary>
+        /// باز محاسبه بر اساس تاریخ تراکنش
+        /// </summary>
+        /// <returns></returns>
+
         [HttpPost]
         public async Task<IActionResult> RecalculateAllBalancesFromTransactionDates()
         {
