@@ -95,6 +95,11 @@ namespace ForexExchange.Models
         [Display(Name = "Deleted By - حذف شده توسط")]
         public string? DeletedBy { get; set; }
 
+        // NEW: Frozen flag for accounting purposes - excludes from calculations but preserves for audit
+        [Required]
+        [Display(Name = "Is Frozen - منجمد شده")]
+        public bool IsFrozen { get; set; } = false;
+
         // Navigation properties
         public virtual Customer Customer { get; set; } = null!;
 

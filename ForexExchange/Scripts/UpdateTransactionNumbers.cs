@@ -31,7 +31,7 @@ namespace ForexExchange.Scripts
                 var historyRecords = await _context.CustomerBalanceHistory
                     .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument 
                                && h.ReferenceId.HasValue
-                               && !h.IsDeleted) // Only non-deleted records
+                               && !h.IsDeleted && !h.IsFrozen) // Only non-deleted and non-frozen records
                     .Include(h => h.Customer) // For logging purposes
                     .ToListAsync();
 
@@ -116,7 +116,7 @@ namespace ForexExchange.Scripts
                 var historyRecords = await _context.BankAccountBalanceHistory
                     .Where(h => h.TransactionType == BankAccountTransactionType.Document 
                                && h.ReferenceId.HasValue
-                               && !h.IsDeleted) // Only non-deleted records
+                               && !h.IsDeleted && !h.IsFrozen) // Only non-deleted and non-frozen records
                     .Include(h => h.BankAccount) // For logging purposes
                     .ToListAsync();
 
@@ -225,19 +225,19 @@ namespace ForexExchange.Scripts
 
             // CustomerBalanceHistory statistics
             var customerHistoryTotal = await _context.CustomerBalanceHistory
-                .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument && !h.IsDeleted)
+                .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument && !h.IsDeleted && !h.IsFrozen)
                 .CountAsync();
 
             var customerHistoryWithTransactionNumber = await _context.CustomerBalanceHistory
                 .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument 
-                           && !h.IsDeleted 
+                           && !h.IsDeleted && !h.IsFrozen
                            && !string.IsNullOrEmpty(h.TransactionNumber))
                 .CountAsync();
 
             // NEW: Count mismatched TransactionNumbers in CustomerBalanceHistory
             var customerHistoryMismatched = await _context.CustomerBalanceHistory
                 .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument 
-                           && !h.IsDeleted 
+                           && !h.IsDeleted && !h.IsFrozen
                            && h.ReferenceId.HasValue
                            && !string.IsNullOrEmpty(h.TransactionNumber))
                 .Join(_context.AccountingDocuments,
@@ -256,19 +256,19 @@ namespace ForexExchange.Scripts
 
             // BankAccountBalanceHistory statistics
             var bankHistoryTotal = await _context.BankAccountBalanceHistory
-                .Where(h => h.TransactionType == BankAccountTransactionType.Document && !h.IsDeleted)
+                .Where(h => h.TransactionType == BankAccountTransactionType.Document && !h.IsDeleted && !h.IsFrozen)
                 .CountAsync();
 
             var bankHistoryWithTransactionNumber = await _context.BankAccountBalanceHistory
                 .Where(h => h.TransactionType == BankAccountTransactionType.Document 
-                           && !h.IsDeleted 
+                           && !h.IsDeleted && !h.IsFrozen
                            && !string.IsNullOrEmpty(h.TransactionNumber))
                 .CountAsync();
 
             // NEW: Count mismatched TransactionNumbers in BankAccountBalanceHistory
             var bankHistoryMismatched = await _context.BankAccountBalanceHistory
                 .Where(h => h.TransactionType == BankAccountTransactionType.Document 
-                           && !h.IsDeleted 
+                           && !h.IsDeleted && !h.IsFrozen
                            && h.ReferenceId.HasValue
                            && !string.IsNullOrEmpty(h.TransactionNumber))
                 .Join(_context.AccountingDocuments,

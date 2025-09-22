@@ -1026,7 +1026,7 @@ namespace ForexExchange.Services
             var query = _context.CustomerBalanceHistory
                 .Where(h => h.CustomerId == customerId && 
                            h.CurrencyCode == currencyCode && 
-                           !h.IsDeleted); // EXCLUDE DELETED RECORDS
+                           !h.IsDeleted && !h.IsFrozen); // EXCLUDE DELETED AND FROZEN RECORDS
 
             if (fromDate.HasValue)
                 query = query.Where(h => h.CreatedAt >= fromDate.Value);
@@ -1041,7 +1041,7 @@ namespace ForexExchange.Services
             DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.CurrencyPoolHistory
-                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted); // EXCLUDE DELETED RECORDS
+                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted && !h.IsFrozen); // EXCLUDE DELETED AND FROZEN RECORDS
 
             if (fromDate.HasValue)
                 query = query.Where(h => h.CreatedAt >= fromDate.Value);
@@ -1056,7 +1056,7 @@ namespace ForexExchange.Services
             DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = _context.BankAccountBalanceHistory
-                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted); // EXCLUDE DELETED RECORDS
+                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted && !h.IsFrozen); // EXCLUDE DELETED AND FROZEN RECORDS
 
             if (fromDate.HasValue)
                 query = query.Where(h => h.CreatedAt >= fromDate.Value);
@@ -1076,7 +1076,7 @@ namespace ForexExchange.Services
             foreach (var balance in customerBalances)
             {
                 var latestHistory = await _context.CustomerBalanceHistory
-                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted)
+                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1091,7 +1091,7 @@ namespace ForexExchange.Services
             foreach (var pool in currencyPools)
             {
                 var latestHistory = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted)
+                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1106,7 +1106,7 @@ namespace ForexExchange.Services
             foreach (var balance in bankBalances)
             {
                 var latestHistory = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted)
+                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted && !h.IsFrozen)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1135,7 +1135,7 @@ namespace ForexExchange.Services
             foreach (var balance in customerBalances)
             {
                 var latestHistory = await _context.CustomerBalanceHistory
-                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted)
+                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1152,7 +1152,7 @@ namespace ForexExchange.Services
             foreach (var pool in currencyPools)
             {
                 var latestHistory = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted)
+                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1169,7 +1169,7 @@ namespace ForexExchange.Services
             foreach (var balance in bankBalances)
             {
                 var latestHistory = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted)
+                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted && !h.IsFrozen)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1601,7 +1601,7 @@ namespace ForexExchange.Services
                 .Where(h => h.CustomerId == customerId && 
                            h.CurrencyCode == currencyCode && 
                            h.Id > fromRecordId && 
-                           !h.IsDeleted)
+                           !h.IsDeleted && !h.IsFrozen)
                 .OrderBy(h => h.Id)
                 .ToListAsync();
 
@@ -1616,7 +1616,7 @@ namespace ForexExchange.Services
                 .Where(h => h.CustomerId == customerId && 
                            h.CurrencyCode == currencyCode && 
                            h.Id < fromRecordId && 
-                           !h.IsDeleted)
+                           !h.IsDeleted && !h.IsFrozen)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
@@ -1649,7 +1649,7 @@ namespace ForexExchange.Services
             var subsequentRecords = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
                            h.Id > fromRecordId && 
-                           !h.IsDeleted)
+                           !h.IsDeleted && !h.IsFrozen)
                 .OrderBy(h => h.Id)
                 .ToListAsync();
 
@@ -1663,7 +1663,7 @@ namespace ForexExchange.Services
             var lastValidRecord = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
                            h.Id < fromRecordId && 
-                           !h.IsDeleted)
+                           !h.IsDeleted && !h.IsFrozen)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
@@ -1696,7 +1696,7 @@ namespace ForexExchange.Services
             var subsequentRecords = await _context.BankAccountBalanceHistory
                 .Where(h => h.BankAccountId == bankAccountId && 
                            h.Id > fromRecordId && 
-                           !h.IsDeleted)
+                           !h.IsDeleted && !h.IsFrozen)
                 .OrderBy(h => h.Id)
                 .ToListAsync();
 
@@ -1710,7 +1710,7 @@ namespace ForexExchange.Services
             var lastValidRecord = await _context.BankAccountBalanceHistory
                 .Where(h => h.BankAccountId == bankAccountId && 
                            h.Id < fromRecordId && 
-                           !h.IsDeleted)
+                           !h.IsDeleted && !h.IsFrozen)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
@@ -1740,7 +1740,7 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Recalculating current customer balance for Customer {customerId}, Currency {currencyCode}");
             
             var latestHistory = await _context.CustomerBalanceHistory
-                .Where(h => h.CustomerId == customerId && h.CurrencyCode == currencyCode && !h.IsDeleted)
+                .Where(h => h.CustomerId == customerId && h.CurrencyCode == currencyCode && !h.IsDeleted && !h.IsFrozen)
                 .OrderByDescending(h => h.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -1770,7 +1770,7 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Recalculating current currency pool balance for Currency {currencyCode}");
             
             var latestHistory = await _context.CurrencyPoolHistory
-                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted)
+                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted && !h.IsFrozen)
                 .OrderByDescending(h => h.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -1800,7 +1800,7 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Recalculating current bank account balance for Bank Account {bankAccountId}");
             
             var latestHistory = await _context.BankAccountBalanceHistory
-                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted)
+                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted && !h.IsFrozen)
                 .OrderByDescending(h => h.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -2221,9 +2221,9 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation("Recalculating customer balances from history");
 
-            // Get all unique customer+currency combinations (excluding deleted records)
+            // Get all unique customer+currency combinations (excluding deleted and frozen records)
             var customerCurrencyCombinations = await _context.CustomerBalanceHistory
-                .Where(h => !h.IsDeleted) // Only consider non-deleted records
+                .Where(h => !h.IsDeleted && !h.IsFrozen) // Only consider non-deleted and non-frozen records
                 .Select(h => new { h.CustomerId, h.CurrencyCode })
                 .Distinct()
                 .ToListAsync();
@@ -2243,11 +2243,11 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Processing Customer {combination.CustomerId} - Currency {combination.CurrencyCode}");
 
                 // Get all history records for this specific customer+currency, ordered by transaction date
-                // IMPORTANT: Exclude deleted records from the sequence
+                // IMPORTANT: Exclude deleted and frozen records from the sequence
                 var historyRecords = await _context.CustomerBalanceHistory
                     .Where(h => h.CustomerId == combination.CustomerId && 
                                h.CurrencyCode == combination.CurrencyCode &&
-                               !h.IsDeleted) // EXCLUDE DELETED RECORDS!
+                               !h.IsDeleted && !h.IsFrozen) // EXCLUDE DELETED AND FROZEN RECORDS!
                     .OrderBy(h => h.TransactionDate)
                     .ThenBy(h => h.Id) // Secondary sort for same transaction dates
                     .ToListAsync();
@@ -2407,9 +2407,9 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation("Recalculating currency pool balances from history");
 
-            // Get all unique currencies that have pool history (excluding deleted records)
+            // Get all unique currencies that have pool history (excluding deleted and frozen records)
             var currencies = await _context.CurrencyPoolHistory
-                .Where(h => !h.IsDeleted) // Only consider non-deleted records
+                .Where(h => !h.IsDeleted && !h.IsFrozen) // Only consider non-deleted and non-frozen records
                 .Select(h => h.CurrencyCode)
                 .Distinct()
                 .ToListAsync();
@@ -2422,9 +2422,9 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Processing Currency Pool: {currencyCode}");
 
                 // Get all pool history records for this currency, ordered by transaction date
-                // IMPORTANT: Exclude deleted records from the sequence
+                // IMPORTANT: Exclude deleted and frozen records from the sequence
                 var historyRecords = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted) // EXCLUDE DELETED RECORDS!
+                    .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted && !h.IsFrozen) // EXCLUDE DELETED AND FROZEN RECORDS!
                     .OrderBy(h => h.TransactionDate)
                     .ThenBy(h => h.Id) // Secondary sort for same transaction dates
                     .ToListAsync();
@@ -2484,9 +2484,9 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation("Recalculating bank account balances from history");
 
-            // Get all unique bank accounts that have balance history (excluding deleted records)
+            // Get all unique bank accounts that have balance history (excluding deleted and frozen records)
             var bankAccountIds = await _context.BankAccountBalanceHistory
-                .Where(h => !h.IsDeleted) // Only consider non-deleted records
+                .Where(h => !h.IsDeleted && !h.IsFrozen) // Only consider non-deleted and non-frozen records
                 .Select(h => h.BankAccountId)
                 .Distinct()
                 .ToListAsync();
@@ -2499,9 +2499,9 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Processing Bank Account ID: {bankAccountId}");
 
                 // Get all bank account history records for this account, ordered by transaction date
-                // IMPORTANT: Exclude deleted records from the sequence
+                // IMPORTANT: Exclude deleted and frozen records from the sequence
                 var historyRecords = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted) // EXCLUDE DELETED RECORDS!
+                    .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted && !h.IsFrozen) // EXCLUDE DELETED AND FROZEN RECORDS!
                     .OrderBy(h => h.TransactionDate)
                     .ThenBy(h => h.Id) // Secondary sort for same transaction dates
                     .ToListAsync();
