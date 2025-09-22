@@ -54,6 +54,7 @@ namespace ForexExchange.Controllers
             ViewData["CustomerSortParm"] = sortOrder == "customer" ? "customer_desc" : "customer";
             ViewData["AmountSortParm"] = sortOrder == "amount" ? "amount_desc" : "amount";
             ViewData["DateSortParm"] = sortOrder == "date" ? "date_desc" : "date";
+            ViewData["StatusSortParm"] = sortOrder == "status" ? "status_desc" : "status";
 
             if (searchString != null)
             {
@@ -150,6 +151,12 @@ namespace ForexExchange.Controllers
                 case "date_desc":
                     documents = documents.OrderByDescending(d => d.DocumentDate);
                     break;
+                case "status":
+                    documents = documents.OrderBy(d => d.IsVerified);
+                    break;
+                case "status_desc":
+                    documents = documents.OrderByDescending(d => d.IsVerified);
+                    break;
                 default:
                     documents = documents.OrderByDescending(d => d.CreatedAt);
                     break;
@@ -175,6 +182,18 @@ namespace ForexExchange.Controllers
             ViewBag.PageSize = pageSize;
             ViewBag.HasPreviousPage = pageNumber > 1;
             ViewBag.HasNextPage = pageNumber < ViewBag.TotalPages;
+
+            // Load customers list for filter dropdown
+            var customers = await _context.Customers
+                .Where(c => c.IsActive && c.IsSystem == false)
+                .OrderBy(c => c.FullName)
+                .ToListAsync();
+
+            ViewBag.CustomersList = customers.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = c.Id.ToString(),
+                Text = c.FullName
+            }).ToList();
 
             return View(pagedDocuments);
         }

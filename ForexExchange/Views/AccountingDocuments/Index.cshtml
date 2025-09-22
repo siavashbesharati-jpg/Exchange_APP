@@ -39,19 +39,38 @@
                         <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]" class="form-control" placeholder="جستجو با شناسه سند...">
                     </div>
                 </div>
-                <div class="col-sm-6 col-md-3">
+                <div class="col-sm-6 col-md-2">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
                         <input type="text" name="ReferenceNumber" value="@ViewData["ReferenceFilter"]" class="form-control" placeholder="شناسه رهگیری...">
                     </div>
                 </div>
-                <div class="col-sm-12 col-md-6 text-end">
+                <div class="col-sm-6 col-md-2">
+                    <select name="customerFilter" class="form-select">
+                        <option value="">همه مشتری‌ها</option>
+                        @if (ViewBag.CustomersList != null)
+                        {
+                            @foreach (var customer in ViewBag.CustomersList)
+                            {
+                                <option value="@customer.Value" selected="@(customer.Value == ViewData["CustomerFilter"]?.ToString())">
+                                    @customer.Text
+                                </option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md-2">
+                    <select name="statusFilter" class="form-select">
+                        <option value="">همه وضعیت‌ها</option>
+                        <option value="false" selected="@(ViewData["StatusFilter"]?.ToString() == "False")">در انتظار تأیید</option>
+                        <option value="true" selected="@(ViewData["StatusFilter"]?.ToString() == "True")">تأیید شده</option>
+                    </select>
+                </div>
+                <div class="col-sm-12 col-md-3 text-end">
                     <input type="hidden" name="currentFilter" value="@ViewData["CurrentFilter"]" />
                     <input type="hidden" name="sortOrder" value="@ViewData["CurrentSort"]" />
                     <input type="hidden" name="typeFilter" value="@ViewData["TypeFilter"]" />
-                    <input type="hidden" name="statusFilter" value="@ViewData["StatusFilter"]" />
-                    <input type="hidden" name="customerFilter" value="@ViewData["CustomerFilter"]" />
-                    <button type="submit" class="btn btn-primary">جستجو</button>
+                    <button type="submit" class="btn btn-primary me-2">جستجو</button>
                     <a asp-action="Index" class="btn btn-outline-secondary">حذف فیلترها</a>
                 </div>
             </form>
@@ -122,7 +141,12 @@
                                        asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
                                        asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">تاریخ سند</a>
                                 </th>
-                                <th>وضعیت</th>
+                                <th>
+                                    <a class="text-white text-decoration-none" asp-action="Index" asp-route-sortOrder="@ViewData["StatusSortParm"]"
+                                       asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                       asp-route-typeFilter="@ViewData["TypeFilter"]" asp-route-statusFilter="@ViewData["StatusFilter"]"
+                                       asp-route-referenceNumber="@ViewData["ReferenceFilter"]" asp-route-page="1">وضعیت</a>
+                                </th>
                                 <th>عملیات</th>
                             </tr>
                         </thead>
@@ -191,9 +215,19 @@
                                         }
                                         else
                                         {
-                                            <span class="badge bg-warning">
-                                                <i class="fas fa-clock"></i> در انتظار تأیید
-                                            </span>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock"></i> در انتظار تأیید
+                                                </span>
+                                                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-success" 
+                                                            onclick="confirmDocument(@item.Id)" 
+                                                            title="تأیید سند">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                }
+                                            </div>
                                         }
                                     </td>
                                     <td>
