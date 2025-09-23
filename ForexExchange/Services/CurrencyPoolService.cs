@@ -301,14 +301,36 @@ namespace ForexExchange.Services
             var pool = await GetPoolAsync(currencyId);
             if (pool == null) return;
 
-            // Count active buy orders (orders where FromCurrencyId = currencyId, meaning the exchange to buy this currency)
-            var activeBuyOrders = await _context.Orders
-                .Where(o => o.FromCurrencyId == currencyId)
+            // Get currency code for this pool
+            var currencyCode = pool.Currency?.Code ?? pool.CurrencyCode;
+            if (string.IsNullOrEmpty(currencyCode))
+            {
+                _logger.LogWarning($"Currency code not found for currency ID {currencyId}");
+                return;
+            }
+
+            // Count active buy orders from CurrencyPoolHistory
+            // Buy orders are transactions where PoolTransactionType = 'Buy' (exchange is buying this currency)
+            var activeBuyOrders = await _context.CurrencyPoolHistory
+                .Where(h => h.CurrencyCode == currencyCode && 
+                           h.TransactionType == CurrencyPoolTransactionType.Order && 
+                           !h.IsFrozen && 
+                           !h.IsDeleted &&
+                           h.PoolTransactionType == "Buy")
+                .Select(h => h.ReferenceId)
+                .Distinct()
                 .CountAsync();
 
-            // Count active sell orders (orders where ToCurrencyId = currencyId, meaning the  exchange want to sell this currency)
-            var activeSellOrders = await _context.Orders
-                .Where(o => o.ToCurrencyId == currencyId)
+            // Count active sell orders from CurrencyPoolHistory  
+            // Sell orders are transactions where PoolTransactionType = 'Sell' (exchange is selling this currency)
+            var activeSellOrders = await _context.CurrencyPoolHistory
+                .Where(h => h.CurrencyCode == currencyCode && 
+                           h.TransactionType == CurrencyPoolTransactionType.Order && 
+                           !h.IsFrozen && 
+                           !h.IsDeleted &&
+                           h.PoolTransactionType == "Sell")
+                .Select(h => h.ReferenceId)
+                .Distinct()
                 .CountAsync();
 
             pool.ActiveBuyOrderCount = activeBuyOrders;
@@ -318,7 +340,7 @@ namespace ForexExchange.Services
             _context.CurrencyPools.Update(pool);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Order counts updated for currency ID {currencyId}: Buy={activeBuyOrders}, Sell={activeSellOrders}");
+            _logger.LogInformation($"Order counts updated for currency ID {currencyId} (from CurrencyPoolHistory): Buy={activeBuyOrders}, Sell={activeSellOrders}");
         }
 
         /// <summary>
