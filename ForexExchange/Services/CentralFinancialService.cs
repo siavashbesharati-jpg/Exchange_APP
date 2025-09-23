@@ -2223,7 +2223,7 @@ namespace ForexExchange.Services
 
             // Get all unique customer+currency combinations (excluding deleted and frozen records)
             var customerCurrencyCombinations = await _context.CustomerBalanceHistory
-                .Where(h => !h.IsDeleted && !h.IsFrozen) // Only consider non-deleted and non-frozen records
+                .Where(h => !h.IsDeleted ) // Only consider non-deleted 
                 .Select(h => new { h.CustomerId, h.CurrencyCode })
                 .Distinct()
                 .ToListAsync();
@@ -2247,7 +2247,7 @@ namespace ForexExchange.Services
                 var historyRecords = await _context.CustomerBalanceHistory
                     .Where(h => h.CustomerId == combination.CustomerId &&
                                h.CurrencyCode == combination.CurrencyCode &&
-                               !h.IsDeleted && !h.IsFrozen) // EXCLUDE DELETED AND FROZEN RECORDS!
+                               !h.IsDeleted) // EXCLUDE DELETED 
                     .OrderBy(h => h.TransactionDate)
                     .ThenBy(h => h.Id) // Secondary sort for same transaction dates
                     .ToListAsync();
