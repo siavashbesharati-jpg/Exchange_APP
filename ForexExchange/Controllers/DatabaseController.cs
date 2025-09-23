@@ -936,6 +936,208 @@ namespace ForexExchange.Controllers
             }
         }
 
+        /// <summary>
+        /// Recalculate customer balance history with decimal point rounding for non-IRR currencies
+        /// بازمحاسبه تاریخچه موجودی مشتریان با گرد کردن اعشار برای ارزهای غیر ریالی
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> RecalculateCustomerBalancesWithRounding()
+        {
+            try
+            {
+                var recalcLog = new List<string>();
+                recalcLog.Add("شروع بازمحاسبه موجودی‌های مشتریان با گرد کردن اعشار...");
+
+                // Get counts before recalculation
+                var customerBalanceCount = await _context.CustomerBalances.CountAsync();
+                var customerHistoryCount = await _context.CustomerBalanceHistory
+                    .Where(h => !h.IsDeleted )
+                    .CountAsync();
+
+                recalcLog.Add($"آمار قبل از بازمحاسبه:");
+                recalcLog.Add($"- موجودی مشتری: {customerBalanceCount}");
+                recalcLog.Add($"- تاریخچه مشتری (فعال): {customerHistoryCount}");
+
+                // Reset all customer balances to zero
+                var allCustomerBalances = await _context.CustomerBalances.ToListAsync();
+                foreach (var balance in allCustomerBalances)
+                {
+                    balance.Balance = 0;
+                    balance.LastUpdated = DateTime.UtcNow;
+                    balance.Notes = "Reset for recalculation with rounding";
+                }
+
+                recalcLog.Add($"✅ {allCustomerBalances.Count} موجودی مشتری صفر شد");
+
+                // Get all customer balance history records sorted by transaction date (active only)
+                var allHistoryRecords = await _context.CustomerBalanceHistory
+                    .Where(h => !h.IsDeleted)
+                    .OrderBy(h => h.TransactionDate)
+                    .ThenBy(h => h.Id) // Secondary sort by ID for consistency
+                    .ToListAsync();
+
+                recalcLog.Add($"✅ {allHistoryRecords.Count} رکورد تاریخچه برای پردازش یافت شد");
+
+                // Group by customer and currency to track running balances
+                var customerCurrencyBalances = new Dictionary<string, decimal>();
+                int processedRecords = 0;
+                int roundedRecords = 0;
+
+                foreach (var history in allHistoryRecords)
+                {
+                    var key = $"{history.CustomerId}_{history.CurrencyCode}";
+                    
+                    // Get current balance for this customer-currency combination
+                    if (!customerCurrencyBalances.ContainsKey(key))
+                    {
+                        customerCurrencyBalances[key] = 0;
+                    }
+
+                    var previousBalance = customerCurrencyBalances[key];
+                    
+                    // Apply rounding for non-IRR currencies
+                    decimal transactionAmount = history.TransactionAmount;
+                    decimal roundedPreviousBalance = previousBalance;
+                    
+                    if (history.CurrencyCode != "IRR")
+                    {
+                        // Round to 2 decimal places for non-IRR currencies
+                        transactionAmount = Math.Round(transactionAmount, 2, MidpointRounding.AwayFromZero);
+                        roundedPreviousBalance = Math.Round(previousBalance, 2, MidpointRounding.AwayFromZero);
+                        
+                        if (Math.Abs(transactionAmount - history.TransactionAmount) > 0.001m ||
+                            Math.Abs(roundedPreviousBalance - previousBalance) > 0.001m)
+                        {
+                            roundedRecords++;
+                        }
+                    }
+
+                    var newBalance = roundedPreviousBalance + transactionAmount;
+                    
+                    // Apply rounding to final balance for non-IRR currencies
+                    if (history.CurrencyCode != "IRR")
+                    {
+                        newBalance = Math.Round(newBalance, 2, MidpointRounding.AwayFromZero);
+                    }
+
+                    // Update the history record with rounded values
+                    history.BalanceBefore = roundedPreviousBalance;
+                    history.TransactionAmount = transactionAmount;
+                    history.BalanceAfter = newBalance;
+
+                    // Update the running balance
+                    customerCurrencyBalances[key] = newBalance;
+                    
+                    processedRecords++;
+                    
+                    if (processedRecords % 1000 == 0)
+                    {
+                        recalcLog.Add($"⏳ پردازش شده: {processedRecords}/{allHistoryRecords.Count} رکورد");
+                    }
+                }
+
+                recalcLog.Add($"✅ {processedRecords} رکورد تاریخچه پردازش شد");
+                recalcLog.Add($"✅ {roundedRecords} رکورد گرد شد (ارزهای غیر ریالی)");
+
+                // Update CustomerBalance table with final values
+                int updatedBalances = 0;
+                foreach (var kvp in customerCurrencyBalances)
+                {
+                    var parts = kvp.Key.Split('_');
+                    var customerId = int.Parse(parts[0]);
+                    var currencyCode = parts[1];
+                    var finalBalance = kvp.Value;
+
+                    var customerBalance = await _context.CustomerBalances
+                        .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
+
+                    if (customerBalance != null)
+                    {
+                        customerBalance.Balance = finalBalance;
+                        customerBalance.LastUpdated = DateTime.UtcNow;
+                        customerBalance.Notes = "Recalculated with rounding - Database Admin";
+                        updatedBalances++;
+                    }
+                }
+
+                recalcLog.Add($"✅ {updatedBalances} موجودی نهایی بروزرسانی شد");
+
+                // Save all changes
+                await _context.SaveChangesAsync();
+                recalcLog.Add("✅ تمام تغییرات ذخیره شد");
+
+                // Get some sample results to verify
+                var sampleCustomerBalances = await _context.CustomerBalances
+                    .Include(cb => cb.Customer)
+                    .Where(cb => cb.Balance != 0)
+                    .Take(10)
+                    .ToListAsync();
+
+                recalcLog.Add("نمونه موجودی‌های نهایی:");
+                foreach (var balance in sampleCustomerBalances)
+                {
+                    recalcLog.Add($"- مشتری {balance.Customer?.FullName}: {balance.Balance:F2} {balance.CurrencyCode}");
+                }
+
+                var summary = new[]
+                {
+                    "✅ بازمحاسبه موجودی‌های مشتریان با گرد کردن اعشار انجام شد",
+                    $"📊 {processedRecords} رکورد تاریخچه پردازش شد",
+                    $"🔄 {roundedRecords} رکورد گرد شد (ارزهای غیر ریالی به 2 رقم اعشار)",
+                    $"💾 {updatedBalances} موجودی نهایی بروزرسانی شد",
+                    "🎯 ترتیب پردازش: بر اساس TransactionDate (تاریخ واقعی تراکنش)",
+                    "📈 موجودی‌ها حالا دقیقاً منطبق با ترتیب زمانی واقعی معاملات است",
+                    "🔢 ارزهای غیر ریالی: گرد شده به 2 رقم اعشار (مثل 14.573 → 14.57)",
+                    "💰 ارز ریال (IRR): بدون تغییر اعشار (حفظ دقت کامل)"
+                };
+
+                // Check if this is an AJAX request
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
+
+                if (isAjaxRequest)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        message = string.Join("\n", summary),
+                        log = string.Join("\n", recalcLog),
+                        statistics = new
+                        {
+                            totalHistoryRecords = processedRecords,
+                            roundedRecords = roundedRecords,
+                            updatedBalances = updatedBalances
+                        }
+                    });
+                }
+
+                // Return redirect for regular form submissions
+                TempData["Success"] = string.Join("<br/>", summary);
+                TempData["RecalcLog"] = string.Join("\n", recalcLog);
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                // Check if this is an AJAX request
+                bool isAjaxRequest = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                                   Request.Headers["Accept"].ToString().Contains("application/json");
+
+                if (isAjaxRequest)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        error = $"خطا در بازمحاسبه موجودی‌های مشتریان: {ex.Message}"
+                    });
+                }
+
+                // Return redirect for regular form submissions
+                TempData["Error"] = $"خطا در بازمحاسبه موجودی‌های مشتریان: {ex.Message}";
+                return RedirectToAction("Index");
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateManualCustomerBalanceHistory(
             int customerId,
