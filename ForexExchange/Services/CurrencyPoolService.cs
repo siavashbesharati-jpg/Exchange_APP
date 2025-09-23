@@ -310,25 +310,25 @@ namespace ForexExchange.Services
             }
 
             // Count active buy orders from CurrencyPoolHistory
-            // Buy orders are transactions where PoolTransactionType = 'Buy' (exchange is buying this currency)
+            // Buy orders are transactions where TransactionAmount > 0 (exchange is buying/receiving this currency)
             var activeBuyOrders = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
                            h.TransactionType == CurrencyPoolTransactionType.Order && 
                            !h.IsFrozen && 
                            !h.IsDeleted &&
-                           h.PoolTransactionType == "Buy")
+                           h.TransactionAmount > 0) // Positive = Pool increase = Exchange buying
                 .Select(h => h.ReferenceId)
                 .Distinct()
                 .CountAsync();
 
             // Count active sell orders from CurrencyPoolHistory  
-            // Sell orders are transactions where PoolTransactionType = 'Sell' (exchange is selling this currency)
+            // Sell orders are transactions where TransactionAmount < 0 (exchange is selling/giving this currency)
             var activeSellOrders = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
                            h.TransactionType == CurrencyPoolTransactionType.Order && 
                            !h.IsFrozen && 
                            !h.IsDeleted &&
-                           h.PoolTransactionType == "Sell")
+                           h.TransactionAmount < 0) // Negative = Pool decrease = Exchange selling
                 .Select(h => h.ReferenceId)
                 .Distinct()
                 .CountAsync();
