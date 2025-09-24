@@ -2286,60 +2286,82 @@ namespace ForexExchange.Controllers
                 await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Created coherent bank account balance history for {bankAccountGroups.Count} bank account + currency combinations");
                 
-                // STEP 4: Rebuild customer balance history from non-deleted documents (including frozen)
-                // NOTE: For customer balances, we include frozen documents to maintain complete customer transaction history
+                // STEP 4: Rebuild coherent customer balance history from both orders and documents (including frozen, excluding only deleted)
                 logMessages.Add("");
-                logMessages.Add("STEP 4: Rebuilding customer balances from non-deleted documents (including frozen for customer history)...");
+                logMessages.Add("STEP 4: Rebuilding coherent customer balance history from orders and documents (including frozen for customer history)...");
                 
+                // Get all non-deleted orders and documents
                 var allValidDocuments = await _context.AccountingDocuments
                     .Where(d => !d.IsDeleted) // Include frozen documents for customer balance history
-                    .OrderBy(d => d.DocumentDate)
                     .ToListAsync();
                 
-                logMessages.Add($"Processing {allValidDocuments.Count} valid (non-deleted) documents for customer balance history...");
+                var allValidOrders = await _context.Orders
+                    .Where(o => !o.IsDeleted) // Include frozen orders for customer balance history  
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .ToListAsync();
                 
-                // Group customer documents by customer + currency for coherent history
-                var customerItems = new List<(int CustomerId, string CurrencyCode, AccountingDocument Document, bool IsDebit)>();
+                logMessages.Add($"Processing {allValidDocuments.Count} valid documents and {allValidOrders.Count} valid orders for customer balance history...");
                 
+                // Create unified transaction items for customers from both orders and documents
+                var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int ReferenceId, decimal Amount, string Description)>();
+                
+                // Add document transactions
                 foreach (var d in allValidDocuments)
                 {
                     if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue)
-                        customerItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d, true));
+                        customerTransactionItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, $"Document #{d.Id}: {d.Type} (Payer)"));
                     if (d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
-                        customerItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d, false));
+                        customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, -d.Amount, $"Document #{d.Id}: {d.Type} (Receiver)"));
                 }
                 
-                var customerGroups = customerItems
+                // Add order transactions
+                foreach (var o in allValidOrders)
+                {
+                    // Customer pays FromAmount in FromCurrency
+                    customerTransactionItems.Add((o.CustomerId, o.FromCurrency.Code, o.CreatedAt, "Order", o.Id, -o.FromAmount, $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Paid)"));
+                    
+                    // Customer receives ToAmount in ToCurrency
+                    customerTransactionItems.Add((o.CustomerId, o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, o.ToAmount, $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Received)"));
+                }
+                
+                // Group by customer + currency and create coherent history
+                var customerGroups = customerTransactionItems
                     .GroupBy(x => new { x.CustomerId, x.CurrencyCode })
                     .ToList();
+                
+                logMessages.Add($"Creating coherent history for {customerGroups.Count} customer + currency combinations...");
                 
                 foreach (var customerGroup in customerGroups)
                 {
                     var customerId = customerGroup.Key.CustomerId;
                     var currencyCode = customerGroup.Key.CurrencyCode;
-                    var customerDocuments = customerGroup.OrderBy(x => x.Document.DocumentDate).ToList();
                     
-                    if (!customerDocuments.Any()) continue;
+                    // Order all transactions chronologically by TransactionDate
+                    var orderedTransactions = customerGroup.OrderBy(x => x.TransactionDate).ToList();
                     
-                    // Process documents chronologically for this customer + currency
+                    if (!orderedTransactions.Any()) continue;
+                    
+                    // Process transactions chronologically for this customer + currency
                     decimal runningBalance = 0;
                     
-                    foreach (var item in customerDocuments)
+                    foreach (var transaction in orderedTransactions)
                     {
-                        var document = item.Document;
-                        var transactionAmount = item.IsDebit ? -document.Amount : document.Amount;
+                        var transactionType = transaction.TransactionType == "Order" 
+                            ? CustomerBalanceTransactionType.Order 
+                            : CustomerBalanceTransactionType.AccountingDocument;
                         
                         var customerHistory = new CustomerBalanceHistory
                         {
                             CustomerId = customerId,
                             CurrencyCode = currencyCode,
-                            TransactionType = CustomerBalanceTransactionType.AccountingDocument,
-                            ReferenceId = document.Id,
+                            TransactionType = transactionType,
+                            ReferenceId = transaction.ReferenceId,
                             BalanceBefore = runningBalance,
-                            TransactionAmount = transactionAmount,
-                            BalanceAfter = runningBalance + transactionAmount,
-                            Description = $"Document #{document.Id}: {document.Type}",
-                            TransactionDate = document.DocumentDate,
+                            TransactionAmount = transaction.Amount,
+                            BalanceAfter = runningBalance + transaction.Amount,
+                            Description = transaction.Description,
+                            TransactionDate = transaction.TransactionDate,
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = performedBy,
                             IsDeleted = false
@@ -2370,7 +2392,7 @@ namespace ForexExchange.Controllers
                 }
                 
                 await _context.SaveChangesAsync();
-                logMessages.Add($"✓ Rebuilt customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} valid documents");
+                logMessages.Add($"✓ Rebuilt coherent customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} documents and {allValidOrders.Count} orders");
                 
                 await dbTransaction.CommitAsync();
                 
