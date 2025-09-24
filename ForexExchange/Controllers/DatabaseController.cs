@@ -2011,11 +2011,11 @@ namespace ForexExchange.Controllers
         /// Comprehensive rebuild of all financial balances based on new IsFrozen strategy:
         /// - Pool balances rebuilt from non-deleted AND non-frozen orders only with coherent history starting from zero
         /// - Bank account balances rebuilt from non-deleted AND non-frozen documents only with coherent history starting from zero
-        /// - Customer balance history rebuilt from non-deleted documents (including frozen)
+        /// - Customer balance history rebuilt from non-deleted orders, documents, and manual records (including frozen orders/documents)
         /// - Active buy/sell counts recalculated properly based on non-frozen orders
         /// 
         /// This ensures frozen historical records don't affect current balance calculations
-        /// but are preserved for customer balance history audit trail.
+        /// but are preserved for customer balance history audit trail, including manual adjustments.
         /// Creates coherent balance history chains starting from zero before first non-frozen record.
         /// </summary>
         [HttpPost]
@@ -2286,9 +2286,9 @@ namespace ForexExchange.Controllers
                 await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Created coherent bank account balance history for {bankAccountGroups.Count} bank account + currency combinations");
                 
-                // STEP 4: Rebuild coherent customer balance history from both orders and documents (including frozen, excluding only deleted)
+                // STEP 4: Rebuild coherent customer balance history from orders, documents, and manual records (including frozen, excluding only deleted)
                 logMessages.Add("");
-                logMessages.Add("STEP 4: Rebuilding coherent customer balance history from orders and documents (including frozen for customer history)...");
+                logMessages.Add("STEP 4: Rebuilding coherent customer balance history from orders, documents, and manual records (including frozen for customer history)...");
                 
                 // Get all non-deleted orders and documents
                 var allValidDocuments = await _context.AccountingDocuments
@@ -2301,10 +2301,15 @@ namespace ForexExchange.Controllers
                     .Include(o => o.ToCurrency)
                     .ToListAsync();
                 
-                logMessages.Add($"Processing {allValidDocuments.Count} valid documents and {allValidOrders.Count} valid orders for customer balance history...");
+                // Get all non-deleted manual customer balance history records
+                var allValidManualRecords = await _context.CustomerBalanceHistory
+                    .Where(h => !h.IsDeleted && h.TransactionType == CustomerBalanceTransactionType.Manual) // Include manual records for customer history
+                    .ToListAsync();
                 
-                // Create unified transaction items for customers from both orders and documents
-                var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int ReferenceId, decimal Amount, string Description)>();
+                logMessages.Add($"Processing {allValidDocuments.Count} valid documents, {allValidOrders.Count} valid orders, and {allValidManualRecords.Count} manual records for customer balance history...");
+                
+                // Create unified transaction items for customers from orders, documents, and manual records
+                var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>();
                 
                 // Add document transactions
                 foreach (var d in allValidDocuments)
@@ -2323,6 +2328,13 @@ namespace ForexExchange.Controllers
                     
                     // Customer receives ToAmount in ToCurrency
                     customerTransactionItems.Add((o.CustomerId, o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, o.ToAmount, $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Received)"));
+                }
+                
+                // Add manual transactions
+                foreach (var m in allValidManualRecords)
+                {
+                    // Manual transactions are already complete customer balance history records
+                    customerTransactionItems.Add((m.CustomerId, m.CurrencyCode, m.TransactionDate, "Manual", m.ReferenceId, m.TransactionAmount, m.Description ?? $"Manual adjustment: {m.TransactionAmount:N2} {m.CurrencyCode}"));
                 }
                 
                 // Group by customer + currency and create coherent history
@@ -2347,9 +2359,13 @@ namespace ForexExchange.Controllers
                     
                     foreach (var transaction in orderedTransactions)
                     {
-                        var transactionType = transaction.TransactionType == "Order" 
-                            ? CustomerBalanceTransactionType.Order 
-                            : CustomerBalanceTransactionType.AccountingDocument;
+                        var transactionType = transaction.TransactionType switch
+                        {
+                            "Order" => CustomerBalanceTransactionType.Order,
+                            "Document" => CustomerBalanceTransactionType.AccountingDocument,
+                            "Manual" => CustomerBalanceTransactionType.Manual,
+                            _ => CustomerBalanceTransactionType.AccountingDocument
+                        };
                         
                         var customerHistory = new CustomerBalanceHistory
                         {
@@ -2392,7 +2408,7 @@ namespace ForexExchange.Controllers
                 }
                 
                 await _context.SaveChangesAsync();
-                logMessages.Add($"✓ Rebuilt coherent customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} documents and {allValidOrders.Count} orders");
+                logMessages.Add($"✓ Rebuilt coherent customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} documents, {allValidOrders.Count} orders, and {allValidManualRecords.Count} manual records");
                 
                 await dbTransaction.CommitAsync();
                 
@@ -2402,6 +2418,7 @@ namespace ForexExchange.Controllers
                 logMessages.Add("✅ All balance histories now start from zero with coherent balance chains");
                 logMessages.Add("✅ Active buy/sell counts recalculated based on non-frozen orders only");
                 logMessages.Add("✅ Frozen records excluded from pool/bank calculations but included in customer history");
+                logMessages.Add("✅ Manual customer balance adjustments preserved in complete customer history");
                 
                 var logSummary = string.Join("\n", logMessages);
                 TempData["Success"] = "بازسازی کامل موجودی‌های مالی با زنجیره‌های منسجم موجودی با موفقیت انجام شد!";
