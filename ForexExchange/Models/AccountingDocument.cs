@@ -123,6 +123,11 @@ namespace ForexExchange.Models
         [Display(Name = "Deleted By - حذف شده توسط")]
         public string? DeletedBy { get; set; }
 
+        // Frozen flag for historical records - excludes from balance calculations
+        [Required]
+        [Display(Name = "Is Frozen - منجمد شده")]
+        public bool IsFrozen { get; set; } = false;
+
         // Navigation properties
         [Display(Name = "Payer Customer - مشتری پرداخت کننده")]
         public Customer? PayerCustomer { get; set; }

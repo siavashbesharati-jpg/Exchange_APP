@@ -1,21 +1,37 @@
 -- database: ./ForexExchange.db
 
-UPDATE CustomerBalanceHistory set IsFrozen = 1;
-UPDATE CurrencyPoolHistory set IsFrozen = 1;
-UPDATE BankAccountBalanceHistory set IsFrozen = 1;
+-- Step 1: Check what's in the database first
+SELECT 'Customers' as TableName, COUNT(*) as RecordCount FROM Customers;
+SELECT 'Currencies' as TableName, COUNT(*) as RecordCount FROM Currencies;
+SELECT 'Orders' as TableName, COUNT(*) as RecordCount FROM Orders;
+SELECT 'AccountingDocuments' as TableName, COUNT(*) as RecordCount FROM AccountingDocuments;
 
+-- Step 2: Check if IsFrozen columns exist
+PRAGMA table_info(Orders);
+PRAGMA table_info(AccountingDocuments);
 
--- Toggle IsFrozen status for CustomerBalanceHistory records created today
-UPDATE CustomerBalanceHistory 
-SET IsFrozen = NOT IsFrozen 
-WHERE DATE(CreatedAt) = '2025-09-22';
+-- Step 3: If database has data, disable foreign keys and update frozen flags
+PRAGMA foreign_keys = OFF;
 
--- Toggle IsFrozen status for CurrencyPoolHistory records created today
-UPDATE CurrencyPoolHistory 
-SET IsFrozen = NOT IsFrozen 
-WHERE DATE(CreatedAt) = '2025-09-22';
+UPDATE Orders 
+SET IsFrozen = 1 
+WHERE date(CreatedAt) < date('2025-09-22');
 
--- Toggle IsFrozen status for BankAccountBalanceHistory records created today
-UPDATE BankAccountBalanceHistory 
-SET IsFrozen = NOT IsFrozen 
-WHERE DATE(CreatedAt) = '2025-09-22';
+UPDATE AccountingDocuments 
+SET IsFrozen = 1 
+WHERE date(DocumentDate) < date('2025-09-22');
+
+PRAGMA foreign_keys = ON;
+
+-- Step 4: Show results
+SELECT 'Orders Updated' as Result, 
+       COUNT(*) as Total,
+       COUNT(CASE WHEN IsFrozen = 1 THEN 1 END) as Frozen,
+       COUNT(CASE WHEN IsFrozen = 0 THEN 1 END) as Active
+FROM Orders;
+
+SELECT 'AccountingDocuments Updated' as Result,
+       COUNT(*) as Total, 
+       COUNT(CASE WHEN IsFrozen = 1 THEN 1 END) as Frozen,
+       COUNT(CASE WHEN IsFrozen = 0 THEN 1 END) as Active
+FROM AccountingDocuments;

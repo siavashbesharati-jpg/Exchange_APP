@@ -292,7 +292,15 @@
                                         </button>
                                     </form>
 
-                                    <button type="button" class="btn btn-outline-info w-100 mb-2" onclick="getTransactionNumberReport()">
+                                    <form asp-action="RebuildAllFinancialBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید همه موجودی‌ها را بر اساس استراتژی جدید IsFrozen بازسازی کنید؟\n\n🔄 این عمل:\n• همه موجودی‌ها را صفر می‌کند\n• موجودی‌های صندوق را فقط از سفارشات غیرحذف‌شده و غیرمنجمد بازسازی می‌کند\n• موجودی‌های حساب بانکی را فقط از اسناد غیرحذف‌شده و غیرمنجمد بازسازی می‌کند\n• موجودی‌های مشتری را از همه اسناد غیرحذف‌شده (شامل منجمدها) بازسازی می‌کند\n\n⚠️ این عمل بر اساس منطق جدید IsFrozen انجام می‌شود!')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger w-100 mb-2">
+                                            <i class="fas fa-sync-alt me-2"></i>
+                                            بازسازی کامل موجودی‌ها (IsFrozen Strategy)
+                                        </button>
+                                    </form>
+
+                                    <button type="button" class="btn btn-outline-info w-100 mb-2" onclick="getTransactionNumberReport()">>
                                         <i class="fas fa-chart-bar me-2"></i>
                                         گزارش پوشش شماره تراکنش
                                     </button>

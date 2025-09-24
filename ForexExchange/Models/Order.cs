@@ -62,6 +62,11 @@ namespace ForexExchange.Models
         [Display(Name = "Deleted By - حذف شده توسط")]
         public string? DeletedBy { get; set; }
         
+        // Frozen flag for historical records - excludes from balance calculations
+        [Required]
+        [Display(Name = "Is Frozen - منجمد شده")]
+        public bool IsFrozen { get; set; } = false;
+        
         /// <summary>
         /// Cross-currency pair identifier (e.g., "USD/EUR", "AED/TRY")
         /// شناسه جفت ارز متقابل

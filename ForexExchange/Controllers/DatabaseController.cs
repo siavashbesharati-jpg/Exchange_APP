@@ -2006,5 +2006,392 @@ namespace ForexExchange.Controllers
 
             return RedirectToAction("Index");
         }
+
+        /// <summary>
+        /// Comprehensive rebuild of all financial balances based on new IsFrozen strategy:
+        /// - Pool balances rebuilt from non-deleted AND non-frozen orders only with coherent history starting from zero
+        /// - Bank account balances rebuilt from non-deleted AND non-frozen documents only with coherent history starting from zero
+        /// - Customer balance history rebuilt from non-deleted documents (including frozen)
+        /// - Active buy/sell counts recalculated properly based on non-frozen orders
+        /// 
+        /// This ensures frozen historical records don't affect current balance calculations
+        /// but are preserved for customer balance history audit trail.
+        /// Creates coherent balance history chains starting from zero before first non-frozen record.
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> RebuildAllFinancialBalances()
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                var performedBy = user?.UserName ?? "Admin";
+                var logMessages = new List<string>();
+
+                logMessages.Add("=== COMPREHENSIVE FINANCIAL BALANCE REBUILD WITH COHERENT HISTORY ===");
+                logMessages.Add($"Started at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                logMessages.Add($"Performed by: {performedBy}");
+                logMessages.Add("");
+
+                using var dbTransaction = await _context.Database.BeginTransactionAsync();
+                
+                // STEP 1: Clear all history tables and reset balances to zero
+                logMessages.Add("STEP 1: Clearing all history tables and resetting balances...");
+                
+                // Clear pool history (will be rebuilt)
+                await _context.Database.ExecuteSqlRawAsync("DELETE FROM CurrencyPoolHistory");
+                
+                // Clear bank account balance history (will be rebuilt)
+                await _context.Database.ExecuteSqlRawAsync("DELETE FROM BankAccountBalanceHistory");
+                
+                // Clear customer balance history (will be rebuilt) 
+                await _context.Database.ExecuteSqlRawAsync("DELETE FROM CustomerBalanceHistory");
+                
+                // Reset customer balances
+                var customerBalances = await _context.CustomerBalances.ToListAsync();
+                foreach (var balance in customerBalances)
+                {
+                    balance.Balance = 0;
+                    balance.LastUpdated = DateTime.UtcNow;
+                }
+                
+                // Reset currency pool balances and active counts
+                var poolBalances = await _context.CurrencyPools.ToListAsync();
+                foreach (var pool in poolBalances)
+                {
+                    pool.Balance = 0;
+                    pool.ActiveBuyOrderCount = 0;
+                    pool.ActiveSellOrderCount = 0;
+                    pool.LastUpdated = DateTime.UtcNow;
+                }
+                
+                // Reset bank account balances
+                var bankBalances = await _context.BankAccountBalances.ToListAsync();
+                foreach (var balance in bankBalances)
+                {
+                    balance.Balance = 0;
+                    balance.LastUpdated = DateTime.UtcNow;
+                }
+                
+                await _context.SaveChangesAsync();
+                logMessages.Add($"✓ Cleared all history tables and reset {customerBalances.Count} customer balances, {poolBalances.Count} pool balances, {bankBalances.Count} bank account balances to zero");
+                
+                // STEP 2: Create coherent pool history starting from zero for each currency
+                logMessages.Add("");
+                logMessages.Add("STEP 2: Creating coherent pool history with zero-starting balance chains...");
+                
+                var activeOrders = await _context.Orders
+                    .Where(o => !o.IsDeleted && !o.IsFrozen)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .OrderBy(o => o.CreatedAt)
+                    .ToListAsync();
+                
+                logMessages.Add($"Processing {activeOrders.Count} active (non-deleted, non-frozen) orders...");
+                
+                // Group orders by currency code to create coherent history per currency
+                var currencyGroups = activeOrders
+                    .SelectMany(o => new[] { 
+                        new { CurrencyCode = o.FromCurrency.Code, Order = o, IsFromCurrency = true },
+                        new { CurrencyCode = o.ToCurrency.Code, Order = o, IsFromCurrency = false }
+                    })
+                    .GroupBy(x => x.CurrencyCode)
+                    .ToList();
+                
+                foreach (var currencyGroup in currencyGroups)
+                {
+                    var currencyCode = currencyGroup.Key;
+                    var currencyOrders = currencyGroup.OrderBy(x => x.Order.CreatedAt).ToList();
+                    
+                    if (!currencyOrders.Any()) continue;
+                    
+                    // Find the earliest non-frozen order for this currency
+                    var firstOrder = currencyOrders.First().Order;
+                    var zeroDateTime = firstOrder.CreatedAt.AddMinutes(-1); // Set zero point 1 minute before first order
+                    
+                    // Create zero-starting pool history record
+                    var zeroPoolHistory = new CurrencyPoolHistory
+                    {
+                        CurrencyCode = currencyCode,
+                        TransactionType = CurrencyPoolTransactionType.ManualEdit,
+                        ReferenceId = null,
+                        BalanceBefore = 0,
+                        TransactionAmount = 0,
+                        BalanceAfter = 0,
+                        Description = "Zero-start balance for coherent history chain (non-frozen records only)",
+                        TransactionDate = zeroDateTime,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = performedBy,
+                        IsDeleted = false
+                    };
+                    _context.CurrencyPoolHistory.Add(zeroPoolHistory);
+                    
+                    // Process orders chronologically for this currency
+                    decimal runningBalance = 0;
+                    int buyCount = 0, sellCount = 0;
+                    decimal totalBought = 0, totalSold = 0;
+                    
+                    foreach (var item in currencyOrders)
+                    {
+                        var order = item.Order;
+                        decimal transactionAmount;
+                        string poolTransactionType;
+                        
+                        if (item.IsFromCurrency)
+                        {
+                            // Institution receives FromAmount in FromCurrency (pool increases)
+                            transactionAmount = order.FromAmount;
+                            poolTransactionType = "Buy";
+                            buyCount++;
+                            totalBought += order.FromAmount; // Accumulate positive amounts
+                        }
+                        else
+                        {
+                            // Institution pays ToAmount in ToCurrency (pool decreases)  
+                            transactionAmount = -order.ToAmount;
+                            poolTransactionType = "Sell";
+                            sellCount++;
+                            totalSold += order.ToAmount; // Accumulate absolute amounts sold
+                        }
+                        
+                        var poolHistory = new CurrencyPoolHistory
+                        {
+                            CurrencyCode = currencyCode,
+                            TransactionType = CurrencyPoolTransactionType.Order,
+                            ReferenceId = order.Id,
+                            BalanceBefore = runningBalance,
+                            TransactionAmount = transactionAmount,
+                            BalanceAfter = runningBalance + transactionAmount,
+                            PoolTransactionType = poolTransactionType,
+                            Description = $"Order #{order.Id}: {order.FromCurrency.Code} → {order.ToCurrency.Code}",
+                            TransactionDate = order.CreatedAt,
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedBy = performedBy,
+                            IsDeleted = false
+                        };
+                        _context.CurrencyPoolHistory.Add(poolHistory);
+                        
+                        runningBalance = poolHistory.BalanceAfter;
+                    }
+                    
+                    // Update pool balance, active counts, and totals
+                    var pool = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == currencyCode);
+                    if (pool != null)
+                    {
+                        pool.Balance = runningBalance;
+                        pool.ActiveBuyOrderCount = buyCount;
+                        pool.ActiveSellOrderCount = sellCount;
+                        pool.TotalBought = totalBought; // Sum of all positive amounts
+                        pool.TotalSold = totalSold; // Sum of all amounts sold (absolute values)
+                        pool.LastUpdated = DateTime.UtcNow;
+                    }
+                }
+                
+                await _context.SaveChangesAsync();
+                logMessages.Add($"✓ Created coherent pool history for {currencyGroups.Count} currencies with {activeOrders.Count} active orders");
+                
+                // STEP 3: Create coherent bank account balance history starting from zero
+                logMessages.Add("");
+                logMessages.Add("STEP 3: Creating coherent bank account balance history with zero-starting balance chains...");
+                
+                var activeDocuments = await _context.AccountingDocuments
+                    .Where(d => !d.IsDeleted && !d.IsFrozen)
+                    .OrderBy(d => d.DocumentDate)
+                    .ToListAsync();
+                
+                logMessages.Add($"Processing {activeDocuments.Count} active (non-deleted, non-frozen) documents...");
+                
+                // Group documents by bank account + currency to create coherent history
+                var bankAccountItems = new List<(int BankAccountId, string CurrencyCode, AccountingDocument Document, bool IsDebit)>();
+                
+                foreach (var d in activeDocuments)
+                {
+                    if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
+                        bankAccountItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d, true));
+                    if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
+                        bankAccountItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d, false));
+                }
+                
+                var bankAccountGroups = bankAccountItems
+                    .GroupBy(x => new { x.BankAccountId, x.CurrencyCode })
+                    .ToList();
+                
+                foreach (var bankGroup in bankAccountGroups)
+                {
+                    var bankAccountId = bankGroup.Key.BankAccountId;
+                    var currencyCode = bankGroup.Key.CurrencyCode;
+                    var bankDocuments = bankGroup.OrderBy(x => x.Document.DocumentDate).ToList();
+                    
+                    if (!bankDocuments.Any()) continue;
+                    
+                    // Find the earliest non-frozen document for this bank account + currency
+                    var firstDocument = bankDocuments.First().Document;
+                    var zeroDateTime = firstDocument.DocumentDate.AddMinutes(-1);
+                    
+                    // Create zero-starting bank account balance history record
+                    var zeroBankHistory = new BankAccountBalanceHistory
+                    {
+                        BankAccountId = bankAccountId,
+                        TransactionType = BankAccountTransactionType.ManualEdit,
+                        ReferenceId = null,
+                        BalanceBefore = 0,
+                        TransactionAmount = 0,
+                        BalanceAfter = 0,
+                        Description = "Zero-start balance for coherent history chain (non-frozen records only)",
+                        TransactionDate = zeroDateTime,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = performedBy,
+                        IsDeleted = false
+                    };
+                    _context.BankAccountBalanceHistory.Add(zeroBankHistory);
+                    
+                    // Process documents chronologically for this bank account + currency
+                    decimal runningBalance = 0;
+                    
+                    foreach (var item in bankDocuments)
+                    {
+                        var document = item.Document;
+                        var transactionAmount = item.IsDebit ? -document.Amount : document.Amount;
+                        
+                        var bankHistory = new BankAccountBalanceHistory
+                        {
+                            BankAccountId = bankAccountId,
+                            TransactionType = BankAccountTransactionType.Document,
+                            ReferenceId = document.Id,
+                            BalanceBefore = runningBalance,
+                            TransactionAmount = transactionAmount,
+                            BalanceAfter = runningBalance + transactionAmount,
+                            Description = $"Document #{document.Id}: {document.Type}",
+                            TransactionDate = document.DocumentDate,
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedBy = performedBy,
+                            IsDeleted = false
+                        };
+                        _context.BankAccountBalanceHistory.Add(bankHistory);
+                        
+                        runningBalance = bankHistory.BalanceAfter;
+                    }
+                    
+                    // Update bank account balance  
+                    var finalBankAccountId = bankAccountId;
+                    var finalCurrencyCode = currencyCode;
+                    var bankBalance = await _context.BankAccountBalances
+                        .FirstOrDefaultAsync(b => b.BankAccountId == finalBankAccountId && b.CurrencyCode == finalCurrencyCode);
+                    if (bankBalance != null)
+                    {
+                        bankBalance.Balance = runningBalance;
+                        bankBalance.LastUpdated = DateTime.UtcNow;
+                    }
+                }
+                
+                await _context.SaveChangesAsync();
+                logMessages.Add($"✓ Created coherent bank account balance history for {bankAccountGroups.Count} bank account + currency combinations");
+                
+                // STEP 4: Rebuild customer balance history from non-deleted documents (including frozen)
+                // NOTE: For customer balances, we include frozen documents to maintain complete customer transaction history
+                logMessages.Add("");
+                logMessages.Add("STEP 4: Rebuilding customer balances from non-deleted documents (including frozen for customer history)...");
+                
+                var allValidDocuments = await _context.AccountingDocuments
+                    .Where(d => !d.IsDeleted) // Include frozen documents for customer balance history
+                    .OrderBy(d => d.DocumentDate)
+                    .ToListAsync();
+                
+                logMessages.Add($"Processing {allValidDocuments.Count} valid (non-deleted) documents for customer balance history...");
+                
+                // Group customer documents by customer + currency for coherent history
+                var customerItems = new List<(int CustomerId, string CurrencyCode, AccountingDocument Document, bool IsDebit)>();
+                
+                foreach (var d in allValidDocuments)
+                {
+                    if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue)
+                        customerItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d, true));
+                    if (d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
+                        customerItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d, false));
+                }
+                
+                var customerGroups = customerItems
+                    .GroupBy(x => new { x.CustomerId, x.CurrencyCode })
+                    .ToList();
+                
+                foreach (var customerGroup in customerGroups)
+                {
+                    var customerId = customerGroup.Key.CustomerId;
+                    var currencyCode = customerGroup.Key.CurrencyCode;
+                    var customerDocuments = customerGroup.OrderBy(x => x.Document.DocumentDate).ToList();
+                    
+                    if (!customerDocuments.Any()) continue;
+                    
+                    // Process documents chronologically for this customer + currency
+                    decimal runningBalance = 0;
+                    
+                    foreach (var item in customerDocuments)
+                    {
+                        var document = item.Document;
+                        var transactionAmount = item.IsDebit ? -document.Amount : document.Amount;
+                        
+                        var customerHistory = new CustomerBalanceHistory
+                        {
+                            CustomerId = customerId,
+                            CurrencyCode = currencyCode,
+                            TransactionType = CustomerBalanceTransactionType.AccountingDocument,
+                            ReferenceId = document.Id,
+                            BalanceBefore = runningBalance,
+                            TransactionAmount = transactionAmount,
+                            BalanceAfter = runningBalance + transactionAmount,
+                            Description = $"Document #{document.Id}: {document.Type}",
+                            TransactionDate = document.DocumentDate,
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedBy = performedBy,
+                            IsDeleted = false
+                        };
+                        _context.CustomerBalanceHistory.Add(customerHistory);
+                        
+                        runningBalance = customerHistory.BalanceAfter;
+                    }
+                    
+                    // Update customer balance
+                    var finalCustomerId = customerId; 
+                    var finalCustomerCurrencyCode = currencyCode;
+                    var customerBalance = await _context.CustomerBalances
+                        .FirstOrDefaultAsync(b => b.CustomerId == finalCustomerId && b.CurrencyCode == finalCustomerCurrencyCode);
+                    if (customerBalance == null)
+                    {
+                        customerBalance = new CustomerBalance
+                        {
+                            CustomerId = customerId,
+                            CurrencyCode = currencyCode,
+                            Balance = 0,
+                            LastUpdated = DateTime.UtcNow
+                        };
+                        _context.CustomerBalances.Add(customerBalance);
+                    }
+                    customerBalance.Balance = runningBalance;
+                    customerBalance.LastUpdated = DateTime.UtcNow;
+                }
+                
+                await _context.SaveChangesAsync();
+                logMessages.Add($"✓ Rebuilt customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} valid documents");
+                
+                await dbTransaction.CommitAsync();
+                
+                logMessages.Add("");
+                logMessages.Add("=== REBUILD COMPLETED SUCCESSFULLY ===");
+                logMessages.Add($"Finished at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                logMessages.Add("✅ All balance histories now start from zero with coherent balance chains");
+                logMessages.Add("✅ Active buy/sell counts recalculated based on non-frozen orders only");
+                logMessages.Add("✅ Frozen records excluded from pool/bank calculations but included in customer history");
+                
+                var logSummary = string.Join("\n", logMessages);
+                TempData["Success"] = "بازسازی کامل موجودی‌های مالی با زنجیره‌های منسجم موجودی با موفقیت انجام شد!";
+                TempData["RecalcLog"] = logSummary;
+                
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در بازسازی موجودی‌های مالی: {ex.Message}";
+                return RedirectToAction("Index");
+            }
+        }
     }
 }

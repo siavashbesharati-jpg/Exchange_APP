@@ -230,6 +230,13 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Processing order creation for Order ID: {order.Id}");
 
+            // NEW: Check if order is frozen - frozen orders don't affect current balances or pool balances
+            if (order.IsFrozen)
+            {
+                _logger.LogInformation($"Order {order.Id} is frozen - skipping all balance updates (pools and customers)");
+                return;
+            }
+
             // Get current balances to validate calculations match preview
             var customerBalanceFrom = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.FromCurrency.Code);
             var customerBalanceTo = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.ToCurrency.Code);
@@ -329,6 +336,13 @@ namespace ForexExchange.Services
         public async Task ProcessAccountingDocumentAsync(AccountingDocument document, string performedBy = "System")
         {
             _logger.LogInformation($"Processing accounting document ID: {document.Id}");
+
+            // NEW: Check if document is frozen - frozen documents don't affect current balances or bank account balances
+            if (document.IsFrozen)
+            {
+                _logger.LogInformation($"Document {document.Id} is frozen - skipping all balance updates (customers and bank accounts)");
+                return;
+            }
 
             // CORRECTED LOGIC: Process customer impact
             if (document.PayerCustomerId.HasValue)
@@ -1076,7 +1090,7 @@ namespace ForexExchange.Services
             foreach (var balance in customerBalances)
             {
                 var latestHistory = await _context.CustomerBalanceHistory
-                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
+                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1091,7 +1105,7 @@ namespace ForexExchange.Services
             foreach (var pool in currencyPools)
             {
                 var latestHistory = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
+                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1106,7 +1120,7 @@ namespace ForexExchange.Services
             foreach (var balance in bankBalances)
             {
                 var latestHistory = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted && !h.IsFrozen)
+                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1135,7 +1149,7 @@ namespace ForexExchange.Services
             foreach (var balance in customerBalances)
             {
                 var latestHistory = await _context.CustomerBalanceHistory
-                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
+                    .Where(h => h.CustomerId == balance.CustomerId && h.CurrencyCode == balance.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1152,7 +1166,7 @@ namespace ForexExchange.Services
             foreach (var pool in currencyPools)
             {
                 var latestHistory = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted && !h.IsFrozen)
+                    .Where(h => h.CurrencyCode == pool.CurrencyCode && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1169,7 +1183,7 @@ namespace ForexExchange.Services
             foreach (var balance in bankBalances)
             {
                 var latestHistory = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted && !h.IsFrozen)
+                    .Where(h => h.BankAccountId == balance.BankAccountId && !h.IsDeleted)
                     .OrderByDescending(h => h.CreatedAt)
                     .FirstOrDefaultAsync();
 
@@ -1601,7 +1615,7 @@ namespace ForexExchange.Services
                 .Where(h => h.CustomerId == customerId &&
                            h.CurrencyCode == currencyCode &&
                            h.Id > fromRecordId &&
-                           !h.IsDeleted && !h.IsFrozen)
+                           !h.IsDeleted)
                 .OrderBy(h => h.Id)
                 .ToListAsync();
 
@@ -1616,7 +1630,7 @@ namespace ForexExchange.Services
                 .Where(h => h.CustomerId == customerId &&
                            h.CurrencyCode == currencyCode &&
                            h.Id < fromRecordId &&
-                           !h.IsDeleted && !h.IsFrozen)
+                           !h.IsDeleted)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
@@ -1649,7 +1663,7 @@ namespace ForexExchange.Services
             var subsequentRecords = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode &&
                            h.Id > fromRecordId &&
-                           !h.IsDeleted && !h.IsFrozen)
+                           !h.IsDeleted)
                 .OrderBy(h => h.Id)
                 .ToListAsync();
 
@@ -1663,7 +1677,7 @@ namespace ForexExchange.Services
             var lastValidRecord = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode &&
                            h.Id < fromRecordId &&
-                           !h.IsDeleted && !h.IsFrozen)
+                           !h.IsDeleted)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
@@ -1696,7 +1710,7 @@ namespace ForexExchange.Services
             var subsequentRecords = await _context.BankAccountBalanceHistory
                 .Where(h => h.BankAccountId == bankAccountId &&
                            h.Id > fromRecordId &&
-                           !h.IsDeleted && !h.IsFrozen)
+                           !h.IsDeleted)
                 .OrderBy(h => h.Id)
                 .ToListAsync();
 
@@ -1710,7 +1724,7 @@ namespace ForexExchange.Services
             var lastValidRecord = await _context.BankAccountBalanceHistory
                 .Where(h => h.BankAccountId == bankAccountId &&
                            h.Id < fromRecordId &&
-                           !h.IsDeleted && !h.IsFrozen)
+                           !h.IsDeleted)
                 .OrderByDescending(h => h.Id)
                 .FirstOrDefaultAsync();
 
@@ -1740,7 +1754,7 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Recalculating current customer balance for Customer {customerId}, Currency {currencyCode}");
 
             var latestHistory = await _context.CustomerBalanceHistory
-                .Where(h => h.CustomerId == customerId && h.CurrencyCode == currencyCode && !h.IsDeleted && !h.IsFrozen)
+                .Where(h => h.CustomerId == customerId && h.CurrencyCode == currencyCode && !h.IsDeleted)
                 .OrderByDescending(h => h.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -1770,7 +1784,7 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Recalculating current currency pool balance for Currency {currencyCode}");
 
             var latestHistory = await _context.CurrencyPoolHistory
-                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted && !h.IsFrozen)
+                .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted)
                 .OrderByDescending(h => h.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -1800,7 +1814,7 @@ namespace ForexExchange.Services
             _logger.LogInformation($"Recalculating current bank account balance for Bank Account {bankAccountId}");
 
             var latestHistory = await _context.BankAccountBalanceHistory
-                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted && !h.IsFrozen)
+                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted)
                 .OrderByDescending(h => h.CreatedAt)
                 .FirstOrDefaultAsync();
 
@@ -1894,9 +1908,10 @@ namespace ForexExchange.Services
         #region Manual Balance History Creation
 
         /// <summary>
-        /// Creates a manual customer balance history record with specified transaction date
-        /// This is useful for manual adjustments, corrections, or importing historical data
-        /// After creating manual records, use RecalculateAllBalancesFromTransactionDatesAsync to ensure coherence
+        /// Creates a manual customer balance history record with specified transaction date following the coherent history pattern.
+        /// This method creates proper balance chains with correct BalanceBefore, TransactionAmount, and BalanceAfter calculations.
+        /// Uses the same coherent sequencing pattern as RebuildAllFinancialBalances to ensure consistency.
+        /// Manual transactions are never frozen and always affect current balance calculations.
         /// </summary>
         public async Task CreateManualCustomerBalanceHistoryAsync(
             int customerId,
@@ -1910,7 +1925,7 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}, Date {transactionDate:yyyy-MM-dd}");
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var dbTransaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // Validate customer exists
@@ -1927,42 +1942,135 @@ namespace ForexExchange.Services
                     throw new ArgumentException($"Currency with code {currencyCode} not found");
                 }
 
-                // Get current balance for this customer/currency to calculate before/after
-                var currentBalance = await _context.CustomerBalances
-                    .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
+                // COHERENT HISTORY PATTERN: Find proper BalanceBefore by looking at chronologically prior transactions
+                var priorTransactions = await _context.CustomerBalanceHistory
+                    .Where(h => h.CustomerId == customerId &&
+                               h.CurrencyCode == currencyCode &&
+                               h.TransactionDate <= transactionDate &&
+                               !h.IsDeleted)
+                    .OrderBy(h => h.TransactionDate)
+                    .ThenBy(h => h.Id)
+                    .ToListAsync();
 
-                // For manual entries, we set temporary balance fields that will be corrected during recalculation
-                var tempBalanceBefore = currentBalance?.Balance ?? 0m;
-                var tempBalanceAfter = tempBalanceBefore + amount;
+                // Calculate the proper BalanceBefore for this manual transaction
+                decimal balanceBefore = 0m;
+                if (priorTransactions.Any())
+                {
+                    // If inserting between existing transactions, we need to recalculate the chain
+                    var transactionsBeforeThisDate = priorTransactions
+                        .Where(h => h.TransactionDate < transactionDate || 
+                               (h.TransactionDate == transactionDate && h.Id < long.MaxValue)) // Handle same-date transactions
+                        .ToList();
 
-                // Create the manual history record
+                    if (transactionsBeforeThisDate.Any())
+                    {
+                        // Calculate balance up to the insertion point
+                        decimal runningBalance = 0m;
+                        foreach (var priorTransaction in transactionsBeforeThisDate)
+                        {
+                            runningBalance += priorTransaction.TransactionAmount;
+                        }
+                        balanceBefore = runningBalance;
+                    }
+                }
+
+                var balanceAfter = balanceBefore + amount;
+
+                // Create the manual history record with proper coherent balance calculations
                 var historyRecord = new CustomerBalanceHistory
                 {
                     CustomerId = customerId,
                     CurrencyCode = currencyCode,
-                    BalanceBefore = tempBalanceBefore, // Temporary - will be corrected during recalculation
+                    BalanceBefore = balanceBefore, // Calculated from chronological prior transactions
                     TransactionAmount = amount,
-                    BalanceAfter = tempBalanceAfter, // Temporary - will be corrected during recalculation
+                    BalanceAfter = balanceAfter, // Coherent calculation: BalanceBefore + TransactionAmount
                     TransactionType = CustomerBalanceTransactionType.Manual,
                     ReferenceId = null, // Manual entries don't have reference IDs
                     Description = reason,
                     TransactionNumber = transactionNumber,
                     TransactionDate = transactionDate, // Use the specified date
                     CreatedAt = DateTime.UtcNow,
-                    CreatedBy = performedBy
+                    CreatedBy = performedBy,
+                    IsDeleted = false // Manual transactions are never deleted via soft delete
                 };
+
+                // Validate the balance calculation
+                if (!historyRecord.IsCalculationValid())
+                {
+                    throw new InvalidOperationException($"Balance calculation validation failed: BalanceBefore({balanceBefore}) + TransactionAmount({amount}) != BalanceAfter({balanceAfter})");
+                }
 
                 _context.CustomerBalanceHistory.Add(historyRecord);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Manual customer balance history created: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+                _logger.LogInformation($"Manual customer balance history created with coherent balances: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}, BalanceBefore {balanceBefore}, BalanceAfter {balanceAfter}");
 
-                // Recalculate balances for this customer/currency from the transaction date onwards
-                // This ensures proper chronological balance coherence immediately after creation
-                await RecalculateCustomerCurrencyBalanceFromDateAsync(customerId, currencyCode, transactionDate);
+                // COHERENT HISTORY PATTERN: Recalculate all subsequent transactions to maintain coherence
+                // Find all transactions after this insertion point that need recalculation
+                var subsequentTransactions = await _context.CustomerBalanceHistory
+                    .Where(h => h.CustomerId == customerId &&
+                               h.CurrencyCode == currencyCode &&
+                               (h.TransactionDate > transactionDate || 
+                                (h.TransactionDate == transactionDate && h.Id > historyRecord.Id)) &&
+                               !h.IsDeleted)
+                    .OrderBy(h => h.TransactionDate)
+                    .ThenBy(h => h.Id)
+                    .ToListAsync();
 
-                await transaction.CommitAsync();
-                _logger.LogInformation($"Successfully created manual transaction and recalculated balances for Customer {customerId}, Currency {currencyCode}");
+                if (subsequentTransactions.Any())
+                {
+                    _logger.LogInformation($"Recalculating {subsequentTransactions.Count} subsequent transactions to maintain balance coherence");
+                    
+                    decimal runningBalance = balanceAfter; // Start from our new transaction's balance
+                    
+                    foreach (var transaction in subsequentTransactions)
+                    {
+                        var oldBalanceBefore = transaction.BalanceBefore;
+                        var oldBalanceAfter = transaction.BalanceAfter;
+                        
+                        transaction.BalanceBefore = runningBalance;
+                        transaction.BalanceAfter = runningBalance + transaction.TransactionAmount;
+                        runningBalance = transaction.BalanceAfter;
+                        
+                        _logger.LogDebug($"Recalculated Transaction ID {transaction.Id}: BalanceBefore {oldBalanceBefore} → {transaction.BalanceBefore}, BalanceAfter {oldBalanceAfter} → {transaction.BalanceAfter}");
+                        
+                        // Validate each recalculation
+                        if (!transaction.IsCalculationValid())
+                        {
+                            throw new InvalidOperationException($"Recalculation validation failed for Transaction ID {transaction.Id}");
+                        }
+                    }
+                    
+                    balanceAfter = runningBalance; // Final balance after all recalculations
+                }
+
+                // Update the current customer balance to reflect the final coherent balance
+                var currentBalance = await _context.CustomerBalances
+                    .FirstOrDefaultAsync(cb => cb.CustomerId == customerId && cb.CurrencyCode == currencyCode);
+
+                if (currentBalance == null)
+                {
+                    // Create new balance record if none exists
+                    currentBalance = new CustomerBalance
+                    {
+                        CustomerId = customerId,
+                        CurrencyCode = currencyCode,
+                        Balance = balanceAfter,
+                        LastUpdated = DateTime.UtcNow
+                    };
+                    _context.CustomerBalances.Add(currentBalance);
+                }
+                else
+                {
+                    // Update existing balance with final coherent amount
+                    currentBalance.Balance = balanceAfter;
+                    currentBalance.LastUpdated = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+                await dbTransaction.CommitAsync();
+
+                _logger.LogInformation($"Successfully created manual transaction with coherent balance chain - Customer {customerId}, Currency {currencyCode}, Final Balance: {balanceAfter:N2}");
 
                 // Send notification to admin users (excluding the performing user)
                 try
@@ -1971,14 +2079,14 @@ namespace ForexExchange.Services
 
                     await _notificationHub.SendCustomNotificationAsync(
                         title: "تعدیل دستی موجودی ایجاد شد",
-                        message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode} | دلیل: {reason}",
+                        message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode} | موجودی نهایی: {balanceAfter:N2} | دلیل: {reason}",
                         eventType: NotificationEventType.CustomerBalanceChanged,
                         userId: performingUserId, // This will exclude the current user from SignalR notifications
                         navigationUrl: $"/Reports/CustomerReports?customerId={customerId}",
                         priority: NotificationPriority.Normal
                     );
 
-                    _logger.LogInformation($"Notification sent for manual balance creation: Customer {customerId}, Amount {amount} {currencyCode}");
+                    _logger.LogInformation($"Notification sent for manual balance creation: Customer {customerId}, Amount {amount} {currencyCode}, Final Balance {balanceAfter:N2}");
                 }
                 catch (Exception notificationEx)
                 {
@@ -1988,7 +2096,7 @@ namespace ForexExchange.Services
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                await dbTransaction.RollbackAsync();
                 _logger.LogError(ex, $"Error creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}");
                 throw;
             }
@@ -2409,7 +2517,7 @@ namespace ForexExchange.Services
 
             // Get all unique currencies that have pool history (excluding deleted and frozen records)
             var currencies = await _context.CurrencyPoolHistory
-                .Where(h => !h.IsDeleted && !h.IsFrozen) // Only consider non-deleted and non-frozen records
+                .Where(h => !h.IsDeleted) // Only consider non-deleted records
                 .Select(h => h.CurrencyCode)
                 .Distinct()
                 .ToListAsync();
@@ -2424,7 +2532,7 @@ namespace ForexExchange.Services
                 // Get all pool history records for this currency, ordered by transaction date
                 // IMPORTANT: Exclude deleted and frozen records from the sequence
                 var historyRecords = await _context.CurrencyPoolHistory
-                    .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted && !h.IsFrozen) // EXCLUDE DELETED AND FROZEN RECORDS!
+                    .Where(h => h.CurrencyCode == currencyCode && !h.IsDeleted) // EXCLUDE DELETED RECORDS!
                     .OrderBy(h => h.TransactionDate)
                     .ThenBy(h => h.Id) // Secondary sort for same transaction dates
                     .ToListAsync();
@@ -2484,7 +2592,7 @@ namespace ForexExchange.Services
 
             // Get all unique bank accounts that have balance history (excluding deleted and frozen records)
             var bankAccountIds = await _context.BankAccountBalanceHistory
-                .Where(h => !h.IsDeleted && !h.IsFrozen) // Only consider non-deleted and non-frozen records
+                .Where(h => !h.IsDeleted) // Only consider non-deleted records
                 .Select(h => h.BankAccountId)
                 .Distinct()
                 .ToListAsync();
@@ -2499,7 +2607,7 @@ namespace ForexExchange.Services
                 // Get all bank account history records for this account, ordered by transaction date
                 // IMPORTANT: Exclude deleted and frozen records from the sequence
                 var historyRecords = await _context.BankAccountBalanceHistory
-                    .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted && !h.IsFrozen) // EXCLUDE DELETED AND FROZEN RECORDS!
+                    .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted) // EXCLUDE DELETED RECORDS!
                     .OrderBy(h => h.TransactionDate)
                     .ThenBy(h => h.Id) // Secondary sort for same transaction dates
                     .ToListAsync();

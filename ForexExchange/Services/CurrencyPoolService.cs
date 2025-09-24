@@ -314,7 +314,6 @@ namespace ForexExchange.Services
             var activeBuyOrders = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
                            h.TransactionType == CurrencyPoolTransactionType.Order && 
-                           !h.IsFrozen && 
                            !h.IsDeleted &&
                            h.TransactionAmount > 0) // Positive = Pool increase = Exchange buying
                 .Select(h => h.ReferenceId)
@@ -326,7 +325,6 @@ namespace ForexExchange.Services
             var activeSellOrders = await _context.CurrencyPoolHistory
                 .Where(h => h.CurrencyCode == currencyCode && 
                            h.TransactionType == CurrencyPoolTransactionType.Order && 
-                           !h.IsFrozen && 
                            !h.IsDeleted &&
                            h.TransactionAmount < 0) // Negative = Pool decrease = Exchange selling
                 .Select(h => h.ReferenceId)
