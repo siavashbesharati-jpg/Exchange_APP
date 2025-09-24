@@ -2080,7 +2080,6 @@ namespace ForexExchange.Controllers
                 // STEP 1.5: Ensure historical manual records exist (before rebuilding)
                 logMessages.Add("");
                 logMessages.Add("STEP 1.5: Ensuring historical manual balance records are preserved...");
-                var insertedManualRecords = await EnsureHistoricalManualRecordsExistAsync(performedBy, logMessages);
                 
                 // STEP 2: Create coherent pool history starting from zero for each currency
                 logMessages.Add("");
@@ -2426,7 +2425,6 @@ namespace ForexExchange.Controllers
                 logMessages.Add("✅ Active buy/sell counts recalculated based on non-frozen orders only");
                 logMessages.Add("✅ Frozen records excluded from pool/bank calculations but included in customer history");
                 logMessages.Add("✅ Manual customer balance adjustments preserved in complete customer history");
-                logMessages.Add($"✅ Historical manual balance records ensured (inserted {insertedManualRecords} missing records)");
                 
                 var logSummary = string.Join("\n", logMessages);
                 TempData["Success"] = "بازسازی کامل موجودی‌های مالی با زنجیره‌های منسجم موجودی با موفقیت انجام شد!";
@@ -2441,54 +2439,6 @@ namespace ForexExchange.Controllers
             }
         }
 
-        /// <summary>
-        /// Ensures historical manual customer balance records exist in the database.
-        /// These are important manual adjustments and initial balances that should be preserved.
-        /// Only inserts records that don't already exist (checks by ID).
-        /// </summary>
-        private async Task<int> EnsureHistoricalManualRecordsExistAsync(string performedBy, List<string> logMessages)
-        {
-            // Historical manual records are now already stored in the database.
-            // The following code is commented out to prevent duplicate insertion.
-            // If you need to re-insert or update these records, uncomment and update as needed.
-            /*
-            logMessages.Add("🔍 Checking for historical manual balance records...");
-            // Insert historical records with placeholder balance values - they will be recalculated coherently in Step 4
-            var historicalRecords = new[]
-            {
-                // ... (historical records array here)
-            };
-            var existingIds = await _context.CustomerBalanceHistory
-                .Where(h => historicalRecords.Select(r => r.Id).Contains(h.Id))
-                .Select(h => h.Id)
-                .ToListAsync();
-            var recordsToInsert = historicalRecords.Where(r => !existingIds.Contains(r.Id)).ToArray();
-            if (recordsToInsert.Length == 0)
-            {
-                logMessages.Add($"✅ All {historicalRecords.Length} historical manual records already exist in database");
-                return 0;
-            }
-            logMessages.Add($"📝 Inserting {recordsToInsert.Length} missing historical manual records out of {historicalRecords.Length} total");
-            int insertedCount = 0;
-            foreach (var record in recordsToInsert)
-            {
-                // Validate balance calculation
-                if (Math.Abs((record.BalanceBefore + record.TransactionAmount) - record.BalanceAfter) > 0.01m)
-                {
-                    logMessages.Add($"⚠️  WARNING: Balance calculation error for ID {record.Id}: {record.BalanceBefore} + {record.TransactionAmount} != {record.BalanceAfter}");
-                }
-                // Update CreatedBy to current performer
-                record.CreatedBy = performedBy;
-                _context.CustomerBalanceHistory.Add(record);
-                logMessages.Add($"   + ID {record.Id}: Customer {record.CustomerId} ({record.CurrencyCode}) {record.TransactionAmount:N2} - {record.Description}");
-                insertedCount++;
-            }
-            await _context.SaveChangesAsync();
-            logMessages.Add($"✅ Successfully inserted {insertedCount} historical manual records");
-            return insertedCount;
-            */
-            logMessages.Add("✅ Historical manual records are already present in the database. No insertion needed.");
-            return 0;
-        }
+        
     }
 }
