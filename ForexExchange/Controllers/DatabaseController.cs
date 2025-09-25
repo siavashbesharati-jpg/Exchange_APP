@@ -6,6 +6,7 @@ using ForexExchange.Services;
 using DNTPersianUtils.Core;
 using ForexExchange.Services.Notifications;
 using Microsoft.AspNetCore.Identity;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
@@ -472,9 +473,17 @@ namespace ForexExchange.Controllers
                 foreach (var history in orderHistoryRecords)
                 {
                     var order = orders.FirstOrDefault(o => o.Id == history.ReferenceId);
-                    if (order != null && !string.IsNullOrEmpty(order.Notes))
+                    if (order != null)
                     {
-                        history.Description = order.Notes;
+                        // Description includes customer info (from order.Notes)
+                        if (!string.IsNullOrEmpty(order.Notes))
+                        {
+                            history.Description = order.Notes;
+                        }
+                        
+                        // Note includes transaction details without customer info
+                        var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                        history.Note = note;
                     }
                 }
 
@@ -486,9 +495,21 @@ namespace ForexExchange.Controllers
                 foreach (var history in documentHistoryRecords)
                 {
                     var document = documents.FirstOrDefault(d => d.Id == history.ReferenceId);
-                    if (document != null && !string.IsNullOrEmpty(document.Notes))
+                    if (document != null)
                     {
-                        history.Description = document.Notes;
+                        // Description includes customer info (from document.Notes)
+                        if (!string.IsNullOrEmpty(document.Notes))
+                        {
+                            history.Description = document.Notes;
+                        }
+                        
+                        // Note includes transaction details without customer info
+                        var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount:N0} {document.CurrencyCode}";
+                        if (!string.IsNullOrEmpty(document.ReferenceNumber))
+                            note += $" - شماره: {document.ReferenceNumber}";
+                        if (!string.IsNullOrEmpty(document.Title))
+                            note += $" - عنوان: {document.Title}";
+                        history.Note = note;
                     }
                 }
 
