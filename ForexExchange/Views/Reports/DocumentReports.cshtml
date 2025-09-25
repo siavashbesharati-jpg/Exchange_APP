@@ -64,17 +64,48 @@
                             <label class="form-label">شناسه مرجع</label>
                             <input type="text" class="form-control" id="referenceId" placeholder="شماره تراکنش یا شناسه">
                         </div>
+                    </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-2">
+                            <label class="form-label">از مبلغ</label>
+                            <input type="number" class="form-control" id="fromAmount" placeholder="حداقل مبلغ" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">تا مبلغ</label>
+                            <input type="number" class="form-control" id="toAmount" placeholder="حداکثر مبلغ" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">جستجو بر اساس فایل</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="fileSearch" accept="image/*,.pdf,.doc,.docx" title="آپلود فایل برای جستجو اسناد مشابه">
+                                <button class="btn btn-outline-secondary" type="button" onclick="clearFileSearch()" title="پاک کردن فایل">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">فرمت‌های مجاز: تصاویر، PDF، Word</small>
+                        </div>
                         <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-warning w-100" onclick="loadDocumentReports()">
                                 <i class="fas fa-search me-1"></i>جستجو
                             </button>
                         </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-secondary flex-fill" onclick="clearAllFilters()">
+                                    <i class="fas fa-eraser me-1"></i>پاک کردن فیلترها
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Anti-forgery token for file upload -->
+    @Html.AntiForgeryToken()
 
     <!-- Documents Table -->
     <div class="row mb-4">
@@ -174,7 +205,9 @@
             'toDate', 
             'currency',
             'customer',
-            'referenceId'
+            'referenceId',
+            'fromAmount',
+            'toAmount'
         ];
 
         filterElements.forEach(elementId => {
@@ -193,6 +226,23 @@
     function clearDate(inputId) {
         document.getElementById(inputId).value = '';
         // Automatically trigger search after clearing date
+        loadDocumentReports();
+    }
+
+    function clearFileSearch() {
+        document.getElementById('fileSearch').value = '';
+        loadDocumentReports();
+    }
+
+    function clearAllFilters() {
+        document.getElementById('fromDate').value = '';
+        document.getElementById('toDate').value = '';
+        document.getElementById('currency').value = '';
+        document.getElementById('customer').value = '';
+        document.getElementById('referenceId').value = '';
+        document.getElementById('fromAmount').value = '';
+        document.getElementById('toAmount').value = '';
+        document.getElementById('fileSearch').value = '';
         loadDocumentReports();
     }
 
@@ -218,53 +268,94 @@
         const currency = document.getElementById('currency').value;
         const customer = document.getElementById('customer').value;
         const referenceId = document.getElementById('referenceId').value;
+        const fromAmount = document.getElementById('fromAmount').value;
+        const toAmount = document.getElementById('toAmount').value;
+        const fileSearchInput = document.getElementById('fileSearch');
 
-        let url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
-        if (currency) url += `&currency=${currency}`;
-        if (customer) url += `&customer=${customer}`;
-        if (referenceId) url += `&referenceId=${encodeURIComponent(referenceId)}`;
+        // Check if file search is being used
+        if (fileSearchInput.files && fileSearchInput.files.length > 0) {
+            // Use FormData for file upload
+            const formData = new FormData();
+            formData.append('fromDate', fromDate);
+            formData.append('toDate', toDate);
+            if (currency) formData.append('currency', currency);
+            if (customer) formData.append('customer', customer);
+            if (referenceId) formData.append('referenceId', referenceId);
+            if (fromAmount) formData.append('fromAmount', fromAmount);
+            if (toAmount) formData.append('toAmount', toAmount);
+            formData.append('fileSearch', fileSearchInput.files[0]);
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    tbody.innerHTML = `
-                    <tr>
-                        <td colspan="9" class="text-center py-5 text-danger">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            ${data.error}
-                        </td>
-                    </tr>
-                `;
-                    return;
-                }
+            // Add anti-forgery token to FormData
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) {
+                formData.append('__RequestVerificationToken', token);
+            }
 
-                tbody.innerHTML = '';
-
-                if (data.documents && data.documents.length > 0) {
-                    documentsData = data.documents; // Store data for sorting
-                    renderDocumentsTable(documentsData);
-                } else {
-                    tbody.innerHTML = `
-                    <tr>
-                        <td colspan="9" class="text-center py-5 text-muted">
-                            <i class="fas fa-info-circle"></i>
-                            هیچ سندی در این بازه زمانی یافت نشد
-                        </td>
-                    </tr>
-                `;
-                }
+            fetch('@Url.Action("GetDocumentsDataWithFile", "Reports")', {
+                method: 'POST',
+                body: formData
             })
-            .catch(error => {
-                tbody.innerHTML = `
+            .then(response => response.json())
+            .then(handleDocumentsResponse)
+            .catch(handleDocumentsError);
+        } else {
+            // Use regular GET request
+            let url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
+            if (currency) url += `&currency=${currency}`;
+            if (customer) url += `&customer=${customer}`;
+            if (referenceId) url += `&referenceId=${encodeURIComponent(referenceId)}`;
+            if (fromAmount) url += `&fromAmount=${fromAmount}`;
+            if (toAmount) url += `&toAmount=${toAmount}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(handleDocumentsResponse)
+                .catch(handleDocumentsError);
+        }
+    }
+
+    function handleDocumentsResponse(data) {
+        const tbody = document.getElementById('documentsTableBody');
+        
+        if (data.error) {
+            tbody.innerHTML = `
                 <tr>
                     <td colspan="9" class="text-center py-5 text-danger">
                         <i class="fas fa-exclamation-triangle"></i>
-                        خطا در بارگذاری اطلاعات
+                        ${data.error}
                     </td>
                 </tr>
             `;
-            });
+            return;
+        }
+
+        tbody.innerHTML = '';
+
+        if (data.documents && data.documents.length > 0) {
+            documentsData = data.documents; // Store data for sorting
+            renderDocumentsTable(documentsData);
+        } else {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        هیچ سندی در این بازه زمانی یافت نشد
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function handleDocumentsError(error) {
+        const tbody = document.getElementById('documentsTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center py-5 text-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    خطا در بارگذاری اطلاعات
+                </td>
+            </tr>
+        `;
     }
 
     function renderDocumentsTable(documents) {
@@ -273,8 +364,10 @@
 
         documents.forEach(doc => {
             const row = document.createElement('tr');
+            const hasFileIcon = doc.hasFile ? '<i class="fas fa-paperclip text-success ms-1" title="دارای فایل پیوست"></i>' : '';
+            
             row.innerHTML = `
-            <td>DOC${doc.id.toString().padStart(3, '0')}</td>
+            <td>DOC${doc.id.toString().padStart(3, '0')}${hasFileIcon}</td>
             <td>${new Date(doc.date).toLocaleDateString('en-GB')}</td>
             <td>
                 <div class="d-flex align-items-center">
@@ -375,6 +468,12 @@
     function formatNumber(num) {
         if (num === 0) return '0';
         return num.toLocaleString('fa-IR');
+    }
+
+    function formatCurrency(amount, currencyCode) {
+        if (!amount && amount !== 0) return '-';
+        const formattedAmount = formatNumber(amount);
+        return `${formattedAmount} ${currencyCode || ''}`;
     }
 
     function formatReferenceNumber(referenceNumber) {

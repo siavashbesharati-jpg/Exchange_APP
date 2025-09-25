@@ -369,7 +369,7 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/GetDocumentsData
         [HttpGet]
-        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId)
+        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId, decimal? fromAmount, decimal? toAmount)
         {
             try
             {
@@ -397,6 +397,19 @@ namespace ForexExchange.Controllers
                 {
                     query = query.Where(ad => ad.ReferenceNumber != null && ad.ReferenceNumber.Contains(referenceId));
                 }
+
+                // Add amount range filter
+                if (fromAmount.HasValue)
+                {
+                    query = query.Where(ad => ad.Amount >= fromAmount.Value);
+                }
+
+                if (toAmount.HasValue)
+                {
+                    query = query.Where(ad => ad.Amount <= toAmount.Value);
+                }
+
+
 
                 var accountingDocs = await query
                     .Select(ad => new
@@ -918,6 +931,141 @@ namespace ForexExchange.Controllers
                 _logger.LogError(ex, "Error loading customers");
                 return Json(new { error = "خطا در بارگذاری مشتریان" });
             }
+        }
+
+        // POST: Reports/GetDocumentsDataWithFile
+        [HttpPost]
+        public async Task<IActionResult> GetDocumentsDataWithFile(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId, decimal? fromAmount, decimal? toAmount, IFormFile? fileSearch)
+        {
+            try
+            {
+                fromDate ??= DateTime.Today.AddDays(-30);
+                toDate ??= DateTime.Today.AddDays(1);
+
+                var query = _context.AccountingDocuments
+                    .Include(ad => ad.PayerCustomer)
+                    .Include(ad => ad.ReceiverCustomer)
+                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate);
+
+                // Apply additional filters
+                if (!string.IsNullOrEmpty(currency))
+                {
+                    query = query.Where(ad => ad.CurrencyCode == currency);
+                }
+
+                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
+                {
+                    query = query.Where(ad => ad.PayerCustomerId == customerId || ad.ReceiverCustomerId == customerId);
+                }
+
+                // Add reference ID filter
+                if (!string.IsNullOrEmpty(referenceId))
+                {
+                    query = query.Where(ad => ad.ReferenceNumber != null && ad.ReferenceNumber.Contains(referenceId));
+                }
+
+                // Add amount range filter
+                if (fromAmount.HasValue)
+                {
+                    query = query.Where(ad => ad.Amount >= fromAmount.Value);
+                }
+
+                if (toAmount.HasValue)
+                {
+                    query = query.Where(ad => ad.Amount <= toAmount.Value);
+                }
+
+                // Handle file search
+                byte[]? searchFileData = null;
+                if (fileSearch != null && fileSearch.Length > 0)
+                {
+                    using var memoryStream = new MemoryStream();
+                    await fileSearch.CopyToAsync(memoryStream);
+                    searchFileData = memoryStream.ToArray();
+                }
+
+                // Get initial results 
+                var accountingDocs = await query
+                    .Select(ad => new
+                    {
+                        id = ad.Id,
+                        date = ad.DocumentDate,
+                        customerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName : (ad.ReceiverCustomer != null ? ad.ReceiverCustomer.FullName : "نامشخص"),
+                        amount = ad.Amount,
+                        currencyCode = ad.CurrencyCode,
+                        referenceNumber = ad.ReferenceNumber,
+                        description = ad.Description,
+                        status = "تایید شده",
+                        fileData = searchFileData != null ? ad.FileData : null // Only load FileData when searching by file
+                    })
+                    .ToListAsync();
+
+                // Apply file data comparison if file search is requested
+                if (searchFileData != null)
+                {
+                    accountingDocs = accountingDocs.Where(doc => doc.fileData != null && doc.fileData.Length > 0 && 
+                        CompareFileData(searchFileData, doc.fileData)).ToList();
+                }
+
+                var allDocuments = accountingDocs.Select(ad => new
+                {
+                    id = ad.id,
+                    date = ad.date,
+                    type = "سند حسابداری",
+                    customerName = ad.customerName,
+                    amount = ad.amount,
+                    currencyCode = ad.currencyCode,
+                    referenceNumber = ad.referenceNumber,
+                    description = ad.description,
+                    status = ad.status,
+                    hasFile = ad.fileData != null && ad.fileData.Length > 0
+                }).OrderByDescending(d => d.date).ToList();
+
+                var totalDocuments = allDocuments.Count;
+                var totalAmount = allDocuments.Sum(d => d.amount);
+                var todayDocuments = allDocuments.Count(d => d.date.Date == DateTime.Today);
+
+                return Json(new
+                {
+                    documents = allDocuments,
+                    stats = new
+                    {
+                        totalDocuments,
+                        totalReceipts = 0,
+                        totalAmount,
+                        todayDocuments
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting documents data with file search");
+                return Json(new { error = "خطا در دریافت اطلاعات اسناد" });
+            }
+        }
+
+        /// <summary>
+        /// Compare two file data arrays to determine if they are identical
+        /// </summary>
+        /// <param name="fileData1">First file data</param>
+        /// <param name="fileData2">Second file data</param>
+        /// <returns>True if files are identical, false otherwise</returns>
+        private bool CompareFileData(byte[] fileData1, byte[] fileData2)
+        {
+            if (fileData1 == null || fileData2 == null)
+                return false;
+
+            if (fileData1.Length != fileData2.Length)
+                return false;
+
+            // Compare byte by byte
+            for (int i = 0; i < fileData1.Length; i++)
+            {
+                if (fileData1[i] != fileData2[i])
+                    return false;
+            }
+
+            return true;
         }
     }
 }
