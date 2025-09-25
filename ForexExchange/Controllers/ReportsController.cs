@@ -936,12 +936,13 @@ namespace ForexExchange.Controllers
                 var timeline = await _poolHistoryService.GetPoolTimelineAsync(currencyCode, fromDateTime, toDateTime);
                 var summary = await _poolHistoryService.GetPoolSummaryAsync(currencyCode);
 
+                // Return timeline as-is (oldest first)
                 return Json(new { success = true, timeline, summary });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading pool timeline for currency: {CurrencyCode}", currencyCode);
-                return Json(new { success = false, error = "خطا در بارگذاری تاریخچه پول" });
+                return Json(new { success = false, error = "خطا در بارگذاری تاریخچه تراز" });
             }
         }
 
@@ -964,8 +965,8 @@ namespace ForexExchange.Controllers
                 return Json(new { success = false, error = "خطا در بارگذاری ارزها" });
             }
         }
-
-        // Bank Account Reports API Methods
+                // Return timeline as-is (oldest first)
+                return Json(new { success = true, timeline, summary });
 
         // GET: Reports/GetBankAccountTimeline
         [HttpGet]

@@ -47,21 +47,7 @@ namespace ForexExchange.Services
 
             var timelineItems = new List<BankAccountTimelineItem>();
 
-            // Add initial balance entry (using BalanceBefore from first record)
-            var firstRecord = historyRecords.First();
-            timelineItems.Add(new BankAccountTimelineItem
-            {
-                Date = FormatGregorianDate(firstRecord.TransactionDate),
-                Time = FormatTime(firstRecord.TransactionDate),
-                TransactionType = "Initial",
-                Description = "موجودی اولیه",
-                BankAccountId = firstRecord.BankAccountId,
-                BankAccountName = GetCleanBankAccountName(firstRecord.BankAccount),
-                Amount = 0,
-                Balance = firstRecord.BalanceBefore,
-                ReferenceId = null,
-                CanNavigate = false
-            });
+      
 
             // Convert history records to timeline items
             foreach (var record in historyRecords)
