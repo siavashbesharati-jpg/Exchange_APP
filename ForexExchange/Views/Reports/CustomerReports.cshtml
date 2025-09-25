@@ -751,15 +751,15 @@
         const fromDate = document.getElementById('fromDate').value || '';
         const toDate = document.getElementById('toDate').value || '';
         const currencyCode = document.getElementById('currencyFilter').value || '';
-        const bankAccountId = document.getElementById('bankAccountFilter').value || '';
+        // const bankAccountId = document.getElementById('bankAccountFilter').value || '';
 
         // Build URL with query parameters
         const params = new URLSearchParams({
             customerId: customerId,
             fromDate: fromDate,
             toDate: toDate,
-            currencyCode: currencyCode,
-            bankAccountId: bankAccountId
+            currencyCode: currencyCode
+            // bankAccountId: bankAccountId
         });
 
         // Open bank receipt page in new window
