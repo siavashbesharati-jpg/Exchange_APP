@@ -271,6 +271,47 @@ namespace ForexExchange.Controllers
             return View(order);
         }
 
+        // GET: Orders/GetOrderDetails/5 (for AJAX popup)
+        [HttpGet]
+        public async Task<IActionResult> GetOrderDetails(int id)
+        {
+            try
+            {
+                var order = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .Where(o => o.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (order == null)
+                {
+                    return Json(new { error = "سفارش یافت نشد" });
+                }
+
+                var result = new
+                {
+                    id = order.Id,
+                    customerId = order.CustomerId,
+                    customerName = order.Customer?.FullName ?? "نامشخص",
+                    fromCurrencyName = order.FromCurrency?.Name ?? "نامشخص",
+                    toCurrencyName = order.ToCurrency?.Name ?? "نامشخص",
+                    fromAmount = order.FromAmount,
+                    toAmount = order.ToAmount,
+                    exchangeRate = order.Rate,
+                    createdAt = order.CreatedAt,
+                    updatedAt = order.UpdatedAt
+                };
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting order details for ID: {OrderId}", id);
+                return Json(new { error = "خطا در دریافت جزئیات سفارش" });
+            }
+        }
+
         // GET: Orders/Create
         public async Task<IActionResult> Create(int? customerId = null)
         {

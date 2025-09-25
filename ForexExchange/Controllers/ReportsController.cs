@@ -471,6 +471,90 @@ namespace ForexExchange.Controllers
             }
         }
 
+        // GET: Reports/GetDocumentDetails/{id}
+        [HttpGet]
+        public async Task<IActionResult> GetDocumentDetails(int id)
+        {
+            try
+            {
+                var document = await _context.AccountingDocuments
+                    .Include(ad => ad.PayerCustomer)
+                    .Include(ad => ad.ReceiverCustomer)
+                    .Include(ad => ad.PayerBankAccount)
+                    .Include(ad => ad.ReceiverBankAccount)
+                    .Where(ad => ad.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (document == null)
+                {
+                    return Json(new { error = "سند یافت نشد" });
+                }
+
+                var result = new
+                {
+                    id = document.Id,
+                    documentType = document.Type.ToString(),
+                    documentDate = document.DocumentDate,
+                    amount = document.Amount,
+                    currencyCode = document.CurrencyCode,
+                    description = document.Description,
+                    notes = document.Notes,
+                    referenceNumber = document.ReferenceNumber,
+                    
+                    // Payer information
+                    payerType = document.PayerType.ToString(),
+                    payerCustomer = document.PayerCustomer != null ? new
+                    {
+                        id = document.PayerCustomer.Id,
+                        fullName = document.PayerCustomer.FullName,
+                        phoneNumber = document.PayerCustomer.PhoneNumber,
+                        email = document.PayerCustomer.Email
+                    } : null,
+                    payerBankAccount = document.PayerBankAccount != null ? new
+                    {
+                        id = document.PayerBankAccount.Id,
+                        accountNumber = document.PayerBankAccount.AccountNumber,
+                        bankName = document.PayerBankAccount.BankName,
+                        accountHolderName = document.PayerBankAccount.AccountHolderName
+                    } : null,
+
+                    // Receiver information
+                    receiverType = document.ReceiverType.ToString(),
+                    receiverCustomer = document.ReceiverCustomer != null ? new
+                    {
+                        id = document.ReceiverCustomer.Id,
+                        fullName = document.ReceiverCustomer.FullName,
+                        phoneNumber = document.ReceiverCustomer.PhoneNumber,
+                        email = document.ReceiverCustomer.Email
+                    } : null,
+                    receiverBankAccount = document.ReceiverBankAccount != null ? new
+                    {
+                        id = document.ReceiverBankAccount.Id,
+                        accountNumber = document.ReceiverBankAccount.AccountNumber,
+                        bankName = document.ReceiverBankAccount.BankName,
+                        accountHolderName = document.ReceiverBankAccount.AccountHolderName
+                    } : null,
+
+                    // Metadata
+                    createdAt = document.CreatedAt,
+                    isVerified = document.IsVerified,
+                    verifiedAt = document.VerifiedAt,
+                    verifiedBy = document.VerifiedBy ?? "نامشخص",
+                    isDeleted = document.IsDeleted,
+                    deletedAt = document.DeletedAt,
+                    deletedBy = document.DeletedBy,
+                    isFrozen = document.IsFrozen
+                };
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting document details for ID: {DocumentId}", id);
+                return Json(new { error = "خطا در دریافت جزئیات سند" });
+            }
+        }
+
         // GET: Reports/GetPoolData
         [HttpGet]
         public async Task<IActionResult> GetPoolData()

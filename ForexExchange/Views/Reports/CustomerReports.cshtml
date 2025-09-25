@@ -246,6 +246,9 @@
     </div>
 </div>
 
+<!-- Transaction Details Popup -->
+<div id="transactionDetailPopup" style="display:none; position:fixed; z-index:1050;"></div>
+
 <script>
     let currentPage = { timeline: 1 };
     let pageSize = 10;
@@ -507,8 +510,9 @@
                 const formattedAmount = formatCurrency(transaction.amount, currency);
                 const formattedBalance = formatCurrency(transaction.runningBalance, currency);
 
+                const rowType = isManualTransaction ? 'manual' : (isOrderTransaction ? 'order' : 'document');
                 timelineHtml += `
-                <tr class="transaction-row" style="${cursorStyle}" ${clickHandler}>
+                <tr class="transaction-row" style="${cursorStyle}" data-type="${rowType}" data-ref-id="${transactionId}" ${clickHandler}>
                     <td class="text-center">${formatDate(transaction.transactionDate)}</td>
                     <td class="text-center">
                         ${isManualTransaction ?
@@ -542,6 +546,20 @@
         tbody.innerHTML = timelineHtml;
         
         renderBalanceSummary(timeline.finalBalances);
+
+        // Add hover events to transaction rows
+        setTimeout(() => {
+            document.querySelectorAll('.transaction-row').forEach(row => {
+                row.addEventListener('mouseenter', function(e) {
+                    const type = this.getAttribute('data-type');
+                    const refId = this.getAttribute('data-ref-id');
+                    showTransactionHoverPopup(type, refId, e);
+                });
+                row.addEventListener('mouseleave', function() {
+                    hideTransactionHoverPopup();
+                });
+            });
+        }, 100);
     }
 
     function updateCustomerInfo(timeline) {
@@ -951,8 +969,127 @@
             });
     }
 
+    // Transaction hover popup logic
+    let transactionPopupTimeout;
+    let currentTransactionPopup = null;
 
-   
+    function showTransactionHoverPopup(type, refId, event) {
+        clearTimeout(transactionPopupTimeout);
+        transactionPopupTimeout = setTimeout(() => {
+            if (type === 'manual' || !refId) {
+                showTransactionPopupHtml(`<div class='popup-header'><h6><i class="fas fa-edit me-2"></i>تراکنش دستی</h6></div>
+                <div class="popup-body p-3"><div class="text-center text-muted"><i class="fas fa-info-circle me-2"></i>این تراکنش به صورت دستی ایجاد شده و جزئیات خاصی ندارد</div></div>`, event);
+            } else if (type === 'order') {
+                fetchOrderDetailPopup(refId, event);
+            } else if (type === 'document') {
+                fetchDocumentDetailPopup(refId, event);
+            }
+        }, 250);
+    }
+
+    function hideTransactionHoverPopup() {
+        clearTimeout(transactionPopupTimeout);
+        if (currentTransactionPopup) {
+            currentTransactionPopup.style.display = 'none';
+            currentTransactionPopup = null;
+        }
+    }
+
+    function showTransactionPopupHtml(html, event) {
+        const popup = document.getElementById('transactionDetailPopup');
+        popup.innerHTML = html;
+        popup.style.display = 'block';
+        // Position popup
+        const rect = event.target.closest('tr').getBoundingClientRect();
+        popup.style.left = (rect.left + rect.width + 10) + 'px';
+        popup.style.top = rect.top + 'px';
+        popup.className = 'transaction-hover-popup';
+        currentTransactionPopup = popup;
+        // Adjust if off screen
+        setTimeout(() => {
+            const popupRect = popup.getBoundingClientRect();
+            if (popupRect.right > window.innerWidth) {
+                popup.style.left = (rect.left - popupRect.width - 10) + 'px';
+            }
+            if (popupRect.bottom > window.innerHeight) {
+                popup.style.top = (window.innerHeight - popupRect.height - 10) + 'px';
+            }
+        }, 0);
+    }
+
+    async function fetchOrderDetailPopup(orderId, event) {
+        try {
+            const response = await fetch(`/Orders/GetOrderDetails/${orderId}`);
+            const data = await response.json();
+            if (data.error) {
+                showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات معامله</div>', event);
+                return;
+            }
+            // Render order details with proper Persian formatting
+            let html = `<div class='popup-header'><h6><i class="fas fa-exchange-alt me-2"></i>جزئیات معامله  #${data.id}</h6></div>
+            <div class='popup-body p-3'>
+                <div class="row g-2">
+                    <div class="col-6"><small class="text-muted">مشتری:</small><div>${data.customerName}</div></div>
+                    <div class="col-6"><small class="text-muted">تاریخ ایجاد:</small><div>${new Date(data.createdAt).toLocaleDateString('fa-IR')}</div></div>
+
+                    <div class="col-6"><small class="text-muted"> دریافت می کنیم  :</small><div class="fw-bold text-primary">${data.fromCurrencyName}</div></div>
+                    <div class="col-6"><small class="text-muted"> پرداخت می کنیم :</small><div class="fw-bold text-success">${data.toCurrencyName}</div></div>
+                    <div class="col-6"><small class="text-muted">مبلغ دربافتی :</small><div>${formatCurrency(data.fromAmount, data.toCurrency)}</div></div>
+                    <div class="col-6"><small class="text-muted">مبلغ پردختی :</small><div>${formatCurrency(data.toAmount, data.toCurrency)}</div></div>
+                    <div class="col-6"><small class="text-muted">نرخ :</small><div class="ltr-direction">${formatNumber(data.exchangeRate)}</div></div>
+                    ${data.updatedAt ? `<div class="col-6"><small class="text-muted">تاریخ بروزرسانی:</small><div>${new Date(data.updatedAt)}</div></div>` : '<div class="col-6"></div>'}
+                    ${data.notes ? `<div class="col-12"><small class="text-muted">یادداشت:</small><div class="text-truncate" title="${data.notes}">${data.notes}</div></div>` : ''}
+                </div>
+            </div>
+            <div class="popup-footer"><small class="text-muted">برای مشاهده جزئیات بیشتر کلیک کنید</small></div>`;
+            showTransactionPopupHtml(html, event);
+        } catch (err) {
+            console.error('Error fetching order details:', err);
+            showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات </div>', event);
+        }
+    }
+
+    async function fetchDocumentDetailPopup(docId, event) {
+        try {
+            const response = await fetch(`/Reports/GetDocumentDetails/${docId}`);
+            const data = await response.json();
+            if (data.error) {
+                showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات سند</div>', event);
+                return;
+            }
+            // Render document details with consistent styling
+            let html = `<div class='popup-header'><h6><i class="fas fa-file-invoice me-2"></i>جزئیات سند #${data.id}</h6></div>
+            <div class='popup-body p-3'>
+                <div class="row g-2">
+                    <div class="col-6"><small class="text-muted">نوع سند:</small><div>${data.documentType === 'Cash' ? 'نقدی' : 'حواله'}</div></div>
+                    <div class="col-6"><small class="text-muted">مبلغ:</small><div class="fw-bold text-success">${formatCurrency(data.amount, data.currencyCode)}</div></div>
+                    <div class="col-6"><small class="text-muted">پرداخت کننده:</small><div>${data.payerCustomer ? data.payerCustomer.fullName : 'سیستم'}</div></div>
+                    <div class="col-6"><small class="text-muted">دریافت کننده:</small><div>${data.receiverCustomer ? data.receiverCustomer.fullName : 'سیستم'}</div></div>
+                    <div class="col-6"><small class="text-muted">تاریخ:</small><div>${new Date(data.documentDate).toLocaleDateString('fa-IR')}</div></div>
+                    <div class="col-6"><small class="text-muted">وضعیت:</small><div><span class="badge ${data.isVerified ? 'bg-success' : 'bg-warning'}">${data.isVerified ? 'تایید شده' : 'در انتظار تایید'}</span></div></div>
+                    ${data.description ? `<div class="col-12"><small class="text-muted">شرح:</small><div class="text-truncate" title="${data.description}">${data.description}</div></div>` : ''}
+                    ${data.notes ? `<div class="col-12"><small class="text-muted">یادداشت:</small><div class="text-truncate" title="${data.notes}">${data.notes}</div></div>` : ''}
+                </div>
+            </div>
+            <div class="popup-footer"><small class="text-muted">برای مشاهده جزئیات بیشتر کلیک کنید</small></div>`;
+            showTransactionPopupHtml(html, event);
+        } catch (err) {
+            console.error('Error fetching document details:', err);
+            showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات سند</div>', event);
+        }
+    }
+
+    // Utility functions for formatting
+    function formatNumber(amount) {
+        if (!amount && amount !== 0) return '-';
+        return new Intl.NumberFormat('fa-IR').format(amount);
+    }
+
+    function formatCurrency(amount, currencyCode = 'IRR') {
+        if (!amount && amount !== 0) return '-';
+        const formattedAmount = formatNumber(amount);
+        return `${formattedAmount} ${currencyCode || ''}`;
+    }
 </script>
 
 <style>
@@ -1143,5 +1280,45 @@
             padding: 4px;
             border: 1px solid #000;
         }
+    }
+
+    .transaction-hover-popup {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-width: 350px;
+        font-size: 0.875rem;
+        pointer-events: none;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+    .transaction-hover-popup .popup-header {
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 7px 7px 0 0;
+    }
+    .transaction-hover-popup .popup-header h6 {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #495057;
+    }
+    .transaction-hover-popup .popup-body {
+        padding: 12px;
+    }
+    .transaction-hover-popup .popup-footer {
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        border-radius: 0 0 7px 7px;
+        text-align: center;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    #timelineTableBody tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
     }
 </style>
