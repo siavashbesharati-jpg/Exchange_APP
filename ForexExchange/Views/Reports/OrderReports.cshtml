@@ -36,21 +36,13 @@
                         <div class="col-md-2">
                             <label class="form-label">ارز مبدأ</label>
                             <select class="form-select" id="fromCurrency">
-                                <option value="">همه</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="AED">AED</option>
-                                <option value="IRR">IRR</option>
+                                <option value="">در حال بارگذاری...</option>
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">ارز مقصد</label>
                             <select class="form-select" id="toCurrency">
-                                <option value="">همه</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="AED">AED</option>
-                                <option value="IRR">IRR</option>
+                                <option value="">در حال بارگذاری...</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -133,6 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
     document.getElementById('toDate').value = today.toISOString().split('T')[0];
     
+    // Load currencies for filter selects
+    loadCurrenciesForFilters();
+    
     // Add click event listeners to sortable headers
     document.querySelectorAll('.sortable').forEach(header => {
         header.addEventListener('click', function() {
@@ -144,6 +139,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadOrderReports();
 });
+
+function loadCurrenciesForFilters() {
+    fetch('@Url.Action("GetCurrencies", "Api")')
+        .then(response => response.json())
+        .then(currencies => {
+            const fromSelect = document.getElementById('fromCurrency');
+            const toSelect = document.getElementById('toCurrency');
+            
+            // Clear loading options and add "همه" option
+            fromSelect.innerHTML = '<option value="">همه</option>';
+            toSelect.innerHTML = '<option value="">همه</option>';
+
+            if (Array.isArray(currencies)) {
+                currencies.forEach(currency => {
+                    const option = `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
+                    fromSelect.innerHTML += option;
+                    toSelect.innerHTML += option;
+                });
+            }
+        })
+        .catch(error => {
+            const fromSelect = document.getElementById('fromCurrency');
+            const toSelect = document.getElementById('toCurrency');
+            fromSelect.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+            toSelect.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+        });
+}
 
 function loadOrderReports() {
     // Load table data
