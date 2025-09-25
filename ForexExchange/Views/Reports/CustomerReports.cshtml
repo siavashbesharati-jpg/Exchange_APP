@@ -251,7 +251,7 @@
 
 <script>
     let currentPage = { timeline: 1 };
-    let pageSize = 10;
+    let pageSize = 10000; // Disabled pagination - load all records
     let currentTimeline = null;
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -427,13 +427,8 @@
                     renderBankStyleTimeline(response.data);
                     updateCustomerInfo(response.data);
                     
-                    // Update pagination if pagination info is available
-                    if (response.pagination) {
-                        updatePagination('timelinePagination', response.pagination.totalPages, response.pagination.currentPage, loadCustomerTimeline);
-                    } else {
-                        // Clear pagination if no pagination info
-                        document.getElementById('timelinePagination').innerHTML = '';
-                    }
+                    // Pagination disabled - clear pagination container
+                    document.getElementById('timelinePagination').innerHTML = '';
                 } else {
                     showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
                 }
