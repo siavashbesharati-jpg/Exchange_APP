@@ -109,8 +109,8 @@
                             تاریخچه مالی مشتری
                         </h5>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-light btn-sm" onclick="exportTimelineData()">
-                                <i class="fas fa-file-excel me-1"></i>دریافت اکسل 
+                            <button class="btn btn-light btn-sm" onclick="copyTimelineToClipboard()">
+                                <i class="fas fa-copy me-1"></i>کپی به کلیپ‌بورد
                             </button>
                             @* <button class="btn btn-outline-light btn-sm" onclick="printTimeline()">
                                 <i class="fas fa-print me-1"></i>چاپ
@@ -138,10 +138,15 @@
 
                     <!-- Balance Summary -->
                     <div id="balanceSummarySection" class="p-3 border-bottom bg-light" style="display: none;">
-                        <h6 class="mb-3 text-center">
-                            <i class="fas fa-wallet text-primary me-2"></i>
-                            موجودی‌های فعلی
-                        </h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                <i class="fas fa-wallet text-primary me-2"></i>
+                                موجودی‌های فعلی
+                            </h6>
+                            <button class="btn btn-outline-primary btn-sm" onclick="shareBalanceSummary()">
+                                <i class="fas fa-share-alt me-1"></i>اشتراک‌گذاری
+                            </button>
+                        </div>
                         <div id="balanceSummaryContent" class="row">
                             <!-- Balance cards will be inserted here -->
                         </div>
@@ -1090,9 +1095,216 @@
         const formattedAmount = formatNumber(amount);
         return `${formattedAmount} ${currencyCode || ''}`;
     }
+
+    // ========== BALANCE SUMMARY SHARING FUNCTIONS ==========
+
+    async function shareBalanceSummary() {
+        const balanceSection = document.getElementById('balanceSummarySection');
+        if (!balanceSection || balanceSection.style.display === 'none') {
+            alert('ابتدا تاریخچه مالی مشتری را بارگذاری کنید');
+            return;
+        }
+
+        try {
+            // Show loading state
+            const shareBtn = event.target.closest('button');
+            const originalHtml = shareBtn.innerHTML;
+            shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>در حال آماده‌سازی...';
+            shareBtn.disabled = true;
+
+            // Take screenshot of balance summary section
+            const canvas = await html2canvas(balanceSection, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                width: balanceSection.offsetWidth,
+                height: balanceSection.offsetHeight
+            });
+
+            // Convert to blob
+            canvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert('خطا در ایجاد تصویر');
+                    shareBtn.innerHTML = originalHtml;
+                    shareBtn.disabled = false;
+                    return;
+                }
+
+                const file = new File([blob], 'balance-summary.png', { type: 'image/png' });
+
+                // Try Web Share API first
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: 'خلاصه تراز مشتری',
+                            text: 'خلاصه موجودی‌های مشتری به تفکیک ارز',
+                            files: [file]
+                        });
+                        showShareSuccess();
+                    } catch (error) {
+                        if (error.name !== 'AbortError') {
+                            console.warn('Web Share API failed, falling back to clipboard');
+                            await copyToClipboard(canvas);
+                        }
+                    }
+                } else {
+                    // Fallback to clipboard
+                    await copyToClipboard(canvas);
+                }
+
+                // Restore button state
+                shareBtn.innerHTML = originalHtml;
+                shareBtn.disabled = false;
+            }, 'image/png');
+
+        } catch (error) {
+            console.error('Error sharing balance summary:', error);
+            alert('خطا در اشتراک‌گذاری: ' + error.message);
+            
+            // Restore button state
+            const shareBtn = event.target.closest('button');
+            shareBtn.innerHTML = '<i class="fas fa-share-alt me-1"></i>اشتراک‌گذاری';
+            shareBtn.disabled = false;
+        }
+    }
+
+    async function copyToClipboard(canvas) {
+        try {
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            
+            if (navigator.clipboard && window.ClipboardItem) {
+                const item = new ClipboardItem({ 'image/png': blob });
+                await navigator.clipboard.write([item]);
+                showShareSuccess('تصویر در کلیپ‌بورد کپی شد');
+            } else {
+                // Fallback: create download link
+                const url = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = 'balance-summary.png';
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showShareSuccess('تصویر دانلود شد');
+            }
+        } catch (error) {
+            console.error('Clipboard copy failed:', error);
+            // Final fallback: download
+            const url = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'balance-summary.png';
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showShareSuccess('تصویر دانلود شد');
+        }
+    }
+
+    function showShareSuccess(message = 'خلاصه تراز با موفقیت اشتراک‌گذاری شد') {
+        // Simple success notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+
+    // ========== TIMELINE CLIPBOARD COPY FUNCTION ==========
+
+    async function copyTimelineToClipboard() {
+        const customerId = document.getElementById('customerFilter').value;
+        if (!customerId || !currentTimeline) {
+            alert('ابتدا مشتری را انتخاب کرده و تاریخچه مالی را بارگذاری کنید');
+            return;
+        }
+
+        try {
+            // Show loading state
+            const copyBtn = event.target.closest('button');
+            const originalHtml = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>در حال کپی...';
+            copyBtn.disabled = true;
+
+            // Create text representation of timeline data
+            let clipboardText = `تاریخچه مالی مشتری\n`;
+            clipboardText += `مشتری: ${currentTimeline.customerName}\n`;
+            clipboardText += `بازه زمانی: ${currentTimeline.fromDate ? new Date(currentTimeline.fromDate).toLocaleDateString('fa-IR') : 'ابتدای زمان'} تا ${currentTimeline.toDate ? new Date(currentTimeline.toDate).toLocaleDateString('fa-IR') : 'انتهای زمان'}\n\n`;
+
+            // Add balance summary
+            if (currentTimeline.finalBalances && Object.keys(currentTimeline.finalBalances).length > 0) {
+                clipboardText += `موجودی‌های نهایی:\n`;
+                Object.entries(currentTimeline.finalBalances).forEach(([currency, amount]) => {
+                    clipboardText += `${currency}: ${formatCurrency(amount, currency)}\n`;
+                });
+                clipboardText += `\n`;
+            }
+
+            // Add transactions grouped by currency
+            if (currentTimeline.transactions && currentTimeline.transactions.length > 0) {
+                const currencyGroups = {};
+                currentTimeline.transactions.forEach(transaction => {
+                    if (!currencyGroups[transaction.currencyCode]) {
+                        currencyGroups[transaction.currencyCode] = [];
+                    }
+                    currencyGroups[transaction.currencyCode].push(transaction);
+                });
+
+                Object.entries(currencyGroups).forEach(([currency, transactions]) => {
+                    clipboardText += `تراکنش‌های ${currency}:\n`;
+                    clipboardText += `تاریخ\t\tنوع\t\tمبلغ\t\tمانده\n`;
+                    clipboardText += `-`.repeat(60) + `\n`;
+
+                    transactions.forEach(transaction => {
+                        const date = formatDate(transaction.transactionDate);
+                        const type = transaction.type === 1 ? 'فروش' : 
+                                   transaction.type === 2 ? 'خرید' : 
+                                   transaction.type === 5 ? 'تعدیل' : 'سند';
+                        const amount = formatCurrency(transaction.amount, currency);
+                        const balance = formatCurrency(transaction.runningBalance, currency);
+                        
+                        clipboardText += `${date}\t${type}\t${amount}\t${balance}\n`;
+                    });
+                    clipboardText += `\n`;
+                });
+            }
+
+            // Copy to clipboard
+            await navigator.clipboard.writeText(clipboardText);
+            
+            // Show success message
+            showShareSuccess('تاریخچه مالی در کلیپ‌بورد کپی شد');
+
+            // Restore button state
+            copyBtn.innerHTML = originalHtml;
+            copyBtn.disabled = false;
+
+        } catch (error) {
+            console.error('Error copying timeline to clipboard:', error);
+            alert('خطا در کپی به کلیپ‌بورد: ' + error.message);
+            
+            // Restore button state
+            const copyBtn = event.target.closest('button');
+            copyBtn.innerHTML = '<i class="fas fa-copy me-1"></i>کپی به کلیپ‌بورد';
+            copyBtn.disabled = false;
+        }
+    }
 </script>
 
-<style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
     .card {
         border-radius: 15px;
         border: 3px solid #e9ecef;

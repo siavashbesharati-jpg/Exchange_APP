@@ -89,8 +89,11 @@
     <div class="row mb-4" id="currencyTotalsRow" style="display: none;">
         <div class="col-12">
             <div class="card shadow-sm border-3">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-coins me-2"></i>خلاصه تراز به تفکیک ارز</h5>
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-black"><i class="fas fa-coins me-2"></i>خلاصه تراز به تفکیک ارز</h5>
+                    <button class="btn btn-sm btn-outline-light" onclick="shareCurrencyTotals()" title="کپی تصویر به کلیپ‌بورد">
+                        <i class="fas fa-share-alt me-1"></i>اشتراک‌گذاری
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="row" id="currencyTotalsContent">
@@ -192,6 +195,9 @@
     <span id="successMessage"></span>
     <button type="button" class="btn-close" onclick="hideSuccess()"></button>
 </div>
+
+<!-- html2canvas for screenshot functionality -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 let currentData = null;
@@ -375,7 +381,18 @@ async function loadCustomersBalances() {
         }
         
         renderStatistics(data.stats);
-        renderCurrencyTotals(data.stats.currencyTotals, selectedCurrency);
+        
+        // Get customer name if a customer is selected
+        let customerName = null;
+        if (selectedCustomer) {
+            const customerFilter = document.getElementById('customerFilter');
+            const selectedOption = customerFilter.querySelector(`option[value="${selectedCustomer}"]`);
+            if (selectedOption) {
+                customerName = selectedOption.textContent;
+            }
+        }
+        
+        renderCurrencyTotals(data.stats.currencyTotals, selectedCurrency, selectedCustomer, customerName);
         
         // Update success message based on filters
         let successMessage = `تعداد ${data.customers.length} مشتری با تراز یافت شد`;
@@ -558,13 +575,24 @@ function renderStatistics(stats) {
 }
 
 // Render currency totals
-function renderCurrencyTotals(currencyTotals, currencyFilter) {
+function renderCurrencyTotals(currencyTotals, currencyFilter, selectedCustomer, customerName = null) {
     const currencyTotalsContent = document.getElementById('currencyTotalsContent');
     const currencyTotalsRow = document.getElementById('currencyTotalsRow');
     
+    // Always show currency totals regardless of customer selection
     if (!currencyTotals || Object.keys(currencyTotals).length === 0) {
         currencyTotalsRow.style.display = 'none';
         return;
+    }
+    
+    // Update header text based on customer selection
+    const headerElement = currencyTotalsRow.querySelector('.card-header h5');
+    if (headerElement) {
+        if (customerName) {
+            headerElement.innerHTML = `<i class="fas fa-coins me-2"></i>خلاصه تراز ${customerName} به تفکیک ارز`;
+        } else {
+            headerElement.innerHTML = `<i class="fas fa-coins me-2"></i>خلاصه تراز به تفکیک ارز`;
+        }
     }
     
     const totalsHtml = Object.entries(currencyTotals).map(([currency, totals]) => {
@@ -900,6 +928,80 @@ function formatCurrency(amount, currencyCode = 'IRR') {
         
     } catch (error) {
         return amount.toString();
+    }
+}
+
+// Share currency totals (copy to clipboard or use Web Share API)
+async function shareCurrencyTotals() {
+    try {
+        const currencyTotalsRow = document.getElementById('currencyTotalsRow');
+
+        if (!currencyTotalsRow || currencyTotalsRow.style.display === 'none') {
+            showError('اطلاعات تراز موجود نیست');
+            return;
+        }
+
+        // Show loading
+        showSuccess('در حال آماده‌سازی تصویر...');
+
+        // Use html2canvas to capture the div as image
+        const canvas = await html2canvas(currencyTotalsRow, {
+            backgroundColor: '#ffffff',
+            scale: 2, // Higher quality
+            useCORS: true
+        });
+
+        // Convert canvas to blob
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                showError('خطا در ایجاد تصویر');
+                return;
+            }
+
+            try {
+                // Try Web Share API first (if supported)
+                if (navigator.share && navigator.canShare) {
+                    const file = new File([blob], 'currency-totals.png', { type: 'image/png' });
+                    const shareData = {
+                        title: 'خلاصه تراز مشتریان',
+                        text: 'خلاصه تراز مشتریان به تفکیک ارز - گروه تابان',
+                        files: [file]
+                    };
+
+                    if (navigator.canShare(shareData)) {
+                        await navigator.share(shareData);
+                        showSuccess('تصویر با موفقیت اشتراک‌گذاری شد');
+                        return;
+                    }
+                }
+
+                // Fallback: Copy to clipboard
+                const clipboardItem = new ClipboardItem({ 'image/png': blob });
+                await navigator.clipboard.write([clipboardItem]);
+
+                showSuccess('تصویر به کلیپ‌بورد کپی شد. اکنون می‌توانید آن را در برنامه‌های دیگر پیست کنید.');
+
+            } catch (clipboardError) {
+                console.error('Clipboard error:', clipboardError);
+
+                // Final fallback: Download the image
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'currency-totals.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                showSuccess('تصویر دانلود شد. اکنون می‌توانید آن را به اشتراک بگذارید.');
+            }
+
+        }, 'image/png');
+
+    } catch (error) {
+        console.error('Error sharing:', error);
+        showError('خطا در اشتراک‌گذاری تصویر');
     }
 }
 </script>
