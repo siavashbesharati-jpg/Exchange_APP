@@ -506,9 +506,8 @@ namespace ForexExchange.Controllers
                         // Note includes transaction details without customer info
                         var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount:N0} {document.CurrencyCode}";
                         if (!string.IsNullOrEmpty(document.ReferenceNumber))
-                            note += $" - شماره: {document.ReferenceNumber}";
-                        if (!string.IsNullOrEmpty(document.Title))
-                            note += $" - عنوان: {document.Title}";
+                            note += $" - شناسه تراکنش: {document.ReferenceNumber}";
+                       
                         history.Note = note;
                     }
                 }

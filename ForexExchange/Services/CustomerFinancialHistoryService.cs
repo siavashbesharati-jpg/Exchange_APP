@@ -125,10 +125,10 @@ namespace ForexExchange.Services
         {
             return transactionType switch
             {
-                CustomerBalanceTransactionType.Order => TransactionType.OrderBuy, // Default to buy, could be refined
-                CustomerBalanceTransactionType.AccountingDocument => TransactionType.DocumentCredit, // Default to credit, could be refined
+                CustomerBalanceTransactionType.Order => TransactionType.Buy, // Default to buy, could be refined
+                CustomerBalanceTransactionType.AccountingDocument => TransactionType.Document, // Default to credit, could be refined
                 CustomerBalanceTransactionType.Manual => TransactionType.ManualAdjustment, // Manual adjustments have their own type
-                _ => TransactionType.DocumentCredit
+                _ => TransactionType.Document
             };
         }
 
@@ -276,8 +276,8 @@ namespace ForexExchange.Services
                     TotalDebits = g.Where(t => t.Amount < 0).Sum(t => Math.Abs(t.Amount)),
                     TotalCredits = g.Where(t => t.Amount > 0).Sum(t => t.Amount),
                     TransactionCount = g.Count(),
-                    OrderTransactions = g.Count(t => t.Type == TransactionType.OrderSell || t.Type == TransactionType.OrderBuy),
-                    DocumentTransactions = g.Count(t => t.Type == TransactionType.DocumentCredit || t.Type == TransactionType.DocumentDebit),
+                    OrderTransactions = g.Count(t => t.Type == TransactionType.Sell || t.Type == TransactionType.Buy),
+                    DocumentTransactions = g.Count(t => t.Type == TransactionType.Document || t.Type == TransactionType.DocumentDebit),
                     NetChange = g.Sum(t => t.Amount),
                     LastTransactionDate = g.Max(t => t.TransactionDate)
                 });

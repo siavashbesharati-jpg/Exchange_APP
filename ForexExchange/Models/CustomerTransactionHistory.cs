@@ -66,8 +66,8 @@ namespace ForexExchange.Models
         
         // Summary statistics
         public int TotalTransactions => Transactions.Count;
-        public int OrderCount => Transactions.Count(t => t.Type == TransactionType.OrderSell || t.Type == TransactionType.OrderBuy);
-        public int DocumentCount => Transactions.Count(t => t.Type == TransactionType.DocumentCredit || t.Type == TransactionType.DocumentDebit);
+        public int OrderCount => Transactions.Count(t => t.Type == TransactionType.Buy || t.Type == TransactionType.Sell);
+        public int DocumentCount => Transactions.Count(t => t.Type == TransactionType.Document || t.Type == TransactionType.DocumentDebit);
         public List<string> CurrenciesInvolved => Transactions.Select(t => t.CurrencyCode).Distinct().ToList();
     }
 
