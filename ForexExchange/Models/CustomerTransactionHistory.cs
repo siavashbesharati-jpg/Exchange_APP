@@ -35,13 +35,13 @@ namespace ForexExchange.Models
         InitialBalance = 0,
         
         [Display(Name = "فروش ارز")]
-        OrderSell = 1,
+        Sell = 1,
         
         [Display(Name = "خرید ارز")]
-        OrderBuy = 2,
+        Buy = 2,
         
         [Display(Name = "واریز")]
-        DocumentCredit = 3,
+        Document = 3,
         
         [Display(Name = "برداشت")]
         DocumentDebit = 4,

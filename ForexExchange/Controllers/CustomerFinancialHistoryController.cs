@@ -211,6 +211,7 @@ namespace ForexExchange.Controllers
                     TransactionDate = t.TransactionDate,
                     TransactionType = t.Type.ToString(),
                     Description = t.Description,
+                    Note = t.Notes ?? "",
                     CurrencyCode = t.CurrencyCode,
                     Amount = t.Amount,
                     RunningBalance = t.RunningBalance,

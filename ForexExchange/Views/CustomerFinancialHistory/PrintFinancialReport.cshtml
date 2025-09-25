@@ -484,9 +484,9 @@
                             <thead>
                                 <tr>
                                     <th style="width: 13%;">تاریخ</th>
-                                    <th style="width: 11%;">زمان</th>
+                                    <th style="width: 11%;">شماره تراکنش</th>
                                     <th style="width: 13%;">نوع</th>
-                                    <th style="width: 33%;">توضیحات</th>
+                                    <th style="width: 33%;">یادداشت</th>
                                     <th style="width: 15%;">مبلغ</th>
                                     <th style="width: 15%;">موجودی</th>
                                 </tr>
@@ -496,13 +496,13 @@
                                 {
                                     <tr>
                                         <td>@transaction.TransactionDate.ToString("yyyy/MM/dd")</td>
-                                        <td>@transaction.TransactionDate.ToString("HH:mm")</td>
+                                        <td>@transaction.TransactionNumber</td>
                                         <td>
                                             <span class="transaction-type type-@(transaction.TransactionType.ToLower().Replace(" ", "-"))">
                                                 @transaction.TransactionType
                                             </span>
                                         </td>
-                                        <td style="text-align: right;">@transaction.Description</td>
+                                        <td style="text-align: right;">@transaction.Note</td>
                                         <td class="amount-cell">
                                             <span class="@(transaction.Amount >= 0 ? "positive" : "negative")">
                                                 @if (transaction.CurrencyCode == "IRR")
