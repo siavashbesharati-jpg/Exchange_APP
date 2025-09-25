@@ -484,7 +484,6 @@
                             <thead>
                                 <tr>
                                     <th style="width: 13%;">تاریخ</th>
-                                    <th style="width: 11%;">شماره تراکنش</th>
                                     <th style="width: 13%;">نوع</th>
                                     <th style="width: 33%;">یادداشت</th>
                                     <th style="width: 15%;">مبلغ</th>
@@ -496,7 +495,6 @@
                                 {
                                     <tr>
                                         <td>@transaction.TransactionDate.ToString("yyyy/MM/dd")</td>
-                                        <td>@transaction.TransactionNumber</td>
                                         <td>
                                             <span class="transaction-type type-@(transaction.TransactionType.ToLower().Replace(" ", "-"))">
                                                 @transaction.TransactionType
