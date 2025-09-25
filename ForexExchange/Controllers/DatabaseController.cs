@@ -405,24 +405,113 @@ namespace ForexExchange.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ApplyDatabaseRounding()
+        public async Task<IActionResult> UpdateNotesAndDescriptions()
         {
             try
             {
-                // WARNING: This is a destructive operation.
-                // It's recommended to secure this endpoint or remove it after use.
-                var resultSummary = await ForexExchange.Helpers.DatabaseRoundingHelper.ApplyRoundingToAllDataAsync(_context);
+                var user = await _userManager.GetUserAsync(User);
+                var performedBy = user?.UserName ?? "Admin";
+                var logMessages = new List<string>();
 
-                return Json(new { success = true, message = "Database rounding process completed successfully.", summary = resultSummary });
+                logMessages.Add("=== UPDATING NOTES AND DESCRIPTIONS ===");
+                logMessages.Add($"Started at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                logMessages.Add($"Performed by: {performedBy}");
+                logMessages.Add("");
+
+                using var dbTransaction = await _context.Database.BeginTransactionAsync();
+
+                // STEP 1: Update Order Notes
+                logMessages.Add("STEP 1: Updating Order Notes...");
+                var orders = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .Where(o => !o.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var order in orders)
+                {
+                    var note = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                    order.Notes = note;
+                }
+
+                var ordersUpdated = await _context.SaveChangesAsync();
+                logMessages.Add($"✓ Updated {ordersUpdated} order notes");
+
+                // STEP 2: Update AccountingDocument Notes
+                logMessages.Add("");
+                logMessages.Add("STEP 2: Updating AccountingDocument Notes...");
+                var documents = await _context.AccountingDocuments
+                    .Include(d => d.PayerCustomer)
+                    .Include(d => d.ReceiverCustomer)
+                    .Include(d => d.PayerBankAccount)
+                    .Include(d => d.ReceiverBankAccount)
+                    .Where(d => !d.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var doc in documents)
+                {
+                    var note = $"{doc.Title} - مبلغ: {doc.Amount:N0} {doc.CurrencyCode} - از: {doc.PayerDisplayText} → به: {doc.ReceiverDisplayText}";
+                    if (!string.IsNullOrEmpty(doc.Description))
+                        note += $" - توضیحات: {doc.Description}";
+                    doc.Notes = note;
+                }
+
+                var documentsUpdated = await _context.SaveChangesAsync();
+                logMessages.Add($"✓ Updated {documentsUpdated} accounting document notes");
+
+                // STEP 3: Update CustomerBalanceHistory Descriptions
+                logMessages.Add("");
+                logMessages.Add("STEP 3: Updating CustomerBalanceHistory Descriptions...");
+
+                // Update descriptions for Order transactions
+                var orderHistoryRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Order && !h.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var history in orderHistoryRecords)
+                {
+                    var order = orders.FirstOrDefault(o => o.Id == history.ReferenceId);
+                    if (order != null && !string.IsNullOrEmpty(order.Notes))
+                    {
+                        history.Description = order.Notes;
+                    }
+                }
+
+                // Update descriptions for AccountingDocument transactions
+                var documentHistoryRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument && !h.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var history in documentHistoryRecords)
+                {
+                    var document = documents.FirstOrDefault(d => d.Id == history.ReferenceId);
+                    if (document != null && !string.IsNullOrEmpty(document.Notes))
+                    {
+                        history.Description = document.Notes;
+                    }
+                }
+
+                var historyUpdated = await _context.SaveChangesAsync();
+                logMessages.Add($"✓ Updated {historyUpdated} customer balance history descriptions");
+
+                await dbTransaction.CommitAsync();
+
+                logMessages.Add("");
+                logMessages.Add("=== UPDATE COMPLETED SUCCESSFULLY ===");
+                logMessages.Add($"Total orders processed: {orders.Count}");
+                logMessages.Add($"Total documents processed: {documents.Count}");
+                logMessages.Add($"Total history records updated: {orderHistoryRecords.Count + documentHistoryRecords.Count}");
+
+                TempData["Success"] = string.Join("<br/>", logMessages);
+                return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, error = $"An error occurred during the rounding process: {ex.Message}" });
+                TempData["Error"] = $"خطا در بروزرسانی یادداشت‌ها: {ex.Message}";
+                return RedirectToAction("Index");
             }
         }
-
-
-
 
         /// <summary>
         /// Comprehensive rebuild of all financial balances based on new IsFrozen strategy:
