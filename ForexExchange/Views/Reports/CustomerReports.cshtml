@@ -254,6 +254,9 @@
 <!-- Transaction Details Popup -->
 <div id="transactionDetailPopup" style="display:none; position:fixed; z-index:1050;"></div>
 
+<!-- html2canvas for screenshot functionality -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <script>
     let currentPage = { timeline: 1 };
     let pageSize = 10;
@@ -418,20 +421,29 @@
         // Update current page
         currentPage.timeline = page;
 
-        $.get('@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")', {
+        // Build URL with parameters
+        let url = '@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")';
+        const params = new URLSearchParams({
             customerId: customerId,
             fromDate: fromDate,
             toDate: toDate,
             currencyCode: currencyCode,
             page: page,
             pageSize: pageSize
-        })
-            .done(function (response) {
+        });
+
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+
+        fetch(url)
+            .then(response => response.json())
+            .then(response => {
                 if (response.success) {
                     currentTimeline = response.data;
                     renderBankStyleTimeline(response.data);
                     updateCustomerInfo(response.data);
-                    
+
                     // Update pagination if pagination info is available
                     if (response.pagination) {
                         updatePagination('timelinePagination', response.pagination.totalPages, response.pagination.currentPage, loadCustomerTimeline);
@@ -443,7 +455,7 @@
                     showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
                 }
             })
-            .fail(function () {
+            .catch(() => {
                 showTimelineError('خطا در ارتباط با سرور');
             });
     }
@@ -1302,10 +1314,7 @@
     }
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-<script>
-    .card {
+<style>
         border-radius: 15px;
         border: 3px solid #e9ecef;
     }
