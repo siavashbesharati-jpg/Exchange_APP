@@ -1,14 +1,7 @@
-@model ForexExchange.Models.CustomerFinancialTimeline
+@model ForexExchange.Models.FinancialReportViewModel
 @{
-    ViewData["Title"] = "صورتحساب - " + Model.CustomerName;
+    ViewData["Title"] = Model.ReportTitle;
     Layout = null; // No layout for print-friendly page
-    System.Console.WriteLine($"from date : {Model.FromDate}");
-    System.Console.WriteLine($"TO date : {Model.ToDate}");
-    System.Console.WriteLine($"Min date : {DateTime.MinValue}");
-    System.Console.WriteLine($"max date : {DateTime.MaxValue}");
-
-
-
 }
 
 <!DOCTYPE html>
@@ -23,7 +16,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
             direction: rtl;
@@ -87,13 +80,8 @@
             opacity: 0.9;
         }
 
-        .bank-name {
+        .report-title {
             font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .receipt-title {
-            font-size: 14px;
             font-weight: bold;
             background: rgba(255,255,255,0.15);
             padding: 6px 12px;
@@ -299,7 +287,7 @@
                 background: white;
                 font-size: 10px;
             }
-            
+
             .receipt-container {
                 box-shadow: none;
                 border: 1px solid #000;
@@ -309,26 +297,26 @@
             .transaction-table thead {
                 display: table-header-group;
             }
-            
+
             .no-print {
                 display: none !important;
             }
-            
+
             .transaction-table {
                 font-size: 9px;
             }
-            
+
             .transaction-table th,
             .transaction-table td {
                 padding: 3px 2px;
             }
-            
+
             .receipt-header {
                 background: #001f4d !important;
                 -webkit-print-color-adjust: exact;
                 color-adjust: exact;
             }
-            
+
             .balance-summary {
                 background: #f0f0f0 !important;
                 border: 1px solid #000 !important;
@@ -382,24 +370,23 @@
                 <div class="company-name">گروه تابان</div>
                 <div class="company-website">https://taban-group.com</div>
             </div>
-            <div class="receipt-title">صورتحساب مشتری</div>
+            <div class="report-title">@Model.ReportTitle</div>
         </div>
 
         <!-- Receipt Information -->
         <div class="receipt-info">
             <div class="info-grid">
                 <div class="info-item">
-                    <div class="info-label">نام مشتری:</div>
-                    <div class="info-value">@Model.CustomerName</div>
+                    <div class="info-label">@(Model.ReportType == "Customer" ? "نام مشتری:" : Model.ReportType == "BankAccount" ? "حساب بانکی:" : "ارز:")</div>
+                    <div class="info-value">@Model.EntityName</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">کد مشتری:</div>
-                    <div class="info-value">@(Model.CustomerId + 100)</div>
+                    <div class="info-label">@(Model.ReportType == "Customer" ? "کد مشتری:" : Model.ReportType == "BankAccount" ? "کد حساب:" : "کد ارز:")</div>
+                    <div class="info-value">@(Model.EntityId?.ToString() ?? Model.EntityName)</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">از تاریخ:</div>
                     <div class="info-value">
-                        @* If FromDate.Date is MinValue.Date, use first transaction date; otherwise, use FromDate *@
                         @if (Model.FromDate.Date == DateTime.MinValue.Date)
                         {
                             if (Model.Transactions != null && Model.Transactions.Any())
@@ -420,7 +407,6 @@
                 <div class="info-item">
                     <div class="info-label">تا تاریخ:</div>
                     <div class="info-value">
-                        @* If ToDate.Date is MaxValue.Date, use last transaction date; otherwise, use ToDate *@
                         @if (Model.ToDate.Date == DateTime.MaxValue.Date)
                         {
                             if (Model.Transactions != null && Model.Transactions.Any())
@@ -436,27 +422,20 @@
                         {
                             @(Model.ToDate.ToString("yyyy/MM/dd"))
                         }
-                        
                     </div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">تاریخ گزارش:</div>
                     <div class="info-value">@DateTime.Now.ToString("yyyy/MM/dd HH:mm")</div>
                 </div>
-             
             </div>
         </div>
 
         <!-- Balance Summary -->
-        <!-- Balance Summary (moved back to before transactions) -->
-
-        <!-- Transactions -->
-        <div class="transactions-section">
-        <!-- Balance Summary (should be before transactions) -->
         @if (Model.FinalBalances != null && Model.FinalBalances.Any())
         {
             <div class="balance-summary">
-                <div class="balance-title">موجودی نهایی حساب‌ها</div>
+                <div class="balance-title">موجودی نهایی @(Model.ReportType == "Customer" ? "حساب‌ها" : Model.ReportType == "BankAccount" ? "حساب بانکی" : "صندوق")</div>
                 <div class="balance-grid">
                     @foreach (var balance in Model.FinalBalances)
                     {
@@ -465,11 +444,11 @@
                             <div class="balance-amount @(balance.Value >= 0 ? "positive" : "negative")">
                                 @if (balance.Key == "IRR")
                                 {
-                                    @String.Format("{0:N0} تومان", balance.Value)
+                                    @String.Format("{0:N0}", balance.Value)
                                 }
                                 else
                                 {
-                                    @(balance.Value.ToString("N2") + " " + balance.Key)
+                                    @String.Format("{0:N2}", balance.Value)
                                 }
                             </div>
                         </div>
@@ -477,8 +456,11 @@
                 </div>
             </div>
         }
+
+        <!-- Transactions -->
+        <div class="transactions-section">
             <div class="section-title">تاریخچه تراکنش‌ها</div>
-            
+
             @if (Model.Transactions != null && Model.Transactions.Any())
             {
                 var currencyGroups = Model.Transactions.GroupBy(t => t.CurrencyCode).OrderBy(g => g.Key);
@@ -495,20 +477,18 @@
                                 <div class="company-name">گروه تابان</div>
                                 <div class="company-website">https://taban-group.com</div>
                             </div>
-                            <div class="receipt-title">صورتحساب مشتری - @Model.CustomerName</div>
+                            <div class="report-title">@Model.ReportTitle - @Model.EntityName</div>
                         </div>
 
                         <table class="transaction-table">
                             <thead>
-                                <tr class="currency-group-header">
-                                    <td colspan="5" style="font-weight:900;color:#000;">تراکنش‌های @currencyGroup.Key (@currencyGroup.Count() تراکنش)</td>
-                                </tr>
                                 <tr>
-                                    <th width="15%">تاریخ</th>
-                                    <th width="18%">نوع تراکنش</th>
-                                    <th width="12%">شماره تراکنش</th>
-                                    <th width="20%">مبلغ</th>
-                                    <th width="20%">موجودی</th>
+                                    <th style="width: 13%;">تاریخ</th>
+                                    <th style="width: 11%;">زمان</th>
+                                    <th style="width: 13%;">نوع</th>
+                                    <th style="width: 33%;">توضیحات</th>
+                                    <th style="width: 15%;">مبلغ</th>
+                                    <th style="width: 15%;">موجودی</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -516,27 +496,24 @@
                                 {
                                     <tr>
                                         <td>@transaction.TransactionDate.ToString("yyyy/MM/dd")</td>
+                                        <td>@transaction.TransactionDate.ToString("HH:mm")</td>
                                         <td>
-                                            @{
-                                                var typeClass = transaction.ReferenceId.HasValue ? 
-                                                    (transaction.Type == TransactionType.OrderSell || transaction.Type == TransactionType.OrderBuy ? "type-order" : "type-document") : 
-                                                    "type-manual";
-                                                var typeText = transaction.ReferenceId.HasValue ?
-                                                    (transaction.Type == TransactionType.OrderSell || transaction.Type == TransactionType.OrderBuy ? "معامله" : "سند") :
-                                                    "تعدیل";
-                                            }
-                                            <span class="transaction-type @typeClass">@typeText</span>
+                                            <span class="transaction-type type-@(transaction.TransactionType.ToLower().Replace(" ", "-"))">
+                                                @transaction.TransactionType
+                                            </span>
                                         </td>
-                                        <td>@((!string.IsNullOrWhiteSpace(transaction.TransactionNumber) && long.TryParse(transaction.TransactionNumber, out _)) ? transaction.TransactionNumber : "-")</td>
-                                        <td class="amount-cell @(transaction.Amount >= 0 ? "positive" : "negative")">
-                                            @if (transaction.CurrencyCode == "IRR")
-                                            {
-                                                @String.Format("{0:N0}", transaction.Amount)
-                                            }
-                                            else
-                                            {
-                                                @(transaction.Amount.ToString("N2"))
-                                            }
+                                        <td style="text-align: right;">@transaction.Description</td>
+                                        <td class="amount-cell">
+                                            <span class="@(transaction.Amount >= 0 ? "positive" : "negative")">
+                                                @if (transaction.CurrencyCode == "IRR")
+                                                {
+                                                    @String.Format("{0:N0}", transaction.Amount)
+                                                }
+                                                else
+                                                {
+                                                    @String.Format("{0:N2}", transaction.Amount)
+                                                }
+                                            </span>
                                         </td>
                                         <td class="amount-cell">
                                             @if (transaction.CurrencyCode == "IRR")
@@ -545,7 +522,7 @@
                                             }
                                             else
                                             {
-                                                @(transaction.RunningBalance.ToString("N2"))
+                                                @String.Format("{0:N2}", transaction.RunningBalance)
                                             }
                                         </td>
                                     </tr>
@@ -568,12 +545,12 @@
         <!-- Footer -->
         <div class="receipt-footer">
             <div class="print-info">
-                <strong>تاریخ چاپ:</strong> @DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") | 
+                <strong>تاریخ چاپ:</strong> @DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") |
                 <strong>کاربر:</strong> @(User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "نامشخص")
             </div>
             <div class="disclaimer">
-                این رسید به صورت خودکار تولید شده و نیاز به امضا ندارد • 
-                صحت اطلاعات با گروه تابان قابل بررسی است • 
+                این گزارش به صورت خودکار تولید شده و نیاز به امضا ندارد •
+                صحت اطلاعات با گروه تابان قابل بررسی است •
                 https://taban-group.com
             </div>
         </div>
@@ -582,7 +559,7 @@
     <!-- Print and Close Buttons -->
     <div style="text-align: center; margin: 20px; padding: 20px;" class="no-print">
         <button onclick="window.print()" style="background: #27ae60; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
-            🖨️ چاپ رسید
+            🖨️ چاپ گزارش
         </button>
         <button onclick="window.close()" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
             ✖️ بستن

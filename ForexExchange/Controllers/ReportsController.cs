@@ -965,8 +965,6 @@ namespace ForexExchange.Controllers
                 return Json(new { success = false, error = "خطا در بارگذاری ارزها" });
             }
         }
-                // Return timeline as-is (oldest first)
-                return Json(new { success = true, timeline, summary });
 
         // GET: Reports/GetBankAccountTimeline
         [HttpGet]
@@ -1191,6 +1189,183 @@ namespace ForexExchange.Controllers
             }
 
             return true;
+        }
+
+        // GET: Reports/PrintBankAccountReport
+        [HttpGet]
+        public async Task<IActionResult> PrintBankAccountReport(int bankAccountId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            try
+            {
+                if (bankAccountId <= 0)
+                    return BadRequest("Invalid bank account ID");
+
+                var timeline = await _bankAccountHistoryService.GetBankAccountTimelineAsync(bankAccountId, fromDate, toDate);
+                var summary = await _bankAccountHistoryService.GetBankAccountSummaryAsync(bankAccountId);
+
+                // Get bank account name
+                var bankAccount = await _context.BankAccounts.FindAsync(bankAccountId);
+                if (bankAccount == null)
+                    return NotFound("Bank account not found");
+
+                var bankAccountName = bankAccount.BankName + " - " + bankAccount.CurrencyCode;
+
+                // Convert timeline to generic format with null checks
+                var transactions = new List<FinancialTransactionItem>();
+                if (timeline != null)
+                {
+                    foreach (var t in timeline)
+                    {
+                        try
+                        {
+                            // Safer date parsing
+                            DateTime transactionDate;
+                            if (!string.IsNullOrEmpty(t.Date) && !string.IsNullOrEmpty(t.Time))
+                            {
+                                string dateTimeString = $"{t.Date} {t.Time}";
+                                if (DateTime.TryParse(dateTimeString, out transactionDate))
+                                {
+                                    transactions.Add(new FinancialTransactionItem
+                                    {
+                                        TransactionDate = transactionDate,
+                                        TransactionType = t.TransactionType ?? "نامشخص",
+                                        Description = t.Description ?? "",
+                                        CurrencyCode = "IRR", // Bank accounts are typically in IRR
+                                        Amount = t.Amount,
+                                        RunningBalance = t.Balance,
+                                        ReferenceId = t.ReferenceId,
+                                        CanNavigate = t.CanNavigate
+                                    });
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Error parsing transaction date for bank account {BankAccountId}", bankAccountId);
+                            // Skip this transaction and continue
+                        }
+                    }
+                }
+
+                // Get final balances from summary with null checks
+                var finalBalances = new Dictionary<string, decimal>();
+                if (summary != null && summary.AccountBalances != null && summary.AccountBalances.ContainsKey(bankAccountId))
+                {
+                    try
+                    {
+                        finalBalances["IRR"] = Convert.ToDecimal(summary.AccountBalances[bankAccountId]);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error converting balance for bank account {BankAccountId}", bankAccountId);
+                    }
+                }
+
+                var reportModel = new FinancialReportViewModel
+                {
+                    ReportType = "BankAccount",
+                    EntityName = bankAccountName,
+                    EntityId = bankAccountId,
+                    FromDate = fromDate ?? DateTime.MinValue,
+                    ToDate = toDate ?? DateTime.MaxValue,
+                    Transactions = transactions,
+                    FinalBalances = finalBalances,
+                    ReportTitle = $"گزارش حساب بانکی - {bankAccountName}",
+                    ReportSubtitle = $"از {fromDate?.ToString("yyyy/MM/dd") ?? "ابتدا"} تا {toDate?.ToString("yyyy/MM/dd") ?? "انتها"}"
+                };
+
+                return View("~/Views/CustomerFinancialHistory/PrintFinancialReport.cshtml", reportModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating bank account report for account {BankAccountId}", bankAccountId);
+                // Return a proper error response instead of View("Error")
+                return StatusCode(500, "خطا در تولید گزارش حساب بانکی");
+            }
+        }
+
+        // GET: Reports/PrintPoolReport
+        [HttpGet]
+        public async Task<IActionResult> PrintPoolReport(string currencyCode, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(currencyCode))
+                    return BadRequest("Invalid currency code");
+
+                var timeline = await _poolHistoryService.GetPoolTimelineAsync(currencyCode, fromDate, toDate);
+                var summary = await _poolHistoryService.GetPoolSummaryAsync(currencyCode);
+
+                if (timeline == null || summary == null)
+                    return StatusCode(500, "خطا در دریافت داده‌های گزارش صندوق");
+
+                // Convert timeline to generic format with safe parsing
+                var transactions = new List<FinancialTransactionItem>();
+                foreach (var t in timeline)
+                {
+                    try
+                    {
+                        DateTime transactionDate;
+                        if (!DateTime.TryParse($"{t.Date} {t.Time}", out transactionDate))
+                        {
+                            _logger.LogWarning("Invalid date/time format for pool transaction: Date={Date}, Time={Time}", t.Date, t.Time);
+                            continue; // Skip invalid transactions
+                        }
+
+                        transactions.Add(new FinancialTransactionItem
+                        {
+                            TransactionDate = transactionDate,
+                            TransactionType = t.TransactionType,
+                            Description = t.Description,
+                            CurrencyCode = t.CurrencyCode,
+                            Amount = t.Amount,
+                            RunningBalance = t.Balance,
+                            ReferenceId = t.ReferenceId,
+                            CanNavigate = t.CanNavigate
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error processing pool transaction item");
+                        continue; // Skip problematic transactions
+                    }
+                }
+
+                // Get final balances from summary with safe conversion
+                var finalBalances = new Dictionary<string, decimal>();
+                if (summary.CurrencyBalances != null && summary.CurrencyBalances.ContainsKey(currencyCode))
+                {
+                    try
+                    {
+                        finalBalances[currencyCode] = Convert.ToDecimal(summary.CurrencyBalances[currencyCode]);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error converting balance for pool currency {CurrencyCode}", currencyCode);
+                    }
+                }
+
+                var reportModel = new FinancialReportViewModel
+                {
+                    ReportType = "Pool",
+                    EntityName = currencyCode,
+                    EntityId = null,
+                    FromDate = fromDate ?? DateTime.MinValue,
+                    ToDate = toDate ?? DateTime.MaxValue,
+                    Transactions = transactions,
+                    FinalBalances = finalBalances,
+                    ReportTitle = $"گزارش صندوق - {currencyCode}",
+                    ReportSubtitle = $"از {fromDate?.ToString("yyyy/MM/dd") ?? "ابتدا"} تا {toDate?.ToString("yyyy/MM/dd") ?? "انتها"}"
+                };
+
+                return View("~/Views/CustomerFinancialHistory/PrintFinancialReport.cshtml", reportModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating pool report for currency {CurrencyCode}", currencyCode);
+                // Return a proper error response instead of View("Error")
+                return StatusCode(500, "خطا در تولید گزارش صندوق");
+            }
         }
     }
 }

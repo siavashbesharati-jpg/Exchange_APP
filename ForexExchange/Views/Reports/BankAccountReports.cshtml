@@ -442,72 +442,25 @@
             return;
         }
 
-        // Create print-friendly version
-        const printWindow = window.open('', '_blank');
-        const bankAccountSelect = document.getElementById('bankAccountSelect');
-        const bankAccountName = bankAccountSelect.options[bankAccountSelect.selectedIndex]?.text || 'نامشخص';
-
-        let tableHTML = `
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; direction: rtl;">
-                <thead>
-                    <tr style="background-color: #f5f5f5;">
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">تاریخ</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">نوع</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">ارز</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">مقدار</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">موجودی</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">توضیحات</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        if (currentTimeline.transactions) {
-            currentTimeline.transactions.forEach(transaction => {
-                const typeText = transaction.type === 5 ? 'تعدیل دستی' : 'سند';
-                const amountColor = transaction.amount >= 0 ? 'color: #28a745;' : 'color: #dc3545;';
-                
-                tableHTML += `
-                    <tr>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${formatDate(transaction.transactionDate)}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${typeText}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${transaction.currencyCode}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center; ${amountColor} font-weight: bold;">${formatCurrency(transaction.amount, transaction.currencyCode)}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">${formatCurrency(transaction.runningBalance, transaction.currencyCode)}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">${transaction.description || '-'}</td>
-                    </tr>
-                `;
-            });
+        const bankAccountId = document.getElementById('bankAccountSelect').value;
+        if (!bankAccountId) {
+            alert('لطفاً ابتدا حساب بانکی را انتخاب کنید');
+            return;
         }
 
-        tableHTML += '</tbody></table>';
+        const fromDate = document.getElementById('fromDate').value || '';
+        const toDate = document.getElementById('toDate').value || '';
 
-        printWindow.document.write(`
-        <html>
-        <head>
-            <title>تاریخچه حساب بانکی - ${bankAccountName}</title>
-            <style>
-                body { font-family: Arial, sans-serif; direction: rtl; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
-                th { background-color: #f5f5f5; }
-                .text-center { text-align: center; }
-                .fw-bold { font-weight: bold; }
-                @@media print { body { margin: 0; } }
-            </style>
-        </head>
-        <body>
-            <h2 class="text-center">تاریخچه حساب بانکی</h2>
-            <h3 class="text-center">${bankAccountName}</h3>
-            ${tableHTML}
-        </body>
-        </html>
-    `);
+        // Build URL with query parameters
+        const params = new URLSearchParams({
+            bankAccountId: bankAccountId,
+            fromDate: fromDate,
+            toDate: toDate
+        });
 
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        // Open bank account report page in new window
+        const url = '@Url.Action("PrintBankAccountReport", "Reports")?' + params.toString();
+        window.open(url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
     }
 
     // Navigation functions for clickable rows

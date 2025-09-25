@@ -153,4 +153,44 @@ namespace ForexExchange.Models
         public int ExchangeRatesCount { get; set; }
         public int AccountingDocumentsCount { get; set; }
     }
+
+    /// <summary>
+    /// Generic financial report view model for printing reports
+    /// مدل نمای کلی گزارش مالی برای چاپ گزارش‌ها
+    /// </summary>
+    public class FinancialReportViewModel
+    {
+        public string ReportType { get; set; } = string.Empty; // "Customer", "BankAccount", "Pool"
+        public string EntityName { get; set; } = string.Empty; // Customer name, Bank account name, Currency code
+        public int? EntityId { get; set; } // Customer ID, Bank Account ID, or null for Pool
+        public DateTime FromDate { get; set; }
+        public DateTime ToDate { get; set; }
+        public List<FinancialTransactionItem> Transactions { get; set; } = new();
+        public Dictionary<string, decimal> FinalBalances { get; set; } = new();
+        public Dictionary<string, decimal> InitialBalances { get; set; } = new();
+        public string ReportTitle { get; set; } = string.Empty;
+        public string ReportSubtitle { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Generic financial transaction item for reports
+    /// آیتم تراکنش مالی کلی برای گزارش‌ها
+    /// </summary>
+    public class FinancialTransactionItem
+    {
+        public DateTime TransactionDate { get; set; }
+        public string TransactionType { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string CurrencyCode { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public decimal RunningBalance { get; set; }
+        public int? ReferenceId { get; set; }
+        public bool CanNavigate { get; set; }
+        public string? TransactionNumber { get; set; }
+
+        // For orders - additional context
+        public string? FromCurrency { get; set; }
+        public string? ToCurrency { get; set; }
+        public decimal? ExchangeRate { get; set; }
+    }
 }

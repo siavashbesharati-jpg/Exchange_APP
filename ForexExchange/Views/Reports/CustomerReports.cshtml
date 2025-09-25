@@ -768,7 +768,7 @@
         });
 
         // Open bank receipt page in new window
-        const url = '@Url.Action("PrintBankReceipt", "CustomerFinancialHistory")?' + params.toString();
+        const url = '@Url.Action("PrintFinancialReport", "CustomerFinancialHistory")?' + params.toString();
         window.open(url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
     }
 

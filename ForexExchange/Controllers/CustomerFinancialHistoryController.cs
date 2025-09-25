@@ -193,7 +193,7 @@ namespace ForexExchange.Controllers
         /// Display customer timeline in bank receipt format
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> PrintBankReceipt(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null)
+        public async Task<IActionResult> PrintFinancialReport(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null)
         {
             try
             {
@@ -205,7 +205,38 @@ namespace ForexExchange.Controllers
                 if (timeline == null)
                     return NotFound("Timeline not found");
 
-                return View(timeline);
+                // Convert CustomerFinancialTimeline to FinancialReportViewModel
+                var transactions = timeline.Transactions.Select(t => new FinancialTransactionItem
+                {
+                    TransactionDate = t.TransactionDate,
+                    TransactionType = t.Type.ToString(),
+                    Description = t.Description,
+                    CurrencyCode = t.CurrencyCode,
+                    Amount = t.Amount,
+                    RunningBalance = t.RunningBalance,
+                    ReferenceId = t.ReferenceId,
+                    CanNavigate = t.ReferenceId.HasValue,
+                    TransactionNumber = t.TransactionNumber,
+                    FromCurrency = t.FromCurrency,
+                    ToCurrency = t.ToCurrency,
+                    ExchangeRate = t.ExchangeRate
+                }).ToList();
+
+                var reportModel = new FinancialReportViewModel
+                {
+                    ReportType = "Customer",
+                    EntityName = timeline.CustomerName,
+                    EntityId = customerId,
+                    FromDate = timeline.FromDate,
+                    ToDate = timeline.ToDate,
+                    Transactions = transactions,
+                    FinalBalances = timeline.FinalBalances,
+                    InitialBalances = timeline.InitialBalances,
+                    ReportTitle = $"صورتحساب مشتری - {timeline.CustomerName}",
+                    ReportSubtitle = $"از {timeline.FromDate.ToString("yyyy/MM/dd")} تا {timeline.ToDate.ToString("yyyy/MM/dd")}"
+                };
+
+                return View("~/Views/CustomerFinancialHistory/PrintFinancialReport.cshtml", reportModel);
             }
             catch (Exception ex)
             {
