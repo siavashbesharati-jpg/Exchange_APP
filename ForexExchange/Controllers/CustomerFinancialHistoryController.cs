@@ -34,7 +34,7 @@ namespace ForexExchange.Controllers
         /// Get complete customer financial timeline
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetCustomerTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null)
+        public async Task<IActionResult> GetCustomerTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null, int page = 1, int pageSize = 10)
         {
             try
             {
@@ -42,6 +42,32 @@ namespace ForexExchange.Controllers
                     return BadRequest("Invalid customer ID");
 
                 var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate, currencyCode);
+                
+                // Apply pagination to transactions
+                if (timeline?.Transactions != null)
+                {
+                    var totalTransactions = timeline.Transactions.Count;
+                    var totalPages = (int)Math.Ceiling((double)totalTransactions / pageSize);
+                    
+                    var pagedTransactions = timeline.Transactions
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .ToList();
+                    
+                    timeline.Transactions = pagedTransactions;
+                    
+                    return Json(new { 
+                        success = true, 
+                        data = timeline,
+                        pagination = new {
+                            currentPage = page,
+                            totalPages = totalPages,
+                            totalRecords = totalTransactions,
+                            pageSize = pageSize
+                        }
+                    });
+                }
+                
                 return Json(new { success = true, data = timeline });
             }
             catch (Exception ex)

@@ -5,7 +5,17 @@
 <div class="container-fluid">
     <!-- Header with Back Button -->
     <div class="row mb-4">
-        <div class="col-12">
+        <div class="c        // Load customers dropdown
+        loadCustomers();
+        
+        // Load bank accounts dropdown
+        loadBankAccounts();
+        
+        // Add Enter key event listeners to all filter inputs
+        addEnterKeyListeners();
+        
+        loadDocumentReports();
+    });
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h2><i class="fas fa-file-invoice text-warning me-2"></i>گزارشات اسناد حسابداری</h2>
@@ -47,10 +57,7 @@
                             <label class="form-label">ارز</label>
                             <select class="form-select" id="currency">
                                 <option value="">همه</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
-                                <option value="AED">AED</option>
-                                <option value="IRR">IRR</option>
+                                <!-- Currency options will be loaded dynamically -->
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -58,6 +65,13 @@
                             <select class="form-select" id="customer">
                                 <option value="">همه</option>
                                 <!-- Customer options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">حساب بانکی</label>
+                            <select class="form-select" id="bankAccount">
+                                <option value="">همه حساب‌ها</option>
+                                <!-- Bank account options will be loaded dynamically -->
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -145,6 +159,14 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Pagination -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <nav id="documentsPagination" class="d-flex justify-content-center">
+                                <!-- Pagination will be inserted here -->
+                            </nav>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -154,6 +176,8 @@
 <script>
     let documentsData = []; // Store documents data for sorting
     let currentSort = { column: null, direction: 'asc' };
+    let currentPage = 1;
+    let pageSize = 10;
 
     document.addEventListener('DOMContentLoaded', function () {
         // Don't set default dates - let users choose to filter by date or not
@@ -171,6 +195,12 @@
 
         // Load customers dropdown
         loadCustomers();
+        
+        // Load bank accounts dropdown
+        loadBankAccounts();
+        
+        // Load currencies dropdown
+        loadCurrencies();
         
         // Add Enter key event listener to all filter inputs
         addEnterKeyListeners();
@@ -198,6 +228,66 @@
             });
     }
 
+    function loadBankAccounts() {
+        console.log('Loading bank accounts...');
+        fetch('/api/bankaccounts')
+            .then(response => {
+                console.log('Bank accounts response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Bank accounts data received:', data);
+                const bankAccountSelect = document.getElementById('bankAccount');
+                bankAccountSelect.innerHTML = '<option value="">همه حساب‌ها</option>';
+                
+                if (data && data.length > 0) {
+                    data.forEach(account => {
+                        const option = document.createElement('option');
+                        option.value = account.id;
+                        option.textContent = `${account.bankName} - ${account.accountNumber}`;
+                        bankAccountSelect.appendChild(option);
+                    });
+                } else {
+                    console.warn('No bank accounts data received or empty array');
+                }
+            })
+            .catch(error => {
+                console.error('خطا در بارگذاری حساب‌های بانکی:', error);
+                const bankAccountSelect = document.getElementById('bankAccount');
+                bankAccountSelect.innerHTML = '<option value="">خطا در بارگذاری حساب‌ها</option>';
+            });
+    }
+
+    function loadCurrencies() {
+        console.log('Loading currencies...');
+        fetch('/api/currencies')
+            .then(response => {
+                console.log('Currencies response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Currencies data received:', data);
+                const currencySelect = document.getElementById('currency');
+                currencySelect.innerHTML = '<option value="">همه</option>';
+                
+                if (data && data.length > 0) {
+                    data.forEach(currency => {
+                        const option = document.createElement('option');
+                        option.value = currency.code;
+                        option.textContent = `${currency.name} (${currency.code})`;
+                        currencySelect.appendChild(option);
+                    });
+                } else {
+                    console.warn('No currencies data received or empty array');
+                }
+            })
+            .catch(error => {
+                console.error('خطا در بارگذاری ارزها:', error);
+                const currencySelect = document.getElementById('currency');
+                currencySelect.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+            });
+    }
+
     function addEnterKeyListeners() {
         // Add Enter key event listener to all filter inputs and selects
         const filterElements = [
@@ -205,6 +295,7 @@
             'toDate', 
             'currency',
             'customer',
+            'bankAccount',
             'referenceId',
             'fromAmount',
             'toAmount'
@@ -225,12 +316,14 @@
 
     function clearDate(inputId) {
         document.getElementById(inputId).value = '';
+        currentPage = 1; // Reset pagination
         // Automatically trigger search after clearing date
         loadDocumentReports();
     }
 
     function clearFileSearch() {
         document.getElementById('fileSearch').value = '';
+        currentPage = 1; // Reset pagination
         loadDocumentReports();
     }
 
@@ -239,14 +332,51 @@
         document.getElementById('toDate').value = '';
         document.getElementById('currency').value = '';
         document.getElementById('customer').value = '';
+        document.getElementById('bankAccount').value = '';
         document.getElementById('referenceId').value = '';
         document.getElementById('fromAmount').value = '';
         document.getElementById('toAmount').value = '';
         document.getElementById('fileSearch').value = '';
+        currentPage = 1; // Reset pagination
         loadDocumentReports();
     }
 
+    function updatePagination(totalPages, currentPageNum) {
+        const container = document.getElementById('documentsPagination');
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let pagination = '<ul class="pagination justify-content-center">';
+
+        // Previous button
+        if (currentPageNum > 1) {
+            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="loadDocumentReportsPage(${currentPageNum - 1}); return false;">قبلی</a></li>`;
+        }
+
+        // Page numbers
+        for (let i = Math.max(1, currentPageNum - 2); i <= Math.min(totalPages, currentPageNum + 2); i++) {
+            const active = i === currentPageNum ? 'active' : '';
+            pagination += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="loadDocumentReportsPage(${i}); return false;">${i}</a></li>`;
+        }
+
+        // Next button
+        if (currentPageNum < totalPages) {
+            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="loadDocumentReportsPage(${currentPageNum + 1}); return false;">بعدی</a></li>`;
+        }
+
+        pagination += '</ul>';
+        container.innerHTML = pagination;
+    }
+
+    function loadDocumentReportsPage(page) {
+        currentPage = page;
+        loadDocumentsTable();
+    }
+
     function loadDocumentReports() {
+        currentPage = 1; // Reset to first page when filters change
         loadDocumentsTable();
     }
 
@@ -272,6 +402,8 @@
         const toAmount = document.getElementById('toAmount').value;
         const fileSearchInput = document.getElementById('fileSearch');
 
+        const bankAccount = document.getElementById('bankAccount').value;
+
         // Check if file search is being used
         if (fileSearchInput.files && fileSearchInput.files.length > 0) {
             // Use FormData for file upload
@@ -280,9 +412,12 @@
             formData.append('toDate', toDate);
             if (currency) formData.append('currency', currency);
             if (customer) formData.append('customer', customer);
+            if (bankAccount) formData.append('bankAccount', bankAccount);
             if (referenceId) formData.append('referenceId', referenceId);
             if (fromAmount) formData.append('fromAmount', fromAmount);
             if (toAmount) formData.append('toAmount', toAmount);
+            formData.append('page', currentPage);
+            formData.append('pageSize', pageSize);
             formData.append('fileSearch', fileSearchInput.files[0]);
 
             // Add anti-forgery token to FormData
@@ -303,9 +438,11 @@
             let url = `@Url.Action("GetDocumentsData", "Reports")?fromDate=${fromDate}&toDate=${toDate}`;
             if (currency) url += `&currency=${currency}`;
             if (customer) url += `&customer=${customer}`;
+            if (bankAccount) url += `&bankAccount=${bankAccount}`;
             if (referenceId) url += `&referenceId=${encodeURIComponent(referenceId)}`;
             if (fromAmount) url += `&fromAmount=${fromAmount}`;
             if (toAmount) url += `&toAmount=${toAmount}`;
+            url += `&page=${currentPage}&pageSize=${pageSize}`;
 
             fetch(url)
                 .then(response => response.json())
@@ -334,6 +471,14 @@
         if (data.documents && data.documents.length > 0) {
             documentsData = data.documents; // Store data for sorting
             renderDocumentsTable(documentsData);
+            
+            // Update pagination if pagination info is available
+            if (data.pagination) {
+                updatePagination(data.pagination.totalPages, data.pagination.currentPage);
+            } else {
+                // Clear pagination if no pagination info
+                document.getElementById('documentsPagination').innerHTML = '';
+            }
         } else {
             tbody.innerHTML = `
                 <tr>

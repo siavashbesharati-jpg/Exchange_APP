@@ -331,7 +331,9 @@
     }
 
     function loadDataForActiveTab() {
-        loadCustomerTimeline();
+        // Reset pagination to page 1 when filters change
+        currentPage.timeline = 1;
+        loadCustomerTimeline(1);
     }
 
     function showEmptyState() {
@@ -342,6 +344,8 @@
 
     function clearDate(inputId) {
         document.getElementById(inputId).value = '';
+        // Reset pagination to page 1 when clearing dates
+        currentPage.timeline = 1;
         loadDataForActiveTab();
     }
 
@@ -356,18 +360,18 @@
 
         // Previous button
         if (currentPageNum > 1) {
-            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${currentPageNum - 1}); return false;">قبلی</a></li>`;
+            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="loadCustomerTimeline(${currentPageNum - 1}); return false;">قبلی</a></li>`;
         }
 
         // Page numbers
         for (let i = Math.max(1, currentPageNum - 2); i <= Math.min(totalPages, currentPageNum + 2); i++) {
             const active = i === currentPageNum ? 'active' : '';
-            pagination += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="${loadFunction.name}(${i}); return false;">${i}</a></li>`;
+            pagination += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="loadCustomerTimeline(${i}); return false;">${i}</a></li>`;
         }
 
         // Next button
         if (currentPageNum < totalPages) {
-            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="${loadFunction.name}(${currentPageNum + 1}); return false;">بعدی</a></li>`;
+            pagination += `<li class="page-item"><a class="page-link" href="#" onclick="loadCustomerTimeline(${currentPageNum + 1}); return false;">بعدی</a></li>`;
         }
 
         pagination += '</ul>';
@@ -387,7 +391,7 @@
 
     // ========== FINANCIAL TIMELINE FUNCTIONS (BANK STYLE) ==========
 
-    function loadCustomerTimeline() {
+    function loadCustomerTimeline(page = 1) {
         const customerId = document.getElementById('customerFilter').value;
         if (!customerId) {
             showTimelineEmptyState();
@@ -403,17 +407,30 @@
         showTimelineLoading();
         showTimelineSections();
 
+        // Update current page
+        currentPage.timeline = page;
+
         $.get('@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")', {
             customerId: customerId,
             fromDate: fromDate,
             toDate: toDate,
-            currencyCode: currencyCode
+            currencyCode: currencyCode,
+            page: page,
+            pageSize: pageSize
         })
             .done(function (response) {
                 if (response.success) {
                     currentTimeline = response.data;
                     renderBankStyleTimeline(response.data);
                     updateCustomerInfo(response.data);
+                    
+                    // Update pagination if pagination info is available
+                    if (response.pagination) {
+                        updatePagination('timelinePagination', response.pagination.totalPages, response.pagination.currentPage, loadCustomerTimeline);
+                    } else {
+                        // Clear pagination if no pagination info
+                        document.getElementById('timelinePagination').innerHTML = '';
+                    }
                 } else {
                     showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
                 }
@@ -721,13 +738,15 @@
         const fromDate = document.getElementById('fromDate').value || '';
         const toDate = document.getElementById('toDate').value || '';
         const currencyCode = document.getElementById('currencyFilter').value || '';
+        const bankAccountId = document.getElementById('bankAccountFilter').value || '';
 
         // Build URL with query parameters
         const params = new URLSearchParams({
             customerId: customerId,
             fromDate: fromDate,
             toDate: toDate,
-            currencyCode: currencyCode
+            currencyCode: currencyCode,
+            bankAccountId: bankAccountId
         });
 
         // Open bank receipt page in new window
@@ -865,7 +884,7 @@
 
                     // Refresh customer timeline if it's loaded
                     if (document.getElementById('customerFilter').value) {
-                        loadCustomerTimeline();
+                        loadCustomerTimeline(currentPage.timeline);
                     }
                 } else {
                     alert('خطا در ثبت تراکنش: ' + (result.error || result.message || 'خطای ناشناخته'));
@@ -913,7 +932,7 @@
 
                     // Refresh customer timeline to show updated data
                     if (document.getElementById('customerFilter').value) {
-                        loadCustomerTimeline();
+                        loadCustomerTimeline(currentPage.timeline);
                     }
                 } else {
                     alert('خطا در حذف تراکنش: ' + (result.error || result.message || 'خطای ناشناخته'));

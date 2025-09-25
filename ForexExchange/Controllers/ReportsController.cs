@@ -369,7 +369,7 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/GetDocumentsData
         [HttpGet]
-        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId, decimal? fromAmount, decimal? toAmount)
+        public async Task<IActionResult> GetDocumentsData(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId, decimal? fromAmount, decimal? toAmount, string? bankAccount, int page = 1, int pageSize = 10)
         {
             try
             {
@@ -409,9 +409,20 @@ namespace ForexExchange.Controllers
                     query = query.Where(ad => ad.Amount <= toAmount.Value);
                 }
 
+                // Add bank account filter
+                if (!string.IsNullOrEmpty(bankAccount) && int.TryParse(bankAccount, out int bankAccountId))
+                {
+                    query = query.Where(ad => ad.PayerBankAccountId == bankAccountId || ad.ReceiverBankAccountId == bankAccountId);
+                }
 
+                // Get total count before pagination
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
                 var accountingDocs = await query
+                    .OrderByDescending(ad => ad.DocumentDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .Select(ad => new
                     {
                         id = ad.Id,
@@ -427,9 +438,9 @@ namespace ForexExchange.Controllers
                     .ToListAsync();
 
                 // Skip receipts since Receipt model is empty
-                var allDocuments = accountingDocs.OrderByDescending(d => d.date).ToList();
+                var allDocuments = accountingDocs.ToList();
 
-                var totalDocuments = allDocuments.Count;
+                var totalDocuments = totalCount;
                 var totalReceipts = 0; // No receipts available
                 var totalAmount = allDocuments.Sum(d => d.amount);
                 var todayDocuments = allDocuments.Count(d => d.date.Date == DateTime.Today);
@@ -443,6 +454,13 @@ namespace ForexExchange.Controllers
                         totalReceipts,
                         totalAmount,
                         todayDocuments
+                    },
+                    pagination = new
+                    {
+                        currentPage = page,
+                        totalPages = totalPages,
+                        totalRecords = totalCount,
+                        pageSize = pageSize
                     }
                 });
             }
@@ -935,7 +953,7 @@ namespace ForexExchange.Controllers
 
         // POST: Reports/GetDocumentsDataWithFile
         [HttpPost]
-        public async Task<IActionResult> GetDocumentsDataWithFile(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId, decimal? fromAmount, decimal? toAmount, IFormFile? fileSearch)
+        public async Task<IActionResult> GetDocumentsDataWithFile(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, string? referenceId, decimal? fromAmount, decimal? toAmount, string? bankAccount, IFormFile? fileSearch, int page = 1, int pageSize = 10)
         {
             try
             {
@@ -973,6 +991,12 @@ namespace ForexExchange.Controllers
                 if (toAmount.HasValue)
                 {
                     query = query.Where(ad => ad.Amount <= toAmount.Value);
+                }
+
+                // Add bank account filter
+                if (!string.IsNullOrEmpty(bankAccount) && int.TryParse(bankAccount, out int bankAccountId))
+                {
+                    query = query.Where(ad => ad.PayerBankAccountId == bankAccountId || ad.ReceiverBankAccountId == bankAccountId);
                 }
 
                 // Handle file search
@@ -1021,19 +1045,35 @@ namespace ForexExchange.Controllers
                     hasFile = ad.fileData != null && ad.fileData.Length > 0
                 }).OrderByDescending(d => d.date).ToList();
 
-                var totalDocuments = allDocuments.Count;
+                // Apply pagination after file filtering
+                var totalCount = allDocuments.Count;
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+                
+                var pagedDocuments = allDocuments
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var totalDocuments = totalCount;
                 var totalAmount = allDocuments.Sum(d => d.amount);
                 var todayDocuments = allDocuments.Count(d => d.date.Date == DateTime.Today);
 
                 return Json(new
                 {
-                    documents = allDocuments,
+                    documents = pagedDocuments,
                     stats = new
                     {
                         totalDocuments,
                         totalReceipts = 0,
                         totalAmount,
                         todayDocuments
+                    },
+                    pagination = new
+                    {
+                        currentPage = page,
+                        totalPages = totalPages,
+                        totalRecords = totalCount,
+                        pageSize = pageSize
                     }
                 });
             }
