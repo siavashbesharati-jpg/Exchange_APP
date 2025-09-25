@@ -153,12 +153,11 @@
                                     <th class="sortable" data-column="amount">مبلغ <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="description">شرح <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="status">وضعیت <i class="fas fa-sort"></i></th>
-                                    <th>عملیات</th>
                                 </tr>
                             </thead>
                             <tbody id="documentsTableBody">
                                 <tr>
-                                    <td colspan="9" class="text-center py-5">
+                                    <td colspan="8" class="text-center py-5">
                                         <div class="spinner-border text-warning" role="status">
                                             <span class="visually-hidden">در حال بارگذاری...</span>
                                         </div>
@@ -412,7 +411,7 @@
         const tbody = document.getElementById('documentsTableBody');
         tbody.innerHTML = `
         <tr>
-            <td colspan="9" class="text-center py-5">
+            <td colspan="8" class="text-center py-5">
                 <div class="spinner-border text-warning" role="status">
                     <span class="visually-hidden">در حال بارگذاری...</span>
                 </div>
@@ -485,7 +484,7 @@
         if (data.error) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center py-5 text-danger">
+                    <td colspan="8" class="text-center py-5 text-danger">
                         <i class="fas fa-exclamation-triangle"></i>
                         ${data.error}
                     </td>
@@ -510,7 +509,7 @@
         } else {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center py-5 text-muted">
+                    <td colspan="8" class="text-center py-5 text-muted">
                         <i class="fas fa-info-circle"></i>
                         هیچ سندی در این بازه زمانی یافت نشد
                     </td>
@@ -523,7 +522,7 @@
         const tbody = document.getElementById('documentsTableBody');
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center py-5 text-danger">
+                <td colspan="8" class="text-center py-5 text-danger">
                     <i class="fas fa-exclamation-triangle"></i>
                     خطا در بارگذاری اطلاعات
                 </td>
@@ -538,6 +537,7 @@
         documents.forEach(doc => {
             const row = document.createElement('tr');
             row.style.cursor = 'pointer';
+            row.className = 'clickable-row';
             row.setAttribute('data-document-id', doc.id);
             const hasFileIcon = doc.hasFile ? '<i class="fas fa-paperclip text-success ms-1" title="دارای فایل پیوست"></i>' : '';
             
@@ -563,12 +563,12 @@
                     ${doc.status}
                 </span>
             </td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="viewDocumentDetails(${doc.id})">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </td>
         `;
+            
+            // Make the entire row clickable
+            row.addEventListener('click', function() {
+                window.open('@Url.Action("Details", "AccountingDocuments")/' + doc.id, '_blank');
+            });
             
             // Add hover events
             row.addEventListener('mouseenter', function(e) {
@@ -640,10 +640,6 @@
         });
 
         renderDocumentsTable(sortedData);
-    }
-
-    function viewDocumentDetails(docId) {
-        window.location.href = '@Url.Action("Details", "AccountingDocuments")/' + docId;
     }
 
     function exportDocumentData() {
@@ -824,104 +820,7 @@
         }, 0);
     }
 
-    // Function for the view button (opens modal)
-    async function viewDocumentDetails(documentId) {
-        try {
-            const response = await fetch(`@Url.Action("GetDocumentDetails", "Reports")/${documentId}`);
-            const data = await response.json();
-            
-            if (data.error) {
-                alert('خطا: ' + data.error);
-                return;
-            }
-            
-            // Populate modal with detailed information
-            document.getElementById('documentDetailContent').innerHTML = `
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">شناسه سند:</label>
-                        <div>DOC${data.id.toString().padStart(3, '0')}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">نوع سند:</label>
-                        <div>${data.documentType === 'Cash' ? 'نقدی' : 'حواله'}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">مبلغ:</label>
-                        <div class="fs-5 text-success">${formatCurrency(data.amount, data.currencyCode)}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">تاریخ سند:</label>
-                        <div>${new Date(data.documentDate).toLocaleDateString('fa-IR')}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">پرداخت کننده:</label>
-                        <div>${data.payerType === 'Customer' ? 
-                            (data.payerCustomer ? `${data.payerCustomer.fullName} (${data.payerCustomer.phoneNumber})` : 'نامشخص') : 
-                            'سیستم'}</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">دریافت کننده:</label>
-                        <div>${data.receiverType === 'Customer' ? 
-                            (data.receiverCustomer ? `${data.receiverCustomer.fullName} (${data.receiverCustomer.phoneNumber})` : 'نامشخص') : 
-                            'سیستم'}</div>
-                    </div>
-                    ${data.payerBankAccount ? `
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">حساب بانکی پرداخت کننده:</label>
-                        <div>${data.payerBankAccount.bankName} - ${data.payerBankAccount.accountNumber}</div>
-                    </div>
-                    ` : ''}
-                    ${data.receiverBankAccount ? `
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">حساب بانکی دریافت کننده:</label>
-                        <div>${data.receiverBankAccount.bankName} - ${data.receiverBankAccount.accountNumber}</div>
-                    </div>
-                    ` : ''}
-                    ${data.referenceNumber ? `
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">شماره مرجع:</label>
-                        <div>${data.referenceNumber}</div>
-                    </div>
-                    ` : ''}
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">وضعیت:</label>
-                        <div><span class="badge ${data.isVerified ? 'bg-success' : 'bg-warning'}">${data.isVerified ? 'تایید شده' : 'در انتظار تایید'}</span></div>
-                    </div>
-                    ${data.description ? `
-                    <div class="col-12">
-                        <label class="form-label fw-bold">توضیحات:</label>
-                        <div>${data.description}</div>
-                    </div>
-                    ` : ''}
-                    ${data.notes ? `
-                    <div class="col-12">
-                        <label class="form-label fw-bold">یادداشت:</label>
-                        <div>${data.notes}</div>
-                    </div>
-                    ` : ''}
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">تاریخ ایجاد:</label>
-                        <div>${new Date(data.createdAt).toLocaleDateString('fa-IR')}</div>
-                    </div>
-                    ${data.verifiedAt ? `
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">تاریخ تایید:</label>
-                        <div>${new Date(data.verifiedAt).toLocaleDateString('fa-IR')}</div>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('documentDetailModal'));
-            modal.show();
-            
-        } catch (error) {
-            console.error('Error fetching document details:', error);
-            alert('خطا در دریافت اطلاعات سند');
-        }
-    }
+
 </script>
 
 <style>
@@ -998,8 +897,14 @@
     }
 
     /* Hover effect for table rows */
-    #documentsTableBody tr:hover {
-        background-color: #f8f9fa;
+    #documentsTableBody tr.clickable-row:hover {
+        background-color: #e3f2fd;
         transition: background-color 0.2s ease;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    #documentsTableBody tr.clickable-row {
+        transition: all 0.2s ease;
     }
 </style>
