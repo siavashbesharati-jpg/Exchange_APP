@@ -1795,10 +1795,28 @@ namespace ForexExchange.Services
             {
                 var oldBalance = currentPool.Balance;
                 currentPool.Balance = latestHistory?.BalanceAfter ?? 0m;
+
+                // Get active orders involving this currency
+                var activeOrders = await _context.Orders
+                    .Where(o => !o.IsDeleted && !o.IsFrozen)
+                    .Where(o => o.FromCurrency.Code == currencyCode || o.ToCurrency.Code == currencyCode)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .ToListAsync();
+
+                decimal totalBought = activeOrders.Where(o => o.FromCurrency.Code == currencyCode).Sum(o => o.FromAmount); // Amount we bought from customers (pool increases)
+                decimal totalSold = activeOrders.Where(o => o.ToCurrency.Code == currencyCode).Sum(o => o.ToAmount);   // Amount we sold to customers (pool decreases)
+                int activeBuyOrderCount = activeOrders.Count(o => o.ToCurrency.Code == currencyCode);  // Orders where customers buy from us
+                int activeSellOrderCount = activeOrders.Count(o => o.FromCurrency.Code == currencyCode); // Orders where customers sell to us
+
+                currentPool.TotalBought = totalBought;
+                currentPool.TotalSold = totalSold;
+                currentPool.ActiveBuyOrderCount = activeBuyOrderCount;
+                currentPool.ActiveSellOrderCount = activeSellOrderCount;
                 currentPool.LastUpdated = DateTime.UtcNow;
                 currentPool.Notes = "Recalculated after deletion";
 
-                _logger.LogInformation($"Updated currency pool {currencyCode} balance from {oldBalance} to {currentPool.Balance}");
+                _logger.LogInformation($"Updated currency pool {currencyCode} balance from {oldBalance} to {currentPool.Balance}, Bought: {totalBought}, Sold: {totalSold}, Buy Orders: {activeBuyOrderCount}, Sell Orders: {activeSellOrderCount}");
             }
             else
             {
