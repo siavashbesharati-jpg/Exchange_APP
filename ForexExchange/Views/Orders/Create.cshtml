@@ -23,14 +23,82 @@
                                         foreach (var error in state.Errors)
                                         {
                                             var msg = error.ErrorMessage;
+                                            // Localize known messages
+                                            if (msg == "The CustomerId field is required.") msg = "انتخاب مشتری الزامی است.";
+                                            if (msg == "The FromCurrencyId field is required.") msg = "انتخاب ارز مبدأ الزامی است.";
+                                            if (msg == "The ToCurrencyId field is required.") msg = "انتخاب ارز مقصد الزامی است.";
+                                            if (msg == "The Amount field is required.") msg = "مقدار معامله الزامی است.";
                                             <li>@msg</li>
                                         }
                                     }
+                                    }
                                 </ul>
-                                <span asp-validation-for="Rate" class="text-danger"></span>
                             </div>
                         }
+                        <div class="alert alert-info mt-2" id="currencyPairMsgBox" style="display: none;"></div>
 
+                        <div class="row mb-3">
+                            <!-- Currency Pool Information -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <div class="alert alert-warning" id="currencyPoolInfo" style="display: none;"
+                                        dir=ltr>
+                                        <h6>موجودی صندوق ارزها:</h6>
+                                        <p id="currencyPoolText"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="CustomerId" class="form-label">انتخاب مشتری</label>
+                                <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select"
+                                    id="customerSelect" required>
+                                    <option value="">یک مشتری انتخاب کنید</option>
+                                </select>
+                                <span asp-validation-for="CustomerId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="CreatedAt" class="form-label">تاریخ و زمان معامله</label>
+                                <input asp-for="CreatedAt" type="datetime-local" class="form-control"
+                                    id="createdAtInput" />
+                                <span asp-validation-for="CreatedAt" class="text-danger"></span>
+                                <div class="form-text">تاریخ و زمان ثبت معامله (پیش‌فرض: زمان فعلی)</div>
+                            </div>
+
+
+
+
+                            <!-- Removed OrderType dropdown -->
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label asp-for="FromCurrencyId" class="form-label"> دریافت می کنیم </label>
+                                <select asp-for="FromCurrencyId" asp-items="ViewBag.FromCurrencies" class="form-select"
+                                    id="fromCurrencySelect" required>
+                                    <option value="">انتخاب کنید</option>
+                                </select>
+                                <span asp-validation-for="FromCurrencyId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="ToCurrencyId" class="form-label"> پرداخت می کنیم </label>
+                                <select asp-for="ToCurrencyId" asp-items="ViewBag.ToCurrencies" class="form-select"
+                                    id="toCurrencySelect" required>
+                                    <option value="">انتخاب کنید</option>
+                                </select>
+                                <span asp-validation-for="ToCurrencyId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="Rate" class="form-label">نرخ ارز</label>
+                                <input asp-for="Rate" type="number" id="calcRateInput" class="form-control" step="any"
+                                    placeholder="نرخ ارز را وارد کنید">
+                                <span asp-validation-for="Rate" class="text-danger"></span>
+                            </div>
+
+                        </div>
 
                         <!-- Amount Input Row -->
                         <div class="row mb-3">
@@ -57,6 +125,7 @@
                             <span id="calcFromCurrencyName">انتخاب نشده</span>
                             <span id="calcToCurrencyCode">---</span>
                             <span id="calcToCurrencyName">انتخاب نشده</span>
+                            <button type="button" id="loadSuggestedRateBtn">Load Rate</button>
                         </div>
 
                         <!-- Currency Pair Information (moved below pool info if needed) -->
@@ -161,7 +230,174 @@
 
 
 
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 
+    <!-- Include Currency Formatter -->
+
+    <script src="~/js/currency-formatter.js"></script>
+
+        <script>
+        // Currency data with RatePriority from server
+        // Format: { 1: {Code: 'IRR', Name: 'ریال', RatePriority: 1}, ... }
+    const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData ?? new {}));
+
+        function getRatePriorityById(id) {
+            if (!id || !currenciesData[id]) return 99;
+            return currenciesData[id].RatePriority || 99;
+        }
+
+        function getCurrencyCodeById(id, selectId) {
+            if (!id) return null;
+            if (currenciesData[id]) return currenciesData[id].Code;
+            const sel = document.getElementById(selectId);
+            if (!sel) return null;
+            const opt = sel.querySelector(`option[value='${id}']`);
+            if (!opt) return null;
+            // Option text format: CODE - Name
+            return opt.textContent.split(' - ')[0].trim();
+        }
+
+        function getCurrencyCodeById(id, selectId) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return null;
+            const opt = sel.querySelector(`option[value='${id}']`);
+            if (!opt) return null;
+            // Option text format: CODE - Name
+            return opt.textContent.split(' - ')[0].trim();
+        }
+
+
+
+        function recalculateAmounts(trigger) {
+            const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
+            const toCurrencyId = document.getElementById('toCurrencySelect').value;
+            const fromCurrencyCode = getCurrencyCodeById(fromCurrencyId, 'fromCurrencySelect');
+            const toCurrencyCode = getCurrencyCodeById(toCurrencyId, 'toCurrencySelect');
+            if (!fromCurrencyCode || !toCurrencyCode) return;
+
+            const fromPriority = getRatePriorityById(fromCurrencyId);
+            const toPriority = getRatePriorityById(toCurrencyId);
+
+            let rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
+            let fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value) || 0;
+            let toAmount = parseFloat(document.getElementById('calcToAmountInput').value) || 0;
+
+            // Decide calculation direction
+            if (trigger === 'from') {
+                // User changed fromAmount or rate
+                if (rate > 0) {
+                    if (fromPriority < toPriority) {
+                        // FromCurrency has higher priority: from / rate = to
+                        toAmount = fromAmount / rate;
+                    } else {
+                        // Otherwise: from * rate = to
+                        toAmount = fromAmount * rate;
+                    }
+                } else {
+                    toAmount = 0;
+                }
+                document.getElementById('calcToAmountInput').value = toAmount || '';
+            } else if (trigger === 'to') {
+                // User changed toAmount or rate
+                if (rate > 0) {
+                    if (fromPriority < toPriority) {
+                        // from / rate = to => from = to * rate
+                        fromAmount = toAmount * rate;
+                    } else {
+                        // from * rate = to => from = to / rate
+                        fromAmount = toAmount / rate;
+                    }
+                } else {
+                    fromAmount = 0;
+                }
+                document.getElementById('calcFromAmountInput').value = fromAmount || '';
+            } else if (trigger === 'rate') {
+                // User changed rate, recalc toAmount from fromAmount
+                if (fromPriority < toPriority) {
+                    toAmount = fromAmount / rate;
+                } else {
+                    toAmount = fromAmount * rate;
+                }
+                document.getElementById('calcToAmountInput').value = toAmount || '';
+            }
+            // Optionally, update display/labels here
+        }
+
+        // Attach event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const fromAmountInput = document.getElementById('calcFromAmountInput');
+            const toAmountInput = document.getElementById('calcToAmountInput');
+            const rateInput = document.getElementById('calcRateInput');
+            const fromCurrencySelect = document.getElementById('fromCurrencySelect');
+            const toCurrencySelect = document.getElementById('toCurrencySelect');
+
+            if (fromAmountInput) fromAmountInput.addEventListener('input', function() { recalculateAmounts('from'); });
+            if (toAmountInput) toAmountInput.addEventListener('input', function() { recalculateAmounts('to'); });
+            if (rateInput) rateInput.addEventListener('input', function() { recalculateAmounts('rate'); });
+            if (fromCurrencySelect) fromCurrencySelect.addEventListener('change', function() { recalculateAmounts('from'); });
+            if (toCurrencySelect) toCurrencySelect.addEventListener('change', function() { recalculateAmounts('from'); });
+        });
+        </script>
+    <script>
+    // Helper: get form values for preview - Use SAME data as real form submission
+    function getOrderPreviewData() {
+        const data = {
+            customerId: parseInt(document.getElementById('customerSelect').value) || 0,
+            fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
+            toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
+            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,  // Use calculator input
+            toAmount: parseFloat(document.getElementById('calcToAmountInput').value) || 0,      // Use calculator input
+            rate: parseFloat(document.getElementById('calcRateInput').value) || 0,             // Use calculator input
+            createdAt: document.getElementById('createdAtInput')?.value || null,
+            notes: document.getElementById('Notes')?.value || null
+        };
+        
+        // Debug: Log the form data being sent
+        console.log('Form data for preview:', data);
+        
+        return data;
+    }
+
+    // Show preview modal with order and effect details - Beautiful Styling
+    function showPreviewModal(order, effects) {
+        
+        
+        
+        
+        // Helper to get property in both PascalCase and camelCase
+        function getProp(obj, name) {
+            return obj[name] ?? obj[name.charAt(0).toLowerCase() + name.slice(1)];
+        }
+
+        // Get customer name from dropdown
+        let customerSelect = document.getElementById('customerSelect');
+        let customerName = 'نامشخص';
+        if (customerSelect) {
+            if (typeof $ !== 'undefined' && $(customerSelect).hasClass('select2-hidden-accessible')) {
+                let selected = $(customerSelect).select2('data')[0];
+                customerName = selected ? selected.text : 'نامشخص';
+            } else {
+                let idx = customerSelect.selectedIndex;
+                customerName = idx > 0 ? customerSelect.options[idx].text : 'نامشخص';
+            }
+        }
+
+        // Get selected date
+        let dateValue = document.getElementById('createdAtInput')?.value || '';
+        let formattedDate = 'نامشخص';
+        if (dateValue) {
+            const date = new Date(dateValue);
+            formattedDate = date.toLocaleDateString('fa-IR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
 
         // Currency labels with better formatting
         let fromCurrencyCode = getProp(effects, 'FromCurrencyCode') || '';
@@ -332,100 +568,23 @@
     document.getElementById('finalSubmitBtn').style.display = 'none';
     </script>
 
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-    <script src="~/js/currency-formatter.js"></script>
     <script>
-    // --- Clean, simple currency calculation logic with RatePriority ---
-    // currenciesData: { id: { code, name, ratePriority } }
-    let currenciesData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrenciesData ?? new Dictionary<int, object>()));
+        let currentRate = null;
+        // Currency pool data loaded from server-side ViewBag (dictionary: code => balance)
+        let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
 
-    function getRatePriority(currencyId) {
-        if (!currencyId || !currenciesData[currencyId]) return 99;
-        return currenciesData[currencyId].ratePriority ?? 99;
-    }
+        // Calculator functionality - variables for inline calculator
+        let calcFromCurrencyId = null;
+        let calcToCurrencyId = null;
+        let calcFromCurrencyCode = null;
+        let calcToCurrencyCode = null;
 
-    function calculateAmounts() {
-        const fromId = parseInt(document.getElementById('fromCurrencySelect').value) || 0;
-        const toId = parseInt(document.getElementById('toCurrencySelect').value) || 0;
-        const rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
-        let fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value) || 0;
-        let toAmount = 0;
+        function initializeCalculator() {
+            // Get current selections from main form using jQuery
+            const fromSelect = $('#fromCurrencySelect');
+            const toSelect = $('#toCurrencySelect');
 
-        if (!fromId || !toId || !rate || !fromAmount) {
-            document.getElementById('calcToAmountInput').value = '';
-            return;
-        }
-
-        const fromPriority = getRatePriority(fromId);
-        const toPriority = getRatePriority(toId);
-
-        if (fromPriority < toPriority) {
-            // From has higher priority (lower number)
-            toAmount = fromAmount / rate;
-        } else {
-            toAmount = fromAmount * rate;
-        }
-        document.getElementById('calcToAmountInput').value = toAmount;
-    }
-
-    function calculateFromAmount() {
-        const fromId = parseInt(document.getElementById('fromCurrencySelect').value) || 0;
-        const toId = parseInt(document.getElementById('toCurrencySelect').value) || 0;
-        const rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
-        let toAmount = parseFloat(document.getElementById('calcToAmountInput').value) || 0;
-        let fromAmount = 0;
-
-        if (!fromId || !toId || !rate || !toAmount) {
-            document.getElementById('calcFromAmountInput').value = '';
-            return;
-        }
-
-        const fromPriority = getRatePriority(fromId);
-        const toPriority = getRatePriority(toId);
-
-        if (fromPriority < toPriority) {
-            // From has higher priority (lower number)
-            fromAmount = toAmount * rate;
-        } else {
-            fromAmount = toAmount / rate;
-        }
-        document.getElementById('calcFromAmountInput').value = fromAmount;
-    }
-
-    // Attach input listeners for live calculation
-    document.getElementById('fromCurrencySelect').addEventListener('change', calculateAmounts);
-    document.getElementById('toCurrencySelect').addEventListener('change', calculateAmounts);
-    document.getElementById('calcRateInput').addEventListener('input', calculateAmounts);
-    document.getElementById('calcFromAmountInput').addEventListener('input', calculateAmounts);
-    document.getElementById('calcToAmountInput').addEventListener('input', calculateFromAmount);
-
-    // On page load, trigger calculation if values exist
-    window.addEventListener('DOMContentLoaded', function() {
-        calculateAmounts();
-    });
-
-    // Helper: get form values for preview - Use SAME data as real form submission
-    function getOrderPreviewData() {
-        const data = {
-            customerId: parseInt(document.getElementById('customerSelect').value) || 0,
-            fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
-            toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
-            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,  // Use calculator input
-            toAmount: parseFloat(document.getElementById('calcToAmountInput').value) || 0,      // Use calculator input
-            rate: parseFloat(document.getElementById('calcRateInput').value) || 0,             // Use calculator input
-            createdAt: document.getElementById('createdAtInput')?.value || null,
-            notes: document.getElementById('Notes')?.value || null
-        };
-        // Debug: Log the form data being sent
-        console.log('Form data for preview:', data);
-        return data;
-    }
-    </script>
-}
+            // Check if both currencies are selected in main form
             if (!fromSelect.val() || !toSelect.val()) {
                 alert('لطفا ابتدا ارزهای مبدا و مقصد را انتخاب کنید');
                 return;
@@ -939,6 +1098,13 @@
             const hasValidCurrencies = fromCurrency && toCurrency && fromCurrency !== toCurrency;
 
 
+            // Enable/disable buttons based on currency selection
+            const loadSuggestedBtn = document.getElementById('loadSuggestedRateBtn');
+
+            if (loadSuggestedBtn) {
+                loadSuggestedBtn.disabled = !hasValidCurrencies;
+            }
+
             // Initialize calculator when currencies are selected
             if (hasValidCurrencies) {
                 initializeInlineCalculator();
@@ -1030,31 +1196,30 @@
             // Note: Removed automatic rate loading - users will enter their own rates
         }
 
-        // Function to check if a currency pair should display the inverse rate based on RatePriority
+        // Function to check if a currency pair should display the inverse rate (larger number)
         function shouldInvertRateForPair(fromCode, toCode) {
-            // Find currencies by code to get their RatePriority
-            let fromCurrency = null;
-            let toCurrency = null;
+            const pairsToInvert = [
+                'AED-OMR', 'AED-USD', 'AED-EUR',
+                'USD-EUR', 'USD-OMR'
+            ];
             
-            // Search through currenciesData to find matching currencies
-            for (const [id, currency] of Object.entries(currenciesData)) {
-                if (currency.code === fromCode) {
-                    fromCurrency = currency;
-                }
-                if (currency.code === toCode) {
-                    toCurrency = currency;
-                }
+            // Normalize codes to uppercase
+            const from = fromCode.toUpperCase();
+            const to = toCode.toUpperCase();
+            const pair = `${from}-${to}`;
+            const reversePair = `${to}-${from}`;
+            
+            // Check if pair is in the list
+            if (pairsToInvert.includes(pair) || pairsToInvert.includes(reversePair)) {
+                return true;
             }
             
-            // If we can't find both currencies, fall back to no inversion
-            if (!fromCurrency || !toCurrency) {
-                return false;
+            // Special cases: IRR to everything - should reverse
+            if (from === 'IRR' || to === 'IRR') {
+                return true;
             }
             
-            // Invert calculation when going from low priority to high priority currency
-            // High priority (1) to low priority (5): multiply (no inversion)
-            // Low priority (5) to high priority (1): divide (invert)
-            return fromCurrency.ratePriority < toCurrency.ratePriority;
+            return false; // Default to direct
         }
 
         // Load rate automatically for calculator (DISABLED - users enter their own rates)
@@ -1140,8 +1305,7 @@
             if (fromAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
                 let toAmount;
 
-                let shouldInvert = shouldInvertRateForPair(calcFromCurrencyCode, calcToCurrencyCode);
-                if (shouldInvert) {
+                if (window.calcRateInverted) {
                     // Reversed calculation for specified pairs
                     toAmount = fromAmount / rate;
                 } else {
@@ -1176,8 +1340,7 @@
             if (toAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
                 let fromAmount;
 
-                let shouldInvert = shouldInvertRateForPair(calcFromCurrencyCode, calcToCurrencyCode);
-                if (shouldInvert) {
+                if (window.calcRateInverted) {
                     // Reversed calculation for specified pairs
                     fromAmount = toAmount * rate;
                 } else {
