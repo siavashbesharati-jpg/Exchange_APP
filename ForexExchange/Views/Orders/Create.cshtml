@@ -238,6 +238,109 @@
     <!-- Include Currency Formatter -->
 
     <script src="~/js/currency-formatter.js"></script>
+
+        <script>
+        // Currency data with RatePriority from server
+        // Format: { 1: {Code: 'IRR', Name: 'ریال', RatePriority: 1}, ... }
+    const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData ?? new {}));
+
+        function getRatePriorityById(id) {
+            if (!id || !currenciesData[id]) return 99;
+            return currenciesData[id].RatePriority || 99;
+        }
+
+        function getCurrencyCodeById(id, selectId) {
+            if (!id) return null;
+            if (currenciesData[id]) return currenciesData[id].Code;
+            const sel = document.getElementById(selectId);
+            if (!sel) return null;
+            const opt = sel.querySelector(`option[value='${id}']`);
+            if (!opt) return null;
+            // Option text format: CODE - Name
+            return opt.textContent.split(' - ')[0].trim();
+        }
+
+        function getCurrencyCodeById(id, selectId) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return null;
+            const opt = sel.querySelector(`option[value='${id}']`);
+            if (!opt) return null;
+            // Option text format: CODE - Name
+            return opt.textContent.split(' - ')[0].trim();
+        }
+
+
+
+        function recalculateAmounts(trigger) {
+            const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
+            const toCurrencyId = document.getElementById('toCurrencySelect').value;
+            const fromCurrencyCode = getCurrencyCodeById(fromCurrencyId, 'fromCurrencySelect');
+            const toCurrencyCode = getCurrencyCodeById(toCurrencyId, 'toCurrencySelect');
+            if (!fromCurrencyCode || !toCurrencyCode) return;
+
+            const fromPriority = getRatePriorityById(fromCurrencyId);
+            const toPriority = getRatePriorityById(toCurrencyId);
+
+            let rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
+            let fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value) || 0;
+            let toAmount = parseFloat(document.getElementById('calcToAmountInput').value) || 0;
+
+            // Decide calculation direction
+            if (trigger === 'from') {
+                // User changed fromAmount or rate
+                if (rate > 0) {
+                    if (fromPriority < toPriority) {
+                        // FromCurrency has higher priority: from / rate = to
+                        toAmount = fromAmount / rate;
+                    } else {
+                        // Otherwise: from * rate = to
+                        toAmount = fromAmount * rate;
+                    }
+                } else {
+                    toAmount = 0;
+                }
+                document.getElementById('calcToAmountInput').value = toAmount || '';
+            } else if (trigger === 'to') {
+                // User changed toAmount or rate
+                if (rate > 0) {
+                    if (fromPriority < toPriority) {
+                        // from / rate = to => from = to * rate
+                        fromAmount = toAmount * rate;
+                    } else {
+                        // from * rate = to => from = to / rate
+                        fromAmount = toAmount / rate;
+                    }
+                } else {
+                    fromAmount = 0;
+                }
+                document.getElementById('calcFromAmountInput').value = fromAmount || '';
+            } else if (trigger === 'rate') {
+                // User changed rate, recalc toAmount from fromAmount
+                if (fromPriority < toPriority) {
+                    toAmount = fromAmount / rate;
+                } else {
+                    toAmount = fromAmount * rate;
+                }
+                document.getElementById('calcToAmountInput').value = toAmount || '';
+            }
+            // Optionally, update display/labels here
+        }
+
+        // Attach event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const fromAmountInput = document.getElementById('calcFromAmountInput');
+            const toAmountInput = document.getElementById('calcToAmountInput');
+            const rateInput = document.getElementById('calcRateInput');
+            const fromCurrencySelect = document.getElementById('fromCurrencySelect');
+            const toCurrencySelect = document.getElementById('toCurrencySelect');
+
+            if (fromAmountInput) fromAmountInput.addEventListener('input', function() { recalculateAmounts('from'); });
+            if (toAmountInput) toAmountInput.addEventListener('input', function() { recalculateAmounts('to'); });
+            if (rateInput) rateInput.addEventListener('input', function() { recalculateAmounts('rate'); });
+            if (fromCurrencySelect) fromCurrencySelect.addEventListener('change', function() { recalculateAmounts('from'); });
+            if (toCurrencySelect) toCurrencySelect.addEventListener('change', function() { recalculateAmounts('from'); });
+        });
+        </script>
     <script>
     // Helper: get form values for preview - Use SAME data as real form submission
     function getOrderPreviewData() {

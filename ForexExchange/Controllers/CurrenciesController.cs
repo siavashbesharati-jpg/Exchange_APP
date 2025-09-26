@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -30,8 +27,8 @@ namespace ForexExchange.Controllers
             }
 
             var currencies = await query
-                .OrderBy(c => c.DisplayOrder)
-                .ThenBy(c => c.Code)
+                .OrderBy(c => c.RatePriority)
+                .ThenBy(c => c.DisplayOrder)
                 .ToListAsync();
 
             ViewBag.OnlyActive = onlyActive == true;
@@ -47,7 +44,7 @@ namespace ForexExchange.Controllers
         // POST: Currencies/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Code,Name,PersianName,Symbol,IsActive,IsBaseCurrency,DisplayOrder")] Currency model)
+        public async Task<IActionResult> Create([Bind("Code,Name,PersianName,Symbol,IsActive,IsBaseCurrency,DisplayOrder,RatePriority")] Currency model)
         {
             // Normalize
             model.Code = model.Code?.Trim().ToUpperInvariant() ?? string.Empty;
@@ -91,7 +88,7 @@ namespace ForexExchange.Controllers
         // POST: Currencies/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Code,Name,PersianName,Symbol,IsActive,IsBaseCurrency,DisplayOrder,CreatedAt")] Currency model)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Code,Name,PersianName,Symbol,IsActive,IsBaseCurrency,DisplayOrder,RatePriority,CreatedAt")] Currency model)
         {
             if (id != model.Id) return NotFound();
 

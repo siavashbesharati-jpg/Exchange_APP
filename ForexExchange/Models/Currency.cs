@@ -27,6 +27,8 @@ namespace ForexExchange.Models
         
         public int DisplayOrder { get; set; }
         
+        public int RatePriority { get; set; }
+        
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         
         // Navigation properties

@@ -401,7 +401,9 @@ namespace ForexExchange.Controllers
                 await _context.SaveChangesAsync();
 
                 // Add zero-balance records for all currencies for this customer
-                var allCurrencies = await _context.Currencies.ToListAsync();
+                var allCurrencies = await _context.Currencies
+                    .OrderBy(c => c.DisplayOrder)
+                    .ToListAsync();
                 int createdBalances = 0;
                 foreach (var currency in allCurrencies)
                 {

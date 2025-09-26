@@ -129,7 +129,9 @@ public class HomeController : Controller
         try
         {
             // Get all currencies
-            var currencies = await _context.Currencies.ToListAsync();
+            var currencies = await _context.Currencies
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
             
             // Update display orders
             foreach (var currency in currencies)

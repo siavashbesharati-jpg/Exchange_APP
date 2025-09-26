@@ -194,7 +194,9 @@ namespace ForexExchange.Controllers
             {
                 // Update rates for base currency to foreign currencies
                 var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
-                var foreignCurrencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency).ToListAsync();
+                var foreignCurrencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency)
+                    .OrderBy(c => c.DisplayOrder)
+                    .ToListAsync();
 
                 if (baseCurrency == null)
                 {
@@ -335,7 +337,9 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Manage));
             }
 
-            var currencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency).ToListAsync();
+            var currencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
 
             foreach (var currency in currencies)
             {
