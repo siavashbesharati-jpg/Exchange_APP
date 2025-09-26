@@ -53,6 +53,7 @@ namespace ForexExchange.Services
             {
                 var item = new PoolTimelineItem
                 {
+                    Id = record.Id, // Set the transaction ID for delete operations
                     Date = FormatGregorianDate(record.TransactionDate),
                     Time = FormatTime(record.TransactionDate),
                     TransactionType = record.TransactionType.ToString(),
@@ -169,6 +170,7 @@ namespace ForexExchange.Services
     /// </summary>
     public class PoolTimelineItem : ITimelineItem
     {
+        public long Id { get; set; } // Transaction ID for delete operations
         public string Date { get; set; } = string.Empty;
         public string Time { get; set; } = string.Empty;
         public string TransactionType { get; set; } = string.Empty;

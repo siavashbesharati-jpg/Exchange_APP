@@ -295,6 +295,9 @@
                     renderBankStyleTimeline(response.timeline);
                     updateBankAccountInfo(response.timeline, bankAccountId);
                     
+                    // Enable manual adjustment button after successful data load
+                    document.getElementById('manualAdjustmentBtn').disabled = false;
+                    
                     // Clear pagination since API doesn't support it yet
                     document.getElementById('timelinePagination').innerHTML = '';
                 } else {
@@ -361,7 +364,7 @@
                 </td>
                 <td class="text-center">
                     ${item.transactionType === 'ManualEdit' ?
-                    `<button class="btn btn-sm btn-outline-danger" onclick="deleteManualBankAccountTransaction(${item.historyId})" title="حذف">
+                    `<button class="btn btn-sm btn-outline-danger" onclick="deleteManualBankAccountTransaction(${item.id})" title="حذف">
                         <i class="fas fa-trash"></i>
                     </button>` :
                     '-'
@@ -630,13 +633,23 @@
             return;
         }
 
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('transactionId', historyId);
+
+        // Send AJAX request
         fetch('@Url.Action("DeleteManualBankAccountBalanceHistory", "Reports")', {
             method: 'POST',
+            body: formData,
             headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-            },
-            body: JSON.stringify({ historyId: historyId })
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
         .then(response => response.json())
         .then(data => {
@@ -650,7 +663,12 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('خطا در ارتباط با سرور');
+            alert('خطا در ارتباط با سرور: ' + error.message);
+        })
+        .finally(() => {
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = originalHtml;
         });
     }
 

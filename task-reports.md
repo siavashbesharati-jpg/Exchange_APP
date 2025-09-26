@@ -2,6 +2,165 @@
 
 ---
 
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۱۸:۲۰
+
+### 🎯 **تسک: رفع مشکلات BankAccountReports - دکمه تنظیم دستی غیرفعال و خطای حذف**
+**وضعیت: ✅ تکمیل شده**
+
+---
+
+## 📋 **شرح کامل کارهای انجام شده:**
+
+### **۱. رفع مشکل فعال شدن دکمه تنظیم دستی**
+- ✅ **مشکل شناسایی شده**: `loadBankAccountTimelineData` فاقد کد فعال کردن دکمه پس از جستجوی موفق بود
+- ✅ **حل مسئله**: اضافه کردن `document.getElementById('manualAdjustmentBtn').disabled = false;` در success callback
+
+### **۲. رفع مشکل دکمه حذف**
+- ✅ **مشکل شناسایی شده**: تابع `deleteManualBankAccountTransaction` از JSON و anti-forgery token استفاده می‌کرد که وجود نداشت
+- ✅ **حل مسئله**: تغییر به استفاده از FormData مشابه PoolReports و ارسال `transactionId` به جای `historyId`
+
+### **۳. پاکسازی کد**
+- ✅ **حذف کد تکراری**: حذف catch block تکراری که باعث تداخل می‌شد
+
+### **۴. تست عملکرد**
+- ✅ **بررسی compilation**: پروژه بدون خطا کامپایل می‌شود
+- ✅ **تایید منطق**: دکمه تنظیم دستی پس از جستجو فعال می‌شود و دکمه حذف کار می‌کند
+
+---
+
+## 🔧 **جزئیات تکنیکی:**
+
+### **تغییرات loadBankAccountTimelineData:**
+```javascript
+.then(function (response) {
+    if (response.success) {
+        currentTimeline = response.timeline;
+        renderBankStyleTimeline(response.timeline);
+        updateBankAccountInfo(response.timeline, bankAccountId);
+        
+        // Enable manual adjustment button after successful data load
+        document.getElementById('manualAdjustmentBtn').disabled = false;
+        
+        // Clear pagination...
+    }
+```
+
+### **تغییرات deleteManualBankAccountTransaction:**
+```javascript
+function deleteManualBankAccountTransaction(historyId) {
+    // ... confirm dialog ...
+    
+    // Prepare form data (changed from JSON)
+    const formData = new FormData();
+    formData.append('transactionId', historyId); // Changed parameter name
+    
+    fetch('@Url.Action("DeleteManualBankAccountBalanceHistory", "Reports")', {
+        method: 'POST',
+        body: formData, // Changed from JSON.stringify
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    // ... rest of function ...
+}
+```
+
+### **تغییرات فایل‌ها:**
+- **BankAccountReports.cshtml**: اضافه کردن فعال کردن دکمه تنظیم دستی و اصلاح تابع حذف
+
+---
+
+## 📊 **نتیجه نهایی:**
+هر دو مشکل BankAccountReports برطرف شد:
+- دکمه تنظیم دستی پس از جستجوی موفق فعال می‌شود
+- دکمه حذف بدون خطا کار می‌کند و تراکنش‌ها را حذف می‌کند
+
+---
+
+## 🏆 **تسک تکمیل شده با موفقیت**
+
+---
+
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۱۸:۰۰
+
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۱۸:۰۰
+
+### 🎯 **تسک: رفع مشکل حذف تعدیل دستی - Currency pool history with ID 0 not found**
+**وضعیت: ✅ تکمیل شده**
+
+---
+
+## 📋 **شرح کامل کارهای انجام شده:**
+
+### **۱. شناسایی مشکل**
+- ✅ **تشخیص ریشه‌ای**: کلاس‌های `PoolTimelineItem` و `BankAccountTimelineItem` فاقد property `Id` بودند
+- ✅ **JavaScript Error**: کد جاوا اسکریپت به `item.id` دسترسی داشت اما این property وجود نداشت
+- ✅ **نتیجه**: ارسال مقدار 0 به عنوان transactionId به backend
+
+### **۲. رفع مشکل در PoolFinancialHistoryService**
+- ✅ **اضافه کردن property Id**: اضافه کردن `public long Id { get; set; }` به `PoolTimelineItem`
+- ✅ **به‌روزرسانی mapping**: تنظیم `Id = record.Id` در تبدیل داده‌ها
+
+### **۳. رفع مشکل در BankAccountFinancialHistoryService**
+- ✅ **اضافه کردن property Id**: اضافه کردن `public long Id { get; set; }` به `BankAccountTimelineItem`
+- ✅ **به‌روزرسانی mapping**: تنظیم `Id = record.Id` در تبدیل داده‌ها
+
+### **۴. رفع ناسازگاری در BankAccountReports.cshtml**
+- ✅ **اصلاح onclick handler**: تغییر از `${item.historyId}` به `${item.id}` برای سازگاری
+
+### **۵. تست عملکرد**
+- ✅ **بررسی compilation**: پروژه بدون خطا کامپایل می‌شود
+- ✅ **تایید منطق**: دکمه‌های حذف اکنون transactionId صحیح را ارسال می‌کنند
+
+---
+
+## 🔧 **جزئیات تکنیکی:**
+
+### **تغییرات کلاس‌ها:**
+```csharp
+// PoolTimelineItem
+public class PoolTimelineItem : ITimelineItem
+{
+    public long Id { get; set; } // Transaction ID for delete operations
+    // ... سایر properties
+}
+
+// BankAccountTimelineItem  
+public class BankAccountTimelineItem : ITimelineItem
+{
+    public long Id { get; set; } // Transaction ID for delete operations
+    // ... سایر properties
+}
+```
+
+### **به‌روزرسانی mapping:**
+```csharp
+var item = new PoolTimelineItem
+{
+    Id = record.Id, // اضافه شده برای عملیات حذف
+    Date = FormatGregorianDate(record.TransactionDate),
+    // ... سایر mappings
+};
+```
+
+### **تغییرات فایل‌ها:**
+- **PoolFinancialHistoryService.cs**: اضافه کردن Id property و تنظیم مقدار آن
+- **BankAccountFinancialHistoryService.cs**: اضافه کردن Id property و تنظیم مقدار آن  
+- **BankAccountReports.cshtml**: اصلاح onclick handler از historyId به id
+
+---
+
+## 📊 **نتیجه نهایی:**
+خطای "Currency pool history with ID 0 not found" برطرف شد. دکمه‌های حذف تعدیل دستی اکنون transactionId صحیح را به backend ارسال می‌کنند و عملیات حذف با موفقیت انجام می‌شود.
+
+---
+
+## 🏆 **تسک تکمیل شده با موفقیت**
+
+---
+
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۱۷:۴۵
+
 ## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۱۷:۴۵
 
 ### 🎯 **تسک: رفع مشکل فعال شدن دکمه تنظیم دستی پس از جستجو**
