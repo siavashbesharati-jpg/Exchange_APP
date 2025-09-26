@@ -203,7 +203,8 @@
         // Currency filter change event
         document.getElementById('currencySelect').addEventListener('change', function () {
             const currencyCode = this.value;
-            document.getElementById('manualAdjustmentBtn').disabled = !currencyCode;
+            // Disable button when currency changes - it will be enabled after search
+            document.getElementById('manualAdjustmentBtn').disabled = true;
             loadDataForActiveTab();
         });
 
@@ -294,6 +295,9 @@
                     currentTimeline = response.timeline;
                     renderPoolStyleTimeline(response.timeline);
                     updatePoolInfo(response.timeline, currencyCode);
+                    
+                    // Enable manual adjustment button after successful data load
+                    document.getElementById('manualAdjustmentBtn').disabled = false;
                     
                     // Clear pagination since API doesn't support it yet
                     document.getElementById('timelinePagination').innerHTML = '';
@@ -719,12 +723,6 @@
             button.innerHTML = originalHtml;
         });
     }
-
-    // Enable/disable manual adjustment button based on currency selection
-    document.getElementById('currencySelect').addEventListener('change', function() {
-        const manualBtn = document.getElementById('manualAdjustmentBtn');
-        manualBtn.disabled = !this.value;
-    });
 </script>
 
 <style>

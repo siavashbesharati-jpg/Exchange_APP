@@ -203,7 +203,7 @@
         // Bank account filter change event
         document.getElementById('bankAccountSelect').addEventListener('change', function () {
             const bankAccountId = this.value;
-            document.getElementById('manualAdjustmentBtn').disabled = !bankAccountId;
+            document.getElementById('manualAdjustmentBtn').disabled = false;
             loadDataForActiveTab();
         });
 
