@@ -218,10 +218,10 @@ namespace ForexExchange.Controllers
             // Pagination
             int pageSize = 15; // 15 items per page
             int pageNumber = (page ?? 1);
-            
+
             // Get total count
             int totalItems = orders.Count;
-            
+
             // Apply pagination
             var pagedOrders = orders
                 .Skip((pageNumber - 1) * pageSize)
@@ -394,7 +394,7 @@ namespace ForexExchange.Controllers
 
             if (ModelState.IsValid)
             {
-              
+
 
                 _context.Add(order);
                 await _context.SaveChangesAsync();
@@ -510,7 +510,7 @@ namespace ForexExchange.Controllers
                         return NotFound();
                     }
 
-                
+
 
                     order.UpdatedAt = DateTime.Now; _context.Update(order);
                     await _context.SaveChangesAsync();
@@ -674,7 +674,7 @@ namespace ForexExchange.Controllers
             // Load minimal currency data for dropdowns (just ID, Code, Name)
             var currencies = await _context.Currencies
                 .Where(c => c.IsActive)
-                .Select(c => new { c.Id, c.Code, c.Name, c.DisplayOrder })
+                .Select(c => new { c.Id, c.Code, c.Name, c.DisplayOrder, c.RatePriority })
                 .OrderBy(c => c.DisplayOrder)
                 .ToListAsync();
 
@@ -690,6 +690,9 @@ namespace ForexExchange.Controllers
                 Value = c.Id.ToString(),
                 Text = $"{c.Code} - {c.Name}"
             }).ToList();
+
+            // Pass currency data with RatePriority to JavaScript
+            ViewBag.CurrenciesData = currencies.ToDictionary(c => c.Id, c => new { c.Code, c.Name, c.RatePriority });
 
             // Load minimal customer data for dropdown (just ID and FullName)
             var customers = _context.Customers

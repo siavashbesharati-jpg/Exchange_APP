@@ -470,6 +470,9 @@
         // Currency pool data loaded from server-side ViewBag (dictionary: code => balance)
         let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
 
+        // Currency data with RatePriority loaded from server-side ViewBag (id => {code, name, ratePriority})
+        let currenciesData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrenciesData ?? new Dictionary<int, object>()));
+
         // Calculator functionality - variables for inline calculator
         let calcFromCurrencyId = null;
         let calcToCurrencyId = null;
@@ -1093,30 +1096,31 @@
             // Note: Removed automatic rate loading - users will enter their own rates
         }
 
-        // Function to check if a currency pair should display the inverse rate (larger number)
+        // Function to check if a currency pair should display the inverse rate based on RatePriority
         function shouldInvertRateForPair(fromCode, toCode) {
-            const pairsToInvert = [
-                'AED-OMR', 'AED-USD', 'AED-EUR',
-                'USD-EUR', 'USD-OMR'
-            ];
+            // Find currencies by code to get their RatePriority
+            let fromCurrency = null;
+            let toCurrency = null;
             
-            // Normalize codes to uppercase
-            const from = fromCode.toUpperCase();
-            const to = toCode.toUpperCase();
-            const pair = `${from}-${to}`;
-            const reversePair = `${to}-${from}`;
-            
-            // Check if pair is in the list
-            if (pairsToInvert.includes(pair) || pairsToInvert.includes(reversePair)) {
-                return true;
+            // Search through currenciesData to find matching currencies
+            for (const [id, currency] of Object.entries(currenciesData)) {
+                if (currency.code === fromCode) {
+                    fromCurrency = currency;
+                }
+                if (currency.code === toCode) {
+                    toCurrency = currency;
+                }
             }
             
-            // Special cases: IRR to everything - should reverse
-            if (from === 'IRR' || to === 'IRR') {
-                return true;
+            // If we can't find both currencies, fall back to no inversion
+            if (!fromCurrency || !toCurrency) {
+                return false;
             }
             
-            return false; // Default to direct
+            // Invert calculation when going from low priority to high priority currency
+            // High priority (1) to low priority (5): multiply (no inversion)
+            // Low priority (5) to high priority (1): divide (invert)
+            return fromCurrency.ratePriority > toCurrency.ratePriority;
         }
 
         // Load rate automatically for calculator (DISABLED - users enter their own rates)
