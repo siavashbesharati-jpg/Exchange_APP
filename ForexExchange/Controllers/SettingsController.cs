@@ -31,7 +31,8 @@ namespace ForexExchange.Controllers
                 // Load currencies for dropdown
                 ViewBag.Currencies = await _context.Currencies
                     .Where(c => c.IsActive)
-                    .OrderBy(c => c.PersianName)
+                    .OrderBy(c => c.DisplayOrder)
+                    .ThenBy(c => c.PersianName)
                     .ToListAsync();
                 
                 return View(settings);
@@ -46,7 +47,8 @@ namespace ForexExchange.Controllers
                 {
                     ViewBag.Currencies = await _context.Currencies
                         .Where(c => c.IsActive)
-                        .OrderBy(c => c.PersianName)
+                        .OrderBy(c => c.DisplayOrder)
+                        .ThenBy(c => c.PersianName)
                         .ToListAsync();
                 }
                 catch { /* ignore if currencies can't be loaded */ }
@@ -67,7 +69,8 @@ namespace ForexExchange.Controllers
                 {
                     ViewBag.Currencies = await _context.Currencies
                         .Where(c => c.IsActive)
-                        .OrderBy(c => c.PersianName)
+                        .OrderBy(c => c.DisplayOrder)
+                        .ThenBy(c => c.PersianName)
                         .ToListAsync();
                 }
                 catch { /* ignore if currencies can't be loaded */ }
@@ -95,7 +98,8 @@ namespace ForexExchange.Controllers
                 {
                     ViewBag.Currencies = await _context.Currencies
                         .Where(c => c.IsActive)
-                        .OrderBy(c => c.PersianName)
+                        .OrderBy(c => c.DisplayOrder)
+                        .ThenBy(c => c.PersianName)
                         .ToListAsync();
                 }
                 catch { /* ignore if currencies can't be loaded */ }

@@ -654,7 +654,9 @@ namespace ForexExchange.Services
 
                 var customers = await _context.Customers.Where(c => !c.IsSystem).ToListAsync();
                 var systemCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.IsSystem);
-                var currencies = await _context.Currencies.Where(c => c.IsActive).ToListAsync();
+                var currencies = await _context.Currencies.Where(c => c.IsActive)
+                    .OrderBy(c => c.DisplayOrder)
+                    .ToListAsync();
 
                 if (systemCustomer == null)
                 {
