@@ -59,31 +59,39 @@ namespace ForexExchange.Controllers
             if (!orderResult.IsSuccess)
                 return BadRequest(orderResult.ErrorMessage);
 
-            // Use the prepared order for preview (same logic as Create method)
-            var effects = await _centralFinancialService.PreviewOrderEffectsAsync(orderResult.Order!);
-
-            // Add currency codes and names for client display
-            var result = new
+            try
             {
-                effects.CustomerId,
-                effects.FromCurrencyCode,
-                effects.ToCurrencyCode,
-                effects.OrderFromAmount,
-                effects.OrderToAmount,
-                effects.OldCustomerBalanceFrom,
-                effects.OldCustomerBalanceTo,
-                effects.NewCustomerBalanceFrom,
-                effects.NewCustomerBalanceTo,
-                effects.OldPoolBalanceFrom,
-                effects.OldPoolBalanceTo,
-                effects.NewPoolBalanceFrom,
-                effects.NewPoolBalanceTo,
-                FromCurrencyName = orderResult.FromCurrency?.Name,
-                ToCurrencyName = orderResult.ToCurrency?.Name,
-                FromCurrencyId = orderResult.FromCurrency?.Id,
-                ToCurrencyId = orderResult.ToCurrency?.Id
-            };
-            return Json(result);
+                // Use the prepared order for preview (same logic as Create method)
+                var effects = await _centralFinancialService.PreviewOrderEffectsAsync(orderResult.Order!);
+
+                // Add currency codes and names for client display
+                var result = new
+                {
+                    effects.CustomerId,
+                    effects.FromCurrencyCode,
+                    effects.ToCurrencyCode,
+                    effects.OrderFromAmount,
+                    effects.OrderToAmount,
+                    effects.OldCustomerBalanceFrom,
+                    effects.OldCustomerBalanceTo,
+                    effects.NewCustomerBalanceFrom,
+                    effects.NewCustomerBalanceTo,
+                    effects.OldPoolBalanceFrom,
+                    effects.OldPoolBalanceTo,
+                    effects.NewPoolBalanceFrom,
+                    effects.NewPoolBalanceTo,
+                    FromCurrencyName = orderResult.FromCurrency?.Name,
+                    ToCurrencyName = orderResult.ToCurrency?.Name,
+                    FromCurrencyId = orderResult.FromCurrency?.Id,
+                    ToCurrencyId = orderResult.ToCurrency?.Id
+                };
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in PreviewOrderEffects");
+                return BadRequest($"خطا در پیش‌نمایش: {ex.Message}");
+            }
         }
 
 
