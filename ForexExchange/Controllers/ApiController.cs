@@ -41,8 +41,8 @@ namespace ForexExchange.Controllers
             {
                 var currencies = await _context.Currencies
                     .Where(c => c.IsActive)
+                    .OrderBy(c => c.DisplayOrder)
                     .Select(c => new { id = c.Id, name = c.Name, code = c.Code })
-                    .OrderBy(c => c.name)
                     .ToListAsync();
 
                 return Ok(currencies);
