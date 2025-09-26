@@ -480,7 +480,7 @@ namespace ForexExchange.Controllers
                         {
                             history.Description = order.Notes;
                         }
-                        
+
                         // Note includes transaction details without customer info
                         var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
                         history.Note = note;
@@ -502,12 +502,12 @@ namespace ForexExchange.Controllers
                         {
                             history.Description = document.Notes;
                         }
-                        
+
                         // Note includes transaction details without customer info
                         var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount:N0} {document.CurrencyCode}";
                         if (!string.IsNullOrEmpty(document.ReferenceNumber))
                             note += $" - شناسه تراکنش: {document.ReferenceNumber}";
-                       
+
                         history.Note = note;
                     }
                 }
@@ -558,6 +558,15 @@ namespace ForexExchange.Controllers
                 logMessages.Add($"Performed by: {performedBy}");
                 logMessages.Add("");
 
+                // Get all manual customer balance history records (including frozen, not deleted)
+                var manualRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual && !h.IsDeleted)
+                    .ToListAsync();
+
+                logMessages.Add($"All Maunl record are saved in memory :{manualRecords.Count}");
+
+
+
                 using var dbTransaction = await _context.Database.BeginTransactionAsync();
 
                 // STEP 1: Clear all history tables and reset balances to zero
@@ -569,8 +578,8 @@ namespace ForexExchange.Controllers
                 // Clear bank account balance history (will be rebuilt)
                 await _context.Database.ExecuteSqlRawAsync("DELETE FROM BankAccountBalanceHistory");
 
-                // Clear customer balance history (will be rebuilt) - but preserve manual records
-                var deletedHistoryCount = await _context.Database.ExecuteSqlRawAsync("DELETE FROM CustomerBalanceHistory WHERE TransactionType != 3"); // 3 = Manual
+                // Clear customer balance history (will be rebuilt)
+                var deletedHistoryCount = await _context.Database.ExecuteSqlRawAsync("DELETE FROM CustomerBalanceHistory");
                 var remainingManualCount = await _context.CustomerBalanceHistory.CountAsync(h => h.TransactionType == CustomerBalanceTransactionType.Manual);
                 logMessages.Add($"✓ Cleared non-manual customer balance history, preserved {remainingManualCount} manual records");
 
@@ -603,9 +612,7 @@ namespace ForexExchange.Controllers
                 await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Cleared non-manual history tables and reset {customerBalances.Count} customer balances, {poolBalances.Count} pool balances, {bankBalances.Count} bank account balances to zero");
 
-                // STEP 1.5: Ensure historical manual records exist (before rebuilding)
-                logMessages.Add("");
-                logMessages.Add("STEP 1.5: Ensuring historical manual balance records are preserved...");
+
 
                 // STEP 2: Create coherent pool history starting from zero for each currency
                 logMessages.Add("");
@@ -833,10 +840,9 @@ namespace ForexExchange.Controllers
                     .Include(o => o.ToCurrency)
                     .ToListAsync();
 
-                // Manual records are already preserved in Step 1, so we don't need to reprocess them
-                // Only process orders and documents to create new coherent history records
 
-                logMessages.Add($"Processing {allValidDocuments.Count} valid documents and {allValidOrders.Count} valid orders for customer balance history...");
+
+                logMessages.Add($"Processing {allValidDocuments.Count} valid documents, {allValidOrders.Count} valid orders, and {manualRecords.Count} manual records for customer balance history...");
 
                 // Create unified transaction items for customers from orders, documents, and manual records
                 var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>();
@@ -860,7 +866,26 @@ namespace ForexExchange.Controllers
                     customerTransactionItems.Add((o.CustomerId, o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, o.ToAmount, $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Received)"));
                 }
 
-                // Manual records are already preserved from Step 1, no need to reprocess them
+                logMessages.Add($"start adding  [{manualRecords.Count}] manualRecords");
+                logMessages.Add($"customerTransactionItems is [{customerTransactionItems.Count}]");
+
+
+
+                // Add manual records as transactions
+                foreach (var manual in manualRecords)
+                {
+                    customerTransactionItems.Add((
+                        manual.CustomerId,
+                        manual.CurrencyCode,
+                        manual.TransactionDate,
+                        "Manual",
+                        (int?)manual.Id,
+                        manual.TransactionAmount,
+                        manual.Description ?? "Manual adjustment"
+                    ));
+                }
+                logMessages.Add($"customerTransactionItems is [{customerTransactionItems.Count}]");
+
 
                 // Group by customer + currency and create coherent history
                 var customerGroups = customerTransactionItems
