@@ -874,7 +874,7 @@
         // Add antiforgery token
         postData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]')?.value || '');
 
-        fetch('@Url.Action("CreateManualCustomerBalanceHistory", "Database")', {
+        fetch('@Url.Action("CreateManualCustomerBalanceHistory", "Reports")', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

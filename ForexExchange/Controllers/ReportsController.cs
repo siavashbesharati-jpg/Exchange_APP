@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using Microsoft.AspNetCore.Identity;
 
 namespace ForexExchange.Controllers
 {
@@ -14,19 +15,27 @@ namespace ForexExchange.Controllers
         private readonly CustomerFinancialHistoryService _customerHistoryService;
         private readonly PoolFinancialHistoryService _poolHistoryService;
         private readonly BankAccountFinancialHistoryService _bankAccountHistoryService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ICentralFinancialService _centralFinancialService;
+
+
 
         public ReportsController(
-            ForexDbContext context, 
+            ForexDbContext context,
             ILogger<ReportsController> logger,
             CustomerFinancialHistoryService customerHistoryService,
             PoolFinancialHistoryService poolHistoryService,
-            BankAccountFinancialHistoryService bankAccountHistoryService)
+            BankAccountFinancialHistoryService bankAccountHistoryService,
+            UserManager<ApplicationUser> userManager,
+             ICentralFinancialService centralFinancialService,)
         {
             _context = context;
             _logger = logger;
             _customerHistoryService = customerHistoryService;
             _poolHistoryService = poolHistoryService;
             _bankAccountHistoryService = bankAccountHistoryService;
+            _userManager = userManager;
+            _centralFinancialService = centralFinancialService;
         }
 
         // GET: Reports
@@ -93,7 +102,7 @@ namespace ForexExchange.Controllers
             {
                 var customers = await _context.Customers
                     .Include(c => c.Balances)
-                    .Where(c => c.IsActive && !c.IsSystem )
+                    .Where(c => c.IsActive && !c.IsSystem)
                     .Select(c => new
                     {
                         id = c.Id,
@@ -158,7 +167,7 @@ namespace ForexExchange.Controllers
                 var query = _context.Customers
                     .Include(c => c.Balances)
                     .Where(c => c.IsActive && !c.IsSystem);
-                
+
                 // Apply customer filter if provided
                 if (!string.IsNullOrEmpty(customerFilter) && int.TryParse(customerFilter, out int customerId))
                 {
@@ -210,10 +219,10 @@ namespace ForexExchange.Controllers
                 var totalCustomersWithBalances = customers.Count;
                 var totalCustomersWithDebt = customers.Count(c => c.totalDebt > 0);
                 var totalCustomersWithCredit = customers.Count(c => c.totalCredit > 0);
-                
+
                 // Currency-specific totals
                 var currencyTotals = new Dictionary<string, object>();
-                
+
                 try
                 {
                     if (string.IsNullOrEmpty(currencyFilter))
@@ -500,7 +509,7 @@ namespace ForexExchange.Controllers
                     description = document.Description,
                     notes = document.Notes,
                     referenceNumber = document.ReferenceNumber,
-                    
+
                     // Payer information
                     payerType = document.PayerType.ToString(),
                     payerCustomer = document.PayerCustomer != null ? new
@@ -861,7 +870,7 @@ namespace ForexExchange.Controllers
                         id = ad.Id,
                         documentNumber = ad.Id.ToString(),
                         customerId = ad.PayerCustomerId ?? ad.ReceiverCustomerId,
-                        customerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName : 
+                        customerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName :
                                      (ad.ReceiverCustomer != null ? ad.ReceiverCustomer.FullName : "نامشخص"),
                         type = ad.PayerCustomerId != null ? "Payment" : "Receipt",
                         amount = ad.Amount,
@@ -899,11 +908,12 @@ namespace ForexExchange.Controllers
 
                 // For now, just redirect to a placeholder or return a message
                 // You can implement actual Excel export using EPPlus or similar library
-                
-                return Json(new { 
-                    success = true, 
+
+                return Json(new
+                {
+                    success = true,
                     message = "قابلیت صدور فایل اکسل  در حال توسعه است",
-                    downloadUrl = "#" 
+                    downloadUrl = "#"
                 });
             }
             catch (Exception ex)
@@ -1111,7 +1121,7 @@ namespace ForexExchange.Controllers
                 // Apply file data comparison if file search is requested
                 if (searchFileData != null)
                 {
-                    accountingDocs = accountingDocs.Where(doc => doc.fileData != null && doc.fileData.Length > 0 && 
+                    accountingDocs = accountingDocs.Where(doc => doc.fileData != null && doc.fileData.Length > 0 &&
                         CompareFileData(searchFileData, doc.fileData)).ToList();
                 }
 
@@ -1132,7 +1142,7 @@ namespace ForexExchange.Controllers
                 // Apply pagination after file filtering
                 var totalCount = allDocuments.Count;
                 var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-                
+
                 var pagedDocuments = allDocuments
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
@@ -1368,5 +1378,157 @@ namespace ForexExchange.Controllers
                 return StatusCode(500, "خطا در تولید گزارش صندوق");
             }
         }
+
+
+
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> CreateManualCustomerBalanceHistory(
+            int customerId,
+            string currencyCode,
+            decimal amount,
+            string reason,
+            DateTime transactionDate)
+        {
+            try
+            {
+                // Validate inputs
+                if (customerId <= 0)
+                {
+                    TempData["Error"] = "لطفاً مشتری معتبری انتخاب کنید";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrWhiteSpace(currencyCode))
+                {
+                    TempData["Error"] = "لطفاً ارز معتبری انتخاب کنید";
+                    return RedirectToAction("Index");
+                }
+
+                if (string.IsNullOrWhiteSpace(reason))
+                {
+                    TempData["Error"] = "لطفاً دلیل تراکنش را وارد کنید";
+                    return RedirectToAction("Index");
+                }
+
+                // Get customer name for display
+                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+                var customerName = customer?.FullName ?? $"مشتری {customerId}";
+
+                // Get current user for notification exclusion
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                // Create the manual history record with notification handling in service layer
+                await _centralFinancialService.CreateManualCustomerBalanceHistoryAsync(
+                    customerId: customerId,
+                    currencyCode: currencyCode,
+                    amount: amount,
+                    reason: reason,
+                    transactionDate: transactionDate,
+                    performedBy: "Database Admin",
+                    performingUserId: currentUser?.Id
+                );
+
+                var summary = new[]
+                {
+                    "✅ رکورد دستی تاریخچه موجودی ایجاد شد",
+                    $"👤 مشتری: {customerName}",
+                    $"💰 مبلغ: {amount:N2} {currencyCode}",
+                    $"📅 تاریخ تراکنش: {transactionDate:yyyy-MM-dd}",
+                    $"📝 دلیل: {reason}",
+                    "",
+                    "⚠️ مهم: برای اطمینان از انسجام موجودی‌ها، حتماً دکمه 'بازمحاسبه بر اساس تاریخ تراکنش' را اجرا کنید"
+                };
+
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تراکنش دستی با موفقیت ثبت شد" });
+                }
+
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در ایجاد رکورد دستی: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در ایجاد رکورد دستی: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteManualCustomerBalanceHistory(long transactionId)
+        {
+            try
+            {
+                // Find the manual transaction record
+                var transaction = await _context.CustomerBalanceHistory
+                    .Include(h => h.Customer)
+                    .FirstOrDefaultAsync(h => h.Id == transactionId &&
+                                           h.TransactionType == CustomerBalanceTransactionType.Manual);
+
+                if (transaction == null)
+                {
+                    // Check if this is an AJAX request
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, error = "تراکنش دستی یافت نشد یا این تراکنش قابل حذف نیست" });
+                    }
+
+                    TempData["Error"] = "تراکنش دستی یافت نشد یا این تراکنش قابل حذف نیست";
+                    return RedirectToAction("Index");
+                }
+
+                var customerName = transaction.Customer?.FullName ?? $"مشتری {transaction.CustomerId}";
+                var amount = transaction.TransactionAmount;
+                var currencyCode = transaction.CurrencyCode;
+
+                // Get current user for notification exclusion
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                // Delete the transaction and recalculate balances with notification handling in service layer
+                await _centralFinancialService.DeleteManualCustomerBalanceHistoryAsync(transactionId, "Database Admin", currentUser?.Id);
+
+                var summary = new[]
+                {
+                    "✅ تعدیل دستی با موفقیت حذف شد",
+                    $"👤 مشتری: {customerName}",
+                    $"💰 مبلغ حذف شده: {amount:N2} {currencyCode}",
+                    "",
+                    "🔄 موجودی‌ها بازمحاسبه شدند"
+                };
+
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تعدیل دستی با موفقیت حذف شد و موجودی‌ها بازمحاسبه شدند" });
+                }
+
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در حذف تعدیل دستی: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در حذف تعدیل دستی: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+
+
     }
 }
