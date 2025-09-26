@@ -48,8 +48,8 @@ namespace ForexExchange.Services
                 await CreateAdminUserAsync();
 
                 await CreatCurencies(); // usd ,toman , AED,OMR,EURO,LiRA
-                
-                 // Initialize currency pools first (required for financial operations)
+
+                // Initialize currency pools first (required for financial operations)
                 await SeedCurrencyPoolsAsync();
 
                 // Seed exchange rates first
@@ -773,67 +773,7 @@ namespace ForexExchange.Services
             }
         }
 
-        /// <summary>
-        /// Initialize customer balances using CentralFinancialService for proper audit trail
-        /// </summary>
-        private async Task SeedCustomerBalancesAsync()
-        {
-            try
-            {
-                // Check if balances already exist
-                var existingBalanceCount = await _context.CustomerBalances.CountAsync();
-                if (existingBalanceCount > 0)
-                {
-                    _logger.LogInformation($"{existingBalanceCount} customer balances already exist, skipping balance seeding");
-                    return;
-                }
-
-                var customers = await _context.Customers
-                    .Where(c => !c.IsSystem)
-                    .ToListAsync();
-
-                var currencies = await _context.Currencies
-                    .Where(c => c.IsActive)
-                    .ToListAsync();
-
-                var random = new Random();
-                var totalBalancesCreated = 0;
-
-                _logger.LogInformation($"Creating initial customer balances using CentralFinancialService");
-
-                foreach (var customer in customers)
-                {
-                    // Give each customer random balances in 2-4 currencies
-                    var currencyCount = random.Next(2, 5);
-                    var selectedCurrencies = currencies.OrderBy(x => random.Next()).Take(currencyCount);
-
-                    foreach (var currency in selectedCurrencies)
-                    {
-                        var amount = (decimal)(random.NextDouble() * 30000 + 1000); // Random amount between 1000-31000
-
-                        // Use CentralFinancialService to create initial balance with audit trail
-                        await _centralFinancialService.AdjustCustomerBalanceAsync(
-                            customerId: customer.Id,
-                            currencyCode: currency.Code,
-                            adjustmentAmount: Math.Round(amount, 2),
-                            reason: $"Initial balance created by DataSeedService for {currency.Name}",
-                            performedBy: "DataSeedService"
-                        );
-
-                        totalBalancesCreated++;
-                    }
-
-                    _logger.LogInformation($"Created initial balances for customer {customer.FullName}");
-                }
-
-                _logger.LogInformation($"Successfully created {totalBalancesCreated} initial customer balances using CentralFinancialService");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to seed customer balances");
-                throw;
-            }
-        }
+    
     }
 }
 

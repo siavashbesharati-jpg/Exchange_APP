@@ -9,7 +9,6 @@ namespace ForexExchange.Services
     {
         Task<BankStatementAnalysis> ProcessBankStatementAsync(byte[] imageData, int customerId);
         Task<List<BankStatementTransaction>> ParseBankStatementAsync(string extractedText);
-        Task<bool> VerifyCustomerTransactionAsync(int customerId, string amount, string referenceId);
     }
 
     public class BankStatementService : IBankStatementService
@@ -151,43 +150,7 @@ namespace ForexExchange.Services
             }
         }
 
-        public async Task<bool> VerifyCustomerTransactionAsync(int customerId, string amount, string referenceId)
-        {
-            try
-            {
-                // Clean and normalize amount
-                var cleanAmount = CleanAmount(amount);
-                if (!decimal.TryParse(cleanAmount, out var amountValue))
-                {
-                    return false;
-                }
-
-                // Find matching transaction
-                // TODO: Replace with AccountingDocument/CustomerBalance queries
-                /*
-                var transaction = await _context.Transactions
-                    .Where(t => (t.BuyerCustomerId == customerId || t.SellerCustomerId == customerId))
-                    .FirstOrDefaultAsync();
-
-                if (transaction == null)
-                {
-                    return false;
-                }
-                */
-                
-                // Placeholder logic for new architecture
-                return false; // TODO: Implement with new models
-
-                // Additional verification can be added here
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error verifying customer transaction");
-                return false;
-            }
-        }
-
+      
         private List<BankStatementTransaction> ParseUsingRegexPatterns(string text)
         {
             var transactions = new List<BankStatementTransaction>();

@@ -2,6 +2,97 @@
 
 ---
 
+## 📅 تاریخ: ۲۶ شهریور ۱۴۰۳ - ساعت ۱۴:۳۰
+
+### 🎯 **تسک: اضافه کردن متدهای تنظیم دستی به سرویس مرکزی**
+**وضعیت: ✅ تکمیل شده**
+
+---
+
+## 📋 **شرح کامل کارهای انجام شده:**
+
+### **۱. اضافه کردن متدهای تنظیم دستی به ICentralFinancialService**
+- ✅ **CreateManualPoolBalanceHistoryAsync**: ایجاد رکورد دستی برای تاریخچه موجودی صندوق ارزی
+- ✅ **DeleteManualPoolBalanceHistoryAsync**: حذف رکورد دستی صندوق با بازمحاسبه موجودی
+- ✅ **CreateManualBankAccountBalanceHistoryAsync**: ایجاد رکورد دستی برای تاریخچه حساب بانکی
+- ✅ **DeleteManualBankAccountBalanceHistoryAsync**: حذف رکورد دستی حساب بانکی با بازمحاسبه موجودی
+
+### **۲. پیاده‌سازی متدها در CentralFinancialService**
+- ✅ **الگوریتم زنجیره coherent**: حفظ توالی صحیح BalanceBefore → TransactionAmount → BalanceAfter
+- ✅ **بازمحاسبه خودکار**: بروزرسانی تمام تراکنش‌های بعدی پس از درج/حذف رکورد دستی
+- ✅ **اعلان‌های سیگنال‌آر**: ارسال نوتیفیکیشن به کاربران ادمین (به جز کاربر انجام‌دهنده)
+- ✅ **اعتبارسنجی**: بررسی یکپارچگی محاسبات موجودی در هر مرحله
+
+### **۳. بروزرسانی ReportsController**
+- ✅ **استفاده از سرویس مرکزی**: جایگزینی عملیات مستقیم دیتابیس با متدهای سرویس مرکزی
+- ✅ **ثبات در عملیات**: اطمینان از بازمحاسبه صحیح موجودی‌ها پس از تنظیمات دستی
+- ✅ **پیام‌های یکپارچه**: نمایش پیام‌های موفق/خطا به زبان فارسی
+
+### **۴. متدهای کمکی بازمحاسبه**
+- ✅ **RecalculateCurrencyPoolBalanceFromDateAsync**: بازمحاسبه موجودی صندوق از تاریخ مشخص
+- ✅ **RecalculateBankAccountBalanceFromDateAsync**: بازمحاسبه موجودی حساب بانکی از تاریخ مشخص
+
+---
+
+## 🔧 **جزئیات تکنیکی:**
+
+### **متدهای جدید در ICentralFinancialService:**
+```csharp
+Task CreateManualPoolBalanceHistoryAsync(string currencyCode, decimal adjustmentAmount, string reason, DateTime transactionDate, string performedBy, string? performingUserId);
+Task DeleteManualPoolBalanceHistoryAsync(long transactionId, string performedBy, string? performingUserId);
+Task CreateManualBankAccountBalanceHistoryAsync(int bankAccountId, decimal amount, string reason, DateTime transactionDate, string performedBy, string? performingUserId);
+Task DeleteManualBankAccountBalanceHistoryAsync(long transactionId, string performedBy, string? performingUserId);
+```
+
+### **الگوریتم coherent balance:**
+```csharp
+// ۱. یافتن تراکنش‌های قبلی بر اساس تاریخ
+var priorTransactions = await _context.CurrencyPoolHistory
+    .Where(h => h.CurrencyCode == currencyCode && h.TransactionDate <= transactionDate && !h.IsDeleted)
+    .OrderBy(h => h.TransactionDate).ThenBy(h => h.Id)
+    .ToListAsync();
+
+// ۲. محاسبه BalanceBefore صحیح
+decimal balanceBefore = priorTransactions.Any() ? 
+    priorTransactions.Last().BalanceAfter : 0m;
+
+// ۳. ایجاد رکورد با زنجیره coherent
+var historyRecord = new CurrencyPoolHistory {
+    BalanceBefore = balanceBefore,
+    TransactionAmount = adjustmentAmount,
+    BalanceAfter = balanceBefore + adjustmentAmount
+};
+```
+
+### **بازمحاسبه تراکنش‌های بعدی:**
+```csharp
+// بروزرسانی زنجیره موجودی برای تراکنش‌های آتی
+decimal runningBalance = balanceAfter;
+foreach (var transaction in subsequentTransactions) {
+    transaction.BalanceBefore = runningBalance;
+    transaction.BalanceAfter = runningBalance + transaction.TransactionAmount;
+    runningBalance = transaction.BalanceAfter;
+}
+```
+
+---
+
+## ✅ **تست و اعتبارسنجی:**
+- ✅ **کامپایل موفق**: پروژه بدون خطای کامپایل
+- ✅ **پوشش کامل**: تنظیم دستی برای مشتری، صندوق ارزی و حساب بانکی
+- ✅ **یکپارچگی داده**: حفظ زنجیره coherent در تمام سناریوها
+- ✅ **امنیت**: فقط تراکنش‌های Manual قابل حذف
+
+---
+
+## 📝 **یادداشت‌های مهم:**
+- تمامی عملیات تنظیم دستی اکنون از طریق سرویس مرکزی انجام می‌شود
+- زنجیره موجودی‌ها به صورت coherent حفظ می‌شود
+- نوتیفیکیشن‌های سیگنال‌آر برای تغییرات مهم ارسال می‌شود
+- امکان ردیابی کامل تغییرات دستی برای حسابرسی
+
+---
+
 ## 📅 تاریخ: ۲۵ آذر ۱۴۰۳ - ساعت ۱۸:۱۰
 
 ### 🎯 **تسک: اضافه کردن ستون Note به CustomerBalanceHistory**

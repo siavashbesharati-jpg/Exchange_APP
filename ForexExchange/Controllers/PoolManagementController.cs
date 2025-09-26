@@ -48,78 +48,7 @@ namespace ForexExchange.Controllers
             }
         }
 
-        /// <summary>
-        /// Update pool balance
-        /// بروزرسانی موجودی صندوق 
-        /// </summary>
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateBalance(int poolId, decimal newBalance, string reason)
-        {
-            try
-            {
-                // Get current pool data
-                var pool = await _poolService.GetPoolByIdAsync(poolId);
-                if (pool == null)
-                {
-                    return Json(new { success = false, message = "صندوق  ارزی یافت نشد" });
-                }
-
-                var oldBalance = pool.Balance;
-                var currencyCode = pool.Currency?.Code;
-                
-                if (string.IsNullOrEmpty(currencyCode))
-                {
-                    return Json(new { success = false, message = "کد ارز صندوق نامعتبر است" });
-                }
-                
-                // Calculate the adjustment amount
-                var adjustmentAmount = newBalance - oldBalance;
-                
-                // Get current user for history recording
-                var currentUser = await _userManager.GetUserAsync(User);
-                var performedBy = currentUser?.UserName ?? "Unknown";
-                
-                // Use centralized service for balance update with history recording
-                await _centralFinancialService.AdjustCurrencyPoolAsync(
-                    currencyCode: currencyCode,
-                    adjustmentAmount: adjustmentAmount,
-                    reason: reason ?? "Manual pool balance adjustment by admin",
-                    performedBy: performedBy
-                );
-
-                // Log admin activity
-                if (currentUser != null)
-                {
-                    await _adminActivityService.LogPoolBalanceChangeAsync(
-                        poolId,
-                        currencyCode,
-                        oldBalance,
-                        newBalance,
-                        adjustmentAmount,
-                        reason ?? "Manual adjustment by admin",
-                        currentUser.Id,
-                        performedBy
-                    );
-                }
-
-                _logger.LogInformation($"Pool balance updated: {currencyCode} from {oldBalance:N0} to {newBalance:N0} by {performedBy}");
-
-                return Json(new { 
-                    success = true, 
-                    message = $"موجودی {pool.Currency?.PersianName} با موفقیت به {newBalance:N0} بروزرسانی شد",
-                    newBalance = newBalance,
-                    difference = adjustmentAmount,
-                    lastUpdated = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error updating pool balance for pool ID {poolId}");
-                return Json(new { success = false, message = "خطا در بروزرسانی موجودی صندوق " });
-            }
-        }
-
+       
         /// <summary>
         /// Reset pool statistics
         /// ریست کردن آمار صندوق 

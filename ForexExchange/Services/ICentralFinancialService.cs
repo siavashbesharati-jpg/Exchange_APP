@@ -40,12 +40,7 @@ namespace ForexExchange.Services
         /// </summary>
         Task ProcessAccountingDocumentAsync(AccountingDocument document, string performedBy = "System");
 
-        /// <summary>
-        /// Manually adjusts customer balance with audit trail
-        /// </summary>
-        Task AdjustCustomerBalanceAsync(int customerId, string currencyCode, decimal adjustmentAmount,
-            string reason, string performedBy);
-
+     
         /// <summary>
         /// Safely deletes an order by reversing its financial impacts
         /// </summary>
@@ -84,11 +79,7 @@ namespace ForexExchange.Services
         Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
             string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null);
 
-        /// <summary>
-        /// Manually adjusts currency pool balance with audit trail
-        /// </summary>
-        Task AdjustCurrencyPoolAsync(string currencyCode, decimal adjustmentAmount,
-            string reason, string performedBy);
+      
 
         #endregion
 
@@ -111,11 +102,7 @@ namespace ForexExchange.Services
         Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
             int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null, string? transactionNumber = null);
 
-        /// <summary>
-        /// Manually adjusts bank account balance with audit trail
-        /// </summary>
-        Task AdjustBankAccountBalanceAsync(int bankAccountId, decimal adjustmentAmount,
-            string reason, string performedBy);
+        
 
         #endregion
 
@@ -180,6 +167,40 @@ namespace ForexExchange.Services
         /// Automatically sends notifications to admin users (excluding the performing user).
         /// </summary>
         Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null);
+
+        /// <summary>
+        /// Creates a manual currency pool balance history record with specified transaction date.
+        /// This is useful for manual adjustments, corrections, or importing historical data.
+        /// After creating manual records, use RecalculateAllBalancesFromTransactionDatesAsync to ensure coherence.
+        /// Automatically sends notifications to admin users (excluding the performing user).
+        /// </summary>
+        Task CreateManualPoolBalanceHistoryAsync(string currencyCode, decimal adjustmentAmount,
+            string reason, DateTime transactionDate, string performedBy = "Manual Entry", string? performingUserId = null);
+
+        /// <summary>
+        /// Deletes a manual currency pool balance history record and recalculates balances from the transaction date.
+        /// Only manual transactions (TransactionType.ManualEdit) can be deleted for safety.
+        /// After deletion, balances are automatically recalculated to maintain coherence.
+        /// Automatically sends notifications to admin users (excluding the performing user).
+        /// </summary>
+        Task DeleteManualPoolBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null);
+
+        /// <summary>
+        /// Creates a manual bank account balance history record with specified transaction date.
+        /// This is useful for manual adjustments, corrections, or importing historical data.
+        /// After creating manual records, use RecalculateAllBalancesFromTransactionDatesAsync to ensure coherence.
+        /// Automatically sends notifications to admin users (excluding the performing user).
+        /// </summary>
+        Task CreateManualBankAccountBalanceHistoryAsync(int bankAccountId, decimal amount,
+            string reason, DateTime transactionDate, string performedBy = "Manual Entry", string? performingUserId = null);
+
+        /// <summary>
+        /// Deletes a manual bank account balance history record and recalculates balances from the transaction date.
+        /// Only manual transactions (TransactionType.ManualEdit) can be deleted for safety.
+        /// After deletion, balances are automatically recalculated to maintain coherence.
+        /// Automatically sends notifications to admin users (excluding the performing user).
+        /// </summary>
+        Task DeleteManualBankAccountBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null);
 
         /// <summary>
         /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders

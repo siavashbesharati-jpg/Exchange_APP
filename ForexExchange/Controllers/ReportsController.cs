@@ -27,7 +27,7 @@ namespace ForexExchange.Controllers
             PoolFinancialHistoryService poolHistoryService,
             BankAccountFinancialHistoryService bankAccountHistoryService,
             UserManager<ApplicationUser> userManager,
-             ICentralFinancialService centralFinancialService,)
+             ICentralFinancialService centralFinancialService)
         {
             _context = context;
             _logger = logger;
@@ -1381,7 +1381,7 @@ namespace ForexExchange.Controllers
 
 
 
-
+        #region  ManualAdjustment
 
 
         [HttpPost]
@@ -1530,5 +1530,195 @@ namespace ForexExchange.Controllers
 
 
 
+
+        // ===== Manual Pool (CurrencyPoolHistory) Adjustment =====
+        [HttpPost]
+        public async Task<IActionResult> CreateManualPoolBalanceHistory(
+            string currencyCode,
+            decimal amount,
+            string reason,
+            DateTime transactionDate)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(currencyCode))
+                {
+                    TempData["Error"] = "لطفاً ارز معتبری انتخاب کنید";
+                    return RedirectToAction("Index");
+                }
+                if (string.IsNullOrWhiteSpace(reason))
+                {
+                    TempData["Error"] = "لطفاً دلیل تراکنش را وارد کنید";
+                    return RedirectToAction("Index");
+                }
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _centralFinancialService.CreateManualPoolBalanceHistoryAsync(
+                    currencyCode: currencyCode,
+                    adjustmentAmount: amount,
+                    reason: reason,
+                    transactionDate: transactionDate,
+                    performedBy: "Database Admin",
+                    performingUserId: currentUser?.Id
+                );
+                var summary = new[]
+                {
+                    "✅ رکورد دستی صندوق ارزی ایجاد شد",
+                    $"💰 مبلغ: {amount:N2} {currencyCode}",
+                    $"📅 تاریخ تراکنش: {transactionDate:yyyy-MM-dd}",
+                    $"📝 دلیل: {reason}",
+                    "",
+                    "⚠️ مهم: برای اطمینان از انسجام صندوق، دکمه 'بازمحاسبه' را اجرا کنید"
+                };
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تراکنش دستی صندوق با موفقیت ثبت شد" });
+                }
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در ایجاد رکورد دستی صندوق: {ex.Message}" });
+                }
+                TempData["Error"] = $"خطا در ایجاد رکورد دستی صندوق: {ex.Message}";
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteManualPoolBalanceHistory(long transactionId)
+        {
+            try
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                // Use central service for proper deletion and balance recalculation
+                await _centralFinancialService.DeleteManualPoolBalanceHistoryAsync(transactionId, "Database Admin", currentUser?.Id);
+
+                var summary = new[]
+                {
+                    "✅ تعدیل دستی صندوق با موفقیت حذف شد",
+                    "",
+                    "🔄 صندوق بازمحاسبه شد"
+                };
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تعدیل دستی صندوق با موفقیت حذف شد و صندوق بازمحاسبه شد" });
+                }
+
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در حذف تعدیل دستی صندوق: {ex.Message}" });
+                }
+
+                TempData["Error"] = $"خطا در حذف تعدیل دستی صندوق: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        // ===== Manual Bank Account (BankAccountBalanceHistory) Adjustment =====
+        [HttpPost]
+        public async Task<IActionResult> CreateManualBankAccountBalanceHistory(
+            int bankAccountId,
+            decimal amount,
+            string reason,
+            DateTime transactionDate)
+        {
+            try
+            {
+                if (bankAccountId <= 0)
+                {
+                    TempData["Error"] = "لطفاً حساب بانکی معتبری انتخاب کنید";
+                    return RedirectToAction("Index");
+                }
+                if (string.IsNullOrWhiteSpace(reason))
+                {
+                    TempData["Error"] = "لطفاً دلیل تراکنش را وارد کنید";
+                    return RedirectToAction("Index");
+                }
+                var currentUser = await _userManager.GetUserAsync(User);
+                await _centralFinancialService.CreateManualBankAccountBalanceHistoryAsync(
+                    bankAccountId: bankAccountId,
+                    amount: amount,
+                    reason: reason,
+                    transactionDate: transactionDate,
+                    performedBy: currentUser?.FullName?? "نامشخص",
+                    performingUserId: currentUser?.Id
+                );
+                var summary = new[]
+                {
+                    "✅ رکورد دستی تاریخچه حساب بانکی ایجاد شد",
+                    $"🏦 حساب بانکی: {bankAccountId}",
+                    $"💰 مبلغ: {amount:N2}",
+                    $"📅 تاریخ تراکنش: {transactionDate:yyyy-MM-dd}",
+                    $"📝 دلیل: {reason}",
+                    "",
+                    "⚠️ مهم: برای اطمینان از انسجام حساب، دکمه 'بازمحاسبه' را اجرا کنید"
+                };
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تراکنش دستی حساب بانکی با موفقیت ثبت شد" });
+                }
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در ایجاد رکورد دستی حساب بانکی: {ex.Message}" });
+                }
+                TempData["Error"] = $"خطا در ایجاد رکورد دستی حساب بانکی: {ex.Message}";
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteManualBankAccountBalanceHistory(long transactionId)
+        {
+            try
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                // Use central service for proper deletion and balance recalculation
+                await _centralFinancialService.DeleteManualBankAccountBalanceHistoryAsync(transactionId, "Database Admin", currentUser?.Id);
+
+                var summary = new[]
+                {
+                    "✅ تعدیل دستی حساب بانکی با موفقیت حذف شد",
+                    "",
+                    "🔄 حساب بانکی بازمحاسبه شد"
+                };
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, message = "تعدیل دستی حساب بانکی با موفقیت حذف شد و حساب بازمحاسبه شد" });
+                }
+
+                TempData["Success"] = string.Join("<br/>", summary);
+            }
+            catch (Exception ex)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, error = $"خطا در حذف تعدیل دستی حساب بانکی: {ex.Message}" });
+                }
+                TempData["Error"] = $"خطا در حذف تعدیل دستی حساب بانکی: {ex.Message}";
+            }
+            return RedirectToAction("Index");
+        }
+
+
+
+
+        #endregion
+
     }
 }
+
