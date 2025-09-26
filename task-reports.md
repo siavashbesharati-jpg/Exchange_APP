@@ -2,6 +2,89 @@
 
 ---
 
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۲۱:۳۰
+
+### 🎯 **تسک: بررسی و به‌روزرسانی متد RebuildAllFinancialBalances برای رکوردهای دستی**
+**وضعیت: ✅ تکمیل شده**
+
+---
+
+## 📋 **شرح کامل کارهای انجام شده:**
+
+### **۱. بررسی روش فعلی مدیریت رکوردهای دستی**
+- ✅ **مشکل شناسایی شده**: فقط رکوردهای دستی مشتری در حافظه بارگذاری و پس از بازسازی اضافه می‌شدند
+- ✅ **الگوی شناسایی شده**: رکوردهای دستی باید در حافظه نگه داشته شوند و پس از پاکسازی تاریخچه، دوباره اضافه شوند
+
+### **۲. پیاده‌سازی بارگذاری رکوردهای دستی برای حساب‌های بانکی**
+- ✅ **اضافه کردن بارگذاری**: `manualBankAccountRecords` از `BankAccountBalanceHistory` با `TransactionType.ManualEdit`
+- ✅ **ساخت لیست یکپارچه**: ترکیب تراکنش‌های سند و رکوردهای دستی برای هر حساب بانکی
+- ✅ **پردازش زمانی**: مرتب‌سازی بر اساس تاریخ تراکنش و ایجاد زنجیره متوازن موجودی
+
+### **۳. پیاده‌سازی بارگذاری رکوردهای دستی برای پول‌ها**
+- ✅ **اضافه کردن بارگذاری**: `manualPoolRecords` از `CurrencyPoolHistory` با `TransactionType.ManualEdit`
+- ✅ **ساخت لیست یکپارچه**: ترکیب تراکنش‌های سفارش و رکوردهای دستی برای هر ارز
+- ✅ **پردازش زمانی**: مرتب‌سازی بر اساس تاریخ تراکنش و محاسبه موجودی پول
+
+### **۴. به‌روزرسانی گزارش‌گیری**
+- ✅ **آمار بهبود یافته**: نمایش تعداد رکوردهای دستی بارگذاری شده برای هر نوع
+- ✅ **پیام‌های log**: اضافه کردن log برای مراحل مختلف پردازش
+
+### **۵. تست عملکرد**
+- ✅ **بررسی compilation**: پروژه بدون خطا کامپایل می‌شود
+- ✅ **تایید منطق**: رکوردهای دستی در بازسازی موجودی‌های مالی حفظ می‌شوند
+
+---
+
+## 🔧 **جزئیات تکنیکی:**
+
+### **تغییرات بارگذاری رکوردهای دستی:**
+```csharp
+// Get all manual customer balance history records (including frozen, not deleted)
+var manualCustomerRecords = await _context.CustomerBalanceHistory
+    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual && !h.IsDeleted)
+    .ToListAsync();
+
+// Get all manual bank account balance history records (including frozen, not deleted)
+var manualBankAccountRecords = await _context.BankAccountBalanceHistory
+    .Where(h => h.TransactionType == BankAccountTransactionType.ManualEdit && !h.IsDeleted)
+    .ToListAsync();
+
+// Get all manual pool history records (including frozen, not deleted)
+var manualPoolRecords = await _context.CurrencyPoolHistory
+    .Where(h => h.TransactionType == CurrencyPoolTransactionType.ManualEdit && !h.IsDeleted)
+    .ToListAsync();
+```
+
+### **تغییرات پردازش حساب‌های بانکی:**
+```csharp
+// Create unified transaction items for bank accounts from documents and manual records
+var bankAccountTransactionItems = new List<(int BankAccountId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>();
+
+// Add document transactions...
+// Add manual bank account records as transactions
+foreach (var manual in manualBankAccountRecords)
+{
+    bankAccountTransactionItems.Add((manual.BankAccountId, "N/A", manual.TransactionDate, "Manual", (int?)manual.Id, manual.TransactionAmount, manual.Description ?? "Manual adjustment"));
+}
+```
+
+### **تغییرات پردازش پول‌ها:**
+```csharp
+// Create unified transaction items for pools from orders and manual records
+var poolTransactionItems = new List<(string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string PoolTransactionType, string Description)>();
+
+// Add order transactions...
+// Add manual pool records as transactions
+foreach (var manual in manualPoolRecords)
+{
+    poolTransactionItems.Add((manual.CurrencyCode, manual.TransactionDate, "Manual", (int?)manual.Id, manual.TransactionAmount, "Manual", manual.Description ?? "Manual adjustment"));
+}
+```
+
+---
+
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۲۰:۴۵
+
 ## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۲۰:۴۵
 
 ### 🎯 **تسک: رفع مشکل ارسال فرم تعدیل دستی در BankAccountReports**

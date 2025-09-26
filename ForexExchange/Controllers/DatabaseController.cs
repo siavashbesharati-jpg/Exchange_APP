@@ -559,11 +559,21 @@ namespace ForexExchange.Controllers
                 logMessages.Add("");
 
                 // Get all manual customer balance history records (including frozen, not deleted)
-                var manualRecords = await _context.CustomerBalanceHistory
+                var manualCustomerRecords = await _context.CustomerBalanceHistory
                     .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual && !h.IsDeleted)
                     .ToListAsync();
 
-                logMessages.Add($"All Maunl record are saved in memory :{manualRecords.Count}");
+                // Get all manual bank account balance history records (including frozen, not deleted)
+                var manualBankAccountRecords = await _context.BankAccountBalanceHistory
+                    .Where(h => h.TransactionType == BankAccountTransactionType.ManualEdit && !h.IsDeleted)
+                    .ToListAsync();
+
+                // Get all manual pool history records (including frozen, not deleted)
+                var manualPoolRecords = await _context.CurrencyPoolHistory
+                    .Where(h => h.TransactionType == CurrencyPoolTransactionType.ManualEdit && !h.IsDeleted)
+                    .ToListAsync();
+
+                logMessages.Add($"All manual records saved in memory: Customer={manualCustomerRecords.Count}, BankAccount={manualBankAccountRecords.Count}, Pool={manualPoolRecords.Count}");
 
 
 
@@ -625,27 +635,50 @@ namespace ForexExchange.Controllers
                     .OrderBy(o => o.CreatedAt)
                     .ToListAsync();
 
-                logMessages.Add($"Processing {activeOrders.Count} active (non-deleted, non-frozen) orders...");
+                logMessages.Add($"Processing {activeOrders.Count} active (non-deleted, non-frozen) orders and {manualPoolRecords.Count} manual pool records...");
 
-                // Group orders by currency code to create coherent history per currency
-                var currencyGroups = activeOrders
-                    .SelectMany(o => new[] {
-                        new { CurrencyCode = o.FromCurrency.Code, Order = o, IsFromCurrency = true },
-                        new { CurrencyCode = o.ToCurrency.Code, Order = o, IsFromCurrency = false }
-                    })
+                // Create unified transaction items for pools from orders and manual records
+                var poolTransactionItems = new List<(string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string PoolTransactionType, string Description)>();
+
+                // Add order transactions
+                foreach (var o in activeOrders)
+                {
+                    // Institution receives FromAmount in FromCurrency (pool increases)
+                    poolTransactionItems.Add((o.FromCurrency.Code, o.CreatedAt, "Order", o.Id, o.FromAmount, "Buy", $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Buy)"));
+
+                    // Institution pays ToAmount in ToCurrency (pool decreases)
+                    poolTransactionItems.Add((o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, -o.ToAmount, "Sell", $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Sell)"));
+                }
+
+                // Add manual pool records as transactions
+                foreach (var manual in manualPoolRecords)
+                {
+                    poolTransactionItems.Add((
+                        manual.CurrencyCode,
+                        manual.TransactionDate,
+                        "Manual",
+                        (int?)manual.Id,
+                        manual.TransactionAmount,
+                        "Manual",
+                        manual.Description ?? "Manual adjustment"
+                    ));
+                }
+
+                // Group by currency code to create coherent history per currency
+                var currencyGroups = poolTransactionItems
                     .GroupBy(x => x.CurrencyCode)
                     .ToList();
 
                 foreach (var currencyGroup in currencyGroups)
                 {
                     var currencyCode = currencyGroup.Key;
-                    var currencyOrders = currencyGroup.OrderBy(x => x.Order.CreatedAt).ToList();
+                    var currencyTransactions = currencyGroup.OrderBy(x => x.TransactionDate).ToList();
 
-                    if (!currencyOrders.Any()) continue;
+                    if (!currencyTransactions.Any()) continue;
 
-                    // Find the earliest non-frozen order for this currency
-                    var firstOrder = currencyOrders.First().Order;
-                    var zeroDateTime = firstOrder.CreatedAt.AddMinutes(-1); // Set zero point 1 minute before first order
+                    // Find the earliest transaction for this currency
+                    var firstTransaction = currencyTransactions.First();
+                    var zeroDateTime = firstTransaction.TransactionDate.AddMinutes(-1);
 
                     // Create zero-starting pool history record
                     var zeroPoolHistory = new CurrencyPoolHistory
@@ -664,45 +697,31 @@ namespace ForexExchange.Controllers
                     };
                     _context.CurrencyPoolHistory.Add(zeroPoolHistory);
 
-                    // Process orders chronologically for this currency
+                    // Process transactions chronologically for this currency
                     decimal runningBalance = 0;
                     int buyCount = 0, sellCount = 0;
                     decimal totalBought = 0, totalSold = 0;
 
-                    foreach (var item in currencyOrders)
+                    foreach (var transaction in currencyTransactions)
                     {
-                        var order = item.Order;
-                        decimal transactionAmount;
-                        string poolTransactionType;
-
-                        if (item.IsFromCurrency)
+                        var transactionType = transaction.TransactionType switch
                         {
-                            // Institution receives FromAmount in FromCurrency (pool increases)
-                            transactionAmount = order.FromAmount;
-                            poolTransactionType = "Buy";
-                            buyCount++;
-                            totalBought += order.FromAmount; // Accumulate positive amounts
-                        }
-                        else
-                        {
-                            // Institution pays ToAmount in ToCurrency (pool decreases)  
-                            transactionAmount = -order.ToAmount;
-                            poolTransactionType = "Sell";
-                            sellCount++;
-                            totalSold += order.ToAmount; // Accumulate absolute amounts sold
-                        }
+                            "Order" => CurrencyPoolTransactionType.Order,
+                            "Manual" => CurrencyPoolTransactionType.ManualEdit,
+                            _ => CurrencyPoolTransactionType.Order
+                        };
 
                         var poolHistory = new CurrencyPoolHistory
                         {
                             CurrencyCode = currencyCode,
-                            TransactionType = CurrencyPoolTransactionType.Order,
-                            ReferenceId = order.Id,
+                            TransactionType = transactionType,
+                            ReferenceId = transaction.ReferenceId,
                             BalanceBefore = runningBalance,
-                            TransactionAmount = transactionAmount,
-                            BalanceAfter = runningBalance + transactionAmount,
-                            PoolTransactionType = poolTransactionType,
-                            Description = $"Order #{order.Id}: {order.FromCurrency.Code} → {order.ToCurrency.Code}",
-                            TransactionDate = order.CreatedAt,
+                            TransactionAmount = transaction.Amount,
+                            BalanceAfter = runningBalance + transaction.Amount,
+                            PoolTransactionType = transaction.PoolTransactionType,
+                            Description = transaction.Description,
+                            TransactionDate = transaction.TransactionDate,
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = performedBy,
                             IsDeleted = false
@@ -710,6 +729,21 @@ namespace ForexExchange.Controllers
                         _context.CurrencyPoolHistory.Add(poolHistory);
 
                         runningBalance = poolHistory.BalanceAfter;
+
+                        // Update counts and totals for orders only (not manual records)
+                        if (transaction.TransactionType == "Order")
+                        {
+                            if (transaction.PoolTransactionType == "Buy")
+                            {
+                                buyCount++;
+                                totalBought += transaction.Amount;
+                            }
+                            else if (transaction.PoolTransactionType == "Sell")
+                            {
+                                sellCount++;
+                                totalSold += Math.Abs(transaction.Amount);
+                            }
+                        }
                     }
 
                     // Update pool balance, active counts, and totals
@@ -719,8 +753,8 @@ namespace ForexExchange.Controllers
                         pool.Balance = runningBalance;
                         pool.ActiveBuyOrderCount = buyCount;
                         pool.ActiveSellOrderCount = sellCount;
-                        pool.TotalBought = totalBought; // Sum of all positive amounts
-                        pool.TotalSold = totalSold; // Sum of all amounts sold (absolute values)
+                        pool.TotalBought = totalBought;
+                        pool.TotalSold = totalSold;
                         pool.LastUpdated = DateTime.UtcNow;
                     }
                 }
@@ -737,34 +771,49 @@ namespace ForexExchange.Controllers
                     .OrderBy(d => d.DocumentDate)
                     .ToListAsync();
 
-                logMessages.Add($"Processing {activeDocuments.Count} active (non-deleted, non-frozen) documents...");
+                logMessages.Add($"Processing {activeDocuments.Count} active (non-deleted, non-frozen) documents and {manualBankAccountRecords.Count} manual bank account records...");
 
-                // Group documents by bank account + currency to create coherent history
-                var bankAccountItems = new List<(int BankAccountId, string CurrencyCode, AccountingDocument Document, bool IsDebit)>();
+                // Create unified transaction items for bank accounts from documents and manual records
+                var bankAccountTransactionItems = new List<(int BankAccountId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>();
 
+                // Add document transactions
                 foreach (var d in activeDocuments)
                 {
                     if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
-                        bankAccountItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d, true));
+                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, -d.Amount, $"Document #{d.Id}: {d.Type} (Debit)"));
                     if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
-                        bankAccountItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d, false));
+                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, $"Document #{d.Id}: {d.Type} (Credit)"));
                 }
 
-                var bankAccountGroups = bankAccountItems
-                    .GroupBy(x => new { x.BankAccountId, x.CurrencyCode })
+                // Add manual bank account records as transactions
+                foreach (var manual in manualBankAccountRecords)
+                {
+                    bankAccountTransactionItems.Add((
+                        manual.BankAccountId,
+                        "N/A", // Bank accounts don't have currency codes in the same way
+                        manual.TransactionDate,
+                        "Manual",
+                        (int?)manual.Id,
+                        manual.TransactionAmount,
+                        manual.Description ?? "Manual adjustment"
+                    ));
+                }
+
+                // Group by bank account to create coherent history
+                var bankAccountGroups = bankAccountTransactionItems
+                    .GroupBy(x => x.BankAccountId)
                     .ToList();
 
                 foreach (var bankGroup in bankAccountGroups)
                 {
-                    var bankAccountId = bankGroup.Key.BankAccountId;
-                    var currencyCode = bankGroup.Key.CurrencyCode;
-                    var bankDocuments = bankGroup.OrderBy(x => x.Document.DocumentDate).ToList();
+                    var bankAccountId = bankGroup.Key;
+                    var bankTransactions = bankGroup.OrderBy(x => x.TransactionDate).ToList();
 
-                    if (!bankDocuments.Any()) continue;
+                    if (!bankTransactions.Any()) continue;
 
-                    // Find the earliest non-frozen document for this bank account + currency
-                    var firstDocument = bankDocuments.First().Document;
-                    var zeroDateTime = firstDocument.DocumentDate.AddMinutes(-1);
+                    // Find the earliest transaction for this bank account
+                    var firstTransaction = bankTransactions.First();
+                    var zeroDateTime = firstTransaction.TransactionDate.AddMinutes(-1);
 
                     // Create zero-starting bank account balance history record
                     var zeroBankHistory = new BankAccountBalanceHistory
@@ -783,24 +832,28 @@ namespace ForexExchange.Controllers
                     };
                     _context.BankAccountBalanceHistory.Add(zeroBankHistory);
 
-                    // Process documents chronologically for this bank account + currency
+                    // Process transactions chronologically for this bank account
                     decimal runningBalance = 0;
 
-                    foreach (var item in bankDocuments)
+                    foreach (var transaction in bankTransactions)
                     {
-                        var document = item.Document;
-                        var transactionAmount = item.IsDebit ? -document.Amount : document.Amount;
+                        var transactionType = transaction.TransactionType switch
+                        {
+                            "Document" => BankAccountTransactionType.Document,
+                            "Manual" => BankAccountTransactionType.ManualEdit,
+                            _ => BankAccountTransactionType.Document
+                        };
 
                         var bankHistory = new BankAccountBalanceHistory
                         {
                             BankAccountId = bankAccountId,
-                            TransactionType = BankAccountTransactionType.Document,
-                            ReferenceId = document.Id,
+                            TransactionType = transactionType,
+                            ReferenceId = transaction.ReferenceId,
                             BalanceBefore = runningBalance,
-                            TransactionAmount = transactionAmount,
-                            BalanceAfter = runningBalance + transactionAmount,
-                            Description = $"Document #{document.Id}: {document.Type}",
-                            TransactionDate = document.DocumentDate,
+                            TransactionAmount = transaction.Amount,
+                            BalanceAfter = runningBalance + transaction.Amount,
+                            Description = transaction.Description,
+                            TransactionDate = transaction.TransactionDate,
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = performedBy,
                             IsDeleted = false
@@ -812,9 +865,8 @@ namespace ForexExchange.Controllers
 
                     // Update bank account balance  
                     var finalBankAccountId = bankAccountId;
-                    var finalCurrencyCode = currencyCode;
                     var bankBalance = await _context.BankAccountBalances
-                        .FirstOrDefaultAsync(b => b.BankAccountId == finalBankAccountId && b.CurrencyCode == finalCurrencyCode);
+                        .FirstOrDefaultAsync(b => b.BankAccountId == finalBankAccountId);
                     if (bankBalance != null)
                     {
                         bankBalance.Balance = runningBalance;
@@ -842,7 +894,7 @@ namespace ForexExchange.Controllers
 
 
 
-                logMessages.Add($"Processing {allValidDocuments.Count} valid documents, {allValidOrders.Count} valid orders, and {manualRecords.Count} manual records for customer balance history...");
+                logMessages.Add($"Processing {allValidDocuments.Count} valid documents, {allValidOrders.Count} valid orders, and {manualCustomerRecords.Count} manual customer records for customer balance history...");
 
                 // Create unified transaction items for customers from orders, documents, and manual records
                 var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>();
@@ -866,13 +918,13 @@ namespace ForexExchange.Controllers
                     customerTransactionItems.Add((o.CustomerId, o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, o.ToAmount, $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Received)"));
                 }
 
-                logMessages.Add($"start adding  [{manualRecords.Count}] manualRecords");
+                logMessages.Add($"start adding  [{manualCustomerRecords.Count}] manual customer records");
                 logMessages.Add($"customerTransactionItems is [{customerTransactionItems.Count}]");
 
 
 
-                // Add manual records as transactions
-                foreach (var manual in manualRecords)
+                // Add manual customer records as transactions
+                foreach (var manual in manualCustomerRecords)
                 {
                     customerTransactionItems.Add((
                         manual.CustomerId,
