@@ -8,9 +8,14 @@
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between">
                 <h2><i class="fas fa-university text-success me-2"></i>گزارشات حساب‌های بانکی</h2>
-                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-right me-1"></i>بازگشت
-                </a>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-warning" onclick="showManualAdjustmentModal()" id="manualAdjustmentBtn" disabled>
+                        <i class="fas fa-edit me-1"></i>تعدیل دستی
+                    </button>
+                    <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-right me-1"></i>بازگشت
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -111,12 +116,13 @@
                         <table class="table table-hover mb-0" id="timelineTable">
                             <thead class="table-dark sticky-top">
                                 <tr class="text-center">
-                                    <th width="12%">تاریخ</th>
-                                    <th width="15%">نوع</th>
-                                    <th width="10%">ارز</th>
-                                    <th width="15%">مقدار</th>
-                                    <th width="15%">موجودی</th>
-                                    <th width="33%">توضیحات</th>
+                                    <th width="10%">تاریخ</th>
+                                    <th width="12%">نوع</th>
+                                    <th width="8%">ارز</th>
+                                    <th width="12%">مقدار</th>
+                                    <th width="12%">موجودی</th>
+                                    <th width="30%">توضیحات</th>
+                                    <th width="16%">عملیات</th>
                                 </tr>
                             </thead>
                             <tbody id="timelineTableBody">
@@ -142,6 +148,45 @@
     </div>
 </div>
 
+<!-- Manual Adjustment Modal -->
+<div class="modal fade" id="manualAdjustmentModal" tabindex="-1" aria-labelledby="manualAdjustmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="manualAdjustmentModalLabel">
+                    <i class="fas fa-edit me-2"></i>تعدیل دستی حساب بانکی
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="manualAdjustmentForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="adjustmentAmount" class="form-label">مبلغ تعدیل <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" id="adjustmentAmount" required>
+                            <div class="form-text">مقدار مثبت برای افزایش و منفی برای کاهش موجودی</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="adjustmentDate" class="form-label">تاریخ تراکنش <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="adjustmentDate" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="adjustmentReason" class="form-label">دلیل تعدیل <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="adjustmentReason" rows="3" required placeholder="لطفاً دلیل تعدیل را توضیح دهید..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>ثبت تعدیل
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentPage = { timeline: 1 };
     let pageSize = 10;
@@ -156,6 +201,8 @@
 
         // Bank account filter change event
         document.getElementById('bankAccountSelect').addEventListener('change', function () {
+            const bankAccountId = this.value;
+            document.getElementById('manualAdjustmentBtn').disabled = !bankAccountId;
             loadDataForActiveTab();
         });
 
@@ -272,7 +319,7 @@
         if (!timeline || timeline.length === 0) {
             tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-5 text-muted">
+                <td colspan="7" class="text-center py-5 text-muted">
                     <i class="fas fa-info-circle fa-2x mb-2"></i>
                     <br>تراکنشی در بازه زمانی انتخاب شده یافت نشد
                 </td>
@@ -310,6 +357,14 @@
                 <td class="text-center ltr-direction fw-bold">${formatNumber(item.balance)}</td>
                 <td class="text-start">
                     <small class="text-muted">${item.description || '-'}</small>
+                </td>
+                <td class="text-center">
+                    ${item.transactionType === 'ManualEdit' ?
+                    `<button class="btn btn-sm btn-outline-danger" onclick="deleteManualBankAccountTransaction(${item.historyId})" title="حذف">
+                        <i class="fas fa-trash"></i>
+                    </button>` :
+                    '-'
+                }
                 </td>
             </tr>
             `;
@@ -380,7 +435,7 @@
     function showTimelineEmptyState() {
         document.getElementById('timelineTableBody').innerHTML = `
         <tr>
-            <td colspan="6" class="text-center py-5 text-muted">
+            <td colspan="7" class="text-center py-5 text-muted">
                 <i class="fas fa-university fa-2x mb-2"></i>
                 <br>لطفا برای دریافت تاریخچه مالی یک حساب بانکی را انتخاب کنید
             </td>
@@ -391,7 +446,7 @@
     function showTimelineLoading() {
         document.getElementById('timelineTableBody').innerHTML = `
         <tr>
-            <td colspan="6" class="text-center py-5">
+            <td colspan="7" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">در حال بارگذاری...</span>
                 </div>
@@ -404,7 +459,7 @@
     function showTimelineError(message) {
         document.getElementById('timelineTableBody').innerHTML = `
         <tr>
-            <td colspan="6" class="text-center py-5 text-danger">
+            <td colspan="7" class="text-center py-5 text-danger">
                 <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                 <br>${message}
             </td>
@@ -501,6 +556,96 @@
         if (!dateString) return '-';
         const date = new Date(dateString);
         return date.toLocaleDateString('en-GB'); // Georgian format: DD/MM/YYYY
+    }
+
+    // Manual Adjustment Functions
+    function showManualAdjustmentModal() {
+        const bankAccountId = document.getElementById('bankAccountSelect').value;
+        if (!bankAccountId) {
+            alert('لطفاً ابتدا حساب بانکی را انتخاب کنید');
+            return;
+        }
+
+        // Reset form
+        document.getElementById('manualAdjustmentForm').reset();
+        document.getElementById('manualAdjustmentBankAccountId').value = bankAccountId;
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('manualAdjustmentModal'));
+        modal.show();
+    }
+
+    function submitManualAdjustment() {
+        const form = document.getElementById('manualAdjustmentForm');
+        const formData = new FormData(form);
+
+        // Show loading state
+        const submitBtn = document.getElementById('submitManualAdjustmentBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>در حال ذخیره...';
+        submitBtn.disabled = true;
+
+        fetch('@Url.Action("CreateManualBankAccountBalanceHistory", "Reports")', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('manualAdjustmentModal'));
+                modal.hide();
+
+                // Reload data
+                loadDataForActiveTab();
+
+                // Show success message
+                alert('تعدیل دستی با موفقیت ثبت شد');
+            } else {
+                alert('خطا در ثبت تعدیل دستی: ' + (data.message || 'خطای نامشخص'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در ارتباط با سرور');
+        })
+        .finally(() => {
+            // Reset button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    }
+
+    function deleteManualBankAccountTransaction(historyId) {
+        if (!confirm('آیا از حذف این تراکنش دستی اطمینان دارید؟')) {
+            return;
+        }
+
+        fetch('@Url.Action("DeleteManualBankAccountBalanceHistory", "Reports")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: JSON.stringify({ historyId: historyId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload data
+                loadDataForActiveTab();
+                alert('تراکنش دستی با موفقیت حذف شد');
+            } else {
+                alert('خطا در حذف تراکنش: ' + (data.message || 'خطای نامشخص'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در ارتباط با سرور');
+        });
     }
 
     // Utility functions for formatting

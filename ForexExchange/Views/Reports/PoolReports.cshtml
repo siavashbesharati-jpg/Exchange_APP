@@ -8,9 +8,14 @@
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between">
                 <h2><i class="fas fa-coins text-info me-2"></i>گزارشات صندوق ها</h2>
-                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-right me-1"></i>بازگشت
-                </a>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-warning" onclick="showManualAdjustmentModal()" id="manualAdjustmentBtn" disabled>
+                        <i class="fas fa-edit me-1"></i>تعدیل دستی
+                    </button>
+                    <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-right me-1"></i>بازگشت
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -111,12 +116,13 @@
                         <table class="table table-hover mb-0" id="timelineTable">
                             <thead class="table-dark sticky-top">
                                 <tr class="text-center">
-                                    <th width="12%">تاریخ</th>
-                                    <th width="15%">نوع</th>
-                                    <th width="10%">ارز</th>
-                                    <th width="15%">مقدار</th>
-                                    <th width="15%">موجودی</th>
-                                    <th width="33%">توضیحات</th>
+                                    <th width="10%">تاریخ</th>
+                                    <th width="12%">نوع</th>
+                                    <th width="8%">ارز</th>
+                                    <th width="12%">مقدار</th>
+                                    <th width="12%">موجودی</th>
+                                    <th width="30%">توضیحات</th>
+                                    <th width="16%">عملیات</th>
                                 </tr>
                             </thead>
                             <tbody id="timelineTableBody">
@@ -138,6 +144,45 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Adjustment Modal -->
+<div class="modal fade" id="manualAdjustmentModal" tabindex="-1" aria-labelledby="manualAdjustmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="manualAdjustmentModalLabel">
+                    <i class="fas fa-edit me-2"></i>تعدیل دستی صندوق ارزی
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="manualAdjustmentForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="adjustmentAmount" class="form-label">مبلغ تعدیل <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" class="form-control" id="adjustmentAmount" required>
+                            <div class="form-text">مقدار مثبت برای افزایش و منفی برای کاهش موجودی</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="adjustmentDate" class="form-label">تاریخ تراکنش <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="adjustmentDate" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="adjustmentReason" class="form-label">دلیل تعدیل <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="adjustmentReason" rows="3" required placeholder="لطفاً دلیل تعدیل را توضیح دهید..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>ثبت تعدیل
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -272,7 +317,7 @@
         if (!timeline || timeline.length === 0) {
             tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-5 text-muted">
+                <td colspan="7" class="text-center py-5 text-muted">
                     <i class="fas fa-info-circle fa-2x mb-2"></i>
                     <br>تراکنشی در بازه زمانی انتخاب شده یافت نشد
                 </td>
@@ -307,6 +352,15 @@
                 typeText = 'تعدیل دستی';
             }
 
+            let actionsHtml = '';
+            if (item.transactionType === 'ManualEdit') {
+                actionsHtml = `
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteManualPoolTransaction(${item.id})" title="حذف تعدیل دستی">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            }
+
             timelineHtml += `
             <tr class="transaction-row" style="${cursorStyle}" ${clickHandler}>
                 <td class="text-center">${item.date}</td>
@@ -322,6 +376,7 @@
                 <td class="text-start">
                     <small class="text-muted">${item.description || '-'}</small>
                 </td>
+                <td class="text-center">${actionsHtml}</td>
             </tr>
             `;
         });
@@ -530,6 +585,142 @@
         const formattedAmount = formatNumber(amount);
         return `${formattedAmount} ${currencyCode || ''}`;
     }
+
+    // Manual Adjustment Functions
+    function showManualAdjustmentModal() {
+        const currencyCode = document.getElementById('currencySelect').value;
+        if (!currencyCode) {
+            alert('لطفاً ابتدا ارز را انتخاب کنید');
+            return;
+        }
+
+        // Set current date/time as default
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        document.getElementById('adjustmentDate').value = localDateTime.toISOString().slice(0, 16);
+
+        // Reset form
+        document.getElementById('manualAdjustmentForm').reset();
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('manualAdjustmentModal'));
+        modal.show();
+    }
+
+    // Handle manual adjustment form submission
+    document.getElementById('manualAdjustmentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const currencyCode = document.getElementById('currencySelect').value;
+        const amount = parseFloat(document.getElementById('adjustmentAmount').value);
+        const transactionDate = document.getElementById('adjustmentDate').value;
+        const reason = document.getElementById('adjustmentReason').value.trim();
+
+        if (!currencyCode || !amount || !transactionDate || !reason) {
+            alert('لطفاً تمام فیلدهای مورد نیاز را پر کنید');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>در حال ثبت...';
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('currencyCode', currencyCode);
+        formData.append('amount', amount);
+        formData.append('reason', reason);
+        formData.append('transactionDate', transactionDate);
+
+        // Send AJAX request
+        fetch('@Url.Action("CreateManualPoolBalanceHistory", "Reports")', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('manualAdjustmentModal'));
+                modal.hide();
+
+                // Show success message
+                alert('تعدیل دستی با موفقیت ثبت شد و موجودی‌ها بازمحاسبه شدند');
+
+                // Reload timeline data
+                loadDataForActiveTab();
+            } else {
+                alert('خطا در ثبت تعدیل دستی: ' + (data.error || 'خطای نامشخص'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در ارتباط با سرور: ' + error.message);
+        })
+        .finally(() => {
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+
+    // Delete manual pool transaction
+    function deleteManualPoolTransaction(transactionId) {
+        if (!confirm('آیا از حذف این تعدیل دستی اطمینان دارید؟ این عملیات قابل برگرداندن نیست.')) {
+            return;
+        }
+
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalHtml = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('transactionId', transactionId);
+
+        // Send AJAX request
+        fetch('@Url.Action("DeleteManualPoolBalanceHistory", "Reports")', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert('تعدیل دستی با موفقیت حذف شد و موجودی‌ها بازمحاسبه شدند');
+
+                // Reload timeline data
+                loadDataForActiveTab();
+            } else {
+                alert('خطا در حذف تعدیل دستی: ' + (data.error || 'خطای نامشخص'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در ارتباط با سرور: ' + error.message);
+        })
+        .finally(() => {
+            // Reset button state
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        });
+    }
+
+    // Enable/disable manual adjustment button based on currency selection
+    document.getElementById('currencySelect').addEventListener('change', function() {
+        const manualBtn = document.getElementById('manualAdjustmentBtn');
+        manualBtn.disabled = !this.value;
+    });
 </script>
 
 <style>
