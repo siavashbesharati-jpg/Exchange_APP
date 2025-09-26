@@ -1120,7 +1120,7 @@
             // Invert calculation when going from low priority to high priority currency
             // High priority (1) to low priority (5): multiply (no inversion)
             // Low priority (5) to high priority (1): divide (invert)
-            return fromCurrency.ratePriority > toCurrency.ratePriority;
+            return fromCurrency.ratePriority < toCurrency.ratePriority;
         }
 
         // Load rate automatically for calculator (DISABLED - users enter their own rates)
@@ -1206,7 +1206,8 @@
             if (fromAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
                 let toAmount;
 
-                if (window.calcRateInverted) {
+                let shouldInvert = shouldInvertRateForPair(calcFromCurrencyCode, calcToCurrencyCode);
+                if (shouldInvert) {
                     // Reversed calculation for specified pairs
                     toAmount = fromAmount / rate;
                 } else {
@@ -1241,7 +1242,8 @@
             if (toAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
                 let fromAmount;
 
-                if (window.calcRateInverted) {
+                let shouldInvert = shouldInvertRateForPair(calcFromCurrencyCode, calcToCurrencyCode);
+                if (shouldInvert) {
                     // Reversed calculation for specified pairs
                     fromAmount = toAmount * rate;
                 } else {
