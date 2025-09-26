@@ -23,82 +23,14 @@
                                         foreach (var error in state.Errors)
                                         {
                                             var msg = error.ErrorMessage;
-                                            // Localize known messages
-                                            if (msg == "The CustomerId field is required.") msg = "انتخاب مشتری الزامی است.";
-                                            if (msg == "The FromCurrencyId field is required.") msg = "انتخاب ارز مبدأ الزامی است.";
-                                            if (msg == "The ToCurrencyId field is required.") msg = "انتخاب ارز مقصد الزامی است.";
-                                            if (msg == "The Amount field is required.") msg = "مقدار معامله الزامی است.";
                                             <li>@msg</li>
                                         }
                                     }
-                                    }
                                 </ul>
-                            </div>
-                        }
-                        <div class="alert alert-info mt-2" id="currencyPairMsgBox" style="display: none;"></div>
-
-                        <div class="row mb-3">
-                            <!-- Currency Pool Information -->
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <div class="alert alert-warning" id="currencyPoolInfo" style="display: none;"
-                                        dir=ltr>
-                                        <h6>موجودی صندوق ارزها:</h6>
-                                        <p id="currencyPoolText"></p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="CustomerId" class="form-label">انتخاب مشتری</label>
-                                <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select"
-                                    id="customerSelect" required>
-                                    <option value="">یک مشتری انتخاب کنید</option>
-                                </select>
-                                <span asp-validation-for="CustomerId" class="text-danger"></span>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="CreatedAt" class="form-label">تاریخ و زمان معامله</label>
-                                <input asp-for="CreatedAt" type="datetime-local" class="form-control"
-                                    id="createdAtInput" />
-                                <span asp-validation-for="CreatedAt" class="text-danger"></span>
-                                <div class="form-text">تاریخ و زمان ثبت معامله (پیش‌فرض: زمان فعلی)</div>
-                            </div>
-
-
-
-
-                            <!-- Removed OrderType dropdown -->
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label asp-for="FromCurrencyId" class="form-label"> دریافت می کنیم </label>
-                                <select asp-for="FromCurrencyId" asp-items="ViewBag.FromCurrencies" class="form-select"
-                                    id="fromCurrencySelect" required>
-                                    <option value="">انتخاب کنید</option>
-                                </select>
-                                <span asp-validation-for="FromCurrencyId" class="text-danger"></span>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label asp-for="ToCurrencyId" class="form-label"> پرداخت می کنیم </label>
-                                <select asp-for="ToCurrencyId" asp-items="ViewBag.ToCurrencies" class="form-select"
-                                    id="toCurrencySelect" required>
-                                    <option value="">انتخاب کنید</option>
-                                </select>
-                                <span asp-validation-for="ToCurrencyId" class="text-danger"></span>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label asp-for="Rate" class="form-label">نرخ ارز</label>
-                                <input asp-for="Rate" type="number" id="calcRateInput" class="form-control" step="any"
-                                    placeholder="نرخ ارز را وارد کنید">
                                 <span asp-validation-for="Rate" class="text-danger"></span>
                             </div>
+                        }
 
-                        </div>
 
                         <!-- Amount Input Row -->
                         <div class="row mb-3">
@@ -125,7 +57,6 @@
                             <span id="calcFromCurrencyName">انتخاب نشده</span>
                             <span id="calcToCurrencyCode">---</span>
                             <span id="calcToCurrencyName">انتخاب نشده</span>
-                            <button type="button" id="loadSuggestedRateBtn">Load Rate</button>
                         </div>
 
                         <!-- Currency Pair Information (moved below pool info if needed) -->
@@ -230,71 +161,7 @@
 
 
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
 
-    <!-- Include Currency Formatter -->
-
-    <script src="~/js/currency-formatter.js"></script>
-    <script>
-    // Helper: get form values for preview - Use SAME data as real form submission
-    function getOrderPreviewData() {
-        const data = {
-            customerId: parseInt(document.getElementById('customerSelect').value) || 0,
-            fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
-            toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
-            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,  // Use calculator input
-            toAmount: parseFloat(document.getElementById('calcToAmountInput').value) || 0,      // Use calculator input
-            rate: parseFloat(document.getElementById('calcRateInput').value) || 0,             // Use calculator input
-            createdAt: document.getElementById('createdAtInput')?.value || null,
-            notes: document.getElementById('Notes')?.value || null
-        };
-        
-        // Debug: Log the form data being sent
-        console.log('Form data for preview:', data);
-        
-        return data;
-    }
-
-    // Show preview modal with order and effect details - Beautiful Styling
-    function showPreviewModal(order, effects) {
-        
-        
-        
-        
-        // Helper to get property in both PascalCase and camelCase
-        function getProp(obj, name) {
-            return obj[name] ?? obj[name.charAt(0).toLowerCase() + name.slice(1)];
-        }
-
-        // Get customer name from dropdown
-        let customerSelect = document.getElementById('customerSelect');
-        let customerName = 'نامشخص';
-        if (customerSelect) {
-            if (typeof $ !== 'undefined' && $(customerSelect).hasClass('select2-hidden-accessible')) {
-                let selected = $(customerSelect).select2('data')[0];
-                customerName = selected ? selected.text : 'نامشخص';
-            } else {
-                let idx = customerSelect.selectedIndex;
-                customerName = idx > 0 ? customerSelect.options[idx].text : 'نامشخص';
-            }
-        }
-
-        // Get selected date
-        let dateValue = document.getElementById('createdAtInput')?.value || '';
-        let formattedDate = 'نامشخص';
-        if (dateValue) {
-            const date = new Date(dateValue);
-            formattedDate = date.toLocaleDateString('fa-IR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
 
         // Currency labels with better formatting
         let fromCurrencyCode = getProp(effects, 'FromCurrencyCode') || '';
@@ -465,26 +332,100 @@
     document.getElementById('finalSubmitBtn').style.display = 'none';
     </script>
 
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="~/js/currency-formatter.js"></script>
     <script>
-        let currentRate = null;
-        // Currency pool data loaded from server-side ViewBag (dictionary: code => balance)
-        let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
+    // --- Clean, simple currency calculation logic with RatePriority ---
+    // currenciesData: { id: { code, name, ratePriority } }
+    let currenciesData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrenciesData ?? new Dictionary<int, object>()));
 
-        // Currency data with RatePriority loaded from server-side ViewBag (id => {code, name, ratePriority})
-        let currenciesData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrenciesData ?? new Dictionary<int, object>()));
+    function getRatePriority(currencyId) {
+        if (!currencyId || !currenciesData[currencyId]) return 99;
+        return currenciesData[currencyId].ratePriority ?? 99;
+    }
 
-        // Calculator functionality - variables for inline calculator
-        let calcFromCurrencyId = null;
-        let calcToCurrencyId = null;
-        let calcFromCurrencyCode = null;
-        let calcToCurrencyCode = null;
+    function calculateAmounts() {
+        const fromId = parseInt(document.getElementById('fromCurrencySelect').value) || 0;
+        const toId = parseInt(document.getElementById('toCurrencySelect').value) || 0;
+        const rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
+        let fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value) || 0;
+        let toAmount = 0;
 
-        function initializeCalculator() {
-            // Get current selections from main form using jQuery
-            const fromSelect = $('#fromCurrencySelect');
-            const toSelect = $('#toCurrencySelect');
+        if (!fromId || !toId || !rate || !fromAmount) {
+            document.getElementById('calcToAmountInput').value = '';
+            return;
+        }
 
-            // Check if both currencies are selected in main form
+        const fromPriority = getRatePriority(fromId);
+        const toPriority = getRatePriority(toId);
+
+        if (fromPriority < toPriority) {
+            // From has higher priority (lower number)
+            toAmount = fromAmount / rate;
+        } else {
+            toAmount = fromAmount * rate;
+        }
+        document.getElementById('calcToAmountInput').value = toAmount;
+    }
+
+    function calculateFromAmount() {
+        const fromId = parseInt(document.getElementById('fromCurrencySelect').value) || 0;
+        const toId = parseInt(document.getElementById('toCurrencySelect').value) || 0;
+        const rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
+        let toAmount = parseFloat(document.getElementById('calcToAmountInput').value) || 0;
+        let fromAmount = 0;
+
+        if (!fromId || !toId || !rate || !toAmount) {
+            document.getElementById('calcFromAmountInput').value = '';
+            return;
+        }
+
+        const fromPriority = getRatePriority(fromId);
+        const toPriority = getRatePriority(toId);
+
+        if (fromPriority < toPriority) {
+            // From has higher priority (lower number)
+            fromAmount = toAmount * rate;
+        } else {
+            fromAmount = toAmount / rate;
+        }
+        document.getElementById('calcFromAmountInput').value = fromAmount;
+    }
+
+    // Attach input listeners for live calculation
+    document.getElementById('fromCurrencySelect').addEventListener('change', calculateAmounts);
+    document.getElementById('toCurrencySelect').addEventListener('change', calculateAmounts);
+    document.getElementById('calcRateInput').addEventListener('input', calculateAmounts);
+    document.getElementById('calcFromAmountInput').addEventListener('input', calculateAmounts);
+    document.getElementById('calcToAmountInput').addEventListener('input', calculateFromAmount);
+
+    // On page load, trigger calculation if values exist
+    window.addEventListener('DOMContentLoaded', function() {
+        calculateAmounts();
+    });
+
+    // Helper: get form values for preview - Use SAME data as real form submission
+    function getOrderPreviewData() {
+        const data = {
+            customerId: parseInt(document.getElementById('customerSelect').value) || 0,
+            fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
+            toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
+            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,  // Use calculator input
+            toAmount: parseFloat(document.getElementById('calcToAmountInput').value) || 0,      // Use calculator input
+            rate: parseFloat(document.getElementById('calcRateInput').value) || 0,             // Use calculator input
+            createdAt: document.getElementById('createdAtInput')?.value || null,
+            notes: document.getElementById('Notes')?.value || null
+        };
+        // Debug: Log the form data being sent
+        console.log('Form data for preview:', data);
+        return data;
+    }
+    </script>
+}
             if (!fromSelect.val() || !toSelect.val()) {
                 alert('لطفا ابتدا ارزهای مبدا و مقصد را انتخاب کنید');
                 return;
@@ -997,13 +938,6 @@
 
             const hasValidCurrencies = fromCurrency && toCurrency && fromCurrency !== toCurrency;
 
-
-            // Enable/disable buttons based on currency selection
-            const loadSuggestedBtn = document.getElementById('loadSuggestedRateBtn');
-
-            if (loadSuggestedBtn) {
-                loadSuggestedBtn.disabled = !hasValidCurrencies;
-            }
 
             // Initialize calculator when currencies are selected
             if (hasValidCurrencies) {
