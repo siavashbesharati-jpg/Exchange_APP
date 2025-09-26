@@ -245,8 +245,8 @@
     const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData ?? new {}));
 
         function getRatePriorityById(id) {
-            if (!id || !currenciesData[id]) return 99;
-            return currenciesData[id].RatePriority || 99;
+            if (!id || !currenciesData[id]) return null;  // Return null if invalid
+            return currenciesData[id].RatePriority || null;  // Return null if zero or missing
         }
 
         function getCurrencyCodeById(id, selectId) {
@@ -276,13 +276,26 @@
             const toCurrencyId = document.getElementById('toCurrencySelect').value;
             const fromPriority = getRatePriorityById(fromCurrencyId);
             const toPriority = getRatePriorityById(toCurrencyId);
+
+            // Validation: Priorities must be valid (not null/zero) and not equal
+            if (fromPriority === null || toPriority === null || fromPriority === 0 || toPriority === 0) {
+                alert('RatePriority برای ارزهای انتخاب شده نامعتبر است (null یا صفر). لطفاً ارزها را بررسی کنید.');
+                return null;  // Invalid, prevent calculation
+            }
+            if (fromPriority === toPriority) {
+                alert('RatePriority ارزهای مبدأ و مقصد برابر است. این ترکیب مجاز نیست.');
+                return null;  // Invalid, prevent calculation
+            }
+
+            // Direction based solely on priority comparison (no base currency)
             if (fromPriority < toPriority) return 'divide';
-            if (fromPriority > toPriority) return 'multiply';
-            return 'multiply'; // fallback if equal
+            return 'multiply';  // fromPriority > toPriority
         }
 
         function updateCalcLabels() {
             const direction = getCalcDirection();
+            if (direction === null) return;  // Skip if invalid
+
             const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
             const toCurrencyId = document.getElementById('toCurrencySelect').value;
             const fromCurrencyCode = getCurrencyCodeById(fromCurrencyId, 'fromCurrencySelect') || '---';
@@ -297,13 +310,15 @@
         }
 
         function recalculateAmounts(trigger) {
+            const direction = getCalcDirection();
+            if (direction === null) return;  // Skip if invalid priorities
+
             const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
             const toCurrencyId = document.getElementById('toCurrencySelect').value;
             const fromCurrencyCode = getCurrencyCodeById(fromCurrencyId, 'fromCurrencySelect');
             const toCurrencyCode = getCurrencyCodeById(toCurrencyId, 'toCurrencySelect');
             if (!fromCurrencyCode || !toCurrencyCode) return;
 
-            const direction = getCalcDirection();
             let rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
             let fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value) || 0;
             let toAmount = parseFloat(document.getElementById('calcToAmountInput').value) || 0;
@@ -578,45 +593,16 @@
     document.getElementById('finalSubmitBtn').style.display = 'none';
     </script>
 
-    <script>
-        let currentRate = null;
-        // Currency pool data loaded from server-side ViewBag (dictionary: code => balance)
-        let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
+    </script>
+}
+    </script>
+}
 
-        // Calculator functionality - variables for inline calculator
-        let calcFromCurrencyId = null;
-        let calcToCurrencyId = null;
-        let calcFromCurrencyCode = null;
-        let calcToCurrencyCode = null;
+    </script>
+}
 
-        function initializeCalculator() {
-            // Get current selections from main form using jQuery
-            const fromSelect = $('#fromCurrencySelect');
-            const toSelect = $('#toCurrencySelect');
-
-            // Check if both currencies are selected in main form
-            if (!fromSelect.val() || !toSelect.val()) {
-                alert('لطفا ابتدا ارزهای مبدا و مقصد را انتخاب کنید');
-                return;
-            }
-
-            // Get currency codes and names from main form using Select2 data
-            const fromData = fromSelect.select2('data')[0];
-            const toData = toSelect.select2('data')[0];
-
-            // Extract code from text (format: "CODE - Name")
-            const fromCode = fromData.text.split(' - ')[0].trim(); // What user pays
-            const toCode = toData.text.split(' - ')[0].trim(); // What user gets
-            const fromName = fromData.text.split(' - ')[1] ? fromData.text.split(' - ')[1].trim() : fromCode;
-            const toName = toData.text.split(' - ')[1] ? toData.text.split(' - ')[1].trim() : toCode;
-
-            // Store for calculations
-            calcFromCurrencyCode = fromCode; // What user pays (IRR)
-            calcToCurrencyCode = toCode;     // What user gets (USD)
-
-            // Update calculator display elements
-            document.getElementById('calcFromCurrencyDisplay').textContent = fromCode;
-            document.getElementById('calcToCurrencyDisplay').textContent = toCode;
+    </script>
+}
             document.getElementById('calcFromCurrencyName').textContent = fromName;
             document.getElementById('calcToCurrencyName').textContent = toName;
             document.getElementById('fromCurrencyLabel').textContent = fromCode;
