@@ -271,6 +271,31 @@
 
 
 
+        function getCalcDirection() {
+            const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
+            const toCurrencyId = document.getElementById('toCurrencySelect').value;
+            const fromPriority = getRatePriorityById(fromCurrencyId);
+            const toPriority = getRatePriorityById(toCurrencyId);
+            if (fromPriority < toPriority) return 'divide';
+            if (fromPriority > toPriority) return 'multiply';
+            return 'multiply'; // fallback if equal
+        }
+
+        function updateCalcLabels() {
+            const direction = getCalcDirection();
+            const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
+            const toCurrencyId = document.getElementById('toCurrencySelect').value;
+            const fromCurrencyCode = getCurrencyCodeById(fromCurrencyId, 'fromCurrencySelect') || '---';
+            const toCurrencyCode = getCurrencyCodeById(toCurrencyId, 'toCurrencySelect') || '---';
+            if (direction === 'divide') {
+                document.getElementById('calcFromAmountLabel').textContent = `${fromCurrencyCode} (مبلغ پایه)`;
+                document.getElementById('calcToAmountLabel').textContent = `${toCurrencyCode} (مبلغ بر اساس تقسیم)`;
+            } else {
+                document.getElementById('calcFromAmountLabel').textContent = `${fromCurrencyCode} (مبلغ پایه)`;
+                document.getElementById('calcToAmountLabel').textContent = `${toCurrencyCode} (مبلغ بر اساس ضرب)`;
+            }
+        }
+
         function recalculateAmounts(trigger) {
             const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
             const toCurrencyId = document.getElementById('toCurrencySelect').value;
@@ -278,22 +303,16 @@
             const toCurrencyCode = getCurrencyCodeById(toCurrencyId, 'toCurrencySelect');
             if (!fromCurrencyCode || !toCurrencyCode) return;
 
-            const fromPriority = getRatePriorityById(fromCurrencyId);
-            const toPriority = getRatePriorityById(toCurrencyId);
-
+            const direction = getCalcDirection();
             let rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
             let fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value) || 0;
             let toAmount = parseFloat(document.getElementById('calcToAmountInput').value) || 0;
 
-            // Decide calculation direction
-            if (trigger === 'from') {
-                // User changed fromAmount or rate
+            if (trigger === 'from' || trigger === 'rate' || trigger === 'dropdown') {
                 if (rate > 0) {
-                    if (fromPriority < toPriority) {
-                        // FromCurrency has higher priority: from / rate = to
+                    if (direction === 'divide') {
                         toAmount = fromAmount / rate;
                     } else {
-                        // Otherwise: from * rate = to
                         toAmount = fromAmount * rate;
                     }
                 } else {
@@ -301,29 +320,18 @@
                 }
                 document.getElementById('calcToAmountInput').value = toAmount || '';
             } else if (trigger === 'to') {
-                // User changed toAmount or rate
                 if (rate > 0) {
-                    if (fromPriority < toPriority) {
-                        // from / rate = to => from = to * rate
+                    if (direction === 'divide') {
                         fromAmount = toAmount * rate;
                     } else {
-                        // from * rate = to => from = to / rate
                         fromAmount = toAmount / rate;
                     }
                 } else {
                     fromAmount = 0;
                 }
                 document.getElementById('calcFromAmountInput').value = fromAmount || '';
-            } else if (trigger === 'rate') {
-                // User changed rate, recalc toAmount from fromAmount
-                if (fromPriority < toPriority) {
-                    toAmount = fromAmount / rate;
-                } else {
-                    toAmount = fromAmount * rate;
-                }
-                document.getElementById('calcToAmountInput').value = toAmount || '';
             }
-            // Optionally, update display/labels here
+            updateCalcLabels();
         }
 
         // Attach event listeners
@@ -337,8 +345,10 @@
             if (fromAmountInput) fromAmountInput.addEventListener('input', function() { recalculateAmounts('from'); });
             if (toAmountInput) toAmountInput.addEventListener('input', function() { recalculateAmounts('to'); });
             if (rateInput) rateInput.addEventListener('input', function() { recalculateAmounts('rate'); });
-            if (fromCurrencySelect) fromCurrencySelect.addEventListener('change', function() { recalculateAmounts('from'); });
-            if (toCurrencySelect) toCurrencySelect.addEventListener('change', function() { recalculateAmounts('from'); });
+            if (fromCurrencySelect) fromCurrencySelect.addEventListener('change', function() { recalculateAmounts('dropdown'); });
+            if (toCurrencySelect) toCurrencySelect.addEventListener('change', function() { recalculateAmounts('dropdown'); });
+            // Initial label update
+            updateCalcLabels();
         });
         </script>
     <script>
