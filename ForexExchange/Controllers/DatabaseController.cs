@@ -824,7 +824,7 @@ namespace ForexExchange.Controllers
 
                 // Get all non-deleted orders and documents
                 var allValidDocuments = await _context.AccountingDocuments
-                    .Where(d => !d.IsDeleted) // Include frozen documents for customer balance history
+                    .Where(d => !d.IsDeleted && d.IsVerified) // Include frozen documents for customer balance history
                     .ToListAsync();
 
                 var allValidOrders = await _context.Orders
