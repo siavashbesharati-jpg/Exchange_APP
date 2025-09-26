@@ -584,21 +584,39 @@
         modal.show();
     }
 
-    function submitManualAdjustment() {
-        const form = document.getElementById('manualAdjustmentForm');
-        const formData = new FormData(form);
+    // Handle manual adjustment form submission
+    document.getElementById('manualAdjustmentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const bankAccountId = document.getElementById('bankAccountSelect').value;
+        const amount = parseFloat(document.getElementById('adjustmentAmount').value);
+        const transactionDate = document.getElementById('adjustmentDate').value;
+        const reason = document.getElementById('adjustmentReason').value.trim();
+
+        if (!bankAccountId || !amount || !transactionDate || !reason) {
+            alert('لطفاً تمام فیلدهای مورد نیاز را پر کنید');
+            return;
+        }
 
         // Show loading state
-        const submitBtn = document.getElementById('submitManualAdjustmentBtn');
+        const submitBtn = this.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>در حال ذخیره...';
         submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>در حال ثبت...';
 
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('bankAccountId', bankAccountId);
+        formData.append('amount', amount);
+        formData.append('reason', reason);
+        formData.append('transactionDate', transactionDate);
+
+        // Send AJAX request
         fetch('@Url.Action("CreateManualBankAccountBalanceHistory", "Reports")', {
             method: 'POST',
             body: formData,
             headers: {
-                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => response.json())
@@ -608,25 +626,25 @@
                 const modal = bootstrap.Modal.getInstance(document.getElementById('manualAdjustmentModal'));
                 modal.hide();
 
-                // Reload data
-                loadDataForActiveTab();
-
                 // Show success message
                 alert('تعدیل دستی با موفقیت ثبت شد');
+
+                // Reload timeline data
+                loadDataForActiveTab();
             } else {
                 alert('خطا در ثبت تعدیل دستی: ' + (data.message || 'خطای نامشخص'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('خطا در ارتباط با سرور');
+            alert('خطا در ارتباط با سرور: ' + error.message);
         })
         .finally(() => {
             // Reset button state
-            submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         });
-    }
+    });
 
     function deleteManualBankAccountTransaction(historyId) {
         if (!confirm('آیا از حذف این تراکنش دستی اطمینان دارید؟')) {

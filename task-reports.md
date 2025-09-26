@@ -2,6 +2,80 @@
 
 ---
 
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۲۰:۴۵
+
+### 🎯 **تسک: رفع مشکل ارسال فرم تعدیل دستی در BankAccountReports**
+**وضعیت: ✅ تکمیل شده**
+
+---
+
+## 📋 **شرح کامل کارهای انجام شده:**
+
+### **۱. شناسایی مشکل ارسال فرم**
+- ✅ **مشکل شناسایی شده**: فرم تعدیل دستی فاقد event listener برای جلوگیری از ارسال پیش‌فرض مرورگر بود
+- ✅ **حل مسئله**: اضافه کردن `addEventListener('submit')` با `preventDefault()` برای جلوگیری از reload صفحه
+
+### **۲. پیاده‌سازی ارسال AJAX**
+- ✅ **اعتبارسنجی ورودی‌ها**: بررسی کامل بودن فیلدهای مورد نیاز قبل از ارسال
+- ✅ **ارسال FormData**: استفاده از FormData برای ارسال داده‌های فرم به سرور
+- ✅ **مدیریت وضعیت loading**: نمایش spinner و غیرفعال کردن دکمه در حین ارسال
+
+### **۳. مدیریت پاسخ سرور**
+- ✅ **پاسخ موفق**: بستن modal، نمایش پیام موفقیت، و بارگذاری مجدد داده‌ها
+- ✅ **پاسخ ناموفق**: نمایش پیام خطا با جزئیات
+- ✅ **مدیریت خطا**: catch block برای خطاهای شبکه
+
+### **۴. بررسی backend**
+- ✅ **کنترلر ReportsController**: متد `CreateManualBankAccountBalanceHistory` پشتیبانی AJAX دارد
+- ✅ **CentralFinancialService**: متد `CreateManualBankAccountBalanceHistoryAsync` زنجیره متوازن را حفظ می‌کند
+
+### **۵. تست عملکرد**
+- ✅ **بررسی compilation**: پروژه بدون خطا کامپایل و اجرا می‌شود
+- ✅ **تایید منطق**: فرم بدون reload صفحه ارسال می‌شود و عملیات موفق است
+
+---
+
+## 🔧 **جزئیات تکنیکی:**
+
+### **تغییرات JavaScript:**
+```javascript
+// Handle manual adjustment form submission
+document.getElementById('manualAdjustmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validation and FormData preparation
+    const formData = new FormData();
+    formData.append('bankAccountId', bankAccountId);
+    formData.append('amount', amount);
+    formData.append('reason', reason);
+    formData.append('transactionDate', transactionDate);
+    
+    // AJAX submission with proper error handling
+    fetch('@Url.Action("CreateManualBankAccountBalanceHistory", "Reports")', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Success handling
+        } else {
+            // Error handling
+        }
+    });
+});
+```
+
+---
+
+## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۱۸:۲۰
+
+### 🎯 **تسک: رفع مشکلات BankAccountReports - دکمه تنظیم دستی غیرفعال و خطای حذف**
+**وضعیت: ✅ تکمیل شده**
+
+---
+
 ## 📅 تاریخ: ۲۶ آذر ۱۴۰۳ - ساعت ۱۸:۲۰
 
 ### 🎯 **تسک: رفع مشکلات BankAccountReports - دکمه تنظیم دستی غیرفعال و خطای حذف**
