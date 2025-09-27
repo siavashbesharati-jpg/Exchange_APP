@@ -551,12 +551,13 @@ namespace ForexExchange.Controllers
             {
                 var user = await _userManager.GetUserAsync(User);
                 var performedBy = user?.UserName ?? "Admin";
-                var logMessages = new List<string>();
-
-                logMessages.Add("=== COMPREHENSIVE FINANCIAL BALANCE REBUILD WITH COHERENT HISTORY ===");
-                logMessages.Add($"Started at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                logMessages.Add($"Performed by: {performedBy}");
-                logMessages.Add("");
+                var logMessages = new List<string>
+                {
+                    "=== COMPREHENSIVE FINANCIAL BALANCE REBUILD WITH COHERENT HISTORY ===",
+                    $"Started at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+                    $"Performed by: {performedBy}",
+                    ""
+                };
 
                 // Get all manual customer balance history records (including frozen, not deleted)
                 var manualCustomerRecords = await _context.CustomerBalanceHistory
@@ -643,11 +644,13 @@ namespace ForexExchange.Controllers
                 // Add order transactions
                 foreach (var o in activeOrders)
                 {
+                    var currentOrder = _context.Orders.Find(o.Id);
+                    if (currentOrder is null) continue;
                     // Institution receives FromAmount in FromCurrency (pool increases)
-                    poolTransactionItems.Add((o.FromCurrency.Code, o.CreatedAt, "Order", o.Id, o.FromAmount, "Buy", $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Buy)"));
+                    poolTransactionItems.Add((o.FromCurrency.Code, o.CreatedAt, "Order", o.Id, o.FromAmount, "Buy", currentOrder?.Notes ?? ""));
 
                     // Institution pays ToAmount in ToCurrency (pool decreases)
-                    poolTransactionItems.Add((o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, -o.ToAmount, "Sell", $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Sell)"));
+                    poolTransactionItems.Add((o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, -o.ToAmount, "Sell", currentOrder?.Notes ?? ""));
                 }
 
                 // Add manual pool records as transactions
@@ -779,10 +782,13 @@ namespace ForexExchange.Controllers
                 // Add document transactions
                 foreach (var d in activeDocuments)
                 {
+
+                    var currentDocument = _context.AccountingDocuments.Find(d.Id);
+                    if (currentDocument is null) continue;
                     if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, -d.Amount, $"Document #{d.Id}: {d.Type} (Debit)"));
+                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, currentDocument?.Notes ?? string.Empty));
                     if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, $"Document #{d.Id}: {d.Type} (Credit)"));
+                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, currentDocument?.Notes ?? string.Empty));
                 }
 
                 // Add manual bank account records as transactions
@@ -897,25 +903,25 @@ namespace ForexExchange.Controllers
                 logMessages.Add($"Processing {allValidDocuments.Count} valid documents, {allValidOrders.Count} valid orders, and {manualCustomerRecords.Count} manual customer records for customer balance history...");
 
                 // Create unified transaction items for customers from orders, documents, and manual records
-                var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>();
+                var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, string transactionCode, int? ReferenceId, decimal Amount, string Description)>();
 
                 // Add document transactions
                 foreach (var d in allValidDocuments)
                 {
                     if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue)
-                        customerTransactionItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, $"Document #{d.Id}: {d.Type} (Payer)"));
+                        customerTransactionItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, d.Amount, d.Description ?? string.Empty));
                     if (d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
-                        customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, -d.Amount, $"Document #{d.Id}: {d.Type} (Receiver)"));
+                        customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
                 }
 
                 // Add order transactions
                 foreach (var o in allValidOrders)
                 {
                     // Customer pays FromAmount in FromCurrency
-                    customerTransactionItems.Add((o.CustomerId, o.FromCurrency.Code, o.CreatedAt, "Order", o.Id, -o.FromAmount, $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Paid)"));
+                    customerTransactionItems.Add((o.CustomerId, o.FromCurrency.Code, o.CreatedAt, "Order", string.Empty, o.Id, -o.FromAmount, o.Notes ?? string.Empty));
 
                     // Customer receives ToAmount in ToCurrency
-                    customerTransactionItems.Add((o.CustomerId, o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, o.ToAmount, $"Order #{o.Id}: {o.FromCurrency.Code} → {o.ToCurrency.Code} (Received)"));
+                    customerTransactionItems.Add((o.CustomerId, o.ToCurrency.Code, o.CreatedAt, "Order", string.Empty, o.Id, o.ToAmount, o.Notes ?? string.Empty));
                 }
 
                 logMessages.Add($"start adding  [{manualCustomerRecords.Count}] manual customer records");
@@ -931,6 +937,7 @@ namespace ForexExchange.Controllers
                         manual.CurrencyCode,
                         manual.TransactionDate,
                         "Manual",
+                        string.Empty,
                         (int?)manual.Id,
                         manual.TransactionAmount,
                         manual.Description ?? "Manual adjustment"
@@ -968,6 +975,9 @@ namespace ForexExchange.Controllers
                             "Manual" => CustomerBalanceTransactionType.Manual,
                             _ => CustomerBalanceTransactionType.AccountingDocument
                         };
+                        var note = $"{transactionType} - مبلغ: {transaction.Amount:N0} {transaction.CurrencyCode}";
+                        if (!string.IsNullOrEmpty(transaction.transactionCode))
+                            note += $" - شناسه تراکنش: {transaction.transactionCode}";
 
                         var customerHistory = new CustomerBalanceHistory
                         {
@@ -979,6 +989,8 @@ namespace ForexExchange.Controllers
                             TransactionAmount = transaction.Amount,
                             BalanceAfter = runningBalance + transaction.Amount,
                             Description = transaction.Description,
+                            TransactionNumber = transaction.transactionCode,
+                            Note = note,
                             TransactionDate = transaction.TransactionDate,
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = performedBy,
