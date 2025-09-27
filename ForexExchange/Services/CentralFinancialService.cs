@@ -1,4 +1,5 @@
 
+using ForexExchange.Extensions;
 using ForexExchange.Models;
 using ForexExchange.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
@@ -826,6 +827,96 @@ namespace ForexExchange.Services
                 throw;
             }
         }
+
+
+
+
+
+        public async Task UpdateNotesAndDescriptions()
+        {
+
+            var orders = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .Where(o => !o.IsDeleted)
+                .ToListAsync();
+
+
+
+            // STEP 2: Update AccountingDocument Notes
+
+            var documents = await _context.AccountingDocuments
+                .Include(d => d.PayerCustomer)
+                .Include(d => d.ReceiverCustomer)
+                .Include(d => d.PayerBankAccount)
+                .Include(d => d.ReceiverBankAccount)
+                .Where(d => !d.IsDeleted)
+                .ToListAsync();
+
+
+
+            // Update descriptions for Order transactions
+            var orderHistoryRecords = await _context.CustomerBalanceHistory
+                .Where(h => h.TransactionType == CustomerBalanceTransactionType.Order && !h.IsDeleted)
+                .ToListAsync();
+
+            foreach (var history in orderHistoryRecords)
+            {
+                var order = orders.FirstOrDefault(o => o.Id == history.ReferenceId);
+                if (order != null)
+                {
+                    // Description includes customer info (from order.Notes)
+                    if (!string.IsNullOrEmpty(order.Notes))
+                    {
+                        var Description = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                        if (!string.IsNullOrEmpty(order.Notes))
+                            Description += $" - توضیحات: {order.Notes}";
+                        history.Description = Description;
+                    }
+
+                    // Note includes transaction details without customer info
+                    var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                    if (!string.IsNullOrEmpty(order.Notes))
+                        note += $" - توضیحات: {order.Notes}";
+                    history.Note = note;
+                }
+            }
+
+            // Update descriptions for AccountingDocument transactions
+            var documentHistoryRecords = await _context.CustomerBalanceHistory
+                .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument && !h.IsDeleted)
+                .ToListAsync();
+
+            foreach (var history in documentHistoryRecords)
+            {
+                var document = documents.FirstOrDefault(d => d.Id == history.ReferenceId);
+                if (document != null)
+                {
+                    // Description includes customer info (from document.Notes)
+                    if (!string.IsNullOrEmpty(document.Notes))
+                    {
+                        var Description = $"{document.Title} - مبلغ: {document.Amount:N0} {document.CurrencyCode} - از: {document.PayerDisplayText} → به: {document.ReceiverDisplayText}";
+                        if (!string.IsNullOrEmpty(document.Description))
+                            Description += $" - توضیحات: {document.Description}";
+                        history.Description = Description;
+                    }
+
+                    // Note includes transaction details without customer info
+                    var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount:N0} {document.CurrencyCode}";
+                    if (!string.IsNullOrEmpty(document.ReferenceNumber))
+                        note += $" -  توضیحات: {document.Notes}";
+
+                    history.Note = note;
+                }
+            }
+
+            var historyUpdated = await _context.SaveChangesAsync();
+
+
+        }
+
+
 
 
         #region Smart Delete Operations with History Soft Delete and Recalculation
