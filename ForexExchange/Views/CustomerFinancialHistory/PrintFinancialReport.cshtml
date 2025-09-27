@@ -6,6 +6,7 @@
 
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -30,7 +31,7 @@
             max-width: 800px;
             margin: 20px auto;
             background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
             border: 2px solid #ddd;
         }
 
@@ -54,7 +55,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             flex-shrink: 0;
         }
 
@@ -72,7 +73,7 @@
             font-size: 20px;
             font-weight: bold;
             margin-bottom: 3px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .company-website {
@@ -83,7 +84,7 @@
         .report-title {
             font-size: 18px;
             font-weight: bold;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             padding: 6px 12px;
             border-radius: 15px;
             display: inline-block;
@@ -180,8 +181,13 @@
             direction: ltr;
         }
 
-        .positive { color: #27ae60; }
-        .negative { color: #e74c3c; }
+        .positive {
+            color: #27ae60;
+        }
+
+        .negative {
+            color: #e74c3c;
+        }
 
         .transactions-section {
             padding: 20px;
@@ -243,9 +249,20 @@
             font-weight: bold;
         }
 
-        .type-order { background: #3498db; color: white; }
-        .type-document { background: #9b59b6; color: white; }
-        .type-manual { background: #95a5a6; color: white; }
+        .type-order {
+            background: #3498db;
+            color: white;
+        }
+
+        .type-document {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .type-manual {
+            background: #95a5a6;
+            color: white;
+        }
 
         .amount-cell {
             direction: ltr;
@@ -294,6 +311,7 @@
                 margin: 0;
                 max-width: none;
             }
+
             .transaction-table thead {
                 display: table-header-group;
             }
@@ -353,12 +371,24 @@
         }
 
         /* RTL adjustments */
-        .ltr { direction: ltr; }
-        .text-left { text-align: left; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
+        .ltr {
+            direction: ltr;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
     </style>
 </head>
+
 <body>
     <div class="receipt-container">
         <!-- Header -->
@@ -377,11 +407,13 @@
         <div class="receipt-info">
             <div class="info-grid">
                 <div class="info-item">
-                    <div class="info-label">@(Model.ReportType == "Customer" ? "نام مشتری:" : Model.ReportType == "BankAccount" ? "حساب بانکی:" : "ارز:")</div>
+                    <div class="info-label">@(Model.ReportType == "Customer" ? "نام مشتری:" : Model.ReportType ==
+                                                "BankAccount" ? "حساب بانکی:" : "ارز:")</div>
                     <div class="info-value">@Model.EntityName</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">@(Model.ReportType == "Customer" ? "کد مشتری:" : Model.ReportType == "BankAccount" ? "کد حساب:" : "کد ارز:")</div>
+                    <div class="info-label">@(Model.ReportType == "Customer" ? "کد مشتری:" : Model.ReportType ==
+                                                "BankAccount" ? "کد حساب:" : "کد ارز:")</div>
                     <div class="info-value">@(Model.EntityId?.ToString() ?? Model.EntityName)</div>
                 </div>
                 <div class="info-item">
@@ -435,7 +467,8 @@
         @if (Model.FinalBalances != null && Model.FinalBalances.Any())
         {
             <div class="balance-summary">
-                <div class="balance-title">موجودی نهایی @(Model.ReportType == "Customer" ? "حساب‌ها" : Model.ReportType == "BankAccount" ? "حساب بانکی" : "صندوق")</div>
+                <div class="balance-title">موجودی نهایی @(Model.ReportType == "Customer" ? "حساب‌ها" : Model.ReportType ==
+                                    "BankAccount" ? "حساب بانکی" : "صندوق")</div>
                 <div class="balance-grid">
                     @foreach (var balance in Model.FinalBalances)
                     {
@@ -485,6 +518,7 @@
                                 <tr>
                                     <th style="width: 13%;">تاریخ</th>
                                     <th style="width: 13%;">نوع</th>
+                                    <th style="width: 13%;">شناسه تراکنش</th>
                                     <th style="width: 33%;">یادداشت</th>
                                     <th style="width: 15%;">مبلغ</th>
                                     <th style="width: 15%;">موجودی</th>
@@ -496,10 +530,15 @@
                                     <tr>
                                         <td>@transaction.TransactionDate.ToString("yyyy/MM/dd")</td>
                                         <td>
-                                            <span class="transaction-type type-@(transaction.TransactionType.ToLower().Replace(" ", "-"))">
+                                            <span
+                                                class="transaction-type type-@(transaction.TransactionType.ToLower().Replace(" ", "-"))">
                                                 @transaction.TransactionType
                                             </span>
                                         </td>
+
+                                        <td style="text-align: center;">@transaction.TransactionNumber</td>
+
+
                                         <td style="text-align: right;">@transaction.Note</td>
                                         <td class="amount-cell">
                                             <span class="@(transaction.Amount >= 0 ? "positive" : "negative")">
@@ -556,23 +595,25 @@
 
     <!-- Print and Close Buttons -->
     <div style="text-align: center; margin: 20px; padding: 20px;" class="no-print">
-        <button onclick="window.print()" style="background: #27ae60; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
+        <button onclick="window.print()"
+            style="background: #27ae60; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
             🖨️ چاپ گزارش
         </button>
-        <button onclick="window.close()" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
+        <button onclick="window.close()"
+            style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">
             ✖️ بستن
         </button>
     </div>
 
     <script>
         // Auto-focus for printing
-        window.addEventListener('load', function() {
+        window.addEventListener('load', function () {
             // Optional: Auto-print when page loads
             // window.print();
         });
 
         // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             // Ctrl+P for print
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
@@ -585,4 +626,5 @@
         });
     </script>
 </body>
+
 </html>
