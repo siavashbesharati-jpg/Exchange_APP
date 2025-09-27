@@ -108,7 +108,7 @@ namespace ForexExchange.Services.Notifications.Providers
             }
         }
 
-        public async Task SendCustomNotificationAsync(NotificationContext context)
+        public async Task SendManualAdjustmentNotificationAsync(NotificationContext context)
         {
             try
             {
@@ -154,14 +154,11 @@ namespace ForexExchange.Services.Notifications.Providers
             return eventType switch
             {
                 NotificationEventType.OrderCreated => "/icons/order-created.png",
-                NotificationEventType.OrderUpdated => "/icons/order-updated.png",
-                NotificationEventType.OrderCompleted => "/icons/order-completed.png",
-                NotificationEventType.OrderCancelled => "/icons/order-cancelled.png",
+                NotificationEventType.OrderDeleted => "/icons/order-cancelled.png",
                 NotificationEventType.AccountingDocumentCreated => "/icons/document-created.png",
                 NotificationEventType.AccountingDocumentVerified => "/icons/document-verified.png",
-                NotificationEventType.AccountingDocumentRejected => "/icons/document-rejected.png",
                 NotificationEventType.CustomerRegistered => "/icons/customer-registered.png",
-                NotificationEventType.CustomerBalanceChanged => "/icons/balance-changed.png",
+                NotificationEventType.ManualAdjustment => "/icons/balance-changed.png",
                 NotificationEventType.SystemError => "/icons/system-error.png",
                 _ => "/icon-192x192.png"
             };

@@ -276,6 +276,8 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Order {order.Id} is frozen - skipping all balance updates (pools and customers)");
                 return;
             }
+            _context.Add(order);
+            _context.SaveChanges();
 
             // Rebuild all financial balances after order creation to ensure coherence
             await RebuildAllFinancialBalancesAsync(performedBy);
@@ -994,10 +996,10 @@ namespace ForexExchange.Services
             try
             {
 
-                await _notificationHub.SendCustomNotificationAsync(
+                await _notificationHub.SendManualAdjustmentNotificationAsync(
                     title: "تعدیل دستی موجودی حذف شد",
                     message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode}",
-                    eventType: NotificationEventType.CustomerBalanceChanged,
+                    eventType: NotificationEventType.ManualAdjustment,
                     userId: performingUserId, // This will exclude the current user from SignalR notifications
                     navigationUrl: $"/Reports/CustomerReports?customerId={customerId}",
                     priority: NotificationPriority.Normal
@@ -1063,10 +1065,10 @@ namespace ForexExchange.Services
             // Send notification to admin users (excluding the performing user)
             try
             {
-                await _notificationHub.SendCustomNotificationAsync(
+                await _notificationHub.SendManualAdjustmentNotificationAsync(
                     title: "تعدیل دستی صندوق ارزی ایجاد شد",
                     message: $"ارز: {currencyCode} | مبلغ: {adjustmentAmount:N2} || دلیل: {reason}",
-                    eventType: NotificationEventType.Custom,
+                    eventType: NotificationEventType.ManualAdjustment,
                     userId: performingUserId,
                     navigationUrl: $"/Reports/PoolReports?currencyCode={currencyCode}",
                     priority: NotificationPriority.Normal
@@ -1122,10 +1124,10 @@ namespace ForexExchange.Services
             // Send notification to admin users (excluding the performing user)
             try
             {
-                await _notificationHub.SendCustomNotificationAsync(
+                await _notificationHub.SendManualAdjustmentNotificationAsync(
                     title: "تعدیل دستی صندوق ارزی حذف شد",
                     message: $"ارز: {currencyCode} | مبلغ: {amount:N2}",
-                    eventType: NotificationEventType.Custom,
+                    eventType: NotificationEventType.ManualAdjustment,
                     userId: performingUserId,
                     navigationUrl: $"/Reports/PoolReports?currencyCode={currencyCode}",
                     priority: NotificationPriority.Normal
@@ -1191,10 +1193,10 @@ namespace ForexExchange.Services
                 var bankrecord = _context.BankAccountBalanceHistory.FirstOrDefault(c => c.BankAccountId == bankAccountId);
                 var accountName = bankrecord?.BankAccount.AccountHolderName ?? $"حساب {bankAccountId}";
 
-                await _notificationHub.SendCustomNotificationAsync(
+                await _notificationHub.SendManualAdjustmentNotificationAsync(
                     title: "تعدیل دستی حساب بانکی ایجاد شد",
                     message: $"حساب: {accountName} | مبلغ: {amount:N2} | موجودی نهایی: {bankrecord?.BalanceAfter:N2} | دلیل: {reason}",
-                    eventType: NotificationEventType.Custom,
+                    eventType: NotificationEventType.ManualAdjustment,
                     userId: performingUserId,
                     navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
                     priority: NotificationPriority.Normal
@@ -1254,10 +1256,10 @@ namespace ForexExchange.Services
             // Send notification to admin users (excluding the performing user)
             try
             {
-                await _notificationHub.SendCustomNotificationAsync(
+                await _notificationHub.SendManualAdjustmentNotificationAsync(
                     title: "تعدیل دستی حساب بانکی حذف شد",
                     message: $"حساب: {accountName} | مبلغ: {amount:N2}",
-                    eventType: NotificationEventType.Custom,
+                    eventType: NotificationEventType.ManualAdjustment,
                     userId: performingUserId,
                     navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
                     priority: NotificationPriority.Normal

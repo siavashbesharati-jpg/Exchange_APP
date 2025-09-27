@@ -31,7 +31,7 @@ namespace ForexExchange.Services.Notifications
         /// Send custom notification
         /// ارسال اعلان معاملهی
         /// </summary>
-        Task SendCustomNotificationAsync(string title, string message, NotificationEventType eventType = NotificationEventType.Custom, string? userId = null, string? navigationUrl = null, NotificationPriority priority = NotificationPriority.Normal);
+        Task SendManualAdjustmentNotificationAsync(string title, string message, NotificationEventType eventType = NotificationEventType.ManualAdjustment, string? userId = null, string? navigationUrl = null, NotificationPriority priority = NotificationPriority.Normal);
 
         /// <summary>
         /// Register a notification provider
@@ -169,7 +169,7 @@ namespace ForexExchange.Services.Notifications
             }
         }
 
-        public async Task SendCustomNotificationAsync(string title, string message, NotificationEventType eventType = NotificationEventType.Custom, string? userId = null, string? navigationUrl = null, NotificationPriority priority = NotificationPriority.Normal)
+        public async Task SendManualAdjustmentNotificationAsync(string title, string message, NotificationEventType eventType = NotificationEventType.ManualAdjustment, string? userId = null, string? navigationUrl = null, NotificationPriority priority = NotificationPriority.Normal)
         {
             if (ShouldSkipNotification())
             {
@@ -180,7 +180,7 @@ namespace ForexExchange.Services.Notifications
             try
             {
                 var context = await BuildManualAdjustmentNotificationContextAsync(title, message, eventType, userId, navigationUrl, priority);
-                await SendNotificationToProvidersAsync(context, provider => provider.SendCustomNotificationAsync(context));
+                await SendNotificationToProvidersAsync(context, provider => provider.SendManualAdjustmentNotificationAsync(context));
             }
             catch (Exception ex)
             {
@@ -223,18 +223,14 @@ namespace ForexExchange.Services.Notifications
             var title = eventType switch
             {
                 NotificationEventType.OrderCreated => "🔔 معامله جدید ثبت شد",
-                NotificationEventType.OrderUpdated => "🔄 تغییر وضعیت معامله",
-                NotificationEventType.OrderCompleted => "✅ معامله تکمیل شد",
-                NotificationEventType.OrderCancelled => "❌ معامله لغو شد",
+                NotificationEventType.OrderDeleted => "❌ معامله حذف شد",
                 _ => "📋 رویداد معامله"
             };
 
             var message = eventType switch
             {
                 NotificationEventType.OrderCreated => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}",
-                NotificationEventType.OrderUpdated when !string.IsNullOrEmpty(oldStatus) && !string.IsNullOrEmpty(newStatus) => $"معامله #{order.Id} ({customer?.FullName}): {oldStatus} → {newStatus}",
-                NotificationEventType.OrderCompleted => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"} با موفقیت تکمیل شد",
-                NotificationEventType.OrderCancelled => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"} لغو شد",
+                NotificationEventType.OrderDeleted => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"} لغو شد",
                 _ => $"رویداد معامله #{order.Id}"
             };
 
@@ -290,7 +286,7 @@ namespace ForexExchange.Services.Notifications
             {
                 NotificationEventType.AccountingDocumentCreated => "📄 سند حسابداری جدید",
                 NotificationEventType.AccountingDocumentVerified => "✅ تأیید سند حسابداری",
-                NotificationEventType.AccountingDocumentRejected => "❌ رد سند حسابداری",
+                NotificationEventType.AccountingDocumentDeleted => "❌ حذف سند حسابداری",
                 _ => "📋 رویداد سند حسابداری"
             };
 
@@ -298,7 +294,7 @@ namespace ForexExchange.Services.Notifications
             {
                 NotificationEventType.AccountingDocumentCreated => $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode}",
                 NotificationEventType.AccountingDocumentVerified => $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode} تأیید شد",
-                NotificationEventType.AccountingDocumentRejected => $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode} رد شد",
+                NotificationEventType.AccountingDocumentDeleted => $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode} حذف شد",
                 _ => $"رویداد سند #{document.Id}"
             };
 
@@ -355,16 +351,12 @@ namespace ForexExchange.Services.Notifications
             var title = eventType switch
             {
                 NotificationEventType.CustomerRegistered => "👤 مشتری جدید ثبت شد",
-                NotificationEventType.CustomerBalanceChanged => "💰 تغییر موجودی مشتری",
-                NotificationEventType.CustomerStatusChanged => "🔄 تغییر وضعیت مشتری",
                 _ => "👤 رویداد مشتری"
             };
 
             var message = eventType switch
             {
                 NotificationEventType.CustomerRegistered => $"مشتری جدید: {customer.FullName} ({customer.PhoneNumber})",
-                NotificationEventType.CustomerBalanceChanged => $"موجودی مشتری {customer.FullName} تغییر کرد",
-                NotificationEventType.CustomerStatusChanged => $"وضعیت مشتری {customer.FullName} تغییر کرد",
                 _ => $"رویداد مشتری {customer.FullName}"
             };
 

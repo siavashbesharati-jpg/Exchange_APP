@@ -48,7 +48,7 @@ namespace ForexExchange.Services.Notifications
         /// Send custom notification
         /// ارسال اعلان معاملهی
         /// </summary>
-        Task SendCustomNotificationAsync(NotificationContext context);
+        Task SendManualAdjustmentNotificationAsync(NotificationContext context);
     }
 
     /// <summary>
@@ -132,27 +132,23 @@ namespace ForexExchange.Services.Notifications
     {
         // Order events
         OrderCreated,
-        OrderUpdated,
-        OrderCompleted,
-        OrderCancelled,
+        OrderDeleted,
         
         // Accounting document events
         AccountingDocumentCreated,
         AccountingDocumentVerified,
-        AccountingDocumentRejected,
+
+        AccountingDocumentDeleted,
         
         // Customer events
         CustomerRegistered,
-        CustomerBalanceChanged,
-        CustomerStatusChanged,
         
         // System events
         SystemError,
         SystemMaintenance,
-        ExchangeRateUpdated,
         
         // Custom events
-        Custom
+        ManualAdjustment
     }
 
     /// <summary>

@@ -396,17 +396,17 @@ namespace ForexExchange.Controllers
             {
 
 
-                _context.Add(order);
-                await _context.SaveChangesAsync();
+
+
+                // Update customer balances and currency pools for the order
+                await _centralFinancialService.ProcessOrderCreationAsync(order);
 
                 // Load related entities for notification
                 await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
                 await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
                 await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
 
-                // Update customer balances and currency pools for the order
-                _logger.LogInformation("About to call ProcessOrderCreationAsync for Order {OrderId}", order.Id);
-                await _centralFinancialService.ProcessOrderCreationAsync(order);
+
                 _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", order.Id);
 
                 // Log admin activity and send notifications
@@ -419,13 +419,6 @@ namespace ForexExchange.Controllers
                     await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCreated, currentUser.Id);
                 }
 
-                // Update order counts for both currencies (not handled by CentralFinancialService)
-                await _poolService.UpdateOrderCountsAsync(order.FromCurrencyId);
-                await _poolService.UpdateOrderCountsAsync(order.ToCurrencyId);
-
-                // Update average rates for this currency pair
-                await UpdateAverageRatesForPairAsync(order.FromCurrencyId, order.ToCurrencyId);
-
                 _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {order.Rate} , Total: {order.ToAmount}");
 
                 TempData["SuccessMessage"] = "معامله با موفقیت ثبت شد.";
@@ -436,120 +429,8 @@ namespace ForexExchange.Controllers
             return View(order);
         }
 
-        // GET: Orders/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null)
-            {
-                return NotFound();
-            }
-
-            await LoadCreateViewDataOptimized();
-            return View(order);
-        }
-
-        // POST: Orders/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Order order)
-        {
-            if (id != order.Id)
-            {
-                return NotFound();
-            }
-
-            // Remove navigation properties and computed fields from validation; we bind by Ids
-            ModelState.Remove("Customer");
-            ModelState.Remove("Transactions");
-            ModelState.Remove("Receipts");
-            ModelState.Remove("FromCurrency");
-            ModelState.Remove("ToCurrency");
-            ModelState.Remove("TotalAmount");
-
-            // Basic server-side validations (parity with Create)
-            if (order.CustomerId == 0)
-            {
-                ModelState.AddModelError("CustomerId", "انتخاب مشتری الزامی است.");
-            }
-            if (order.FromCurrencyId == 0)
-            {
-                ModelState.AddModelError("FromCurrencyId", "انتخاب ارز مبدأ الزامی است.");
-            }
-            if (order.ToCurrencyId == 0)
-            {
-                ModelState.AddModelError("ToCurrencyId", "انتخاب ارز مقصد الزامی است.");
-            }
-            if (order.FromCurrencyId == order.ToCurrencyId && order.FromCurrencyId != 0)
-            {
-                ModelState.AddModelError("ToCurrencyId", "ارز مبدأ و مقصد نمی‌توانند یکسان باشند.");
-            }
-            if (order.Rate <= 0)
-            {
-                ModelState.AddModelError("Rate", "نرخ ارز باید بزرگتر از صفر باشد.");
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    // Get the original order for balance reversal
-                    var originalOrder = await _context.Orders
-                        .Include(o => o.FromCurrency)
-                        .Include(o => o.ToCurrency)
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(o => o.Id == id);
-
-                    if (originalOrder == null)
-                    {
-                        return NotFound();
-                    }
 
 
-
-                    order.UpdatedAt = DateTime.Now; _context.Update(order);
-                    await _context.SaveChangesAsync();
-
-                    // Load related entities for notification
-                    await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
-                    await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
-                    await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
-
-                    // Update customer balances for the order edit (reverse old, apply new)
-                    await _customerBalanceService.ProcessOrderEditAsync(originalOrder, order);
-
-                    // Log admin activity
-                    var currentUser = await _userManager.GetUserAsync(User);
-                    if (currentUser != null)
-                    {
-                        await _adminActivityService.LogOrderUpdatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                        await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderUpdated, currentUser.Id);
-                    }
-
-                    TempData["SuccessMessage"] = "معامله با موفقیت بروزرسانی شد.";
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!OrderExists(order.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-
-            await LoadCreateViewDataOptimized();
-            return View(order);
-        }
 
         // GET: Orders/Delete/5
         public async Task<IActionResult> Delete(int? id)
@@ -571,96 +452,6 @@ namespace ForexExchange.Controllers
 
             return View(order);
         }
-
-        // POST: Orders/CancelWithReverseOrder
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CancelWithReverseOrder(int id, decimal reverseRate)
-        {
-            var originalOrder = await _context.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.FromCurrency)
-                .Include(o => o.ToCurrency)
-                .FirstOrDefaultAsync(o => o.Id == id);
-
-            if (originalOrder == null)
-            {
-                TempData["ErrorMessage"] = "معامله یافت نشد.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            // Validate reverse rate
-            if (reverseRate <= 0)
-            {
-                TempData["ErrorMessage"] = "نرخ معکوس باید بزرگتر از صفر باشد.";
-                return RedirectToAction(nameof(Delete), new { id });
-            }
-
-
-            using (var transaction = await _context.Database.BeginTransactionAsync())
-            {
-                try
-                {
-
-                    originalOrder.UpdatedAt = DateTime.Now;
-                    _context.Update(originalOrder);
-
-                    // Create reverse order with corrected calculations
-                    var reverseOrder = new Order
-                    {
-                        CustomerId = originalOrder.CustomerId,
-                        FromCurrencyId = originalOrder.ToCurrencyId,     // Reverse currencies: IRR
-                        ToCurrencyId = originalOrder.FromCurrencyId,     // USD
-                        FromAmount = originalOrder.ToAmount,              // Total from original order: 10,300,000 IRR
-                        Rate = reverseRate,                              // User-input rate: 104,000
-                        CreatedAt = DateTime.Now,
-                        ToAmount = originalOrder.ToAmount / reverseRate   // Correct calculation: 10,300,000 / 104,000 = 99
-                    };
-
-
-
-                    _context.Add(reverseOrder);
-                    await _context.SaveChangesAsync();
-
-                    // Update currency pools for the new reverse order
-                    await _poolService.UpdatePoolAsync(reverseOrder.FromCurrencyId, reverseOrder.FromAmount, PoolTransactionType.Buy, reverseOrder.Rate);
-                    await _poolService.UpdatePoolAsync(reverseOrder.ToCurrencyId, reverseOrder.ToAmount, PoolTransactionType.Sell, reverseOrder.Rate);
-
-                    // Update order counts
-                    await _poolService.UpdateOrderCountsAsync(reverseOrder.FromCurrencyId);
-                    await _poolService.UpdateOrderCountsAsync(reverseOrder.ToCurrencyId);
-
-
-                    await transaction.CommitAsync();
-
-                    // Load related entities for notifications
-                    await _context.Entry(reverseOrder).Reference(o => o.Customer).LoadAsync();
-                    await _context.Entry(reverseOrder).Reference(o => o.FromCurrency).LoadAsync();
-                    await _context.Entry(reverseOrder).Reference(o => o.ToCurrency).LoadAsync();
-
-                    // Log admin activity
-                    var currentUser = await _userManager.GetUserAsync(User);
-                    if (currentUser != null)
-                    {
-                        await _adminActivityService.LogOrderCancelledAsync(originalOrder, currentUser.Id, currentUser.UserName ?? "Unknown");
-                        await _adminActivityService.LogOrderCreatedAsync(reverseOrder, currentUser.Id, currentUser.UserName ?? "Unknown");
-                        await _notificationHub.SendOrderNotificationAsync(originalOrder, NotificationEventType.OrderCancelled, currentUser.Id);
-                        await _notificationHub.SendOrderNotificationAsync(reverseOrder, NotificationEventType.OrderCreated, currentUser.Id);
-                    }
-
-                    TempData["SuccessMessage"] = $"معامله لغو شد و معامله معکوس با نرخ {reverseRate:N4} ایجاد شد.";
-                    return RedirectToAction(nameof(Details), new { id = reverseOrder.Id });
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, $"Error cancelling order {id} and creating reverse order");
-                    TempData["ErrorMessage"] = "خطا در لغو معامله و ایجاد معامله معکوس.";
-                    return RedirectToAction(nameof(Delete), new { id });
-                }
-            }
-        }
-
 
 
 
@@ -717,105 +508,6 @@ namespace ForexExchange.Controllers
 
         }
 
-        // New AJAX endpoint to get exchange rates for specific currency pair
-        [HttpGet]
-        public async Task<IActionResult> GetExchangeRate(int fromCurrencyId, int toCurrencyId, string orderType)
-        {
-            try
-            {
-                // Try to find direct exchange rate
-                var directRate = await _context.ExchangeRates
-                    .Where(r => r.FromCurrencyId == fromCurrencyId &&
-                               r.ToCurrencyId == toCurrencyId &&
-                               r.IsActive)
-                    .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
-                    .FirstOrDefaultAsync();
-
-                decimal rate = 0;
-                decimal? averageBuyRate = null;
-                decimal? averageSellRate = null;
-                string source = "";
-
-                if (directRate != null)
-                {
-                    rate = directRate.Rate;
-                    averageBuyRate = directRate.AverageBuyRate;
-                    averageSellRate = directRate.AverageSellRate;
-                    source = "Direct";
-                }
-                else
-                {
-                    // Try reverse rate
-                    var reverseRate = await _context.ExchangeRates
-                        .Where(r => r.FromCurrencyId == toCurrencyId &&
-                                   r.ToCurrencyId == fromCurrencyId &&
-                                   r.IsActive)
-                        .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
-                        .FirstOrDefaultAsync();
-
-                    if (reverseRate != null)
-                    {
-                        rate = (1.0m / reverseRate.Rate);
-                        // For reverse rates, swap buy/sell averages
-                        averageBuyRate = reverseRate.AverageSellRate.HasValue ? (1.0m / reverseRate.AverageSellRate.Value) : null;
-                        averageSellRate = reverseRate.AverageBuyRate.HasValue ? (1.0m / reverseRate.AverageBuyRate.Value) : null;
-                        source = "Reverse";
-                    }
-                    else
-                    {
-                        // Try cross-rate via base currency
-                        var baseCurrencyId = await _context.Currencies
-                            .Where(c => c.IsBaseCurrency)
-                            .Select(c => c.Id)
-                            .FirstOrDefaultAsync();
-
-                        if (baseCurrencyId > 0)
-                        {
-                            var fromRate = await _context.ExchangeRates
-                                .Where(r => r.FromCurrencyId == baseCurrencyId &&
-                                           r.ToCurrencyId == fromCurrencyId && r.IsActive)
-                                .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
-                                .FirstOrDefaultAsync();
-
-                            var toRate = await _context.ExchangeRates
-                                .Where(r => r.FromCurrencyId == baseCurrencyId &&
-                                           r.ToCurrencyId == toCurrencyId && r.IsActive)
-                                .Select(r => new { r.Rate, r.AverageBuyRate, r.AverageSellRate })
-                                .FirstOrDefaultAsync();
-
-                            if (fromRate != null && toRate != null)
-                            {
-                                rate = toRate.Rate / fromRate.Rate;
-                                // For cross rates, calculate averages proportionally
-                                if (fromRate.AverageBuyRate.HasValue && toRate.AverageBuyRate.HasValue)
-                                {
-                                    averageBuyRate = toRate.AverageBuyRate.Value / fromRate.AverageBuyRate.Value;
-                                }
-                                if (fromRate.AverageSellRate.HasValue && toRate.AverageSellRate.HasValue)
-                                {
-                                    averageSellRate = toRate.AverageSellRate.Value / fromRate.AverageSellRate.Value;
-                                }
-                                source = "Cross-rate";
-                            }
-                        }
-                    }
-                }
-
-                return Json(new
-                {
-                    success = true,
-                    rate,
-                    averageBuyRate,
-                    averageSellRate,
-                    source
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting exchange rate for {FromCurrency} to {ToCurrency}", fromCurrencyId, toCurrencyId);
-                return Json(new { success = false, error = "خطا در دریافت نرخ ارز" });
-            }
-        }
 
         // AJAX endpoint to get customers list
         [HttpGet]
@@ -844,133 +536,7 @@ namespace ForexExchange.Controllers
             }
         }
 
-        // Diagnostic endpoint to check for data integrity issues
-        [HttpGet]
-        public async Task<IActionResult> DiagnoseDataIntegrity()
-        {
-            try
-            {
-                // Check for orders with missing currencies
-                var ordersWithMissingCurrencies = await _context.Orders
-                    .Where(o => !_context.Currencies.Any(c => c.Id == o.FromCurrencyId) ||
-                               !_context.Currencies.Any(c => c.Id == o.ToCurrencyId))
-                    .Select(o => new
-                    {
-                        o.Id,
-                        o.FromCurrencyId,
-                        o.ToCurrencyId,
-                        FromCurrencyExists = _context.Currencies.Any(c => c.Id == o.FromCurrencyId),
-                        ToCurrencyExists = _context.Currencies.Any(c => c.Id == o.ToCurrencyId)
-                    })
-                    .ToListAsync();
 
-                return Json(new
-                {
-                    success = true,
-                    ordersWithMissingCurrencies = ordersWithMissingCurrencies,
-                    totalOrders = await _context.Orders.CountAsync(),
-                    totalCurrencies = await _context.Currencies.CountAsync()
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error diagnosing data integrity");
-                return Json(new { success = false, error = ex.Message });
-            }
-        }
-
-        // Helper method to find the optimal matching combination
-        private List<Order> FindOptimalMatchingCombination(List<Order> availableOrders, decimal targetAmount)
-        {
-            // Sort by size descending (largest first)
-            var sortedBySize = availableOrders.OrderByDescending(o => o.FromAmount).ToList();
-
-            // Greedy algorithm: take largest orders that fit without exceeding target
-            var selectedOrders = new List<Order>();
-            decimal currentSum = 0;
-
-            foreach (var order in sortedBySize)
-            {
-                var availableAmount = order.FromAmount;
-
-                // If adding this order would exceed target, skip it
-                if (currentSum + availableAmount > targetAmount)
-                {
-                    continue; // Skip this order, try next smaller one
-                }
-
-                // Add this order if it fits
-                selectedOrders.Add(order);
-                currentSum += availableAmount;
-
-                // If we've reached or exceeded target, stop
-                if (currentSum >= targetAmount)
-                {
-                    break;
-                }
-            }
-
-            return selectedOrders;
-        }
-
-        /// <summary>
-        /// Update average rates for a currency pair based on active orders
-        /// بروزرسانی نرخ‌های میانگین برای جفت ارز بر اساس معاملات  فعال
-        /// </summary>
-        private async Task UpdateAverageRatesForPairAsync(int fromCurrencyId, int toCurrencyId)
-        {
-            // Find the exchange rate for this pair
-            var exchangeRate = await _context.ExchangeRates
-                .FirstOrDefaultAsync(er => er.FromCurrencyId == fromCurrencyId &&
-                                         er.ToCurrencyId == toCurrencyId &&
-                                         er.IsActive);
-
-            if (exchangeRate == null) return;
-
-            // Calculate average buy rate (orders where ToCurrencyId matches)
-            var buyOrders = await _context.Orders
-                .Where(o => o.FromCurrencyId == fromCurrencyId &&
-                           o.ToCurrencyId == toCurrencyId)
-                .ToListAsync();
-
-            if (buyOrders.Any())
-            {
-                // Weighted average buy rate
-                var totalBuyVolume = buyOrders.Sum(o => o.FromAmount);
-                var weightedBuyRate = buyOrders.Sum(o => o.FromAmount * o.Rate) / totalBuyVolume;
-                exchangeRate.AverageBuyRate = weightedBuyRate;
-                exchangeRate.TotalBuyVolume = totalBuyVolume;
-            }
-            else
-            {
-                exchangeRate.AverageBuyRate = null;
-                exchangeRate.TotalBuyVolume = 0;
-            }
-
-            // Calculate average sell rate (orders where FromCurrencyId matches)
-            var sellOrders = await _context.Orders
-                .Where(o => o.FromCurrencyId == toCurrencyId &&
-                           o.ToCurrencyId == fromCurrencyId)
-                .ToListAsync();
-
-            if (sellOrders.Any())
-            {
-                // Weighted average sell rate
-                var totalSellVolume = sellOrders.Sum(o => o.FromAmount);
-                var weightedSellRate = sellOrders.Sum(o => o.FromAmount * o.Rate) / totalSellVolume;
-                exchangeRate.AverageSellRate = weightedSellRate;
-                exchangeRate.TotalSellVolume = totalSellVolume;
-            }
-            else
-            {
-                exchangeRate.AverageSellRate = null;
-                exchangeRate.TotalSellVolume = 0;
-            }
-
-            exchangeRate.UpdatedAt = DateTime.Now;
-            _context.Update(exchangeRate);
-            await _context.SaveChangesAsync();
-        }
 
         // POST: Orders/Delete/5
         [HttpPost]
@@ -1007,6 +573,17 @@ namespace ForexExchange.Controllers
                 };
                 _context.AdminActivities.Add(adminActivity);
                 await _context.SaveChangesAsync();
+
+                // Log admin activity and send notifications
+                if (currentUser != null)
+                {
+                    await _adminActivityService.LogOrderCancelledAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
+
+                    // Send notifications through central hub (replaces individual notification calls)
+                    await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderDeleted, currentUser.Id);
+                }
+
+
 
                 TempData["SuccessMessage"] = $"معامله #{order.Id} با موفقیت حذف شد و تأثیرات مالی آن برگردانده شد.";
             }

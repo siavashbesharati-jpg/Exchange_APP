@@ -128,7 +128,7 @@ IFormFile fileSearch → byte[] comparison via CompareFileData()
 ### Real-time Notifications
 ```cs
 // SignalR notifications for financial operations
-await _notificationHub.SendCustomNotificationAsync(title, message, eventType, userId);
+await _notificationHub.SendManualAdjustmentNotificationAsync(title, message, eventType, userId);
 ```
 
 ### Balance Rebuilding

@@ -19,7 +19,7 @@ Base interface for all notification providers with methods for different event t
 - `SendAccountingDocumentNotificationAsync()` - Document notifications
 - `SendCustomerNotificationAsync()` - Customer-related notifications
 - `SendSystemNotificationAsync()` - System-wide notifications
-- `SendCustomNotificationAsync()` - Custom notifications (used for manual adjustments)
+- `SendManualAdjustmentNotificationAsync()` - Custom notifications (used for manual adjustments)
 
 #### 2. NotificationHub (Central Coordinator)
 Main orchestrator that manages all notification providers and handles:
@@ -107,7 +107,7 @@ await _notificationHub.SendOrderNotificationAsync(
 ### 2. Manual Transaction Notifications (Custom)
 ```csharp
 // In DatabaseController.cs - Manual balance adjustments
-await _notificationHub.SendCustomNotificationAsync(
+await _notificationHub.SendManualAdjustmentNotificationAsync(
     title: "تعدیل دستی موجودی ایجاد شد",
     message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode}",
     eventType: NotificationEventType.CustomerBalanceChanged,
@@ -129,7 +129,7 @@ await _notificationHub.SendAccountingDocumentNotificationAsync(
 
 ### 4. System Notifications
 ```csharp
-await _notificationHub.SendCustomNotificationAsync(
+await _notificationHub.SendManualAdjustmentNotificationAsync(
     title: "System Maintenance",
     message: "Scheduled maintenance will begin in 30 minutes",
     eventType: NotificationEventType.SystemMaintenance,
@@ -280,7 +280,7 @@ Views/Shared/
 
 ### Step 2: Choose Method
 - **Specific events**: Use typed methods (`SendOrderNotificationAsync`, etc.)
-- **Custom events**: Use `SendCustomNotificationAsync`
+- **Custom events**: Use `SendManualAdjustmentNotificationAsync`
 
 ### Step 3: Controller Integration
 ```csharp
@@ -292,7 +292,7 @@ public class YourController : Controller
     // In your action method:
     var currentUser = await _userManager.GetUserAsync(User);
 
-    await _notificationHub.SendCustomNotificationAsync(
+    await _notificationHub.SendManualAdjustmentNotificationAsync(
         title: "Your Notification Title",
         message: "Your notification message",
         eventType: NotificationEventType.YourEventType,

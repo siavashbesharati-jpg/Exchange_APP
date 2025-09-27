@@ -93,7 +93,7 @@ namespace ForexExchange.Services.Notifications.Providers
             }
         }
 
-        public async Task SendCustomNotificationAsync(NotificationContext context)
+        public async Task SendManualAdjustmentNotificationAsync(NotificationContext context)
         {
             if (!IsEnabled) return;
 
@@ -205,7 +205,7 @@ namespace ForexExchange.Services.Notifications.Providers
             }
         }
 
-        public async Task SendCustomNotificationAsync(NotificationContext context)
+        public async Task SendManualAdjustmentNotificationAsync(NotificationContext context)
         {
             if (!IsEnabled) return;
 
@@ -317,7 +317,7 @@ namespace ForexExchange.Services.Notifications.Providers
             }
         }
 
-        public async Task SendCustomNotificationAsync(NotificationContext context)
+        public async Task SendManualAdjustmentNotificationAsync(NotificationContext context)
         {
             if (!IsEnabled) return;
 
