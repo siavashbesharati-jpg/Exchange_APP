@@ -203,6 +203,19 @@ namespace ForexExchange.Services
         Task DeleteManualBankAccountBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null);
 
         /// <summary>
+        /// Comprehensive rebuild of all financial balances based on new IsFrozen strategy:
+        /// - Pool balances rebuilt from non-deleted AND non-frozen orders only with coherent history starting from zero
+        /// - Bank account balances rebuilt from non-deleted AND non-frozen documents only with coherent history starting from zero
+        /// - Customer balance history rebuilt from non-deleted orders, documents, and manual records (including frozen orders/documents)
+        /// - Active buy/sell counts recalculated properly based on non-frozen orders
+        /// 
+        /// This ensures frozen historical records don't affect current balance calculations
+        /// but are preserved for customer balance history audit trail, including manual adjustments.
+        /// Creates coherent balance history chains starting from zero before first non-frozen record.
+        /// </summary>
+        Task RebuildAllFinancialBalancesAsync(string performedBy = "System");
+
+        /// <summary>
         /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders
         /// This method should be called once to fix missing IRR pool updates, then removed
         /// </summary>
