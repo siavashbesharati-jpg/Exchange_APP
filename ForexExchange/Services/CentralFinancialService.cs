@@ -809,11 +809,6 @@ namespace ForexExchange.Services
                 logMessages.Add($"✓ Rebuilt coherent customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} documents and {allValidOrders.Count} orders (manual records were preserved)");
 
 
-                // NEW: Update Notes and Descriptions after rebuild
-                logMessages.Add("");
-                logMessages.Add("STEP 5: Updating Notes and Descriptions for Orders and AccountingDocuments...");
-                await UpdateNotesAndDescriptions();  // Call the method to update Notes on entities and Descriptions on history
-                logMessages.Add("✓ Updated Notes and Descriptions for all orders and documents");
 
 
                 await dbTransaction.CommitAsync();
@@ -834,6 +829,11 @@ namespace ForexExchange.Services
                 _logger.LogError(ex, $"Error during comprehensive financial balance rebuild: {ex.Message}");
                 throw;
             }
+            finally
+            {
+                await UpdateNotesAndDescriptions();  // Call the method to update Notes on entities and Descriptions on history
+
+            }
         }
 
 
@@ -848,6 +848,7 @@ namespace ForexExchange.Services
                 .Include(o => o.FromCurrency)
                 .Include(o => o.ToCurrency)
                 .Where(o => !o.IsDeleted)
+                .AsNoTracking()
                 .ToListAsync();
 
 
@@ -860,6 +861,7 @@ namespace ForexExchange.Services
                 .Include(d => d.PayerBankAccount)
                 .Include(d => d.ReceiverBankAccount)
                 .Where(d => !d.IsDeleted)
+                .AsNoTracking()
                 .ToListAsync();
 
 
@@ -875,19 +877,22 @@ namespace ForexExchange.Services
                 if (order != null)
                 {
                     // Description includes customer info (from order.Notes)
+
+                    var Description = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
                     if (!string.IsNullOrEmpty(order.Notes))
-                    {
-                        var Description = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
-                        if (!string.IsNullOrEmpty(order.Notes))
-                            Description += $" - توضیحات: {order.Notes}";
-                        history.Description = Description;
-                    }
+                        Description += $" - توضیحات: {order.Notes}";
+                    history.Description = Description;
+
 
                     // Note includes transaction details without customer info
                     var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
                     if (!string.IsNullOrEmpty(order.Notes))
+                    {
                         note += $" - توضیحات: {order.Notes}";
+
+                    }
                     history.Note = note;
+                    history.TransactionNumber = (100 + order.Id).ToString();
                 }
             }
 
@@ -896,26 +901,35 @@ namespace ForexExchange.Services
                 .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument && !h.IsDeleted)
                 .ToListAsync();
 
+
             foreach (var history in documentHistoryRecords)
             {
                 var document = documents.FirstOrDefault(d => d.Id == history.ReferenceId);
                 if (document != null)
                 {
                     // Description includes customer info (from document.Notes)
-                    if (!string.IsNullOrEmpty(document.Notes))
-                    {
-                        var Description = $"{document.Title} - مبلغ: {document.Amount:N0} {document.CurrencyCode} - از: {document.PayerDisplayText} → به: {document.ReceiverDisplayText}";
-                        if (!string.IsNullOrEmpty(document.Description))
-                            Description += $" - توضیحات: {document.Description}";
-                        history.Description = Description;
-                    }
+
+                    var Description = $"{document.Title} - مبلغ: {document.Amount:N0} {document.CurrencyCode} - از: {document.PayerDisplayText} → به: {document.ReceiverDisplayText}";
+                    if (!string.IsNullOrEmpty(document.Description))
+                        Description += $" - توضیحات: {document.Description}";
+                    history.Description = Description;
+
 
                     // Note includes transaction details without customer info
                     var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount:N0} {document.CurrencyCode}";
                     if (!string.IsNullOrEmpty(document.ReferenceNumber))
-                        note += $" -  توضیحات: {document.Notes}";
+                    {
+                        note += $" -  شماره تراکنش: {document.ReferenceNumber}";
+
+                    }
+                    if (!string.IsNullOrWhiteSpace(document.Description))
+                    {
+                        note += $" -  توضیحات: {document.Description}";
+
+                    }
 
                     history.Note = note;
+                    history.TransactionNumber = document.ReferenceNumber;
                 }
             }
 
