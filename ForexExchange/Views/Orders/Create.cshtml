@@ -153,7 +153,6 @@
                                                 <div class="d-flex justify-content-between">
                                                         <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
                                                         <button type="button" class="btn btn-info" id="previewEffectsBtn">پیش‌نمایش تاثیر</button>
-                                                        <button type="submit" class="btn btn-primary" id="finalSubmitBtn" style="display:none;">تایید و ثبت نهایی</button>
                                                 </div>
 
                                                 <!-- Order Preview Modal - Beautiful Styling -->
@@ -567,15 +566,116 @@
     });
 
     document.getElementById('confirmPreviewBtn').addEventListener('click', function() {
-        // Hide modal, show submit button, and submit form
-        var modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
-        modal.hide();
-        document.getElementById('finalSubmitBtn').style.display = '';
-        document.getElementById('finalSubmitBtn').click();
+        // Show loading state in modal and disable button
+        const confirmBtn = document.getElementById('confirmPreviewBtn');
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>در حال ثبت...';
+        confirmBtn.disabled = true;
+
+        // Show loading overlay in modal
+        const modalBody = document.querySelector('#previewModal .modal-body');
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.id = 'modalLoadingOverlay';
+        loadingOverlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75';
+        loadingOverlay.style.zIndex = '1050';
+        loadingOverlay.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-2" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <div class="text-primary fw-bold">در حال ثبت معامله...</div>
+            </div>
+        `;
+        modalBody.style.position = 'relative';
+        modalBody.appendChild(loadingOverlay);
+
+        // Collect form data
+        const formData = new FormData();
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        formData.append('CustomerId', document.getElementById('customerSelect').value);
+        formData.append('FromCurrencyId', document.getElementById('fromCurrencySelect').value);
+        formData.append('ToCurrencyId', document.getElementById('toCurrencySelect').value);
+        formData.append('FromAmount', document.getElementById('calcFromAmountInput').value);
+        formData.append('ToAmount', document.getElementById('calcToAmountInput').value);
+        formData.append('Rate', document.getElementById('calcRateInput').value);
+        formData.append('Notes', document.getElementById('Notes').value);
+
+        // Add CreatedAt if present
+        const createdAtInput = document.getElementById('createdAtInput');
+        if (createdAtInput && createdAtInput.value) {
+            formData.append('CreatedAt', createdAtInput.value);
+        }
+
+        // Submit order via AJAX
+        fetch('/Orders/Create', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success - redirect to details page
+                window.location.href = data.redirectUrl;
+            } else {
+                // Validation errors - hide modal and show errors
+                var modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
+                modal.hide();
+
+                let errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>خطا در ثبت معامله!</strong><ul class="mb-0 mt-2">';
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    messages.forEach(message => {
+                        // Translate common validation messages
+                        let translatedMessage = message;
+                        if (message === "The CustomerId field is required.") translatedMessage = "انتخاب مشتری الزامی است.";
+                        if (message === "The FromCurrencyId field is required.") translatedMessage = "انتخاب ارز مبدأ الزامی است.";
+                        if (message === "The ToCurrencyId field is required.") translatedMessage = "انتخاب ارز مقصد الزامی است.";
+                        if (message === "The FromAmount field is required." || message.includes("Amount")) translatedMessage = "مقدار معامله الزامی است.";
+                        errorHtml += `<li>${translatedMessage}</li>`;
+                    });
+                }
+                errorHtml += '</ul><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+
+                const container = document.querySelector('.container');
+                container.insertAdjacentHTML('afterbegin', errorHtml);
+
+                // Scroll to top to show error
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        })
+        .catch(error => {
+            console.error('Error creating order:', error);
+            // Hide modal and show error message
+            var modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
+            modal.hide();
+
+            const errorHtml = `
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>خطا در ثبت معامله!</strong>
+                    <p>خطای نامشخص رخ داده است. لطفاً دوباره تلاش کنید.</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            const container = document.querySelector('.container');
+            container.insertAdjacentHTML('afterbegin', errorHtml);
+
+            // Scroll to top to show error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        })
+        .finally(() => {
+            // Remove loading overlay and restore button state
+            const overlay = document.getElementById('modalLoadingOverlay');
+            if (overlay) overlay.remove();
+
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+        });
     });
 
     // Hide final submit button by default
-    document.getElementById('finalSubmitBtn').style.display = 'none';
+    // document.getElementById('finalSubmitBtn').style.display = 'none';
     </script>
 
     <script>

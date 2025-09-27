@@ -422,10 +422,30 @@ namespace ForexExchange.Controllers
                 _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {order.Rate} , Total: {order.ToAmount}");
 
                 TempData["SuccessMessage"] = "معامله با موفقیت ثبت شد.";
+
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = true, redirectUrl = Url.Action(nameof(Details), new { id = order.Id }) });
+                }
+
                 return RedirectToAction(nameof(Details), new { id = order.Id });
             }
 
             await LoadCreateViewDataOptimized();
+
+            // Check if this is an AJAX request
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                // Return validation errors as JSON
+                var errors = ModelState.Where(x => x.Value != null && x.Value.Errors.Any())
+                    .ToDictionary(
+                        x => x.Key,
+                        x => x.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+                return Json(new { success = false, errors = errors });
+            }
+
             return View(order);
         }
 
