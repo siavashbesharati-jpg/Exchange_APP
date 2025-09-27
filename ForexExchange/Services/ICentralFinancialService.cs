@@ -16,18 +16,9 @@ namespace ForexExchange.Services
         /// </summary>
         Task<OrderPreviewEffectsDto> PreviewOrderEffectsAsync(Order order);
 
-        #region Customer Balance Operations
 
-        /// <summary>
-        /// Gets current balance for a specific customer and currency
-        /// </summary>
-        Task<decimal> GetCustomerBalanceAsync(int customerId, string currencyCode);
-
-        /// <summary>
-        /// Gets all currency balances for a customer
-        /// </summary>
-        Task<List<CustomerBalance>> GetCustomerBalancesAsync(int customerId);
-
+       
+     
         /// <summary>
         /// Processes order creation - creates dual-currency impact (payment + receipt transactions)
         /// Preserves exact logic from existing CustomerFinancialHistoryService
@@ -51,106 +42,15 @@ namespace ForexExchange.Services
         /// </summary>
         Task DeleteAccountingDocumentAsync(AccountingDocument document, string performedBy = "Admin");
 
-        #endregion
 
-        #region Currency Pool Operations
+       
+   
+       
 
-        /// <summary>
-        /// Gets current balance for a currency pool
-        /// </summary>
-        Task<decimal> GetCurrencyPoolBalanceAsync(string currencyCode);
-
-        /// <summary>
-        /// Gets all currency pool balances
-        /// </summary>
-        Task<List<CurrencyPool>> GetAllCurrencyPoolsAsync();
-
-        /// <summary>
-        /// Increases currency pool balance (buying from customer)
-        /// Preserves exact logic from existing pool management
-        /// </summary>
-        Task IncreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
-            string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null);
-
-        /// <summary>
-        /// Decreases currency pool balance (selling to customer)
-        /// Preserves exact logic from existing pool management
-        /// </summary>
-        Task DecreaseCurrencyPoolAsync(string currencyCode, decimal amount, CurrencyPoolTransactionType transactionType,
-            string reason, string performedBy = "System", int? referenceId = null, DateTime? transactionDate = null);
-
-      
-
-        #endregion
-
-        #region Bank Account Balance Operations
-
-        /// <summary>
-        /// Gets current balance for a bank account
-        /// </summary>
-        Task<decimal> GetBankAccountBalanceAsync(int bankAccountId);
-
-        /// <summary>
-        /// Gets all bank account balances
-        /// </summary>
-        Task<List<BankAccountBalance>> GetAllBankAccountBalancesAsync();
-
-        /// <summary>
-        /// Processes bank account transaction from accounting document
-        /// Preserves exact logic from existing bank account processing
-        /// </summary>
-        Task ProcessBankAccountTransactionAsync(int bankAccountId, decimal amount, BankAccountTransactionType transactionType,
-            int? relatedDocumentId, string reason, string performedBy = "System", DateTime? transactionDate = null, string? transactionNumber = null);
-
+       
+       
         
-
-        #endregion
-
-        #region Balance History and Audit
-
-        /// <summary>
-        /// Gets complete financial history for a customer within date range
-        /// Preserves exact logic from CustomerFinancialHistoryService
-        /// </summary>
-        Task<CustomerFinancialHistoryDto> GetCustomerFinancialHistoryAsync(int customerId,
-            DateTime? fromDate = null, DateTime? toDate = null);
-
-        /// <summary>
-        /// Gets balance history for a customer and currency
-        /// </summary>
-        Task<List<CustomerBalanceHistory>> GetCustomerBalanceHistoryAsync(int customerId,
-            string currencyCode, DateTime? fromDate = null, DateTime? toDate = null);
-
-        /// <summary>
-        /// Gets balance history for a currency pool
-        /// </summary>
-        Task<List<CurrencyPoolHistory>> GetCurrencyPoolHistoryAsync(string currencyCode,
-            DateTime? fromDate = null, DateTime? toDate = null);
-
-        /// <summary>
-        /// Gets balance history for a bank account
-        /// </summary>
-        Task<List<BankAccountBalanceHistory>> GetBankAccountHistoryAsync(int bankAccountId,
-            DateTime? fromDate = null, DateTime? toDate = null);
-
-        /// <summary>
-        /// Validates that current balances match the latest balance history entries
-        /// Used for data integrity checks
-        /// </summary>
-        Task<bool> ValidateBalanceConsistencyAsync();
-
-        /// <summary>
-        /// Recalculates all current balances from history tables
-        /// Used for balance reconciliation and initial data migration
-        /// </summary>
-        Task RecalculateAllBalancesFromHistoryAsync();
-
-        /// <summary>
-        /// Recalculates all balances based on transaction dates in chronological order.
-        /// This method should be used after fixing transaction dates to ensure balance accuracy.
-        /// </summary>
-        Task RecalculateAllBalancesFromTransactionDatesAsync(string performedBy = "System");
-
+       
         /// <summary>
         /// Creates a manual customer balance history record with specified transaction date.
         /// This is useful for manual adjustments, corrections, or importing historical data.
@@ -215,47 +115,13 @@ namespace ForexExchange.Services
         /// </summary>
         Task RebuildAllFinancialBalancesAsync(string performedBy = "System");
 
-        /// <summary>
-        /// TEMPORARY METHOD: Recalculate IRR pool balance based on existing orders
-        /// This method should be called once to fix missing IRR pool updates, then removed
-        /// </summary>
-        Task RecalculateIRRPoolFromOrdersAsync();
+        
 
-        #endregion
 
-        #region Admin Methods for Deleted Records
 
-        /// <summary>
-        /// Get all orders including deleted ones (for admin purposes)
-        /// </summary>
-        Task<List<Order>> GetAllOrdersIncludingDeletedAsync();
-
-        /// <summary>
-        /// Get all accounting documents including deleted ones (for admin purposes)
-        /// </summary>
-        Task<List<AccountingDocument>> GetAllDocumentsIncludingDeletedAsync();
-
-        /// <summary>
-        /// Get only deleted orders (for admin recovery purposes)
-        /// </summary>
-        Task<List<Order>> GetDeletedOrdersAsync();
-
-        /// <summary>
-        /// Get only deleted accounting documents (for admin recovery purposes)
-        /// </summary>
-        Task<List<AccountingDocument>> GetDeletedDocumentsAsync();
-
-        /// <summary>
-        /// Restore a soft-deleted order (for admin recovery)
-        /// </summary>
-        Task RestoreOrderAsync(int orderId, string performedBy = "Admin");
-
-        /// <summary>
-        /// Restore a soft-deleted accounting document (for admin recovery)
-        /// </summary>
-        Task RestoreDocumentAsync(int documentId, string performedBy = "Admin");
-
-        #endregion
+     
+      
+       
     }
 }
 

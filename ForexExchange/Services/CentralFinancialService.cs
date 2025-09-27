@@ -905,51 +905,49 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}, Date {transactionDate:yyyy-MM-dd}");
 
-            using var dbTransaction = await _context.Database.BeginTransactionAsync();
-            try
+
+            // Validate customer exists
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
+            if (customer == null)
             {
-                // Validate customer exists
-                var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
-                if (customer == null)
-                {
-                    throw new ArgumentException($"Customer with ID {customerId} not found");
-                }
-
-                // Validate currency exists
-                var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == currencyCode);
-                if (currency == null)
-                {
-                    throw new ArgumentException($"Currency with code {currencyCode} not found");
-                }
-
-
-                // Create the manual history record with proper coherent balance calculations
-                var historyRecord = new CustomerBalanceHistory
-                {
-                    CustomerId = customerId,
-                    CurrencyCode = currencyCode,
-                    BalanceBefore = 0, //will update to corect value in rebuild 
-                    TransactionAmount = amount,
-                    BalanceAfter = 0, //will update to corect value in rebuild 
-                    TransactionType = CustomerBalanceTransactionType.Manual,
-                    ReferenceId = null, // Manual entries don't have reference IDs
-                    Description = reason,
-                    TransactionNumber = transactionNumber,
-                    TransactionDate = transactionDate, // Use the specified date
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = performedBy,
-                    IsDeleted = false // Manual transactions are never deleted via soft delete
-                };
-
-
-
-                _context.CustomerBalanceHistory.Add(historyRecord);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Manual customer balance history created with coherent balances: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}, BalanceBefore {balanceBefore}, BalanceAfter {balanceAfter}");
-
-                await RebuildAllFinancialBalancesAsync(performedBy);
+                throw new ArgumentException($"Customer with ID {customerId} not found");
             }
+
+            // Validate currency exists
+            var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == currencyCode);
+            if (currency == null)
+            {
+                throw new ArgumentException($"Currency with code {currencyCode} not found");
+            }
+
+
+            // Create the manual history record with proper coherent balance calculations
+            var historyRecord = new CustomerBalanceHistory
+            {
+                CustomerId = customerId,
+                CurrencyCode = currencyCode,
+                BalanceBefore = 0, //will update to corect value in rebuild 
+                TransactionAmount = amount,
+                BalanceAfter = 0, //will update to corect value in rebuild 
+                TransactionType = CustomerBalanceTransactionType.Manual,
+                ReferenceId = null, // Manual entries don't have reference IDs
+                Description = reason,
+                TransactionNumber = transactionNumber,
+                TransactionDate = transactionDate, // Use the specified date
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = performedBy,
+                IsDeleted = false // Manual transactions are never deleted via soft delete
+            };
+
+
+
+            _context.CustomerBalanceHistory.Add(historyRecord);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Manual customer balance history created with coherent balances: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+
+            await RebuildAllFinancialBalancesAsync(performedBy);
+        }
 
         /// <summary>
         /// Deletes a manual customer balance history record and recalculates balances from the transaction date.
@@ -979,21 +977,22 @@ namespace ForexExchange.Services
             // Delete the manual transaction
             _context.CustomerBalanceHistory.Remove(historyRecord);
             await _context.SaveChangesAsync();
-            _logger.LogInformation($"Manual customer balance history deleted: ID {transactionId}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+            _logger.LogInformation($"Manual customer balance history deleted: ID {transactionId}, Customer {historyRecord.CustomerId}, Currency {historyRecord.CurrencyCode}, Amount {historyRecord.TransactionAmount}");
 
 
             // Rebuild all financial balances after manual customer balance deletion to ensure complete coherence
             await RebuildAllFinancialBalancesAsync(performedBy);
 
             // Send notification to admin users (excluding the performing user)
+
+            var customerId = historyRecord.CustomerId;
+            var currencyCode = historyRecord.CurrencyCode;
+            var amount = historyRecord.TransactionAmount;
+            var transactionDate = historyRecord.TransactionDate;
+            var customerName = historyRecord.Customer?.FullName ?? $"مشتری {customerId}";
+
             try
             {
-
-                var customerId = historyRecord.CustomerId;
-                var currencyCode = historyRecord.CurrencyCode;
-                var amount = historyRecord.TransactionAmount;
-                var transactionDate = historyRecord.TransactionDate;
-                var customerName = historyRecord.Customer?.FullName ?? $"مشتری {customerId}";
 
                 await _notificationHub.SendCustomNotificationAsync(
                     title: "تعدیل دستی موجودی حذف شد",
@@ -1052,7 +1051,7 @@ namespace ForexExchange.Services
             _context.CurrencyPoolHistory.Add(historyRecord);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Manual pool balance history created with coherent balances: ID {historyRecord.Id}, Currency {currencyCode}, Amount {adjustmentAmount}, BalanceBefore {balanceBefore}, BalanceAfter {balanceAfter}");
+            _logger.LogInformation($"Manual pool balance history created with coherent balances: ID {historyRecord.Id}, Currency {currencyCode}, Amount {adjustmentAmount}");
 
 
 
@@ -1066,14 +1065,14 @@ namespace ForexExchange.Services
             {
                 await _notificationHub.SendCustomNotificationAsync(
                     title: "تعدیل دستی صندوق ارزی ایجاد شد",
-                    message: $"ارز: {currencyCode} | مبلغ: {adjustmentAmount:N2} | موجودی نهایی: {balanceAfter:N2} | دلیل: {reason}",
+                    message: $"ارز: {currencyCode} | مبلغ: {adjustmentAmount:N2} || دلیل: {reason}",
                     eventType: NotificationEventType.Custom,
                     userId: performingUserId,
                     navigationUrl: $"/Reports/PoolReports?currencyCode={currencyCode}",
                     priority: NotificationPriority.Normal
                 );
 
-                _logger.LogInformation($"Notification sent for manual pool balance creation: Currency {currencyCode}, Amount {adjustmentAmount}, Final Balance {balanceAfter:N2}");
+                _logger.LogInformation($"Notification sent for manual pool balance creation: Currency {currencyCode}, Amount {adjustmentAmount}");
             }
             catch (Exception notificationEx)
             {
@@ -1180,7 +1179,7 @@ namespace ForexExchange.Services
             _context.BankAccountBalanceHistory.Add(historyRecord);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Manual bank account balance history created with coherent balances: ID {historyRecord.Id}, Bank Account {bankAccountId}, Amount {amount}, BalanceBefore {balanceBefore}, BalanceAfter {balanceAfter}");
+            _logger.LogInformation($"Manual bank account balance history created with coherent balances: ID {historyRecord.Id}, Bank Account {bankAccountId}, Amount {amount}");
 
 
             // Rebuild all financial balances after manual bank account balance creation to ensure complete coherence
@@ -1201,7 +1200,7 @@ namespace ForexExchange.Services
                     priority: NotificationPriority.Normal
                 );
 
-                _logger.LogInformation($"Notification sent for manual bank account balance creation: Bank Account {bankAccountId}, Amount {amount}, Final Balance {balanceAfter:N2}");
+                _logger.LogInformation($"Notification sent for manual bank account balance creation: Bank Account {bankAccountId}, Amount {amount}");
             }
             catch (Exception notificationEx)
             {
