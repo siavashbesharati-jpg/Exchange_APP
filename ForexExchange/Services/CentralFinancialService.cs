@@ -34,7 +34,10 @@ namespace ForexExchange.Services
     /// </summary>
     public class CentralFinancialService : ICentralFinancialService
     {
-
+        /// <summary>
+        /// Thread safety semaphore to prevent concurrent balance rebuilds
+        /// </summary>
+        private static readonly SemaphoreSlim _rebuildSemaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Database context for Entity Framework operations
@@ -339,6 +342,25 @@ namespace ForexExchange.Services
         /// </summary>
         public async Task RebuildAllFinancialBalancesAsync(string performedBy = "System")
         {
+            // Thread safety: Prevent concurrent rebuilds
+            if (!await _rebuildSemaphore.WaitAsync(TimeSpan.FromSeconds(1)))
+            {
+                _logger.LogWarning("Balance rebuild already in progress, skipping concurrent request");
+                throw new InvalidOperationException("Balance rebuild is already in progress. Please wait for the current operation to complete.");
+            }
+
+            try
+            {
+                await PerformBalanceRebuildAsync(performedBy);
+            }
+            finally
+            {
+                _rebuildSemaphore.Release();
+            }
+        }
+
+        private async Task PerformBalanceRebuildAsync(string performedBy)
+        {
             try
             {
                 var logMessages = new List<string>
@@ -351,19 +373,42 @@ namespace ForexExchange.Services
 
                 _logger.LogInformation("Starting comprehensive financial balance rebuild");
 
-                // Get all manual customer balance history records (including frozen, not deleted)
+                // Get all manual records efficiently (only load necessary fields)
                 var manualCustomerRecords = await _context.CustomerBalanceHistory
                     .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual && !h.IsDeleted)
+                    .Select(h => new
+                    {
+                        h.Id,
+                        h.CustomerId,
+                        h.CurrencyCode,
+                        h.TransactionAmount,
+                        h.TransactionDate,
+                        h.Description
+                    })
                     .ToListAsync();
 
-                // Get all manual bank account balance history records (including frozen, not deleted)
                 var manualBankAccountRecords = await _context.BankAccountBalanceHistory
                     .Where(h => h.TransactionType == BankAccountTransactionType.ManualEdit && !h.IsDeleted)
+                    .Select(h => new
+                    {
+                        h.Id,
+                        h.BankAccountId,
+                        h.TransactionAmount,
+                        h.TransactionDate,
+                        h.Description
+                    })
                     .ToListAsync();
 
-                // Get all manual pool history records (including frozen, not deleted)
                 var manualPoolRecords = await _context.CurrencyPoolHistory
                     .Where(h => h.TransactionType == CurrencyPoolTransactionType.ManualEdit && !h.IsDeleted)
+                    .Select(h => new
+                    {
+                        h.Id,
+                        h.CurrencyCode,
+                        h.TransactionAmount,
+                        h.TransactionDate,
+                        h.Description
+                    })
                     .ToListAsync();
 
                 logMessages.Add($"All manual records saved in memory: Customer={manualCustomerRecords.Count}, BankAccount={manualBankAccountRecords.Count}, Pool={manualPoolRecords.Count}");
@@ -385,61 +430,51 @@ namespace ForexExchange.Services
                 var remainingManualCount = await _context.CustomerBalanceHistory.CountAsync(h => h.TransactionType == CustomerBalanceTransactionType.Manual);
                 logMessages.Add($"✓ Cleared non-manual customer balance history, preserved {remainingManualCount} manual records");
 
-                // Reset customer balances
-                var customerBalances = await _context.CustomerBalances.ToListAsync();
-                foreach (var balance in customerBalances)
-                {
-                    balance.Balance = 0;
-                    balance.LastUpdated = DateTime.UtcNow;
-                }
+                // Reset balances efficiently using bulk updates
+                var resetTimestamp = DateTime.UtcNow;
+                await _context.Database.ExecuteSqlRawAsync("UPDATE CustomerBalances SET Balance = 0, LastUpdated = {0}", resetTimestamp);
+                await _context.Database.ExecuteSqlRawAsync("UPDATE CurrencyPools SET Balance = 0, ActiveBuyOrderCount = 0, ActiveSellOrderCount = 0, TotalBought = 0, TotalSold = 0, LastUpdated = {0}", resetTimestamp);
+                await _context.Database.ExecuteSqlRawAsync("UPDATE BankAccountBalances SET Balance = 0, LastUpdated = {0}", resetTimestamp);
 
-                // Reset currency pool balances and active counts
-                var poolBalances = await _context.CurrencyPools.ToListAsync();
-                foreach (var pool in poolBalances)
-                {
-                    pool.Balance = 0;
-                    pool.ActiveBuyOrderCount = 0;
-                    pool.ActiveSellOrderCount = 0;
-                    pool.LastUpdated = DateTime.UtcNow;
-                }
-
-                // Reset bank account balances
-                var bankBalances = await _context.BankAccountBalances.ToListAsync();
-                foreach (var balance in bankBalances)
-                {
-                    balance.Balance = 0;
-                    balance.LastUpdated = DateTime.UtcNow;
-                }
-
-                await _context.SaveChangesAsync();
-                logMessages.Add($"✓ Cleared non-manual history tables and reset {customerBalances.Count} customer balances, {poolBalances.Count} pool balances, {bankBalances.Count} bank account balances to zero");
+                logMessages.Add("✓ Reset all balances to zero using bulk updates");
 
                 // STEP 2: Create coherent pool history starting from zero for each currency
                 logMessages.Add("");
                 logMessages.Add("STEP 2: Creating coherent pool history with zero-starting balance chains...");
 
+                // Load active orders with required data only (eliminate N+1 queries)
                 var activeOrders = await _context.Orders
                     .Where(o => !o.IsDeleted && !o.IsFrozen)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
+                    .Select(o => new
+                    {
+                        o.Id,
+                        o.CustomerId,
+                        o.CreatedAt,
+                        o.FromAmount,
+                        o.ToAmount,
+                        o.Rate,
+                        o.Notes,
+                        FromCurrencyCode = o.FromCurrency.Code,
+                        ToCurrencyCode = o.ToCurrency.Code
+                    })
                     .OrderBy(o => o.CreatedAt)
                     .ToListAsync();
 
                 logMessages.Add($"Processing {activeOrders.Count} active (non-deleted, non-frozen) orders and {manualPoolRecords.Count} manual pool records...");
 
-                // Create unified transaction items for pools from orders and manual records
-                var poolTransactionItems = new List<(string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string PoolTransactionType, string Description)>();
+                // Pre-allocate collections with estimated capacity for better performance
+                var poolTransactionItems = new List<(string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string PoolTransactionType, string Description)>(activeOrders.Count * 2);
 
-                // Add order transactions
+                // Add order transactions (eliminated N+1 query by pre-loading data)
                 foreach (var o in activeOrders)
                 {
-                    var currentOrder = _context.Orders.Find(o.Id);
-                    if (currentOrder is null) continue;
                     // Institution receives FromAmount in FromCurrency (pool increases)
-                    poolTransactionItems.Add((o.FromCurrency.Code, o.CreatedAt, "Order", o.Id, o.FromAmount, "Buy", currentOrder?.Notes ?? ""));
+                    poolTransactionItems.Add((o.FromCurrencyCode, o.CreatedAt, "Order", o.Id, o.FromAmount, "Buy", o.Notes ?? ""));
 
                     // Institution pays ToAmount in ToCurrency (pool decreases)
-                    poolTransactionItems.Add((o.ToCurrency.Code, o.CreatedAt, "Order", o.Id, -o.ToAmount, "Sell", currentOrder?.Notes ?? ""));
+                    poolTransactionItems.Add((o.ToCurrencyCode, o.CreatedAt, "Order", o.Id, -o.ToAmount, "Sell", o.Notes ?? ""));
                 }
 
                 // Add manual pool records as transactions
@@ -461,6 +496,11 @@ namespace ForexExchange.Services
                     .GroupBy(x => x.CurrencyCode)
                     .ToList();
 
+                // Process pool transactions in batches for better performance
+                const int batchSize = 1000;
+                var poolHistoryRecords = new List<CurrencyPoolHistory>();
+                var poolBalanceUpdates = new Dictionary<string, (decimal Balance, int BuyCount, int SellCount, decimal TotalBought, decimal TotalSold)>();
+
                 foreach (var currencyGroup in currencyGroups)
                 {
                     var currencyCode = currencyGroup.Key;
@@ -473,7 +513,7 @@ namespace ForexExchange.Services
                     var zeroDateTime = firstTransaction.TransactionDate.AddMinutes(-1);
 
                     // Create zero-starting pool history record
-                    var zeroPoolHistory = new CurrencyPoolHistory
+                    poolHistoryRecords.Add(new CurrencyPoolHistory
                     {
                         CurrencyCode = currencyCode,
                         TransactionType = CurrencyPoolTransactionType.ManualEdit,
@@ -486,8 +526,7 @@ namespace ForexExchange.Services
                         CreatedAt = DateTime.UtcNow,
                         CreatedBy = performedBy,
                         IsDeleted = false
-                    };
-                    _context.CurrencyPoolHistory.Add(zeroPoolHistory);
+                    });
 
                     // Process transactions chronologically for this currency
                     decimal runningBalance = 0;
@@ -503,7 +542,7 @@ namespace ForexExchange.Services
                             _ => CurrencyPoolTransactionType.Order
                         };
 
-                        var poolHistory = new CurrencyPoolHistory
+                        poolHistoryRecords.Add(new CurrencyPoolHistory
                         {
                             CurrencyCode = currencyCode,
                             TransactionType = transactionType,
@@ -517,10 +556,9 @@ namespace ForexExchange.Services
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = performedBy,
                             IsDeleted = false
-                        };
-                        _context.CurrencyPoolHistory.Add(poolHistory);
+                        });
 
-                        runningBalance = poolHistory.BalanceAfter;
+                        runningBalance = poolHistoryRecords.Last().BalanceAfter;
 
                         // Update counts and totals for orders only (not manual records)
                         if (transaction.TransactionType == "Order")
@@ -536,21 +574,41 @@ namespace ForexExchange.Services
                                 totalSold += Math.Abs(transaction.Amount);
                             }
                         }
+
+                        // Batch save when reaching batch size
+                        if (poolHistoryRecords.Count >= batchSize)
+                        {
+                            await _context.CurrencyPoolHistory.AddRangeAsync(poolHistoryRecords);
+                            await _context.SaveChangesAsync();
+                            poolHistoryRecords.Clear();
+                        }
                     }
 
-                    // Update pool balance, active counts, and totals
+                    // Store final balance for update
+                    poolBalanceUpdates[currencyCode] = (runningBalance, buyCount, sellCount, totalBought, totalSold);
+                }
+
+                // Save remaining pool history records
+                if (poolHistoryRecords.Any())
+                {
+                    await _context.CurrencyPoolHistory.AddRangeAsync(poolHistoryRecords);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Update pool balances in batch
+                foreach (var (currencyCode, balances) in poolBalanceUpdates)
+                {
                     var pool = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == currencyCode);
                     if (pool != null)
                     {
-                        pool.Balance = runningBalance;
-                        pool.ActiveBuyOrderCount = buyCount;
-                        pool.ActiveSellOrderCount = sellCount;
-                        pool.TotalBought = totalBought;
-                        pool.TotalSold = totalSold;
+                        pool.Balance = balances.Balance;
+                        pool.ActiveBuyOrderCount = balances.BuyCount;
+                        pool.ActiveSellOrderCount = balances.SellCount;
+                        pool.TotalBought = balances.TotalBought;
+                        pool.TotalSold = balances.TotalSold;
                         pool.LastUpdated = DateTime.UtcNow;
                     }
                 }
-
                 await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Created coherent pool history for {currencyGroups.Count} currencies with {activeOrders.Count} active orders");
 
@@ -558,26 +616,36 @@ namespace ForexExchange.Services
                 logMessages.Add("");
                 logMessages.Add("STEP 3: Creating coherent bank account balance history with zero-starting balance chains...");
 
+                // Load active documents efficiently
                 var activeDocuments = await _context.AccountingDocuments
                     .Where(d => !d.IsDeleted && !d.IsFrozen)
+                    .Select(d => new
+                    {
+                        d.Id,
+                        d.DocumentDate,
+                        d.CurrencyCode,
+                        d.Amount,
+                        d.Notes,
+                        d.PayerType,
+                        d.PayerBankAccountId,
+                        d.ReceiverType,
+                        d.ReceiverBankAccountId
+                    })
                     .OrderBy(d => d.DocumentDate)
                     .ToListAsync();
 
                 logMessages.Add($"Processing {activeDocuments.Count} active (non-deleted, non-frozen) documents and {manualBankAccountRecords.Count} manual bank account records...");
 
                 // Create unified transaction items for bank accounts from documents and manual records
-                var bankAccountTransactionItems = new List<(int BankAccountId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>();
+                var bankAccountTransactionItems = new List<(int BankAccountId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>(activeDocuments.Count + manualBankAccountRecords.Count);
 
-                // Add document transactions
+                // Add document transactions (eliminated N+1 query)
                 foreach (var d in activeDocuments)
                 {
-
-                    var currentDocument = _context.AccountingDocuments.Find(d.Id);
-                    if (currentDocument is null) continue;
                     if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, currentDocument?.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, d.Notes ?? string.Empty));
                     if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, currentDocument?.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, d.Notes ?? string.Empty));
                 }
 
                 // Add manual bank account records as transactions
@@ -599,6 +667,10 @@ namespace ForexExchange.Services
                     .GroupBy(x => x.BankAccountId)
                     .ToList();
 
+                // Process bank account transactions in batches
+                var bankHistoryRecords = new List<BankAccountBalanceHistory>();
+                var bankBalanceUpdates = new Dictionary<int, decimal>();
+
                 foreach (var bankGroup in bankAccountGroups)
                 {
                     var bankAccountId = bankGroup.Key;
@@ -611,7 +683,7 @@ namespace ForexExchange.Services
                     var zeroDateTime = firstTransaction.TransactionDate.AddMinutes(-1);
 
                     // Create zero-starting bank account balance history record
-                    var zeroBankHistory = new BankAccountBalanceHistory
+                    bankHistoryRecords.Add(new BankAccountBalanceHistory
                     {
                         BankAccountId = bankAccountId,
                         TransactionType = BankAccountTransactionType.ManualEdit,
@@ -624,8 +696,7 @@ namespace ForexExchange.Services
                         CreatedAt = DateTime.UtcNow,
                         CreatedBy = performedBy,
                         IsDeleted = false
-                    };
-                    _context.BankAccountBalanceHistory.Add(zeroBankHistory);
+                    });
 
                     // Process transactions chronologically for this bank account
                     decimal runningBalance = 0;
@@ -639,7 +710,7 @@ namespace ForexExchange.Services
                             _ => BankAccountTransactionType.Document
                         };
 
-                        var bankHistory = new BankAccountBalanceHistory
+                        bankHistoryRecords.Add(new BankAccountBalanceHistory
                         {
                             BankAccountId = bankAccountId,
                             TransactionType = transactionType,
@@ -652,23 +723,41 @@ namespace ForexExchange.Services
                             CreatedAt = DateTime.UtcNow,
                             CreatedBy = performedBy,
                             IsDeleted = false
-                        };
-                        _context.BankAccountBalanceHistory.Add(bankHistory);
+                        });
 
-                        runningBalance = bankHistory.BalanceAfter;
+                        runningBalance = bankHistoryRecords.Last().BalanceAfter;
+
+                        // Batch save when reaching batch size
+                        if (bankHistoryRecords.Count >= batchSize)
+                        {
+                            await _context.BankAccountBalanceHistory.AddRangeAsync(bankHistoryRecords);
+                            await _context.SaveChangesAsync();
+                            bankHistoryRecords.Clear();
+                        }
                     }
 
-                    // Update bank account balance
-                    var finalBankAccountId = bankAccountId;
+                    // Store final balance for update
+                    bankBalanceUpdates[bankAccountId] = runningBalance;
+                }
+
+                // Save remaining bank history records
+                if (bankHistoryRecords.Any())
+                {
+                    await _context.BankAccountBalanceHistory.AddRangeAsync(bankHistoryRecords);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Update bank account balances in batch
+                foreach (var (bankAccountId, balance) in bankBalanceUpdates)
+                {
                     var bankBalance = await _context.BankAccountBalances
-                        .FirstOrDefaultAsync(b => b.BankAccountId == finalBankAccountId);
+                        .FirstOrDefaultAsync(b => b.BankAccountId == bankAccountId);
                     if (bankBalance != null)
                     {
-                        bankBalance.Balance = runningBalance;
+                        bankBalance.Balance = balance;
                         bankBalance.LastUpdated = DateTime.UtcNow;
                     }
                 }
-
                 await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Created coherent bank account balance history for {bankAccountGroups.Count} bank account + currency combinations");
 
@@ -676,21 +765,46 @@ namespace ForexExchange.Services
                 logMessages.Add("");
                 logMessages.Add("STEP 4: Rebuilding coherent customer balance history from orders, documents, and manual records (including frozen for customer history)...");
 
-                // Get all non-deleted orders and documents
+                // Load all valid documents and orders efficiently for customer history
                 var allValidDocuments = await _context.AccountingDocuments
-                    .Where(d => !d.IsDeleted && d.IsVerified) // Include frozen documents for customer balance history
+                    .Where(d => !d.IsDeleted && d.IsVerified)
+                    .Select(d => new
+                    {
+                        d.Id,
+                        d.DocumentDate,
+                        d.CurrencyCode,
+                        d.Amount,
+                        d.Description,
+                        d.ReferenceNumber,
+                        d.PayerType,
+                        d.PayerCustomerId,
+                        d.ReceiverType,
+                        d.ReceiverCustomerId
+                    })
                     .ToListAsync();
 
                 var allValidOrders = await _context.Orders
-                    .Where(o => !o.IsDeleted) // Include frozen orders for customer balance history
+                    .Where(o => !o.IsDeleted)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
+                    .Select(o => new
+                    {
+                        o.Id,
+                        o.CustomerId,
+                        o.CreatedAt,
+                        o.FromAmount,
+                        o.ToAmount,
+                        o.Notes,
+                        FromCurrencyCode = o.FromCurrency.Code,
+                        ToCurrencyCode = o.ToCurrency.Code
+                    })
                     .ToListAsync();
 
                 logMessages.Add($"Processing {allValidDocuments.Count} valid documents, {allValidOrders.Count} valid orders, and {manualCustomerRecords.Count} manual customer records for customer balance history...");
 
                 // Create unified transaction items for customers from orders, documents, and manual records
-                var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, string transactionCode, int? ReferenceId, decimal Amount, string Description)>();
+                var estimatedCapacity = allValidOrders.Count * 2 + allValidDocuments.Count * 2 + manualCustomerRecords.Count;
+                var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, string transactionCode, int? ReferenceId, decimal Amount, string Description)>(estimatedCapacity);
 
                 // Add document transactions
                 foreach (var d in allValidDocuments)
@@ -701,14 +815,14 @@ namespace ForexExchange.Services
                         customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
                 }
 
-                // Add order transactions
+                // Add order transactions for customer history
                 foreach (var o in allValidOrders)
                 {
                     // Customer pays FromAmount in FromCurrency
-                    customerTransactionItems.Add((o.CustomerId, o.FromCurrency.Code, o.CreatedAt, "Order", string.Empty, o.Id, -o.FromAmount, o.Notes ?? string.Empty));
+                    customerTransactionItems.Add((o.CustomerId, o.FromCurrencyCode, o.CreatedAt, "Order", string.Empty, o.Id, -o.FromAmount, o.Notes ?? string.Empty));
 
                     // Customer receives ToAmount in ToCurrency
-                    customerTransactionItems.Add((o.CustomerId, o.ToCurrency.Code, o.CreatedAt, "Order", string.Empty, o.Id, o.ToAmount, o.Notes ?? string.Empty));
+                    customerTransactionItems.Add((o.CustomerId, o.ToCurrencyCode, o.CreatedAt, "Order", string.Empty, o.Id, o.ToAmount, o.Notes ?? string.Empty));
                 }
 
                 logMessages.Add($"start adding  [{manualCustomerRecords.Count}] manual customer records");
@@ -730,82 +844,112 @@ namespace ForexExchange.Services
                 }
                 logMessages.Add($"customerTransactionItems is [{customerTransactionItems.Count}]");
 
-                // Group by customer + currency and create coherent history
+                // Group by customer + currency and create coherent history (process in chunks for memory efficiency)
                 var customerGroups = customerTransactionItems
                     .GroupBy(x => new { x.CustomerId, x.CurrencyCode })
                     .ToList();
 
                 logMessages.Add($"Creating coherent history for {customerGroups.Count} customer + currency combinations...");
 
-                foreach (var customerGroup in customerGroups)
+                // Process customer groups in chunks to reduce memory usage
+                const int customerChunkSize = 500; // Process 500 customer-currency combinations at a time
+                var customerChunks = customerGroups.Chunk(customerChunkSize);
+
+                foreach (var chunk in customerChunks)
                 {
-                    var customerId = customerGroup.Key.CustomerId;
-                    var currencyCode = customerGroup.Key.CurrencyCode;
+                    var customerHistoryRecords = new List<CustomerBalanceHistory>();
+                    var customerBalanceUpdates = new Dictionary<(int CustomerId, string CurrencyCode), decimal>();
 
-                    // Order all transactions chronologically by TransactionDate
-                    var orderedTransactions = customerGroup.OrderBy(x => x.TransactionDate).ToList();
-
-                    if (!orderedTransactions.Any()) continue;
-
-                    // Process transactions chronologically for this customer + currency
-                    decimal runningBalance = 0;
-
-                    foreach (var transaction in orderedTransactions)
+                    foreach (var customerGroup in chunk)
                     {
-                        var transactionType = transaction.TransactionType switch
-                        {
-                            "Order" => CustomerBalanceTransactionType.Order,
-                            "Document" => CustomerBalanceTransactionType.AccountingDocument,
-                            "Manual" => CustomerBalanceTransactionType.Manual,
-                            _ => CustomerBalanceTransactionType.AccountingDocument
-                        };
-                        var note = $"{transactionType} - مبلغ: {transaction.Amount:N0} {transaction.CurrencyCode}";
-                        if (!string.IsNullOrEmpty(transaction.transactionCode))
-                            note += $" - شناسه تراکنش: {transaction.transactionCode}";
+                        var customerId = customerGroup.Key.CustomerId;
+                        var currencyCode = customerGroup.Key.CurrencyCode;
 
-                        var customerHistory = new CustomerBalanceHistory
-                        {
-                            CustomerId = customerId,
-                            CurrencyCode = currencyCode,
-                            TransactionType = transactionType,
-                            ReferenceId = transaction.ReferenceId,
-                            BalanceBefore = runningBalance,
-                            TransactionAmount = transaction.Amount,
-                            BalanceAfter = runningBalance + transaction.Amount,
-                            Description = transaction.Description,
-                            TransactionNumber = transaction.transactionCode,
-                            Note = note,
-                            TransactionDate = transaction.TransactionDate,
-                            CreatedAt = DateTime.UtcNow,
-                            CreatedBy = performedBy,
-                            IsDeleted = false
-                        };
-                        _context.CustomerBalanceHistory.Add(customerHistory);
+                        // Order all transactions chronologically by TransactionDate
+                        var orderedTransactions = customerGroup.OrderBy(x => x.TransactionDate).ToList();
 
-                        runningBalance = customerHistory.BalanceAfter;
+                        if (!orderedTransactions.Any()) continue;
+
+                        // Process transactions chronologically for this customer + currency
+                        decimal runningBalance = 0;
+
+                        foreach (var transaction in orderedTransactions)
+                        {
+                            var transactionType = transaction.TransactionType switch
+                            {
+                                "Order" => CustomerBalanceTransactionType.Order,
+                                "Document" => CustomerBalanceTransactionType.AccountingDocument,
+                                "Manual" => CustomerBalanceTransactionType.Manual,
+                                _ => CustomerBalanceTransactionType.AccountingDocument
+                            };
+                            var note = $"{transactionType} - مبلغ: {transaction.Amount:N0} {transaction.CurrencyCode}";
+                            if (!string.IsNullOrEmpty(transaction.transactionCode))
+                                note += $" - شناسه تراکنش: {transaction.transactionCode}";
+
+                            customerHistoryRecords.Add(new CustomerBalanceHistory
+                            {
+                                CustomerId = customerId,
+                                CurrencyCode = currencyCode,
+                                TransactionType = transactionType,
+                                ReferenceId = transaction.ReferenceId,
+                                BalanceBefore = runningBalance,
+                                TransactionAmount = transaction.Amount,
+                                BalanceAfter = runningBalance + transaction.Amount,
+                                Description = transaction.Description,
+                                TransactionNumber = transaction.transactionCode,
+                                Note = note,
+                                TransactionDate = transaction.TransactionDate,
+                                CreatedAt = DateTime.UtcNow,
+                                CreatedBy = performedBy,
+                                IsDeleted = false
+                            });
+
+                            runningBalance = customerHistoryRecords.Last().BalanceAfter;
+
+                            // Batch save when reaching batch size
+                            if (customerHistoryRecords.Count >= batchSize)
+                            {
+                                await _context.CustomerBalanceHistory.AddRangeAsync(customerHistoryRecords);
+                                await _context.SaveChangesAsync();
+                                customerHistoryRecords.Clear();
+                            }
+                        }
+
+                        // Store final balance for update
+                        customerBalanceUpdates[(customerId, currencyCode)] = runningBalance;
                     }
 
-                    // Update customer balance
-                    var finalCustomerId = customerId;
-                    var finalCustomerCurrencyCode = currencyCode;
-                    var customerBalance = await _context.CustomerBalances
-                        .FirstOrDefaultAsync(b => b.CustomerId == finalCustomerId && b.CurrencyCode == finalCustomerCurrencyCode);
-                    if (customerBalance == null)
+                    // Save remaining customer history records for this chunk
+                    if (customerHistoryRecords.Any())
                     {
-                        customerBalance = new CustomerBalance
-                        {
-                            CustomerId = customerId,
-                            CurrencyCode = currencyCode,
-                            Balance = 0,
-                            LastUpdated = DateTime.UtcNow
-                        };
-                        _context.CustomerBalances.Add(customerBalance);
+                        await _context.CustomerBalanceHistory.AddRangeAsync(customerHistoryRecords);
+                        await _context.SaveChangesAsync();
                     }
-                    customerBalance.Balance = runningBalance;
-                    customerBalance.LastUpdated = DateTime.UtcNow;
+
+                    // Update customer balances for this chunk
+                    foreach (var ((customerId, currencyCode), balance) in customerBalanceUpdates)
+                    {
+                        var customerBalance = await _context.CustomerBalances
+                            .FirstOrDefaultAsync(b => b.CustomerId == customerId && b.CurrencyCode == currencyCode);
+                        if (customerBalance == null)
+                        {
+                            customerBalance = new CustomerBalance
+                            {
+                                CustomerId = customerId,
+                                CurrencyCode = currencyCode,
+                                Balance = 0,
+                                LastUpdated = DateTime.UtcNow
+                            };
+                            _context.CustomerBalances.Add(customerBalance);
+                        }
+                        customerBalance.Balance = balance;
+                        customerBalance.LastUpdated = DateTime.UtcNow;
+                    }
+                    await _context.SaveChangesAsync();
+
+                    // Clear memory for next chunk
+                    customerBalanceUpdates.Clear();
                 }
-
-                await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Rebuilt coherent customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} documents and {allValidOrders.Count} orders (manual records were preserved)");
 
 
@@ -822,6 +966,8 @@ namespace ForexExchange.Services
                 logMessages.Add("✅ Manual customer balance adjustments preserved in complete customer history");
 
                 var logSummary = string.Join("\n", logMessages);
+                await UpdateNotesAndDescriptions();  // Call the method to update Notes on entities and Descriptions on history
+
                 _logger.LogInformation($"Financial balance rebuild completed successfully. Summary: {logSummary}");
             }
             catch (Exception ex)
@@ -829,11 +975,7 @@ namespace ForexExchange.Services
                 _logger.LogError(ex, $"Error during comprehensive financial balance rebuild: {ex.Message}");
                 throw;
             }
-            finally
-            {
-                await UpdateNotesAndDescriptions();  // Call the method to update Notes on entities and Descriptions on history
-
-            }
+           
         }
 
 
