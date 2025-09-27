@@ -808,6 +808,14 @@ namespace ForexExchange.Services
                 await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Rebuilt coherent customer balance history for {customerGroups.Count} customer + currency combinations from {allValidDocuments.Count} documents and {allValidOrders.Count} orders (manual records were preserved)");
 
+
+                // NEW: Update Notes and Descriptions after rebuild
+                logMessages.Add("");
+                logMessages.Add("STEP 5: Updating Notes and Descriptions for Orders and AccountingDocuments...");
+                await UpdateNotesAndDescriptions();  // Call the method to update Notes on entities and Descriptions on history
+                logMessages.Add("✓ Updated Notes and Descriptions for all orders and documents");
+
+
                 await dbTransaction.CommitAsync();
 
                 logMessages.Add("");
