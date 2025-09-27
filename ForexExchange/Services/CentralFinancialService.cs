@@ -1176,13 +1176,13 @@ namespace ForexExchange.Services
                 IsDeleted = false
             };
 
-          
+
             _context.BankAccountBalanceHistory.Add(historyRecord);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation($"Manual bank account balance history created with coherent balances: ID {historyRecord.Id}, Bank Account {bankAccountId}, Amount {amount}, BalanceBefore {balanceBefore}, BalanceAfter {balanceAfter}");
 
-           
+
             // Rebuild all financial balances after manual bank account balance creation to ensure complete coherence
             await RebuildAllFinancialBalancesAsync(performedBy);
 
@@ -1219,69 +1219,58 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Deleting manual bank account balance history: Transaction ID {transactionId}");
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            var historyRecord = await _context.BankAccountBalanceHistory
+                .FirstOrDefaultAsync(h => h.Id == transactionId);
+
+            if (historyRecord == null)
+            {
+                throw new ArgumentException($"Bank account balance history with ID {transactionId} not found");
+            }
+
+            if (historyRecord.TransactionType != BankAccountTransactionType.ManualEdit)
+            {
+                throw new InvalidOperationException($"Only manual transactions can be deleted. Transaction ID {transactionId} is of type {historyRecord.TransactionType}");
+            }
+
+            var bankAccountId = historyRecord.BankAccountId;
+            var amount = historyRecord.TransactionAmount;
+            var transactionDate = historyRecord.TransactionDate;
+
+            // Get bank account name for notification
+            var bankAccount = await _context.BankAccounts
+                .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
+            var accountName = bankAccount?.AccountHolderName ?? $"حساب {bankAccountId}";
+
+            _context.BankAccountBalanceHistory.Remove(historyRecord);
+            await _context.SaveChangesAsync();
+
+
+
+            _logger.LogInformation($"Successfully deleted manual bank account transaction and recalculated balances for Bank Account {bankAccountId}");
+
+            // Rebuild all financial balances after manual bank account balance deletion to ensure complete coherence
+            await RebuildAllFinancialBalancesAsync(performedBy);
+
+            // Send notification to admin users (excluding the performing user)
             try
             {
-                var historyRecord = await _context.BankAccountBalanceHistory
-                    .FirstOrDefaultAsync(h => h.Id == transactionId);
+                await _notificationHub.SendCustomNotificationAsync(
+                    title: "تعدیل دستی حساب بانکی حذف شد",
+                    message: $"حساب: {accountName} | مبلغ: {amount:N2}",
+                    eventType: NotificationEventType.Custom,
+                    userId: performingUserId,
+                    navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
+                    priority: NotificationPriority.Normal
+                );
 
-                if (historyRecord == null)
-                {
-                    throw new ArgumentException($"Bank account balance history with ID {transactionId} not found");
-                }
-
-                if (historyRecord.TransactionType != BankAccountTransactionType.ManualEdit)
-                {
-                    throw new InvalidOperationException($"Only manual transactions can be deleted. Transaction ID {transactionId} is of type {historyRecord.TransactionType}");
-                }
-
-                var bankAccountId = historyRecord.BankAccountId;
-                var amount = historyRecord.TransactionAmount;
-                var transactionDate = historyRecord.TransactionDate;
-
-                // Get bank account name for notification
-                var bankAccount = await _context.BankAccounts
-                    .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
-                var accountName = bankAccount?.AccountHolderName ?? $"حساب {bankAccountId}";
-
-                _context.BankAccountBalanceHistory.Remove(historyRecord);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Manual bank account balance history deleted: ID {transactionId}, Bank Account {bankAccountId}, Amount {amount}");
-
-                await RecalculateBankAccountBalanceFromDateAsync(bankAccountId, transactionDate);
-
-                await transaction.CommitAsync();
-                _logger.LogInformation($"Successfully deleted manual bank account transaction and recalculated balances for Bank Account {bankAccountId}");
-
-                // Rebuild all financial balances after manual bank account balance deletion to ensure complete coherence
-                await RebuildAllFinancialBalancesAsync(performedBy);
-
-                // Send notification to admin users (excluding the performing user)
-                try
-                {
-                    await _notificationHub.SendCustomNotificationAsync(
-                        title: "تعدیل دستی حساب بانکی حذف شد",
-                        message: $"حساب: {accountName} | مبلغ: {amount:N2}",
-                        eventType: NotificationEventType.Custom,
-                        userId: performingUserId,
-                        navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
-                        priority: NotificationPriority.Normal
-                    );
-
-                    _logger.LogInformation($"Notification sent for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
-                }
-                catch (Exception notificationEx)
-                {
-                    _logger.LogError(notificationEx, $"Error sending notification for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
-                }
+                _logger.LogInformation($"Notification sent for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
             }
-            catch (Exception ex)
+            catch (Exception notificationEx)
             {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, $"Error deleting manual bank account balance history: Transaction ID {transactionId}");
-                throw;
+                _logger.LogError(notificationEx, $"Error sending notification for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
             }
+
         }
 
         #endregion
