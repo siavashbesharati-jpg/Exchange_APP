@@ -219,7 +219,7 @@
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                             <i class="fas fa-times"></i> انصراف
                                         </button>
-                                        <button type="button" id="confirmPreviewBtn" class="btn btn-primary">
+                                        <button type="button" id="finalSubmitBtn" class="btn btn-primary">
                                             <i class="fas fa-check"></i> تایید و ثبت نهایی
                                         </button>
                                     </div>
@@ -234,23 +234,25 @@
     </div>
 </div>
 
+@{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+}
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
 
     <script src="~/js/currency-formatter.js"></script>
+    <script src="~/js/order-preview.js"></script> <!-- فایل جداگانه -->
 
     <script>
         // --- داده‌ها از سرور ---
         let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
-        const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData ?? new { }));
+        const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData));
 
         // --- Helper ---
         function getRatePriorityById(id) {
             if (!id || !currenciesData[id]) return 99;
             return currenciesData[id].RatePriority || 99;
         }
+
         function getCurrencyCodeById(id, selectId) {
             const sel = document.getElementById(selectId);
             if (!sel) return null;
@@ -258,6 +260,7 @@
             if (!opt) return null;
             return opt.textContent.split(' - ')[0].trim();
         }
+
         function getCalcDirection() {
             const fromPriority = getRatePriorityById(document.getElementById('fromCurrencySelect').value);
             const toPriority = getRatePriorityById(document.getElementById('toCurrencySelect').value);
@@ -266,47 +269,45 @@
             return 'multiply';
         }
 
-        // --- نمایش موجودی ---
         function showCurrencyPoolInfo(fromCurrencyId, toCurrencyId) {
             const fromSelect = $('#fromCurrencySelect');
             const toSelect = $('#toCurrencySelect');
-            let fromCode = null, toCode = null;
-
-            if (fromSelect.val()) fromCode = fromSelect.select2('data')[0].text.split(' - ')[0].trim();
-            if (toSelect.val()) toCode = toSelect.select2('data')[0].text.split(' - ')[0].trim();
+            let fromCode = fromSelect.val() ? fromSelect.select2('data')[0].text.split(' - ')[0].trim() : null;
+            let toCode = toSelect.val() ? toSelect.select2('data')[0].text.split(' - ')[0].trim() : null;
 
             let html = '';
             if (fromCode && currencyPools.hasOwnProperty(fromCode)) {
                 const fromVal = currencyPools[fromCode];
-                const fromBadge = fromVal < 0 ? 'badge bg-danger' : 'badge bg-success';
-                html += `<strong>موجودی ${fromCode}:</strong> <span class="${fromBadge}">${formatCurrency(fromVal, fromCode)}</span>`;
+                html += `<strong>موجودی ${fromCode}:</strong> <span class="badge ${fromVal < 0 ? 'bg-danger' : 'bg-success'}">${formatCurrency(fromVal, fromCode)}</span>`;
             }
             if (toCode && currencyPools.hasOwnProperty(toCode)) {
                 const toVal = currencyPools[toCode];
-                const toBadge = toVal < 0 ? 'badge bg-danger' : 'badge bg-success';
-                html += `<br><strong>موجودی ${toCode}:</strong> <span class="${toBadge}">${formatCurrency(toVal, toCode)}</span>`;
+                html += `<br><strong>موجودی ${toCode}:</strong> <span class="badge ${toVal < 0 ? 'bg-danger' : 'bg-success'}">${formatCurrency(toVal, toCode)}</span>`;
             }
+
             document.getElementById('currencyPoolText').innerHTML = html;
             document.getElementById('currencyPoolInfo').style.display = html ? 'block' : 'none';
         }
 
-        // --- محاسبات ---
         function calculateFromAmountChange() {
             const direction = getCalcDirection();
             const fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value);
             const rate = parseFloat(document.getElementById('calcRateInput').value);
             const toCode = getCurrencyCodeById(document.getElementById('toCurrencySelect').value, 'toCurrencySelect') || '';
+
             if (fromAmount && rate && rate > 0) {
                 let toAmount = direction === "divide" ? fromAmount / rate : fromAmount * rate;
                 toAmount = toCode.toUpperCase() === 'IRR' ? Math.round(toAmount) : Math.round(toAmount * 1000) / 1000;
                 document.getElementById('calcToAmountInput').value = toAmount;
             } else document.getElementById('calcToAmountInput').value = '';
         }
+
         function calculateToAmountChange() {
             const toAmount = parseFloat(document.getElementById('calcToAmountInput').value);
             const rate = parseFloat(document.getElementById('calcRateInput').value);
             const direction = getCalcDirection();
             const fromCode = getCurrencyCodeById(document.getElementById('fromCurrencySelect').value, 'fromCurrencySelect') || '';
+
             if (toAmount && rate && rate > 0) {
                 let fromAmount = direction === "divide" ? toAmount * rate : toAmount / rate;
                 fromAmount = fromCode.toUpperCase() === 'IRR' ? Math.round(fromAmount) : Math.round(fromAmount * 1000) / 1000;
@@ -314,7 +315,6 @@
             } else document.getElementById('calcFromAmountInput').value = '';
         }
 
-        // --- جمع‌آوری داده برای پیش‌نمایش ---
         function getOrderPreviewData() {
             return {
                 customerId: parseInt(document.getElementById('customerSelect').value) || 0,
@@ -328,14 +328,6 @@
             };
         }
 
-        // --- تابع نمایش پیش‌نمایش ---
-        // (این همون showPreviewModalی هست که دادی)
-        // کافیست همین تابعی که فرستادی رو بدون تغییر بگذاری اینجا
-        // من فقط console.log هاش رو حذف کردم
-        // ⬇️
-        // ... اینجا کل showPreviewModal شما ...
-
-        // --- Event ها ---
         document.addEventListener('DOMContentLoaded', function () {
             const now = new Date();
             document.getElementById('createdAtInput').value =
@@ -347,15 +339,16 @@
                 $('#toCurrencySelect').select2();
                 $('#customerSelect').select2();
             }
-            $('#fromCurrencySelect,#toCurrencySelect').on('select2:select', function () {
-                var f = $('#fromCurrencySelect').val();
-                var t = $('#toCurrencySelect').val();
-                $('#calcFromAmountLabel').text($("#fromCurrencySelect").select2('data')[0].text); 
-                $('#calcToAmountLabel').text($("#toCurrencySelect").select2('data')[0].text); 
-                document.getElementById('calcFromAmountInput').value = ''; // Clear input
-                document.getElementById('calcToAmountInput').value = '';   // Clear the other input
-                document.getElementById('calcRateInput').value = '';   // Clear the other input
 
+            $('#fromCurrencySelect,#toCurrencySelect').on('select2:select', function () {
+                $('#calcFromAmountLabel').text($("#fromCurrencySelect").select2('data')[0].text);
+                $('#calcToAmountLabel').text($("#toCurrencySelect").select2('data')[0].text);
+                document.getElementById('calcFromAmountInput').value = '';
+                document.getElementById('calcToAmountInput').value = '';
+                document.getElementById('calcRateInput').value = '';
+
+                const f = $('#fromCurrencySelect').val();
+                const t = $('#toCurrencySelect').val();
                 if (f && t && f !== t) showCurrencyPoolInfo(f, t);
                 else document.getElementById('currencyPoolInfo').style.display = 'none';
             });
@@ -363,44 +356,55 @@
             document.getElementById('calcFromAmountInput')?.addEventListener('keyup', calculateFromAmountChange);
             document.getElementById('calcToAmountInput')?.addEventListener('keyup', calculateToAmountChange);
             document.getElementById('calcRateInput')?.addEventListener('keyup', calculateFromAmountChange);
-        });
 
-        // دکمه پیش‌نمایش
-        document.getElementById('previewEffectsBtn').addEventListener('click', function (e) {
-            e.preventDefault();
-            const data = getOrderPreviewData();
-            fetch('/Orders/PreviewOrderEffects', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: JSON.stringify(data)
-            })
-                .then(async res => {
-                    if (!res.ok) {
-                        let msg = 'خطا در دریافت پیش‌نمایش';
-                        try { msg += ': ' + await res.text(); } catch { }
-                        document.getElementById('previewOrderDetails').innerHTML = '';
-                        document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>${msg}</div>`;
-                        new bootstrap.Modal(document.getElementById('previewModal')).show();
-                        return;
-                    }
-                    return res.json();
+            // --- دکمه ثبت نهایی ایجکسی ---
+            document.getElementById('finalSubmitBtn').addEventListener('click', function (e) {
+                e.preventDefault();
+                const btn = e.target;
+                const originalText = btn.innerHTML;
+
+                // تغییر به حالت لودینگ
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال ثبت...';
+                btn.disabled = true;
+
+                const data = getOrderPreviewData();
+
+                fetch('/Orders/Create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(data)
                 })
-                .then(effects => { if (effects) showPreviewModal(data, effects); })
-                .catch(err => {
-                    document.getElementById('previewOrderDetails').innerHTML = '';
-                    document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>خطای ارتباط با سرور: ${err}</div>`;
-                    new bootstrap.Modal(document.getElementById('previewModal')).show();
-                });
+                    .then(async res => {
+                        if (!res.ok) {
+                            let msg = 'خطا در ثبت معامله';
+                            try { msg += ': ' + await res.text(); } catch { }
+                            alert(msg);
+                            return;
+                        }
+                        return res.json();
+                    })
+                    .then(result => {
+                        if (result && result.success) {
+                            // نمایش پیام موفقیت بدون بستن مودال
+                            alert('معامله با موفقیت ثبت شد!');
+                            window.location.href = result.redirectUrl;
+                        } else {
+                            alert(result.message);
+                        }
+                    })
+                    .catch(err => {
+                        alert('خطا در ارتباط با سرور: ' + err);
+                    })
+                    .finally(() => {
+                        // بازگرداندن دکمه به حالت اولیه
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    });
+            });
         });
-
-        document.getElementById('confirmPreviewBtn').addEventListener('click', function () {
-            bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();
-            document.getElementById('finalSubmitBtn').style.display = '';
-            document.getElementById('finalSubmitBtn').click();
-        });
-        document.getElementById('finalSubmitBtn').style.display = 'none';
     </script>
 }

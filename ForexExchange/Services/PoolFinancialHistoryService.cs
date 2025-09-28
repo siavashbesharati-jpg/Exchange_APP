@@ -57,7 +57,7 @@ namespace ForexExchange.Services
                     Date = FormatGregorianDate(record.TransactionDate),
                     Time = FormatTime(record.TransactionDate),
                     TransactionType = record.TransactionType.ToString(),
-                    Description = GenerateTransactionDescription(record),
+                    Description = record.Description ?? GenerateTransactionDescription(record),
                     CurrencyCode = record.CurrencyCode,
                     Amount = record.TransactionAmount,
                     Balance = record.BalanceAfter,
@@ -136,19 +136,7 @@ namespace ForexExchange.Services
             return await GetTimelineAsync(fromDate, toDate, currencyCode);
         }
 
-        /// <summary>
-        /// Get transaction description based on type and data
-        /// دریافت توضیحات تراکنش بر اساس نوع و داده‌ها
-        /// </summary>
-        private string GetTransactionDescription(CurrencyPoolHistory record)
-        {
-            return record.TransactionType switch
-            {
-                CurrencyPoolTransactionType.Order => $"معامله شماره {record.ReferenceId}",
-                CurrencyPoolTransactionType.ManualEdit => "ویرایش دستی موجودی",
-                _ => "تراکنش نامشخص"
-            };
-        }
+    
 
         /// <summary>
         /// Get pool summary statistics

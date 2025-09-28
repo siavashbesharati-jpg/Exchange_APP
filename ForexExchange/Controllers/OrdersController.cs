@@ -334,7 +334,7 @@ namespace ForexExchange.Controllers
         // POST: Orders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Order order)
+        public async Task<IActionResult> Create([FromBody]Order order)
         {
             // Debug: Log received order data first
             _logger.LogInformation($"Order data received - CustomerId: {order.CustomerId}, FromCurrencyId: {order.FromCurrencyId}, ToCurrencyId: {order.ToCurrencyId}, FromAmount: {order.FromAmount}, ToAmount: {order.ToAmount}, Rate: {order.Rate}");
@@ -357,8 +357,6 @@ namespace ForexExchange.Controllers
             if (!orderResult.IsSuccess)
             {
                 ModelState.AddModelError("", orderResult.ErrorMessage!);
-                await LoadCreateViewDataOptimized();
-                return View(order);
             }
 
             // Use the validated and prepared order from the service
@@ -374,23 +372,7 @@ namespace ForexExchange.Controllers
             ModelState.Remove("ToCurrency");
             ModelState.Remove("TotalAmount"); // TotalAmount is calculated server-side
 
-            // Data validation is now handled by OrderDataService
-            // Proceed with ModelState validation for remaining fields
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("ModelState is invalid for order creation:");
-                foreach (var modelError in ModelState)
-                {
-                    foreach (var error in modelError.Value.Errors)
-                    {
-                        _logger.LogWarning($"Field: {modelError.Key}, Error: {error.ErrorMessage}");
-                    }
-                }
 
-                // Reload view data and return with errors
-                await LoadCreateViewDataOptimized();
-                return View(order);
-            }
 
             if (ModelState.IsValid)
             {
@@ -421,32 +403,14 @@ namespace ForexExchange.Controllers
 
                 _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {order.Rate} , Total: {order.ToAmount}");
 
-                TempData["SuccessMessage"] = "معامله با موفقیت ثبت شد.";
 
-                // Check if this is an AJAX request
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                {
-                    return Json(new { success = true, redirectUrl = Url.Action(nameof(Details), new { id = order.Id }) });
-                }
-
-                return RedirectToAction(nameof(Details), new { id = order.Id });
+                return Json(new { success = true, redirectUrl = Url.Action(nameof(Details), new { id = order.Id }) });
             }
-
-            await LoadCreateViewDataOptimized();
-
-            // Check if this is an AJAX request
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            else
             {
-                // Return validation errors as JSON
-                var errors = ModelState.Where(x => x.Value != null && x.Value.Errors.Any())
-                    .ToDictionary(
-                        x => x.Key,
-                        x => x.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
-                return Json(new { success = false, errors = errors });
+                return Json(new { success = false, message =  "خطایی در ثبت معمامله بوجود آمد" });
             }
 
-            return View(order);
         }
 
 

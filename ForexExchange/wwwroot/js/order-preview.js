@@ -175,13 +175,3 @@ document.getElementById('previewEffectsBtn').addEventListener('click', function(
     });
 });
 
-// --- Confirm button ---
-document.getElementById('confirmPreviewBtn').addEventListener('click', function() {
-    var modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
-    modal.hide();
-    document.getElementById('finalSubmitBtn').style.display = '';
-    document.getElementById('finalSubmitBtn').click();
-});
-
-// Hide final submit button by default
-document.getElementById('finalSubmitBtn').style.display = 'none';
