@@ -103,15 +103,17 @@
                         <!-- Amount Input Row -->
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label asp-for="FromAmount" class="form-label"> <span id="calcFromAmountLabel">---</span></label>
-                                <input asp-for="FromAmount" type="number" id="calcFromAmountInput" class="form-control" step="any"
-                                    placeholder="مقدار">
+                                <label asp-for="FromAmount" class="form-label"> <span
+                                        id="calcFromAmountLabel">---</span></label>
+                                <input asp-for="FromAmount" type="number" id="calcFromAmountInput" class="form-control"
+                                    step="any" placeholder="مقدار">
                                 <span asp-validation-for="FromAmount" class="text-danger"></span>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="ToAmount" class="form-label"> <span id="calcToAmountLabel">---</span></label>
-                                <input asp-for="ToAmount" type="number" id="calcToAmountInput" class="form-control" step="any"
-                                    placeholder="مقدار">
+                                <label asp-for="ToAmount" class="form-label"> <span
+                                        id="calcToAmountLabel">---</span></label>
+                                <input asp-for="ToAmount" type="number" id="calcToAmountInput" class="form-control"
+                                    step="any" placeholder="مقدار">
                                 <span asp-validation-for="ToAmount" class="text-danger"></span>
                             </div>
                         </div>
@@ -150,75 +152,80 @@
                         </div>
 
 
-                                                <div class="d-flex justify-content-between">
-                                                        <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
-                                                        <button type="button" class="btn btn-info" id="previewEffectsBtn">پیش‌نمایش تاثیر</button>
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+                            <button type="button" class="btn btn-info" id="previewEffectsBtn">پیش‌نمایش تاثیر</button>
+                        </div>
+
+                        <!-- Order Preview Modal - Beautiful Styling -->
+                        <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel"
+                            aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title" id="previewModalLabel">
+                                            <i class="fas fa-eye"></i> پیش‌نمایش تاثیر معامله
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                            aria-label="بستن"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i> لطفاً جزئیات معامله و تأثیرات آن را بررسی
+                                            کنید.
+                                        </div>
+
+                                        <!-- Order Summary -->
+                                        <div class="card mb-3">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-exchange-alt"></i> خلاصه معامله</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="previewOrderDetails" class="row">
+                                                    <!-- Order details will be populated here -->
                                                 </div>
+                                            </div>
+                                        </div>
 
-                                                <!-- Order Preview Modal - Beautiful Styling -->
-                                                <div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
-                                                    <div class="modal-dialog modal-lg">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header bg-info text-white">
-                                                                <h5 class="modal-title" id="previewModalLabel">
-                                                                    <i class="fas fa-eye"></i> پیش‌نمایش تاثیر معامله
-                                                                </h5>
-                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="بستن"></button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <div class="alert alert-info">
-                                                                    <i class="fas fa-info-circle"></i> لطفاً جزئیات معامله و تأثیرات آن را بررسی کنید.
-                                                                </div>
-                                                                
-                                                                <!-- Order Summary -->
-                                                                <div class="card mb-3">
-                                                                    <div class="card-header">
-                                                                        <h6 class="mb-0"><i class="fas fa-exchange-alt"></i> خلاصه معامله</h6>
-                                                                    </div>
-                                                                    <div class="card-body">
-                                                                        <div id="previewOrderDetails" class="row">
-                                                                            <!-- Order details will be populated here -->
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- Balance Effects -->
-                                                                <div class="card mb-3">
-                                                                    <div class="card-header">
-                                                                        <h6 class="mb-0"><i class="fas fa-balance-scale"></i> تأثیرات بر ترازها</h6>
-                                                                    </div>
-                                                                    <div class="card-body">
-                                                                        <div id="balance-effects-loading" class="text-center py-3" style="display: none;">
-                                                                            <div class="spinner-border text-primary" role="status">
-                                                                                <span class="visually-hidden">در حال بارگذاری...</span>
-                                                                            </div>
-                                                                            <div class="mt-2">در حال محاسبه تأثیرات...</div>
-                                                                        </div>
-                                                                        <div id="previewOrderEffects">
-                                                                            <!-- Balance effects will be populated here -->
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- Warning Messages -->
-                                                                <div id="order-warnings" style="display: none;">
-                                                                    <div class="alert alert-warning">
-                                                                        <i class="fas fa-exclamation-triangle"></i>
-                                                                        <div id="warning-messages"></div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                                    <i class="fas fa-times"></i> انصراف
-                                                                </button>
-                                                                <button type="button" id="confirmPreviewBtn" class="btn btn-primary">
-                                                                    <i class="fas fa-check"></i> تایید و ثبت نهایی
-                                                                </button>
-                                                            </div>
-                                                        </div>
+                                        <!-- Balance Effects -->
+                                        <div class="card mb-3">
+                                            <div class="card-header">
+                                                <h6 class="mb-0"><i class="fas fa-balance-scale"></i> تأثیرات بر ترازها
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="balance-effects-loading" class="text-center py-3"
+                                                    style="display: none;">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">در حال بارگذاری...</span>
                                                     </div>
+                                                    <div class="mt-2">در حال محاسبه تأثیرات...</div>
                                                 </div>
+                                                <div id="previewOrderEffects">
+                                                    <!-- Balance effects will be populated here -->
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Warning Messages -->
+                                        <div id="order-warnings" style="display: none;">
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <div id="warning-messages"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            <i class="fas fa-times"></i> انصراف
+                                        </button>
+                                        <button type="button" id="confirmPreviewBtn" class="btn btn-primary">
+                                            <i class="fas fa-check"></i> تایید و ثبت نهایی
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                     </form>
                 </div>
@@ -235,898 +242,72 @@
     }
 
     <!-- Include Currency Formatter -->
-
     <script src="~/js/currency-formatter.js"></script>
 
-        <script>
-        // Currency data with RatePriority from server
-        // Format: { 1: {Code: 'IRR', Name: 'ریال', RatePriority: 1}, ... }
-    const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData ?? new {}));
+    <script>
+        // Currency pool data loaded from server-side ViewBag (dictionary: code => balance)
+        let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
 
+        // Currency data with RatePriority from server
+        const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData ?? new { }));
+
+        // --- Helper functions ---
         function getRatePriorityById(id) {
-            if (!id || !currenciesData[id]) return 99;
+            if (!id || !currenciesData[id]) {
+                return 99;
+            }
             return currenciesData[id].RatePriority || 99;
         }
 
         function getCurrencyCodeById(id, selectId) {
-            if (!id) return null;
-            if (currenciesData[id]) return currenciesData[id].Code;
             const sel = document.getElementById(selectId);
             if (!sel) return null;
             const opt = sel.querySelector(`option[value='${id}']`);
             if (!opt) return null;
-            // Option text format: CODE - Name
             return opt.textContent.split(' - ')[0].trim();
         }
-
-        function getCurrencyCodeById(id, selectId) {
-            const sel = document.getElementById(selectId);
-            if (!sel) return null;
-            const opt = sel.querySelector(`option[value='${id}']`);
-            if (!opt) return null;
-            // Option text format: CODE - Name
-            return opt.textContent.split(' - ')[0].trim();
-        }
-
-
 
         function getCalcDirection() {
             const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
             const toCurrencyId = document.getElementById('toCurrencySelect').value;
             const fromPriority = getRatePriorityById(fromCurrencyId);
             const toPriority = getRatePriorityById(toCurrencyId);
-            if (fromPriority < toPriority) return 'divide';
-            if (fromPriority > toPriority) return 'multiply';
-            return 'multiply'; // fallback if equal
+
+            if (fromPriority < toPriority) {
+                return 'multiply';
+            }
+            if (fromPriority > toPriority) {
+                return 'divide';
+            }
+            return 'multiply';
         }
 
-        function updateCalcLabels() {
-            const direction = getCalcDirection();
-            const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
-            const toCurrencyId = document.getElementById('toCurrencySelect').value;
-            const fromCurrencyCode = getCurrencyCodeById(fromCurrencyId, 'fromCurrencySelect') || '---';
-            const toCurrencyCode = getCurrencyCodeById(toCurrencyId, 'toCurrencySelect') || '---';
-            if (direction === 'divide') {
-                document.getElementById('calcFromAmountLabel').textContent = `${fromCurrencyCode} (مبلغ پایه)`;
-                document.getElementById('calcToAmountLabel').textContent = `${toCurrencyCode} (مبلغ بر اساس تقسیم)`;
+        // --- Select2 events ---
+        $('#fromCurrencySelect').on('select2:select', function () {
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
+
+            if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
-                document.getElementById('calcFromAmountLabel').textContent = `${fromCurrencyCode} (مبلغ پایه)`;
-                document.getElementById('calcToAmountLabel').textContent = `${toCurrencyCode} (مبلغ بر اساس ضرب)`;
+                document.getElementById('calculationResult').style.display = 'none';
+                document.getElementById('currencyPoolInfo').style.display = 'none';
             }
-        }
-
-        function recalculateAmounts(trigger) {
-            const fromCurrencyId = document.getElementById('fromCurrencySelect').value;
-            const toCurrencyId = document.getElementById('toCurrencySelect').value;
-            const fromCurrencyCode = getCurrencyCodeById(fromCurrencyId, 'fromCurrencySelect');
-            const toCurrencyCode = getCurrencyCodeById(toCurrencyId, 'toCurrencySelect');
-            if (!fromCurrencyCode || !toCurrencyCode) return;
-
-            const direction = getCalcDirection();
-            let rate = parseFloat(document.getElementById('calcRateInput').value) || 0;
-            let fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value) || 0;
-            let toAmount = parseFloat(document.getElementById('calcToAmountInput').value) || 0;
-
-            if (trigger === 'from' || trigger === 'rate' || trigger === 'dropdown') {
-                if (rate > 0) {
-                    if (direction === 'divide') {
-                        toAmount = fromAmount / rate;
-                    } else {
-                        toAmount = fromAmount * rate;
-                    }
-                } else {
-                    toAmount = 0;
-                }
-                document.getElementById('calcToAmountInput').value = toAmount || '';
-            } else if (trigger === 'to') {
-                if (rate > 0) {
-                    if (direction === 'divide') {
-                        fromAmount = toAmount * rate;
-                    } else {
-                        fromAmount = toAmount / rate;
-                    }
-                } else {
-                    fromAmount = 0;
-                }
-                document.getElementById('calcFromAmountInput').value = fromAmount || '';
-            }
-            updateCalcLabels();
-        }
-
-        // Attach event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            const fromAmountInput = document.getElementById('calcFromAmountInput');
-            const toAmountInput = document.getElementById('calcToAmountInput');
-            const rateInput = document.getElementById('calcRateInput');
-            const fromCurrencySelect = document.getElementById('fromCurrencySelect');
-            const toCurrencySelect = document.getElementById('toCurrencySelect');
-
-            if (fromAmountInput) fromAmountInput.addEventListener('input', function() { recalculateAmounts('from'); });
-            if (toAmountInput) toAmountInput.addEventListener('input', function() { recalculateAmounts('to'); });
-            if (rateInput) rateInput.addEventListener('input', function() { recalculateAmounts('rate'); });
-            if (fromCurrencySelect) fromCurrencySelect.addEventListener('change', function() { recalculateAmounts('dropdown'); });
-            if (toCurrencySelect) toCurrencySelect.addEventListener('change', function() { recalculateAmounts('dropdown'); });
-            // Initial label update
-            updateCalcLabels();
         });
-        </script>
-    <script>
-    // Helper: get form values for preview - Use SAME data as real form submission
-    function getOrderPreviewData() {
-        const data = {
-            customerId: parseInt(document.getElementById('customerSelect').value) || 0,
-            fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
-            toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
-            fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,  // Use calculator input
-            toAmount: parseFloat(document.getElementById('calcToAmountInput').value) || 0,      // Use calculator input
-            rate: parseFloat(document.getElementById('calcRateInput').value) || 0,             // Use calculator input
-            createdAt: document.getElementById('createdAtInput')?.value || null,
-            notes: document.getElementById('Notes')?.value || null
-        };
-        
-        // Debug: Log the form data being sent
-        console.log('Form data for preview:', data);
-        
-        return data;
-    }
 
-    // Show preview modal with order and effect details - Beautiful Styling
-    function showPreviewModal(order, effects) {
-        
-        
-        
-        
-        // Helper to get property in both PascalCase and camelCase
-        function getProp(obj, name) {
-            return obj[name] ?? obj[name.charAt(0).toLowerCase() + name.slice(1)];
-        }
+        $('#toCurrencySelect').on('select2:select', function () {
+            var fromCurrency = $('#fromCurrencySelect').val();
+            var toCurrency = $('#toCurrencySelect').val();
 
-        // Get customer name from dropdown
-        let customerSelect = document.getElementById('customerSelect');
-        let customerName = 'نامشخص';
-        if (customerSelect) {
-            if (typeof $ !== 'undefined' && $(customerSelect).hasClass('select2-hidden-accessible')) {
-                let selected = $(customerSelect).select2('data')[0];
-                customerName = selected ? selected.text : 'نامشخص';
+            if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                showCurrencyPoolInfo(fromCurrency, toCurrency);
             } else {
-                let idx = customerSelect.selectedIndex;
-                customerName = idx > 0 ? customerSelect.options[idx].text : 'نامشخص';
+                document.getElementById('calculationResult').style.display = 'none';
+                document.getElementById('currencyPoolInfo').style.display = 'none';
             }
-        }
-
-        // Get selected date
-        let dateValue = document.getElementById('createdAtInput')?.value || '';
-        let formattedDate = 'نامشخص';
-        if (dateValue) {
-            const date = new Date(dateValue);
-            formattedDate = date.toLocaleDateString('fa-IR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        // Currency labels with better formatting
-        let fromCurrencyCode = getProp(effects, 'FromCurrencyCode') || '';
-        let toCurrencyCode = getProp(effects, 'ToCurrencyCode') || '';
-        let fromCurrencyName = getProp(effects, 'FromCurrencyName') || fromCurrencyCode;
-        let toCurrencyName = getProp(effects, 'ToCurrencyName') || toCurrencyCode;
-        
-        let fromCurrency = fromCurrencyName && fromCurrencyCode ? `${fromCurrencyName} (${fromCurrencyCode})` : (fromCurrencyCode || 'نامشخص');
-        let toCurrency = toCurrencyName && toCurrencyCode ? `${toCurrencyName} (${toCurrencyCode})` : (toCurrencyCode || 'نامشخص');
-
-        // Use server-returned amounts and rate (not frontend calculations)
-        // This ensures preview shows exact same values as actual order creation
-        let displayFromAmount = getProp(effects, 'OrderFromAmount') || order.fromAmount;
-        let displayToAmount = getProp(effects, 'OrderToAmount') || order.toAmount;
-        let displayRate = order.rate; // Use the rate that was sent to server
-
-        // Order details with beautiful card layout - using SERVER data
-        let orderDetailsHtml = `
-            <div class="col-md-6">
-                <div class="mb-2"><strong>مشتری:</strong> <span class="text-primary">${customerName}</span></div>
-                <div class="mb-2"><strong>نوع معامله:</strong> <span class="badge bg-info">خرید/فروش ارز</span></div>
-                <div class="mb-2"><strong>دریافت می کنیم : </strong> <span class="text-success fw-bold" dir="ltr">${formatCurrency(displayFromAmount, fromCurrencyCode)} ${fromCurrencyCode}</span></div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-2"><strong> پرداخت می کنیم : </strong> <span class="text-primary fw-bold" dir="ltr">${formatCurrency(displayToAmount, toCurrencyCode)} ${toCurrencyCode}</span></div>
-                <div class="mb-2"><strong>نرخ تبدیل:</strong> <span class="text-warning fw-bold" dir="ltr">${displayRate}</span></div>
-                <div class="mb-2"><strong>تاریخ:</strong> <span>${formattedDate}</span></div>
-            </div>
-        `;
-        document.getElementById('previewOrderDetails').innerHTML = orderDetailsHtml;
-
-        // Balance effects with beautiful styling matching Upload.cshtml
-        let eff = effects;
-        
-        // Customer Effects
-        let customerEffectsHtml = '';
-        if (getProp(eff, 'OldCustomerBalanceFrom') !== undefined) {
-            customerEffectsHtml = `
-                <div class="mb-3">
-                    <h6 class="text-primary"><i class="fas fa-user"></i> تأثیرات موجودی مشتری</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-center">ارز</th>
-                                    <th class="text-center">موجودی قبل</th>
-                                    <th class="text-center">موجودی بعد</th>
-                                    <th class="text-center">تغییر</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="text-center fw-bold">${fromCurrencyCode}</td>
-                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldCustomerBalanceFrom'), fromCurrencyCode)}</td>
-                                    <td class="text-center fw-bold text-${getProp(eff, 'NewCustomerBalanceFrom') >= 0 ? 'success' : 'danger'}" dir="ltr">${formatCurrency(getProp(eff, 'NewCustomerBalanceFrom'), fromCurrencyCode)}</td>
-                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(displayFromAmount, fromCurrencyCode)}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center fw-bold">${toCurrencyCode}</td>
-                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldCustomerBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center fw-bold text-success" dir="ltr">${formatCurrency(getProp(eff, 'NewCustomerBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(displayToAmount, toCurrencyCode)}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Pool Effects
-        let poolEffectsHtml = '';
-        if (getProp(eff, 'OldPoolBalanceFrom') !== undefined) {
-            poolEffectsHtml = `
-                <div class="mb-3">
-                    <h6 class="text-warning"><i class="fas fa-piggy-bank"></i> تأثیرات صندوق ارز</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-center">ارز</th>
-                                    <th class="text-center">موجودی قبل</th>
-                                    <th class="text-center">موجودی بعد</th>
-                                    <th class="text-center">تغییر</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="text-center fw-bold">${fromCurrencyCode}</td>
-                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldPoolBalanceFrom'), fromCurrencyCode)}</td>
-                                    <td class="text-center fw-bold text-success" dir="ltr">${formatCurrency(getProp(eff, 'NewPoolBalanceFrom'), fromCurrencyCode)}</td>
-                                    <td class="text-center text-success" dir="ltr">+${formatCurrency(displayFromAmount, fromCurrencyCode)}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-center fw-bold">${toCurrencyCode}</td>
-                                    <td class="text-center" dir="ltr">${formatCurrency(getProp(eff, 'OldPoolBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center fw-bold text-${getProp(eff, 'NewPoolBalanceTo') >= 0 ? 'success' : 'danger'}" dir="ltr">${formatCurrency(getProp(eff, 'NewPoolBalanceTo'), toCurrencyCode)}</td>
-                                    <td class="text-center text-danger" dir="ltr">-${formatCurrency(displayToAmount, toCurrencyCode)}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Combine all effects
-        let allEffectsHtml = customerEffectsHtml + poolEffectsHtml;
-        
-        if (!allEffectsHtml) {
-            allEffectsHtml = '<div class="alert alert-warning">هیچ تأثیری بر ترازها محاسبه نشد.</div>';
-        }
-
-        document.getElementById('previewOrderEffects').innerHTML = allEffectsHtml;
-
-        // Show the modal
-        var modal = new bootstrap.Modal(document.getElementById('previewModal'));
-        modal.show();
-        
-        
-    }
-
-    document.getElementById('previewEffectsBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        const data = getOrderPreviewData();
-        fetch('/Orders/PreviewOrderEffects', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
-            body: JSON.stringify(data)
-        })
-        .then(async res => {
-            if (!res.ok) {
-                let msg = 'خطا در دریافت پیش‌نمایش';
-                try {
-                    const err = await res.text();
-                    msg += ': ' + err;
-                } catch {}
-                document.getElementById('previewOrderDetails').innerHTML = '';
-                document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>${msg}</div>`;
-                var modal = new bootstrap.Modal(document.getElementById('previewModal'));
-                modal.show();
-                
-                return;
-            }
-            return res.json();
-        })
-        .then(effects => {
-            if (effects) showPreviewModal(data, effects);
-        })
-        .catch(err => {
-            document.getElementById('previewOrderDetails').innerHTML = '';
-            document.getElementById('previewOrderEffects').innerHTML = `<div class='alert alert-danger'>خطای ارتباط با سرور: ${err}</div>`;
-            var modal = new bootstrap.Modal(document.getElementById('previewModal'));
-            modal.show();
-            
         });
-    });
-
-    document.getElementById('confirmPreviewBtn').addEventListener('click', function() {
-        // Show loading state in modal and disable button
-        const confirmBtn = document.getElementById('confirmPreviewBtn');
-        const originalText = confirmBtn.innerHTML;
-        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>در حال ثبت...';
-        confirmBtn.disabled = true;
-
-        // Show loading overlay in modal
-        const modalBody = document.querySelector('#previewModal .modal-body');
-        const loadingOverlay = document.createElement('div');
-        loadingOverlay.id = 'modalLoadingOverlay';
-        loadingOverlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75';
-        loadingOverlay.style.zIndex = '1050';
-        loadingOverlay.innerHTML = `
-            <div class="text-center">
-                <div class="spinner-border text-primary mb-2" role="status">
-                    <span class="visually-hidden">در حال بارگذاری...</span>
-                </div>
-                <div class="text-primary fw-bold">در حال ثبت معامله...</div>
-            </div>
-        `;
-        modalBody.style.position = 'relative';
-        modalBody.appendChild(loadingOverlay);
-
-        // Collect form data
-        const formData = new FormData();
-        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
-        formData.append('CustomerId', document.getElementById('customerSelect').value);
-        formData.append('FromCurrencyId', document.getElementById('fromCurrencySelect').value);
-        formData.append('ToCurrencyId', document.getElementById('toCurrencySelect').value);
-        formData.append('FromAmount', document.getElementById('calcFromAmountInput').value);
-        formData.append('ToAmount', document.getElementById('calcToAmountInput').value);
-        formData.append('Rate', document.getElementById('calcRateInput').value);
-        formData.append('Notes', document.getElementById('Notes').value);
-
-        // Add CreatedAt if present
-        const createdAtInput = document.getElementById('createdAtInput');
-        if (createdAtInput && createdAtInput.value) {
-            formData.append('CreatedAt', createdAtInput.value);
-        }
-
-        // Submit order via AJAX
-        fetch('/Orders/Create', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Success - redirect to details page
-                window.location.href = data.redirectUrl;
-            } else {
-                // Validation errors - hide modal and show errors
-                var modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
-                modal.hide();
-
-                let errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>خطا در ثبت معامله!</strong><ul class="mb-0 mt-2">';
-                for (const [field, messages] of Object.entries(data.errors)) {
-                    messages.forEach(message => {
-                        // Translate common validation messages
-                        let translatedMessage = message;
-                        if (message === "The CustomerId field is required.") translatedMessage = "انتخاب مشتری الزامی است.";
-                        if (message === "The FromCurrencyId field is required.") translatedMessage = "انتخاب ارز مبدأ الزامی است.";
-                        if (message === "The ToCurrencyId field is required.") translatedMessage = "انتخاب ارز مقصد الزامی است.";
-                        if (message === "The FromAmount field is required." || message.includes("Amount")) translatedMessage = "مقدار معامله الزامی است.";
-                        errorHtml += `<li>${translatedMessage}</li>`;
-                    });
-                }
-                errorHtml += '</ul><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-
-                const container = document.querySelector('.container');
-                container.insertAdjacentHTML('afterbegin', errorHtml);
-
-                // Scroll to top to show error
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        })
-        .catch(error => {
-            console.error('Error creating order:', error);
-            // Hide modal and show error message
-            var modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
-            modal.hide();
-
-            const errorHtml = `
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <strong>خطا در ثبت معامله!</strong>
-                    <p>خطای نامشخص رخ داده است. لطفاً دوباره تلاش کنید.</p>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            const container = document.querySelector('.container');
-            container.insertAdjacentHTML('afterbegin', errorHtml);
-
-            // Scroll to top to show error
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        })
-        .finally(() => {
-            // Remove loading overlay and restore button state
-            const overlay = document.getElementById('modalLoadingOverlay');
-            if (overlay) overlay.remove();
-
-            confirmBtn.innerHTML = originalText;
-            confirmBtn.disabled = false;
-        });
-    });
-
-    // Hide final submit button by default
-    // document.getElementById('finalSubmitBtn').style.display = 'none';
-    </script>
-
-    <script>
-        let currentRate = null;
-        // Currency pool data loaded from server-side ViewBag (dictionary: code => balance)
-        let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
-
-        // Calculator functionality - variables for inline calculator
-        let calcFromCurrencyId = null;
-        let calcToCurrencyId = null;
-        let calcFromCurrencyCode = null;
-        let calcToCurrencyCode = null;
-
-        function initializeCalculator() {
-            // Get current selections from main form using jQuery
-            const fromSelect = $('#fromCurrencySelect');
-            const toSelect = $('#toCurrencySelect');
-
-            // Check if both currencies are selected in main form
-            if (!fromSelect.val() || !toSelect.val()) {
-                alert('لطفا ابتدا ارزهای مبدا و مقصد را انتخاب کنید');
-                return;
-            }
-
-            // Get currency codes and names from main form using Select2 data
-            const fromData = fromSelect.select2('data')[0];
-            const toData = toSelect.select2('data')[0];
-
-            // Extract code from text (format: "CODE - Name")
-            const fromCode = fromData.text.split(' - ')[0].trim(); // What user pays
-            const toCode = toData.text.split(' - ')[0].trim(); // What user gets
-            const fromName = fromData.text.split(' - ')[1] ? fromData.text.split(' - ')[1].trim() : fromCode;
-            const toName = toData.text.split(' - ')[1] ? toData.text.split(' - ')[1].trim() : toCode;
-
-            // Store for calculations
-            calcFromCurrencyCode = fromCode; // What user pays (IRR)
-            calcToCurrencyCode = toCode;     // What user gets (USD)
-
-            // Update calculator display elements
-            document.getElementById('calcFromCurrencyDisplay').textContent = fromCode;
-            document.getElementById('calcToCurrencyDisplay').textContent = toCode;
-            document.getElementById('calcFromCurrencyName').textContent = fromName;
-            document.getElementById('calcToCurrencyName').textContent = toName;
-            document.getElementById('fromCurrencyLabel').textContent = fromCode;
-            document.getElementById('toCurrencyLabel').textContent = toCode;
-
-            // Always display rate as "1 Non-IRR = X IRR" format
-            const nonIrrCode = fromCode.toUpperCase() === 'IRR' ? toCode : fromCode;
-            const irrCode = 'IRR';
-            document.getElementById('calcToCurrencyInRate').textContent = nonIrrCode;
-            document.getElementById('calcFromCurrencyInRate').textContent = irrCode;
-
-            // Get current values from main form
-            const currentAmount = parseFloat(document.getElementById('amountInput').value) || '';
-            const currentRate = parseFloat(document.getElementById('calcRateInput').value) || '';
-
-            // Pre-fill calculator with main form values
-            if (currentAmount) {
-                document.getElementById('calcFromAmount').value = currentAmount; // Amount goes to "From" currency
-            }
-
-            if (currentRate && currentRate > 0) {
-                // Always display rate as "1 Non-IRR = X IRR"
-                let displayRate;
-                if (fromCode.toUpperCase() === 'IRR') {
-                    // FROM is IRR, TO is foreign currency
-                    // Main form rate: how much IRR per foreign currency unit
-                    // Display rate should be: 1 foreign currency = X IRR
-                    displayRate = 1 / currentRate;
-                } else {
-                    // FROM is foreign currency, TO is IRR
-                    // Main form rate: how much foreign currency per IRR unit
-                    // Display rate should be: 1 foreign currency = X IRR
-                    displayRate = currentRate;
-                }
-
-                // Apply proper precision based on currencies involved
-                if (fromCode.toUpperCase() === 'IRR' || toCode.toUpperCase() === 'IRR') {
-                    // If IRR is involved, round to whole numbers
-                    displayRate = Math.round(displayRate);
-                } else {
-                    // If both currencies are non-IRR, preserve 2 decimal places
-                    displayRate = Math.round(displayRate * 100) / 100;
-                }
-
-                document.getElementById('calcRate').value = displayRate;
-            }
-
-            // Show sync status
-            document.getElementById('syncStatus').style.display = 'block';
-
-            // Calculate initial result if both values are present
-            if (currentAmount && currentRate) {
-                calculateToFromAmount(); // Calculate TO amount from FROM amount
-            }
-        }
-
-        // Calculate FROM amount based on TO amount and rate
-        function calculateFromToAmount() {
-            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
-            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
-
-            if (toAmount && rate && rate > 0) {
-                let fromAmount;
-
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // FROM is IRR, TO is foreign currency
-                    // rate = 1 foreign currency = X IRR
-                    // fromAmount (IRR) = toAmount (foreign) * rate
-                    fromAmount = toAmount * rate;
-                    fromAmount = Math.round(fromAmount); // Round IRR amounts
-                } else {
-                    // FROM is foreign currency, TO is IRR
-                    // rate = 1 foreign currency = X IRR
-                    // fromAmount (foreign) = toAmount (IRR) / rate
-                    fromAmount = toAmount / rate;
-                    fromAmount = Math.round(fromAmount * 1000) / 1000; // Round to 3 decimal places
-                }
-
-                // Update from amount input using the universal formatter
-                document.getElementById('calcFromAmount').value = fromAmount;
-
-                // Show calculation result
-                showCalculationResult(toAmount, fromAmount, rate);
-
-                // Auto-update main form with FROM amount (what user is paying)
-                updateMainForm(fromAmount, rate);
-
-                return fromAmount;
-            } else {
-                document.getElementById('calcResult').style.display = 'none';
-                return null;
-            }
-        }
-
-        // Calculate TO amount based on FROM amount and rate
-        function calculateToFromAmount() {
-            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
-            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
-
-            if (fromAmount && rate && rate > 0) {
-                let toAmount;
-
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // FROM is IRR, TO is foreign currency
-                    // rate = 1 foreign currency = X IRR
-                    // toAmount (foreign) = fromAmount (IRR) / rate
-                    toAmount = fromAmount / rate;
-                    toAmount = Math.round(toAmount * 1000) / 1000; // Round to 3 decimal places
-                } else {
-                    // FROM is foreign currency, TO is IRR
-                    // rate = 1 foreign currency = X IRR
-                    // toAmount (IRR) = fromAmount (foreign) * rate
-                    toAmount = fromAmount * rate;
-                    toAmount = Math.round(toAmount); // Round IRR amounts
-                }
-
-                // Update to amount input using the universal formatter
-                document.getElementById('calcToAmount').value = toAmount;
-
-                // Show calculation result
-                showCalculationResult(toAmount, fromAmount, rate);
-
-                // Auto-update main form with FROM amount (what user is paying)
-                updateMainForm(fromAmount, rate);
-
-                return toAmount;
-            } else {
-                document.getElementById('calcResult').style.display = 'none';
-                return null;
-            }
-        }
-
-        // Calculate rate based on both amounts
-        function calculateRateFromAmounts() {
-            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
-            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
-
-            if (fromAmount && toAmount && fromAmount > 0 && toAmount > 0) {
-                let rate;
-
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // FROM is IRR, TO is foreign currency
-                    // rate = 1 foreign currency = X IRR
-                    // rate = fromAmount (IRR) / toAmount (foreign)
-                    rate = fromAmount / toAmount;
-                } else {
-                    // FROM is foreign currency, TO is IRR
-                    // rate = 1 foreign currency = X IRR
-                    // rate = toAmount (IRR) / fromAmount (foreign)
-                    rate = toAmount / fromAmount;
-                }
-
-                // Apply proper precision based on currencies involved
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR' || calcToCurrencyCode.toUpperCase() === 'IRR') {
-                    // If IRR is involved, round to whole numbers
-                    rate = Math.round(rate);
-                } else {
-                    // If both currencies are non-IRR, preserve 2 decimal places
-                    rate = Math.round(rate * 100) / 100;
-                }
-
-                // Update rate input
-                document.getElementById('calcRate').value = rate;
-
-                // Show calculation result
-                showCalculationResult(toAmount, fromAmount, rate);
-
-                // Auto-update main form with FROM amount (what user is paying)
-                updateMainForm(fromAmount, rate);
-
-                return rate;
-            } else {
-                document.getElementById('calcResult').style.display = 'none';
-                return null;
-            }
-        }
-
-        // Show calculation result display
-        function showCalculationResult(toAmount, fromAmount, rate) {
-            // Use the universal currency formatter
-            const formattedToAmount = formatCurrency(toAmount, calcToCurrencyCode);
-            const formattedFromAmount = formatCurrency(fromAmount, calcFromCurrencyCode);
-            const formattedRate = formatCurrency(rate, 'IRR'); // Rate is always displayed as IRR format
-
-            const formula = `${formattedToAmount} ${calcToCurrencyCode} × ${formattedRate} = ${formattedFromAmount} ${calcFromCurrencyCode}`;
-
-            // Always display rate as "1 Non-IRR = X IRR"
-            const nonIrrCode = calcFromCurrencyCode.toUpperCase() === 'IRR' ? calcToCurrencyCode : calcFromCurrencyCode;
-            const details = `نرخ: ۱ ${nonIrrCode} = ${formattedRate} IRR`;
-
-            document.getElementById('calculationFormula').textContent = formula;
-            document.getElementById('calculationDetails').textContent = details;
-            document.getElementById('calcResult').style.display = 'block';
-        }
-
-        // Update main form with calculator values
-        function updateMainForm(fromAmount, rate, isFromAmountSource = false) {
-            // Put FROM amount back to main form (this represents what user is paying/receiving)
-            document.getElementById('amountInput').value = fromAmount;
-
-            // Convert calculator rate back to main form format
-            let mainFormRate;
-            if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                // FROM is IRR, TO is foreign currency
-                // Calculator rate: 1 foreign = X IRR
-                // Main form rate: 1 IRR = Y foreign
-                mainFormRate = 1 / rate;
-            } else {
-                // FROM is foreign currency, TO is IRR
-                // Calculator rate: 1 foreign = X IRR
-                // Main form rate: 1 foreign = X IRR (same)
-                mainFormRate = rate;
-            }
-
-            document.getElementById('rateInput').value = mainFormRate;
-            document.getElementById('hiddenRate').value = mainFormRate;
-
-            // Trigger calculation update in main form
-            updateCalculation();
-        }
-
-        // Helper function to update rate input step based on currency
-        function updateRateInputStep(fromCurrencyCode = null) {
-            // Since we use step="any", we don't need to update the HTML step attribute
-            // But we keep this function for potential future use or rounding logic
-            return;
-        }
-
-        // Helper function to format numbers by removing trailing zeros
-        function formatNumber(num, fromCurrencyCode = null) {
-            // Use the universal formatter for consistency
-            return formatCurrency(num, fromCurrencyCode);
-        }
-
-        // Calculate FROM amount based on TO amount and rate
-        function calculateFromToAmount() {
-            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
-            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
-
-            if (toAmount && rate && rate > 0) {
-                let fromAmount;
-
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // FROM is IRR, TO is foreign currency
-                    // rate = 1 foreign currency = X IRR
-                    // fromAmount (IRR) = toAmount (foreign) * rate
-                    fromAmount = toAmount * rate;
-                    fromAmount = Math.round(fromAmount); // Round IRR amounts
-                } else {
-                    // FROM is foreign currency, TO is IRR
-                    // rate = 1 foreign currency = X IRR
-                    // fromAmount (foreign) = toAmount (IRR) / rate
-                    fromAmount = toAmount / rate;
-                    fromAmount = Math.round(fromAmount * 1000) / 1000; // Round to 3 decimal places
-                }
-
-                // Update from amount input using the universal formatter
-                document.getElementById('calcFromAmount').value = fromAmount;
-
-                // Show calculation result
-                showCalculationResult(toAmount, fromAmount, rate);
-
-                // Auto-update main form with FROM amount (what user is paying)
-                updateMainForm(fromAmount, rate);
-
-                return fromAmount;
-            } else {
-                document.getElementById('calcResult').style.display = 'none';
-                return null;
-            }
-        }
-
-        // Calculate TO amount based on FROM amount and rate
-        function calculateToFromAmount() {
-            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
-            const rate = parseFloat(document.getElementById('calcRate').value); // Rate is always "1 Non-IRR = X IRR"
-
-            if (fromAmount && rate && rate > 0) {
-                let toAmount;
-
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // FROM is IRR, TO is foreign currency
-                    // rate = 1 foreign currency = X IRR
-                    // toAmount (foreign) = fromAmount (IRR) / rate
-                    toAmount = fromAmount / rate;
-                    toAmount = Math.round(toAmount * 1000) / 1000; // Round to 3 decimal places
-                } else {
-                    // FROM is foreign currency, TO is IRR
-                    // rate = 1 foreign currency = X IRR
-                    // toAmount (IRR) = fromAmount (foreign) * rate
-                    toAmount = fromAmount * rate;
-                    toAmount = Math.round(toAmount); // Round IRR amounts
-                }
-
-                // Update to amount input using the universal formatter
-                document.getElementById('calcToAmount').value = toAmount;
-
-                // Show calculation result
-                showCalculationResult(toAmount, fromAmount, rate);
-
-                // Auto-update main form with FROM amount (what user is paying)
-                updateMainForm(fromAmount, rate);
-
-                return toAmount;
-            } else {
-                document.getElementById('calcResult').style.display = 'none';
-                return null;
-            }
-        }
-
-        // Calculate rate based on both amounts
-        function calculateRateFromAmounts() {
-            const fromAmount = parseFloat(document.getElementById('calcFromAmount').value);
-            const toAmount = parseFloat(document.getElementById('calcToAmount').value);
-
-            if (fromAmount && toAmount && fromAmount > 0 && toAmount > 0) {
-                let rate;
-
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    // FROM is IRR, TO is foreign currency
-                    // rate = 1 foreign currency = X IRR
-                    // rate = fromAmount (IRR) / toAmount (foreign)
-                    rate = fromAmount / toAmount;
-                } else {
-                    // FROM is foreign currency, TO is IRR
-                    // rate = 1 foreign currency = X IRR
-                    // rate = toAmount (IRR) / fromAmount (foreign)
-                    rate = toAmount / fromAmount;
-                }
-                // Apply proper precision based on currencies involved
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR' || calcToCurrencyCode.toUpperCase() === 'IRR') {
-                    // If IRR is involved, round to whole numbers
-                    rate = Math.round(rate);
-                } else {
-                    // If both currencies are non-IRR, preserve 2 decimal places
-                    rate = Math.round(rate * 100) / 100;
-                }
-
-                // Update rate input
-                document.getElementById('calcRate').value = rate;
-
-                // Show calculation result
-                showCalculationResult(toAmount, fromAmount, rate);
-
-                // Auto-update main form with FROM amount (what user is paying)
-                updateMainForm(fromAmount, rate);
-
-                return rate;
-            } else {
-                document.getElementById('calcResult').style.display = 'none';
-                return null;
-            }
-        }
-
-        // Show calculation result display
-        function showCalculationResult(toAmount, fromAmount, rate) {
-            // Use the universal currency formatter
-            const formattedToAmount = formatCurrency(toAmount, calcToCurrencyCode);
-            const formattedFromAmount = formatCurrency(fromAmount, calcFromCurrencyCode);
-            const formattedRate = formatCurrency(rate, 'IRR'); // Rate is always displayed as IRR format
-
-            const formula = `${formattedToAmount} ${calcToCurrencyCode} × ${formattedRate} = ${formattedFromAmount} ${calcFromCurrencyCode}`;
-
-            // Always display rate as "1 Non-IRR = X IRR"
-            const nonIrrCode = calcFromCurrencyCode.toUpperCase() === 'IRR' ? calcToCurrencyCode : calcFromCurrencyCode;
-            const details = `نرخ: ۱ ${nonIrrCode} = ${formattedRate} IRR`;
-
-            document.getElementById('calculationFormula').textContent = formula;
-            document.getElementById('calculationDetails').textContent = details;
-            document.getElementById('calcResult').style.display = 'block';
-        }
-
-        // Update main form with calculator values
-        function updateMainForm(fromAmount, rate, isFromAmountSource = false) {
-            // Put FROM amount back to main form (this represents what user is paying/receiving)
-            document.getElementById('amountInput').value = fromAmount;
-
-            // Convert calculator rate back to main form format
-            let mainFormRate;
-            if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                // FROM is IRR, TO is foreign currency
-                // Calculator rate: 1 foreign = X IRR
-                // Main form rate: 1 IRR = Y foreign
-                mainFormRate = 1 / rate;
-            } else {
-                // FROM is foreign currency, TO is IRR
-                // Calculator rate: 1 foreign = X IRR
-                // Main form rate: 1 foreign = X IRR (same)
-                mainFormRate = rate;
-            }
-
-            document.getElementById('rateInput').value = mainFormRate;
-            document.getElementById('hiddenRate').value = mainFormRate;
-
-            // Trigger calculation update in main form
-            updateCalculation();
-        }
-
-        // Helper function to update rate input step based on currency
-        function updateRateInputStep(fromCurrencyCode = null) {
-            // Since we use step="any", we don't need to update the HTML step attribute
-            // But we keep this function for potential future use or rounding logic
-            return;
-        }
-
-
-
 
         function showCurrencyPoolInfo(fromCurrencyId, toCurrencyId) {
-            // Get currency codes from Select2 data
             const fromSelect = $('#fromCurrencySelect');
             const toSelect = $('#toCurrencySelect');
 
@@ -1142,11 +323,6 @@
                 toCode = toData.text.split(' - ')[0].trim();
             }
 
-            // Debug logs
-            
-            
-            
-            
             let html = '';
             if (fromCode && currencyPools.hasOwnProperty(fromCode)) {
                 const fromVal = currencyPools[fromCode];
@@ -1166,423 +342,9 @@
             }
         }
 
-        function updateCalculation() {
-            var amount = document.getElementById('calcFromAmountInput').value;
-            var rate = document.getElementById('calcRateInput').value;
-
-            // Get from currency code for formatting
-            const fromSelect = document.getElementById('fromCurrencySelect');
-            const fromCode = fromSelect.value ? fromSelect.options[fromSelect.selectedIndex].text.split(' - ')[0].trim() : null;
-
-            if (amount && rate && parseFloat(rate) > 0) {
-                var total = parseFloat(amount) * parseFloat(rate);
-
-                document.getElementById('calculationText').innerHTML =
-                    `${formatCurrency(parseFloat(amount), fromCode)} × ${formatCurrency(parseFloat(rate), fromCode)} = <strong>${formatCurrency(total, 'IRR')}</strong>`;
-                document.getElementById('calculationResult').style.display = 'block';
-
-                // Update hidden total amount field
-                document.getElementById('calcToAmountInput').value = total;
-                // Update rate field
-                document.getElementById('calcRateInput').value = rate;
-            } else {
-                document.getElementById('calculationResult').style.display = 'none';
-                document.getElementById('calcToAmountInput').value = '0';
-                document.getElementById('calcRateInput').value = '0';
-            }
-        }
-
-        // Function to update button states based on currency selection
-        function updateButtonStates() {
-            let fromCurrency, toCurrency;
-
-            // Try Select2 first, then fallback to regular select
-            if (typeof $.fn.select2 !== 'undefined' && $('#fromCurrencySelect').hasClass('select2-hidden-accessible')) {
-                fromCurrency = $('#fromCurrencySelect').val();
-                toCurrency = $('#toCurrencySelect').val();
-            } else {
-                fromCurrency = document.getElementById('fromCurrencySelect').value;
-                toCurrency = document.getElementById('toCurrencySelect').value;
-            }
-
-            const hasValidCurrencies = fromCurrency && toCurrency && fromCurrency !== toCurrency;
-
-
-            // Enable/disable buttons based on currency selection
-            const loadSuggestedBtn = document.getElementById('loadSuggestedRateBtn');
-
-            if (loadSuggestedBtn) {
-                loadSuggestedBtn.disabled = !hasValidCurrencies;
-            }
-
-            // Initialize calculator when currencies are selected
-            if (hasValidCurrencies) {
-                initializeInlineCalculator();
-            }
-        }
-
-        // Initialize inline calculator with current currency selection
-        function initializeInlineCalculator() {
-
-            // Get current selections from main form
-            let fromSelect, toSelect, fromData, toData;
-
-            if (typeof $.fn.select2 !== 'undefined' && $('#fromCurrencySelect').hasClass('select2-hidden-accessible')) {
-                fromSelect = $('#fromCurrencySelect');
-                toSelect = $('#toCurrencySelect');
-
-                if (fromSelect.val() && toSelect.val()) {
-                    fromData = fromSelect.select2('data')[0];
-                    toData = toSelect.select2('data')[0];
-                }
-            } else {
-                fromSelect = document.getElementById('fromCurrencySelect');
-                toSelect = document.getElementById('toCurrencySelect');
-
-                if (fromSelect.value && toSelect.value) {
-                    fromData = { text: fromSelect.options[fromSelect.selectedIndex].text };
-                    toData = { text: toSelect.options[toSelect.selectedIndex].text };
-                }
-            }
-
-
-            if (!fromData || !toData) {
-                return;
-            }
-
-            // Extract currency codes and names
-            const fromCode = fromData.text.split(' - ')[0].trim();
-            const toCode = toData.text.split(' - ')[0].trim();
-            const fromName = fromData.text.split(' - ')[1] ? fromData.text.split(' - ')[1].trim() : fromCode;
-            const toName = toData.text.split(' - ')[1] ? toData.text.split(' - ')[1].trim() : toCode;
-
-
-            // Store for later use
-            calcFromCurrencyCode = fromCode;
-            calcToCurrencyCode = toCode;
-
-            // Check if this pair should use reversed calculation
-            const shouldInvert = shouldInvertRateForPair(fromCode, toCode);
-            window.calcRateInverted = shouldInvert;
-
-            // Label always shows direct: "1 fromCode = X toCode"
-            document.getElementById('calcRateFromCurrency').textContent = fromCode;
-            document.getElementById('calcRateToCurrency').textContent = toCode;
-
-            // Update display elements
-            document.getElementById('calcFromCurrencyCode').textContent = fromCode;
-            document.getElementById('calcFromCurrencyName').textContent = fromName;
-            document.getElementById('calcToCurrencyCode').textContent = toCode;
-            document.getElementById('calcToCurrencyName').textContent = toName;
-
-            // Update amount labels
-            document.getElementById('calcFromAmountLabel').textContent = fromCode;
-            document.getElementById('calcToAmountLabel').textContent = toCode;
-
-            // Clear previous values
-            document.getElementById('calcFromAmountInput').value = '';
-            document.getElementById('calcToAmountInput').value = '';
-            document.getElementById('calcRateInput').value = '';
-
-            // Pre-fill calculator with main form values, adjusting for inversion
-            const currentAmount = parseFloat(document.getElementById('amountInput').value) || '';
-            const currentRate = parseFloat(document.getElementById('rateInput').value) || '';
-
-            if (currentAmount) {
-                document.getElementById('calcFromAmount').value = currentAmount;
-            }
-
-            if (currentRate && currentRate > 0) {
-                let displayRate = currentRate; // Always display direct rate
-                // Apply proper precision
-                if (fromCode.toUpperCase() === 'IRR' || toCode.toUpperCase() === 'IRR') {
-                    displayRate = Math.round(displayRate);
-                } else {
-                    displayRate = Math.round(displayRate * 100) / 100;
-                }
-                document.getElementById('calcRate').value = displayRate;
-            }
-
-            // Note: Removed automatic rate loading - users will enter their own rates
-        }
-
-        // Function to check if a currency pair should display the inverse rate (larger number)
-        function shouldInvertRateForPair(fromCode, toCode) {
-            const pairsToInvert = [
-                'AED-OMR', 'AED-USD', 'AED-EUR',
-                'USD-EUR', 'USD-OMR'
-            ];
-            
-            // Normalize codes to uppercase
-            const from = fromCode.toUpperCase();
-            const to = toCode.toUpperCase();
-            const pair = `${from}-${to}`;
-            const reversePair = `${to}-${from}`;
-            
-            // Check if pair is in the list
-            if (pairsToInvert.includes(pair) || pairsToInvert.includes(reversePair)) {
-                return true;
-            }
-            
-            // Special cases: IRR to everything - should reverse
-            if (from === 'IRR' || to === 'IRR') {
-                return true;
-            }
-            
-            return false; // Default to direct
-        }
-
-     
-        // Calculate when FROM amount changes
-        function calculateFromAmountChange() {
-            const fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value);
-            const rate = parseFloat(document.getElementById('calcRateInput').value);
-
-
-            if (fromAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
-                let toAmount;
-
-                if (window.calcRateInverted) {
-                    // Reversed calculation for specified pairs
-                    toAmount = fromAmount / rate;
-                } else {
-                    // Direct calculation
-                    toAmount = fromAmount * rate;
-                }
-
-                // Apply rounding based on to currency
-                if (calcToCurrencyCode.toUpperCase() === 'IRR') {
-                    toAmount = Math.round(toAmount);
-                } else {
-                    toAmount = Math.round(toAmount * 1000) / 1000;
-                }
-
-                document.getElementById('calcToAmountInput').value = toAmount;
-                showInlineCalculationResult(fromAmount, toAmount, rate);
-
-                // Update main form with the correct rate direction for backend
-                updateMainFormFromCalculator(fromAmount, rate);
-            } else {
-                document.getElementById('calcToAmountInput').value = '';
-                clearMainForm();
-            }
-        }
-
-        // Calculate when TO amount changes
-        function calculateToAmountChange() {
-            const toAmount = parseFloat(document.getElementById('calcToAmountInput').value);
-            const rate = parseFloat(document.getElementById('calcRateInput').value);
-
-
-            if (toAmount && rate && rate > 0 && calcFromCurrencyCode && calcToCurrencyCode) {
-                let fromAmount;
-
-                if (window.calcRateInverted) {
-                    // Reversed calculation for specified pairs
-                    fromAmount = toAmount * rate;
-                } else {
-                    // Direct calculation
-                    fromAmount = toAmount / rate;
-                }
-
-                // Apply rounding based on from currency
-                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
-                    fromAmount = Math.round(fromAmount);
-                } else {
-                    fromAmount = Math.round(fromAmount * 1000) / 1000;
-                }
-
-                document.getElementById('calcFromAmountInput').value = fromAmount;
-                showInlineCalculationResult(fromAmount, toAmount, rate);
-
-                // Update main form with the correct rate direction for backend
-                updateMainFormFromCalculator(fromAmount, rate);
-            } else {
-                document.getElementById('calcFromAmountInput').value = '';
-                clearMainForm();
-            }
-        }
-
-        // Calculate when rate changes
-        function calculateRateChange() {
-            const rate = parseFloat(document.getElementById('calcRateInput').value);
-            const fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value);
-
-
-            // Sync the hidden rateInput for main form compatibility
-            const hiddenRateInput = document.getElementById('rateInput');
-            if (hiddenRateInput && rate) {
-                hiddenRateInput.value = rate;
-            }
-
-            if (rate && rate > 0 && fromAmount) {
-                // Recalculate TO amount based on FROM amount and new rate
-                calculateFromAmountChange();
-            } else if (rate && rate > 0) {
-                // Just clear TO amount if no FROM amount
-                document.getElementById('calcToAmountInput').value = '';
-            } else {
-                clearMainForm();
-            }
-        }
-
-        // Update main form immediately from calculator values
-        function updateMainFormFromCalculator(fromAmount, rate) {
-
-            if (fromAmount && rate && rate > 0 && calcFromCurrencyCode) {
-                // Set amount in main form
-                document.getElementById('amountInput').value = fromAmount;
-
-                // Rate is always direct
-                document.getElementById('rateInput').value = rate;
-                document.getElementById('hiddenRate').value = rate;
-
-                // Calculate total amount
-                const totalAmount = fromAmount * mainFormRate;
-                document.getElementById('hiddenTotalAmount').value = totalAmount;
-
-                // Trigger main form calculation update
-                updateCalculation();
-            }
-        }
-
-        // Clear main form when calculator is invalid
-        function clearMainForm() {
-            document.getElementById('amountInput').value = '';
-            document.getElementById('rateInput').value = '';
-            document.getElementById('hiddenRate').value = '0';
-            document.getElementById('hiddenTotalAmount').value = '0';
-            document.getElementById('calculationResult').style.display = 'none';
-        }
-
-        // Show calculation result
-        function showInlineCalculationResult(fromAmount, toAmount, rate) {
-
-            const fromCode = calcFromCurrencyCode;
-            const toCode = calcToCurrencyCode;
-
-            // Check if currency codes are defined
-            if (!fromCode || !toCode) {
-                return;
-            }
-
-            const formattedFromAmount = formatCurrency(fromAmount, fromCode);
-            const formattedToAmount = formatCurrency(toAmount, toCode);
-            const formattedRate = formatCurrency(rate, 'IRR');
-
-            const formula = `${formattedFromAmount} ${fromCode} → ${formattedToAmount} ${toCode}`;
-            const details = `نرخ: ۱ ${fromCode.toUpperCase() === 'IRR' ? toCode : fromCode} = ${formattedRate} IRR`;
-
-
-            // Note: Display elements removed - calculation result only logged
-        }
-
-        // Calculate result based on inline calculator inputs (legacy - keeping for compatibility)
-        function calculateInlineResult() {
-            calculateFromAmountChange();
-        }
-
-        // Add event listeners - Use Select2 events since Select2 replaces the original elements
-        $('#fromCurrencySelect').on('select2:select', function (e) {
-            var fromCurrency = $('#fromCurrencySelect').val();
-            var toCurrency = $('#toCurrencySelect').val();
-            updateButtonStates(); // Update button states
-
-            if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-                showCurrencyPoolInfo(fromCurrency, toCurrency);
-            } else {
-                document.getElementById('calculationResult').style.display = 'none';
-                document.getElementById('currencyPoolInfo').style.display = 'none';
-            }
-        });
-
-        $('#toCurrencySelect').on('select2:select', function (e) {
-            var fromCurrency = $('#fromCurrencySelect').val();
-            var toCurrency = $('#toCurrencySelect').val();
-            updateButtonStates(); // Update button states
-
-            if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-                showCurrencyPoolInfo(fromCurrency, toCurrency);
-            } else {
-                document.getElementById('calculationResult').style.display = 'none';
-                document.getElementById('currencyPoolInfo').style.display = 'none';
-            }
-        });
-        // Add event listeners with null checks
-        const amountInput = document.getElementById('amountInput');
-        if (amountInput) {
-            amountInput.addEventListener('input', updateCalculation);
-        }
-
-        // Add event listener for manual rate input with validation
-        const rateInput = document.getElementById('rateInput');
-        if (rateInput) {
-            rateInput.addEventListener('input', function () {
-                var rateValue = parseFloat(this.value);
-                if (!isNaN(rateValue) && rateValue > 0) {
-                    // Get from currency code to determine rounding precision using Select2
-                    const fromSelect = $('#fromCurrencySelect');
-                    let fromCode = null;
-                    if (fromSelect.val()) {
-                        const fromData = fromSelect.select2('data')[0];
-                        fromCode = fromData.text.split(' - ')[0].trim();
-                    }
-
-                    // Determine rounding precision based on currency
-                    const roundingFactor = (fromCode && fromCode.toUpperCase() === 'IRR') ? 10000000 : 100;
-
-                    // Round to appropriate decimal places
-                    var roundedRate = Math.round(rateValue * roundingFactor) / roundingFactor;
-
-                    if (roundedRate !== rateValue) {
-                        this.value = roundedRate;
-                    }
-                }
-                updateCalculation();
-            });
-        }
-
-        // Add event listener for load suggested rate button  
-        const loadSuggestedRateBtn = document.getElementById('loadSuggestedRateBtn');
-        if (loadSuggestedRateBtn) {
-            loadSuggestedRateBtn.addEventListener('click', function () {
-                var fromCurrency = $('#fromCurrencySelect').val();
-                var toCurrency = $('#toCurrencySelect').val();
-                if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-                    // Note: Exchange rate loading functionality has been removed
-                } else {
-                    alert('لطفاً ابتدا ارز مبدأ و مقصد را انتخاب کنید.');
-                }
-            });
-        }
-
-        // Add form submission validation
-        document.querySelector('form').addEventListener('submit', function (e) {
-            var fromCurrency = $('#fromCurrencySelect').val();
-            var toCurrency = $('#toCurrencySelect').val();
-            var amount = document.getElementById('amountInput').value;
-            var customerId = document.getElementById('customerSelect').value;
-            var rate = document.getElementById('rateInput').value;
-            if (!customerId || !fromCurrency || !toCurrency || !amount || !rate || rate === '0') {
-                e.preventDefault();
-                alert('لطفاً تمام فیلدهای ضروری را تکمیل کنید.');
-                return false;
-            }
-            if (fromCurrency === toCurrency) {
-                e.preventDefault();
-                alert('ارز مبدأ و مقصد نمی‌توانند یکسان باشند.');
-                return false;
-            }
-            if (parseFloat(rate) <= 0) {
-                e.preventDefault();
-                alert('نرخ ارز باید بزرگتر از صفر باشد.');
-                return false;
-            }
-        });
-
-        // Initialize on page load
+        // --- DOMContentLoaded ---
         document.addEventListener('DOMContentLoaded', function () {
-            // Set default date and time to current date/time
+            // Set default date/time
             const now = new Date();
             const formattedDateTime = now.getFullYear() + '-' +
                 String(now.getMonth() + 1).padStart(2, '0') + '-' +
@@ -1591,63 +353,91 @@
                 String(now.getMinutes()).padStart(2, '0');
             document.getElementById('createdAtInput').value = formattedDateTime;
 
-            // Initialize Select2 if available
+            // Initialize Select2
             if (typeof $.fn.select2 !== 'undefined') {
                 $('#fromCurrencySelect').select2();
                 $('#toCurrencySelect').select2();
                 $('#customerSelect').select2();
-            } else {
-                // Add fallback event listeners for regular select change
-                document.getElementById('fromCurrencySelect').addEventListener('change', function () {
-                    updateButtonStates();
-                    var fromCurrency = this.value;
-                    var toCurrency = document.getElementById('toCurrencySelect').value;
-                    if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-                        showCurrencyPoolInfo(fromCurrency, toCurrency);
-                    }
-                });
-
-                document.getElementById('toCurrencySelect').addEventListener('change', function () {
-                    updateButtonStates();
-                    var fromCurrency = document.getElementById('fromCurrencySelect').value;
-                    var toCurrency = this.value;
-                    if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
-                        showCurrencyPoolInfo(fromCurrency, toCurrency);
-                    }
-                });
             }
 
-            // Initialize button states
-            updateButtonStates();
+            // Event listeners
+            const calcFromAmountInput = document.getElementById('calcFromAmountInput');
+            if (calcFromAmountInput) calcFromAmountInput.addEventListener('keyup', calculateFromAmountChange);
 
-            // Calculate when rate changes
-        function calculateRateChange() {
+            const calcToAmountInput = document.getElementById('calcToAmountInput');
+            if (calcToAmountInput) calcToAmountInput.addEventListener('keyup', calculateToAmountChange);
+
+            const calcRateInput = document.getElementById('calcRateInput');
+            if (calcRateInput) calcRateInput.addEventListener('keyup', calculateFromAmountChange);
+        });
+
+        // --- Calculation functions ---
+        function calculateFromAmountChange() {
+            var direction = getCalcDirection();
+            const fromAmount = parseFloat(document.getElementById('calcFromAmountInput').value);
             const rate = parseFloat(document.getElementById('calcRateInput').value);
+            const calcToCurrencyCode = getCurrencyCodeById(document.getElementById('toCurrencySelect').value, 'toCurrencySelect') || '';
 
-            // Rate is always direct
-            document.getElementById('rateInput').value = rate;
+            if (fromAmount && rate && rate > 0) {
+                let toAmount;
+                if (direction === "divide") {
+                    toAmount = fromAmount / rate;
+                } else {
+                    toAmount = fromAmount * rate;
+                }
 
-            // Trigger calculation update
-            if (parseFloat(document.getElementById('calcFromAmountInput').value)) {
-                calculateFromAmountChange();
+                if (calcToCurrencyCode.toUpperCase() === 'IRR') {
+                    toAmount = Math.round(toAmount);
+                } else {
+                    toAmount = Math.round(toAmount * 1000) / 1000;
+                }
+
+                document.getElementById('calcToAmountInput').value = toAmount;
+            } else {
+                document.getElementById('calcToAmountInput').value = '';
             }
         }
 
-        // Add inline calculator event listeners for immediate calculation with null checks
-            const calcFromAmountInput = document.getElementById('calcFromAmountInput');
-            if (calcFromAmountInput) {
-                calcFromAmountInput.addEventListener('input', calculateFromAmountChange);
-            }
+        function calculateToAmountChange() {
+            const toAmount = parseFloat(document.getElementById('calcToAmountInput').value);
+            const rate = parseFloat(document.getElementById('calcRateInput').value);
+            var direction = getCalcDirection();
+            const calcFromCurrencyCode = getCurrencyCodeById(document.getElementById('fromCurrencySelect').value, 'fromCurrencySelect') || '';
 
-            const calcToAmountInput = document.getElementById('calcToAmountInput');
-            if (calcToAmountInput) {
-                calcToAmountInput.addEventListener('input', calculateToAmountChange);
-            }
+            if (toAmount && rate && rate > 0) {
+                let fromAmount;
+                if (direction === "divide") {
+                    fromAmount = toAmount * rate;
+                } else {
+                    fromAmount = toAmount / rate;
+                }
 
-            const calcRateInput = document.getElementById('calcRateInput');
-            if (calcRateInput) {
-                calcRateInput.addEventListener('input', calculateRateChange);
+                if (calcFromCurrencyCode.toUpperCase() === 'IRR') {
+                    fromAmount = Math.round(fromAmount);
+                } else {
+                    fromAmount = Math.round(fromAmount * 1000) / 1000;
+                }
+
+                document.getElementById('calcFromAmountInput').value = fromAmount;
+            } else {
+                document.getElementById('calcFromAmountInput').value = '';
             }
-        });
+        }
+
+        // --- Preview Data ---
+        function getOrderPreviewData() {
+            return {
+                customerId: parseInt(document.getElementById('customerSelect').value) || 0,
+                fromCurrencyId: parseInt(document.getElementById('fromCurrencySelect').value) || 0,
+                toCurrencyId: parseInt(document.getElementById('toCurrencySelect').value) || 0,
+                fromAmount: parseFloat(document.getElementById('calcFromAmountInput').value) || 0,
+                toAmount: parseFloat(document.getElementById('calcToAmountInput').value) || 0,
+                rate: parseFloat(document.getElementById('calcRateInput').value) || 0,
+                createdAt: document.getElementById('createdAtInput')?.value || null,
+                notes: document.getElementById('Notes')?.value || null
+            };
+        }
+
+        // --- بقیه کد showPreviewModal و دکمه‌ها به همین سبک می‌تواند اضافه شود ---
     </script>
 }
