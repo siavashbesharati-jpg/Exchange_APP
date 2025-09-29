@@ -237,7 +237,7 @@ namespace ForexExchange.Controllers
                     ReportSubtitle = $"از {timeline.FromDate.ToString("yyyy/MM/dd")} تا {timeline.ToDate.ToString("yyyy/MM/dd")}"
                 };
 
-                return View("~/Views/CustomerFinancialHistory/PrintFinancialReport.cshtml", reportModel);
+                return View("~/Views/PrintViews/CustomerPrintReport.cshtml", reportModel);
             }
             catch (Exception ex)
             {
