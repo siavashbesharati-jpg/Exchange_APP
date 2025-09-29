@@ -172,7 +172,7 @@ $(document).ready(function() {
                             <div class="row">
                                 <div class="col-12">
                                     <h3 class="text-success mb-3 text-center">
-                                        ${formatCurrency(currency.dailyTransactionSum)} 
+                                        ${formatCurrency(currency.dailyTransactionSum, currency.currencyCode)} 
                                     </h3>
                                 </div>
                             </div>
@@ -192,9 +192,9 @@ $(document).ready(function() {
                                                 </div>
                                                 <div class="text-end">
                                                     <div class="fw-bold ${t.amount >= 0 ? 'text-success' : 'text-danger'}">
-                                                        ${formatCurrency(t.amount)}
+                                                        ${formatCurrency(t.amount, currency.currencyCode)}
                                                     </div>
-                                                    <small class="text-muted">موجودی: ${formatCurrency(t.balanceAfter)}</small>
+                                                    <small class="text-muted">موجودی: ${formatCurrency(t.balanceAfter, currency.currencyCode)}</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -210,9 +210,6 @@ $(document).ready(function() {
         });
     }
 
-    function formatCurrency(amount) {
-        return new Intl.NumberFormat('fa-IR').format(amount);
-    }
 });
 </script>
 }
