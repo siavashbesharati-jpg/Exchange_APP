@@ -75,6 +75,12 @@ namespace ForexExchange.Controllers
             return View();
         }
 
+        // GET: Reports/PoolDailyReport
+        public IActionResult PoolDailyReport()
+        {
+            return View();
+        }
+
         // GET: Reports/BankAccountReports
         public IActionResult BankAccountReports()
         {
@@ -621,6 +627,81 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error getting pool data");
                 return Json(new { error = "خطا در دریافت اطلاعات پول" });
+            }
+        }
+
+        // GET: Reports/GetPoolDailyReport
+        [HttpGet]
+        public async Task<IActionResult> GetPoolDailyReport(DateTime date)
+        {
+            try
+            {
+                // Validate date - ensure it's not in the future
+                if (date > DateTime.Today)
+                {
+                    return Json(new { error = "تاریخ انتخاب شده نمی‌تواند در آینده باشد" });
+                }
+
+                var startOfDay = date.Date;
+                var endOfDay = startOfDay.AddDays(1).AddSeconds(-1);
+
+                // Get all active currencies
+                var currencies = await _context.Currencies
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.DisplayOrder)
+                    .ToListAsync();
+
+                var result = new List<object>();
+
+                foreach (var currency in currencies)
+                {
+                    // Get the latest balance at the end of the selected day
+                    var latestHistory = await _context.CurrencyPoolHistory
+                        .Where(h => h.CurrencyCode == currency.Code && h.TransactionDate <= endOfDay)
+                        .OrderByDescending(h => h.TransactionDate)
+                        .ThenByDescending(h => h.Id) // In case of same timestamp, use ID
+                        .FirstOrDefaultAsync();
+
+                    decimal latestBalance = latestHistory?.BalanceAfter ?? 0;
+
+                    // Get all transactions during the selected day (from 00:00:01 to 23:59:59)
+                    var transactions = await _context.CurrencyPoolHistory
+                        .Where(h => h.CurrencyCode == currency.Code && 
+                                   h.TransactionDate >= startOfDay && 
+                                   h.TransactionDate <= endOfDay)
+                        .OrderBy(h => h.TransactionDate)
+                        .ThenBy(h => h.Id)
+                        .Select(h => new
+                        {
+                            time = h.TransactionDate.ToString("HH:mm:ss"),
+                            type = h.TransactionType.ToString(),
+                            description = h.Description ?? "",
+                            amount = h.TransactionAmount,
+                            balanceAfter = h.BalanceAfter,
+                            referenceId = h.ReferenceId
+                        })
+                        .ToListAsync();
+
+                    // Only include currencies that have transactions or a balance
+                    if (transactions.Any() || latestBalance != 0)
+                    {
+                        result.Add(new
+                        {
+                            currencyCode = currency.Code,
+                            currencyName = currency.Name,
+                            latestBalance,
+                            transactionCount = transactions.Count,
+                            transactions
+                        });
+                    }
+                }
+
+                return Json(new { success = true, date = date.ToString("yyyy-MM-dd"), currencies = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pool daily report for date: {Date}", date);
+                return Json(new { success = false, error = "خطا در دریافت گزارش روزانه صندوق" });
             }
         }
 
