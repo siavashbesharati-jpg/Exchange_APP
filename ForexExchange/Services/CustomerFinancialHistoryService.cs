@@ -13,7 +13,7 @@ namespace ForexExchange.Services
     {
         private readonly ILogger<CustomerFinancialHistoryService> _logger;
 
-        public CustomerFinancialHistoryService(ForexDbContext context, ILogger<CustomerFinancialHistoryService> logger) 
+        public CustomerFinancialHistoryService(ForexDbContext context, ILogger<CustomerFinancialHistoryService> logger)
             : base(context)
         {
             _logger = logger;
@@ -48,8 +48,8 @@ namespace ForexExchange.Services
 
                 // NEW APPROACH: Use CustomerBalanceHistory table directly - EXCLUDE ONLY DELETED RECORDS FOR REPORTING
                 var historyQuery = _context.CustomerBalanceHistory
-                    .Where(h => h.CustomerId == customerId && 
-                               h.TransactionDate >= validFromDate && 
+                    .Where(h => h.CustomerId == customerId &&
+                               h.TransactionDate >= validFromDate &&
                                h.TransactionDate <= validToDate &&
                                !h.IsDeleted); // EXCLUDE ONLY DELETED RECORDS FOR REPORTING
 
@@ -72,7 +72,7 @@ namespace ForexExchange.Services
                     Id = (int)h.Id, // Set the CustomerBalanceHistory ID for deletion functionality (cast long to int)
                     CustomerId = h.CustomerId,
                     TransactionDate = h.TransactionDate,
-                    Type = GetTransactionTypeFromEnum(h.TransactionType),
+                    Type = GetTransactionTypeFromEnum(h.TransactionType, h.TransactionAmount),
                     Description = h.Description ?? GetDefaultDescription(h.TransactionType, h.ReferenceId),
                     CurrencyCode = h.CurrencyCode,
                     Amount = h.TransactionAmount,
@@ -85,18 +85,18 @@ namespace ForexExchange.Services
                 // Calculate initial balances from first record per currency
                 var initialBalances = new Dictionary<string, decimal>();
                 var currencyGroups = historyRecords.GroupBy(h => h.CurrencyCode);
-                
+
                 foreach (var group in currencyGroups)
                 {
                     var firstRecord = group.First(); // First history record for this currency
-                    
+
                     // ALWAYS use BalanceBefore from first record as initial balance
                     initialBalances[firstRecord.CurrencyCode] = firstRecord.BalanceBefore;
                 }
 
                 timeline.InitialBalances = initialBalances;
                 timeline.Transactions = allTransactions;
-                
+
                 // Final balances are the last BalanceAfter for each currency
                 timeline.FinalBalances = currencyGroups.ToDictionary(
                     g => g.Key,
@@ -120,14 +120,20 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Helper method to convert enum transaction type to CustomerTransactionHistory enum
+        /// Considers both transaction type and amount sign for proper classification
         /// </summary>
-        private TransactionType GetTransactionTypeFromEnum(CustomerBalanceTransactionType transactionType)
+        private TransactionType GetTransactionTypeFromEnum(CustomerBalanceTransactionType transactionType, decimal amount)
         {
             return transactionType switch
             {
-                CustomerBalanceTransactionType.Order => TransactionType.Buy, // Default to buy, could be refined
-                CustomerBalanceTransactionType.AccountingDocument => TransactionType.Document, // Default to credit, could be refined
-                CustomerBalanceTransactionType.Manual => TransactionType.ManualAdjustment, // Manual adjustments have their own type
+                CustomerBalanceTransactionType.Order =>
+                    amount > 0 ? TransactionType.Buy : TransactionType.Sell,
+
+                CustomerBalanceTransactionType.AccountingDocument =>
+                    amount > 0 ? TransactionType.Document : TransactionType.DocumentDebit,
+
+                CustomerBalanceTransactionType.Manual => TransactionType.ManualAdjustment,
+
                 _ => TransactionType.Document
             };
         }
@@ -152,7 +158,7 @@ namespace ForexExchange.Services
         public async Task<CustomerBalanceSnapshot> GetBalanceSnapshotAsync(int customerId, DateTime asOfDate)
         {
             var timeline = await GetCustomerTimelineAsync(customerId, DateTime.MinValue, asOfDate, null);
-            
+
             var snapshot = new CustomerBalanceSnapshot
             {
                 CustomerId = customerId,
@@ -204,7 +210,7 @@ namespace ForexExchange.Services
 
                 // Customer pays FromCurrency (decrease balance)
                 balances[order.FromCurrency.Code] -= order.FromAmount;
-                
+
                 // Customer receives ToCurrency (increase balance)
                 balances[order.ToCurrency.Code] += order.ToAmount;
             }
@@ -299,7 +305,7 @@ namespace ForexExchange.Services
         public int DocumentTransactions { get; set; }
         public decimal NetChange { get; set; }
         public DateTime LastTransactionDate { get; set; }
-        
+
         public decimal TotalVolume => TotalDebits + TotalCredits;
         public string NetChangeStatus => NetChange >= 0 ? "افزایش" : "کاهش";
     }
