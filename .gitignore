@@ -306,7 +306,7 @@ appsettings.Production.json
 # Main appsettings.json should also be ignored for security
 
 # Entity Framework
-Migrations/
+# Migrations/  # <- Removed to track migrations in git
 
 # SQLite database
 ForexExchange.db
