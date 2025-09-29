@@ -642,10 +642,17 @@ namespace ForexExchange.Services
                 // Add document transactions (eliminated N+1 query)
                 foreach (var d in activeDocuments)
                 {
+                    if ((d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue) && (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue))
+                    {
+                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, -(d.Amount), d.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, d.Amount, d.Notes ?? string.Empty));
+                    }
                     if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, d.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "payment document", d.Id, -(d.Amount), d.Notes ?? string.Empty));
                     if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.Id, d.Amount, d.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "reciept document", d.Id, d.Amount, d.Notes ?? string.Empty));
+
+
                 }
 
                 // Add manual bank account records as transactions
@@ -975,7 +982,7 @@ namespace ForexExchange.Services
                 _logger.LogError(ex, $"Error during comprehensive financial balance rebuild: {ex.Message}");
                 throw;
             }
-           
+
         }
 
 

@@ -314,12 +314,6 @@
     function renderPoolStyleTimeline(timeline) {
         const tbody = document.getElementById('timelineTableBody');
 
-        // DEBUG: Check the order received in JavaScript
-        console.log('=== JavaScript Pool Timeline Order ===');
-        for (let i = 0; i < Math.min(5, timeline.length); i++) {
-            console.log(`${i+1}. Date: ${timeline[i].date}, Amount: ${timeline[i].amount}`);
-        }
-        console.log('================================');
 
         if (!timeline || timeline.length === 0) {
             tbody.innerHTML = `
