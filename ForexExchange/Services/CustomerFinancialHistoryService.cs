@@ -40,8 +40,9 @@ namespace ForexExchange.Services
 
                 var timeline = new CustomerFinancialTimeline
                 {
+                    //TODO : The Name should use gender  as perfix
                     CustomerId = 100 + customerId,
-                    CustomerName = $"MR.{customer.FullName}",
+                    CustomerName = $"{customer.FullName}",
                     FromDate = validFromDate,
                     ToDate = validToDate
                 };
