@@ -40,8 +40,8 @@ namespace ForexExchange.Services
 
                 var timeline = new CustomerFinancialTimeline
                 {
-                    CustomerId = customerId,
-                    CustomerName = customer.FullName,
+                    CustomerId = 100 + customerId,
+                    CustomerName = $"MR.{customer.FullName}",
                     FromDate = validFromDate,
                     ToDate = validToDate
                 };

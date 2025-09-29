@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using ForexExchange.Models;
 using ForexExchange.Services;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
@@ -209,7 +210,7 @@ namespace ForexExchange.Controllers
                 var transactions = timeline.Transactions.Select(t => new FinancialTransactionItem
                 {
                     TransactionDate = t.TransactionDate,
-                    TransactionType = t.Type.ToString(),
+                    TransactionType = t.Type.GetDisplayName(),
                     Description = t.Description,
                     Note = t.Notes ?? "",
                     CurrencyCode = t.CurrencyCode,
@@ -227,7 +228,7 @@ namespace ForexExchange.Controllers
                 {
                     ReportType = "Customer",
                     EntityName = timeline.CustomerName,
-                    EntityId = customerId,
+                    EntityId = timeline.CustomerId,
                     FromDate = timeline.FromDate,
                     ToDate = timeline.ToDate,
                     Transactions = transactions,

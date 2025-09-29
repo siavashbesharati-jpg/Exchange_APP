@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
 using Microsoft.AspNetCore.Identity;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
