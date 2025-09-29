@@ -1005,50 +1005,6 @@ namespace ForexExchange.Migrations
                     b.ToTable("CustomerBalanceHistory");
                 });
 
-            modelBuilder.Entity("ForexExchange.Models.DailyBalanceReport", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("BankAccountBalancesJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CustomerBalancesJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("GeneratedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("GeneratedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PoolBalancesJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("ReportDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TotalBalancesJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("TotalValueInIRR")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("DailyBalanceReports");
-                });
-
             modelBuilder.Entity("ForexExchange.Models.ExchangeRate", b =>
                 {
                     b.Property<int>("Id")
