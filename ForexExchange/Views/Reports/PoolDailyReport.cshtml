@@ -188,7 +188,7 @@ $(document).ready(function() {
                                                 <div>
                                                     <small class="text-muted">${t.time}</small>
                                                     <div class="fw-bold">${t.description}</div>
-                                                    <small class="text-primary">${t.type}</small>
+                                                    <small class="text-primary">${t.amount >= 0 ? 'خرید' : 'فروش'}</small>
                                                 </div>
                                                 <div class="text-end" dir="ltr" >
                                                     <div class="fw-bold ${t.amount >= 0 ? 'text-success' : 'text-danger'}">
