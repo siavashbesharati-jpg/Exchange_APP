@@ -40,10 +40,10 @@ namespace ForexExchange.Models
         [Display(Name = "خرید ارز")]
         Buy = 2,
         
-        [Display(Name = "واریز")]
+        [Display(Name = "پرداخت")]
         Document = 3,
         
-        [Display(Name = "برداشت")]
+        [Display(Name = "دریافت")]
         DocumentDebit = 4,
         
         [Display(Name = "تعدیل دستی")]
