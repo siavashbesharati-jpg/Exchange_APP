@@ -644,15 +644,18 @@ namespace ForexExchange.Services
                 {
                     if ((d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue) && (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue))
                     {
+                        // Both sides are system bank accounts: create two transactions
                         bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, -(d.Amount), d.Notes ?? string.Empty));
                         bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, d.Amount, d.Notes ?? string.Empty));
                     }
-                    if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "payment document", d.Id, -(d.Amount), d.Notes ?? string.Empty));
-                    if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
-                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "reciept document", d.Id, d.Amount, d.Notes ?? string.Empty));
-
-
+                    else
+                    {
+                        // Single side system bank account transactions
+                        if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
+                            bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "payment document", d.Id, -(d.Amount), d.Notes ?? string.Empty));
+                        if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
+                            bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "reciept document", d.Id, d.Amount, d.Notes ?? string.Empty));
+                    }
                 }
 
                 // Add manual bank account records as transactions
@@ -816,10 +819,20 @@ namespace ForexExchange.Services
                 // Add document transactions
                 foreach (var d in allValidDocuments)
                 {
-                    if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue)
+                    if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue && d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
+                    {
+                        // Both sides are customers: create two transactions
                         customerTransactionItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, d.Amount, d.Description ?? string.Empty));
-                    if (d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
                         customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
+                    }
+                    else
+                    {
+                        // Single side customer transactions
+                        if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue)
+                            customerTransactionItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, d.Amount, d.Description ?? string.Empty));
+                        if (d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
+                            customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
+                    }
                 }
 
                 // Add order transactions for customer history
