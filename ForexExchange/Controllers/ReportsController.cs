@@ -1285,7 +1285,7 @@ namespace ForexExchange.Controllers
                     ReportSubtitle = $"از {fromDate?.ToString("yyyy/MM/dd") ?? "ابتدا"} تا {toDate?.ToString("yyyy/MM/dd") ?? "انتها"}"
                 };
 
-                return View("~/Views/PrintViews/CustomerPrintReport.cshtml", reportModel);
+                return View("~/Views/PrintViews/BankAccountPrintReport.cshtml", reportModel);
             }
             catch (Exception ex)
             {
@@ -1369,7 +1369,7 @@ namespace ForexExchange.Controllers
                     ReportSubtitle = $"از {fromDate?.ToString("yyyy/MM/dd") ?? "ابتدا"} تا {toDate?.ToString("yyyy/MM/dd") ?? "انتها"}"
                 };
 
-                return View("~/Views/PrintViews/CustomerPrintReport.cshtml", reportModel);
+                return View("~/Views/PrintViews/PoolPrintReport.cshtml", reportModel);
             }
             catch (Exception ex)
             {
