@@ -95,8 +95,6 @@
                                         <button type="button" class="btn btn-outline-danger btn-sm remove-row">حذف</button>
                                     </div>
                                 </div>
-                                <div id="balance-rows"></div>
-                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-balance">افزودن ارز</button>
                             </div>
                         </div>
 
@@ -158,125 +156,6 @@
             });
         }
 
-        // Initial balances - dynamic rows and prefill
-        (function() {
-            const currencyOptions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CurrencyOptions ?? new object[0]));
-            
-            // Debug logging
-            
-            const addBtn = document.getElementById('add-balance');
-            const rowsContainer = document.getElementById('balance-rows');
-            const template = document.getElementById('balance-row-template');
-
-            function buildOptions(selectEl, selectedCode) {
-                
-                // Clear and add placeholder
-                selectEl.innerHTML = '';
-                const ph = document.createElement('option');
-                ph.value = '';
-                ph.textContent = 'انتخاب ارز';
-                ph.disabled = true;
-                ph.selected = !selectedCode;
-                selectEl.appendChild(ph);
-                
-                // Add options
-                (currencyOptions || []).forEach(o => {
-                    const opt = document.createElement('option');
-                    opt.value = o.Code;
-                    opt.textContent = `${o.PersianName} (${o.Code})`;
-                    if (selectedCode && selectedCode.toUpperCase() === o.Code) opt.selected = true;
-                    selectEl.appendChild(opt);
-                });
-                
-            }
-
-            function isDuplicateCode(selectEl) {
-                const code = (selectEl.value || '').toUpperCase();
-                if (!code) return false;
-                let count = 0;
-                document.querySelectorAll('#balance-rows .currency-code').forEach(s => {
-                    if ((s.value || '').toUpperCase() === code) count++;
-                });
-                return count > 1; // include current select
-            }
-
-            function addRow(code = '', amount = '') {
-                const row = template.cloneNode(true);
-                row.id = '';
-                row.classList.remove('d-none');
-                rowsContainer.appendChild(row);
-
-                const codeInput = row.querySelector('.currency-code');
-                const amountInput = row.querySelector('.currency-amount');
-                buildOptions(codeInput, code);
-                amountInput.value = amount;
-
-                // Apply currency formatting to the new amount input
-                setTimeout(() => {
-                    if (window.currencyFormatter && typeof window.currencyFormatter.setupInputFormatting === 'function') {
-                        window.currencyFormatter.setupInputFormatting(amountInput);
-                    } else {
-                        // Fallback: trigger a re-scan of all inputs
-                        if (window.currencyFormatter && typeof window.currencyFormatter.setupFormatting === 'function') {
-                            window.currencyFormatter.setupFormatting();
-                        }
-                    }
-                }, 100);
-
-                codeInput.addEventListener('change', function() {
-                    if (isDuplicateCode(this)) {
-                        alert('این ارز قبلاً اضافه شده است.');
-                        this.value = '';
-                    }
-                });
-
-                const removeBtn = row.querySelector('.remove-row');
-                removeBtn.addEventListener('click', () => row.remove());
-            }
-
-            addBtn.addEventListener('click', function() { addRow(); });
-
-            // Prefill from model
-            const initialData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.InitialBalances ?? new Dictionary<string, decimal>()));
-            Object.keys(initialData).forEach(k => addRow(k, initialData[k]));
-
-            // On submit, convert to hidden inputs
-            const targetForm = document.getElementById('customer-edit-form');
-            if (!targetForm) {
-                return;
-            }
-            
-            targetForm.addEventListener('submit', function(e) {
-                // Remove existing hidden fields
-                this.querySelectorAll('input[type="hidden"][data-gen="ib"]').forEach(x => x.remove());
-                
-                // Get all visible balance rows (not the template)
-                const rows = rowsContainer.querySelectorAll('.balance-row:not(.d-none):not(#balance-row-template)');
-                
-                rows.forEach((row, idx) => {
-                    const codeSelect = row.querySelector('.currency-code');
-                    const amountInput = row.querySelector('.currency-amount');
-                    
-                    if (!codeSelect || !amountInput) {
-                        return;
-                    }
-                    
-                    const code = (codeSelect.value || '').trim().toUpperCase();
-                    const amount = amountInput.value.trim();
-                    
-                    if (!code || !amount || parseFloat(amount) === 0) {
-                        return;
-                    }
-                    
-                    // Create hidden input using dictionary format
-                    const keyInput = document.createElement('input');
-                    keyInput.type = 'hidden';
-                    keyInput.name = `InitialBalances[${code}]`;
-                    keyInput.value = amount;
-                    keyInput.setAttribute('data-gen', 'ib');
-                    this.appendChild(keyInput);
-                });
-            });
-        })();
+        
     </script>
 }
