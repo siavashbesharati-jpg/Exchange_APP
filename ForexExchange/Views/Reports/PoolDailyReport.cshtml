@@ -19,12 +19,6 @@
                                    value="@DateTime.Today.ToString("yyyy-MM-dd")"
                                    max="@DateTime.Today.ToString("yyyy-MM-dd")">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <button type="button" class="btn btn-primary w-100" id="loadReport">
-                                <i class="fas fa-search"></i> بارگذاری گزارش
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Loading Indicator -->
@@ -57,12 +51,52 @@
 @section Scripts {
 <script>
 $(document).ready(function() {
-    $('#loadReport').click(function() {
+    // Load report on page load with today's date
+    loadDailyReport();
+
+    // Load report when date changes
+    $('#reportDate').on('change', function() {
         loadDailyReport();
     });
 
-    // Load report on page load with today's date
-    loadDailyReport();
+    // Load report when Enter is pressed in date input
+    $('#reportDate').on('keypress', function(e) {
+        if (e.which === 13) { // Enter key
+            loadDailyReport();
+        }
+    });
+
+    function loadDailyReport() {
+        const selectedDate = $('#reportDate').val();
+        if (!selectedDate) {
+            alert('لطفاً تاریخ را انتخاب کنید');
+            return;
+        }
+
+        $('#loadingIndicator').removeClass('d-none');
+        $('#reportContent').addClass('d-none');
+        $('#noDataMessage').addClass('d-none');
+
+        $.ajax({
+            url: '/Reports/GetPoolDailyReport',
+            type: 'GET',
+            data: { date: selectedDate },
+            success: function(response) {
+                $('#loadingIndicator').addClass('d-none');
+
+                if (response.success && response.currencies && response.currencies.length > 0) {
+                    displayReport(response.currencies, response.date);
+                    $('#reportContent').removeClass('d-none');
+                } else {
+                    $('#noDataMessage').removeClass('d-none');
+                }
+            },
+            error: function() {
+                $('#loadingIndicator').addClass('d-none');
+                alert('خطا در بارگذاری گزارش');
+            }
+        });
+    }
 
     function loadDailyReport() {
         const selectedDate = $('#reportDate').val();
@@ -104,16 +138,15 @@ $(document).ready(function() {
             const cardHtml = `
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header  text-black text-center">
                             <h5 class="card-title mb-0">${currency.currencyName} (${currency.currencyCode})</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12">
-                                    <h3 class="text-success mb-3">
-                                        ${formatCurrency(currency.dailyTransactionSum)} ${currency.currencyCode}
+                                    <h3 class="text-success mb-3 text-center">
+                                        ${formatCurrency(currency.dailyTransactionSum)} 
                                     </h3>
-                                    <p class="text-muted small">جمع تراکنش‌های روز ${reportDate}</p>
                                 </div>
                             </div>
 
@@ -132,7 +165,7 @@ $(document).ready(function() {
                                                 </div>
                                                 <div class="text-end">
                                                     <div class="fw-bold ${t.amount >= 0 ? 'text-success' : 'text-danger'}">
-                                                        ${t.amount >= 0 ? '+' : ''}${formatCurrency(t.amount)}
+                                                        ${formatCurrency(t.amount)}
                                                     </div>
                                                     <small class="text-muted">موجودی: ${formatCurrency(t.balanceAfter)}</small>
                                                 </div>
