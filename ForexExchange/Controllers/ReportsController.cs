@@ -682,6 +682,9 @@ namespace ForexExchange.Controllers
                         })
                         .ToListAsync();
 
+                    // Calculate the sum of transactions for the selected day
+                    decimal dailyTransactionSum = transactions.Sum(t => t.amount);
+
                     // Only include currencies that have transactions or a balance
                     if (transactions.Any() || latestBalance != 0)
                     {
@@ -690,6 +693,7 @@ namespace ForexExchange.Controllers
                             currencyCode = currency.Code,
                             currencyName = currency.Name,
                             latestBalance,
+                            dailyTransactionSum,
                             transactionCount = transactions.Count,
                             transactions
                         });
