@@ -190,11 +190,11 @@ $(document).ready(function() {
                                                     <div class="fw-bold">${t.description}</div>
                                                     <small class="text-primary">${t.type}</small>
                                                 </div>
-                                                <div class="text-end dir="ltr"">
+                                                <div class="text-end" dir="ltr" >
                                                     <div class="fw-bold ${t.amount >= 0 ? 'text-success' : 'text-danger'}">
                                                         ${formatCurrency(t.amount, currency.currencyCode)}
                                                     </div>
-                                                    <small class="text-muted" >موجودی: ${formatCurrency(t.balanceAfter, currency.currencyCode)}</small>
+                                                    <small class="text-muted" >موجودی: <span dir="ltr"> ${formatCurrency(t.balanceAfter, currency.currencyCode)}</span></small>
                                                 </div>
                                             </div>
                                         </div>
