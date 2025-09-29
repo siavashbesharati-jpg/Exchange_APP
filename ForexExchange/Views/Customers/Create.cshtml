@@ -29,7 +29,20 @@
                                 <small class="form-text text-muted">مثال: 0096871746098 یا +98912xxxxxxx یا 0912xxxxxxx</small>
                                 <span asp-validation-for="PhoneNumber" class="text-danger"></span>
                             </div>
-                        </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label asp-for="Gender" class="form-label">جنسیت *</label>
+                                    <select asp-for="Gender" class="form-select" required>
+                                        <option value="">انتخاب جنسیت</option>
+                                        <option value="true">مرد</option>
+                                        <option value="false">زن</option>
+                                    </select>
+                                    <span asp-validation-for="Gender" class="text-danger"></span>
+                                </div>
+                            </div>
+                    
 
                       
 

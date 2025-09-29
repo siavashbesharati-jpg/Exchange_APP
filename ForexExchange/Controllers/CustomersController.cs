@@ -394,7 +394,8 @@ namespace ForexExchange.Controllers
                     NationalId = model.NationalId ?? string.Empty,
                     Address = model.Address ?? string.Empty,
                     CreatedAt = DateTime.Now,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    Gender = model.Gender
                 };
 
                 _context.Add(customer);
@@ -448,7 +449,7 @@ namespace ForexExchange.Controllers
                     var currentUser = await _userManager.GetUserAsync(User);
                     var performedBy = currentUser?.UserName ?? "System";
 
-                  
+
                     // Send notification about new customer
                     await _adminNotificationService.SendCustomerNotificationAsync(customer, "created");
 
@@ -502,6 +503,7 @@ namespace ForexExchange.Controllers
                 Address = customer.Address,
                 IsActive = customer.IsActive,
                 CreatedAt = customer.CreatedAt,
+                Gender = customer.Gender,
                 InitialBalances = customer.Balances?.ToDictionary(b => b.CurrencyCode, b => b.Balance) ?? new Dictionary<string, decimal>()
             };
 
@@ -609,6 +611,7 @@ namespace ForexExchange.Controllers
                     customer.NationalId = model.NationalId ?? string.Empty;
                     customer.Address = model.Address ?? string.Empty;
                     customer.IsActive = model.IsActive;
+                    customer.Gender = model.Gender;
 
                     _context.Update(customer);
 

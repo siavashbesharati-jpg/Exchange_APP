@@ -13,7 +13,10 @@ namespace ForexExchange.Models
         [Required]
         [StringLength(20)]
         public string PhoneNumber { get; set; } = string.Empty;
-        
+
+         [Required]
+        public bool Gender { get; set; } = true;
+
         [StringLength(200)]
         public string Email { get; set; } = string.Empty;
         
