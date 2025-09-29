@@ -539,7 +539,7 @@
                                         <td style="text-align: center;">@transaction.TransactionNumber</td>
 
 
-                                        <td style="text-align: right;">@transaction.Description</td>
+                                        <td style="text-align: right;">@transaction.Note</td>
                                         <td class="amount-cell">
                                             <span class="@(transaction.Amount >= 0 ? "positive" : "negative")">
                                                 @if (transaction.CurrencyCode == "IRR")
