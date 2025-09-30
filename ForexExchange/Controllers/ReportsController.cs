@@ -39,6 +39,28 @@ namespace ForexExchange.Controllers
             _centralFinancialService = centralFinancialService;
         }
 
+        /// <summary>
+        /// Helper method to properly format date range for reports.
+        /// From date starts at 00:00:01, To date ends at 23:59:00
+        /// </summary>
+        private (DateTime fromDateTime, DateTime toDateTime) FormatDateRange(DateTime? fromDate, DateTime? toDate)
+        {
+            // Set default values if dates are null
+            var defaultFromDate = DateTime.Today.AddMonths(-12);
+            var defaultToDate = DateTime.Today;
+
+            var from = fromDate ?? defaultFromDate;
+            var to = toDate ?? defaultToDate;
+
+            // Ensure fromDate starts at 00:00:01
+            var fromDateTime = new DateTime(from.Year, from.Month, from.Day, 0, 0, 1);
+            
+            // Ensure toDate ends at 23:59:00
+            var toDateTime = new DateTime(to.Year, to.Month, to.Day, 23, 59, 0);
+
+            return (fromDateTime, toDateTime);
+        }
+
         // GET: Reports
         public IActionResult Index()
         {
@@ -319,14 +341,13 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                fromDate ??= DateTime.Today.AddDays(-30);
-                toDate ??= DateTime.Today.AddDays(1);
+                var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
 
                 var query = _context.Orders
                     .Include(o => o.Customer)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
-                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+                    .Where(o => o.CreatedAt >= fromDateTime && o.CreatedAt <= toDateTime);
 
                 // Apply currency filters
                 if (!string.IsNullOrEmpty(fromCurrency))
@@ -389,13 +410,12 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                fromDate ??= DateTime.Today.AddDays(-30);
-                toDate ??= DateTime.Today.AddDays(1);
+                var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
 
                 var query = _context.AccountingDocuments
                     .Include(ad => ad.PayerCustomer)
                     .Include(ad => ad.ReceiverCustomer)
-                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate);
+                    .Where(ad => ad.DocumentDate >= fromDateTime && ad.DocumentDate <= toDateTime);
 
                 // Apply additional filters
                 if (!string.IsNullOrEmpty(currency))
@@ -826,7 +846,8 @@ namespace ForexExchange.Controllers
                 // Apply date filter if provided (filter by customer creation date)
                 if (fromDate.HasValue && toDate.HasValue)
                 {
-                    query = query.Where(cb => cb.Customer.CreatedAt >= fromDate && cb.Customer.CreatedAt <= toDate);
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    query = query.Where(cb => cb.Customer.CreatedAt >= fromDateTime && cb.Customer.CreatedAt <= toDateTime);
                 }
 
                 if (!string.IsNullOrEmpty(currency))
@@ -895,7 +916,8 @@ namespace ForexExchange.Controllers
                 // Apply date filter if provided (filter by order creation date)
                 if (fromDate.HasValue && toDate.HasValue)
                 {
-                    query = query.Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate);
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    query = query.Where(o => o.CreatedAt >= fromDateTime && o.CreatedAt <= toDateTime);
                 }
 
                 if (!string.IsNullOrEmpty(currency))
@@ -967,7 +989,8 @@ namespace ForexExchange.Controllers
                 // Apply date filter if provided (filter by document creation date)
                 if (fromDate.HasValue && toDate.HasValue)
                 {
-                    query = query.Where(ad => ad.CreatedAt >= fromDate && ad.CreatedAt <= toDate);
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    query = query.Where(ad => ad.CreatedAt >= fromDateTime && ad.CreatedAt <= toDateTime);
                 }
 
                 if (!string.IsNullOrEmpty(currency))
@@ -1019,11 +1042,11 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                fromDate ??= DateTime.Today.AddDays(-30);
-                toDate ??= DateTime.Today.AddDays(1);
+                var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
 
                 // For now, just redirect to a placeholder or return a message
                 // You can implement actual Excel export using EPPlus or similar library
+                // When implemented, use fromDateTime and toDateTime for filtering
 
                 return Json(new
                 {
@@ -1058,6 +1081,14 @@ namespace ForexExchange.Controllers
                 if (!string.IsNullOrEmpty(toDate) && DateTime.TryParse(toDate, out var parsedToDate))
                 {
                     toDateTime = parsedToDate;
+                }
+
+                // Format date range if any dates are provided
+                if (fromDateTime.HasValue || toDateTime.HasValue)
+                {
+                    var (formattedFromDateTime, formattedToDateTime) = FormatDateRange(fromDateTime, toDateTime);
+                    fromDateTime = formattedFromDateTime;
+                    toDateTime = formattedToDateTime;
                 }
 
                 var timeline = await _poolHistoryService.GetPoolTimelineAsync(currencyCode, fromDateTime, toDateTime);
@@ -1110,6 +1141,14 @@ namespace ForexExchange.Controllers
                 if (!string.IsNullOrEmpty(toDate) && DateTime.TryParse(toDate, out var parsedToDate))
                 {
                     toDateTime = parsedToDate;
+                }
+
+                // Format date range if any dates are provided
+                if (fromDateTime.HasValue || toDateTime.HasValue)
+                {
+                    var (formattedFromDateTime, formattedToDateTime) = FormatDateRange(fromDateTime, toDateTime);
+                    fromDateTime = formattedFromDateTime;
+                    toDateTime = formattedToDateTime;
                 }
 
                 var timeline = await _bankAccountHistoryService.GetBankAccountTimelineAsync(bankAccountId, fromDateTime, toDateTime);
@@ -1167,13 +1206,12 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                fromDate ??= DateTime.Today.AddDays(-30);
-                toDate ??= DateTime.Today.AddDays(1);
+                var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
 
                 var query = _context.AccountingDocuments
                     .Include(ad => ad.PayerCustomer)
                     .Include(ad => ad.ReceiverCustomer)
-                    .Where(ad => ad.DocumentDate >= fromDate && ad.DocumentDate <= toDate);
+                    .Where(ad => ad.DocumentDate >= fromDateTime && ad.DocumentDate <= toDateTime);
 
                 // Apply additional filters
                 if (!string.IsNullOrEmpty(currency))
@@ -1327,7 +1365,18 @@ namespace ForexExchange.Controllers
                 if (bankAccountId <= 0)
                     return BadRequest("Invalid bank account ID");
 
-                var timeline = await _bankAccountHistoryService.GetBankAccountTimelineAsync(bankAccountId, fromDate, toDate);
+                // Format date range if dates are provided
+                DateTime? formattedFromDate = null;
+                DateTime? formattedToDate = null;
+                
+                if (fromDate.HasValue || toDate.HasValue)
+                {
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    formattedFromDate = fromDateTime;
+                    formattedToDate = toDateTime;
+                }
+
+                var timeline = await _bankAccountHistoryService.GetBankAccountTimelineAsync(bankAccountId, formattedFromDate, formattedToDate);
                 var summary = await _bankAccountHistoryService.GetBankAccountSummaryAsync(bankAccountId);
 
                 // Get bank account name
