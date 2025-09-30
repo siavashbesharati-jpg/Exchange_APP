@@ -725,31 +725,34 @@ namespace ForexExchange.Controllers
                         if (rate.HasValue && rate.Value > 0 && averageRate > 0 && 
                             fromCurrency != null && toCurrency != null)
                         {
-                            // Determine conversion direction based on RatePriority (lower number = higher priority)
-                            // If FromCurrency has higher priority (lower number), we divide
-                            bool shouldDivide = fromCurrency!.RatePriority < toCurrency!.RatePriority;
-                            
-                            decimal transactionAmount = h.TransactionAmount;
+                            decimal transactionAmount = Math.Abs(h.TransactionAmount); // Use absolute value for calculation
                             decimal convertedAmount;
                             decimal reversedAmount;
 
-                            if (shouldDivide)
+                            // Determine direction based on which currency pool we're looking at
+                            // If the pool currency matches FromCurrency, we're selling from pool (divide)
+                            // If the pool currency matches ToCurrency, we're buying to pool (multiply)
+                            bool isSellingFromPool = currency.Code == fromCurrency!.Code;
+
+                            if (isSellingFromPool)
                             {
-                                // Higher priority to lower priority: divide by rate, then multiply by average
-                                // Example: OMR(1) to USD(3): amount ÷ rate, then × averageRate
+                                // Selling from pool: convert pool currency to target currency (divide by rate)
                                 convertedAmount = transactionAmount / rate.Value;
                                 reversedAmount = convertedAmount * averageRate;
                             }
                             else
                             {
-                                // Lower priority to higher priority: multiply by rate, then divide by average  
-                                // Example: USD(3) to OMR(1): amount × rate, then ÷ averageRate
+                                // Buying to pool: convert source currency to pool currency (multiply by rate)
                                 convertedAmount = transactionAmount * rate.Value;
                                 reversedAmount = convertedAmount / averageRate;
                             }
 
                             // Profit = Original amount - Amount if converted at average rate
                             profit = transactionAmount - reversedAmount;
+
+                            // Debug logging to see what's happening
+                            _logger.LogInformation("Profit calc: Pool={Pool}, From={From}, To={To}, Selling={Selling}, Amount={Amount}, Rate={Rate}, AvgRate={AvgRate}, Converted={Converted}, Reversed={Reversed}, Profit={Profit}", 
+                                currency.Code, fromCurrency.Code, toCurrency.Code, isSellingFromPool, transactionAmount, rate.Value, averageRate, convertedAmount, reversedAmount, profit);
 
                         }
 
