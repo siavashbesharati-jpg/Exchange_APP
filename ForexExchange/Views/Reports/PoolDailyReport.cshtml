@@ -262,7 +262,23 @@ $(document).ready(function() {
         // Ensure formatCurrency is available with fallback
         const safeFormatCurrency = window.formatCurrency ? window.formatCurrency : function(val, code) {
             if (val === null || val === undefined || isNaN(val)) return '0';
-            return Number(val).toLocaleString('en-US');
+            
+            const numAmount = parseFloat(val);
+            const isIRR = code && code.toUpperCase() === 'IRR';
+            
+            if (isIRR) {
+                // IRR: No decimal places
+                return new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(numAmount);
+            } else {
+                // Non-IRR: 3 decimal places
+                return new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(numAmount);
+            }
         };
 
         currencies.forEach(function(currency) {
