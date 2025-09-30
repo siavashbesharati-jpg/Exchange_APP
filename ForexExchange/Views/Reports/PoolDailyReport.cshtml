@@ -44,14 +44,14 @@
                         <div class="col-md-6">
                             <div class="quick-actions mt-4">
                                 <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-outline-primary" id="btnYesterday">
-                                        <i class="fas fa-arrow-left me-1"></i>دیروز
+                                    <button type="button" class="btn btn-outline-primary" id="btnPreviousDay">
+                                        <i class="fas fa-arrow-right me-1"></i>روز قبل
                                     </button>
                                     <button type="button" class="btn btn-outline-primary" id="btnToday">
                                         <i class="fas fa-calendar-day me-1"></i>امروز
                                     </button>
-                                    <button type="button" class="btn btn-outline-primary" id="btnRefresh">
-                                        <i class="fas fa-sync-alt me-1"></i>بروزرسانی
+                                    <button type="button" class="btn btn-outline-primary" id="btnNextDay">
+                                        <i class="fas fa-arrow-left me-1"></i>روز بعد
                                     </button>
                                 </div>
                             </div>
@@ -97,11 +97,15 @@
 $(document).ready(function() {
     // Load report on page load with today's date
     loadDailyReport();
+    
+    // Initialize navigation buttons
+    updateNavigationButtons();
 
     // Load report when date changes
     $('#reportDate').on('change', function() {
         loadDailyReport();
         updateReportDateDisplay();
+        updateNavigationButtons();
     });
 
     // Load report when Enter is pressed in date input
@@ -112,11 +116,11 @@ $(document).ready(function() {
     });
 
     // Quick action buttons
-    $('#btnYesterday').on('click', function() {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        $('#reportDate').val(yesterdayStr).trigger('change');
+    $('#btnPreviousDay').on('click', function() {
+        const currentDate = new Date($('#reportDate').val());
+        currentDate.setDate(currentDate.getDate() - 1);
+        const previousDayStr = currentDate.toISOString().split('T')[0];
+        $('#reportDate').val(previousDayStr).trigger('change');
     });
 
     $('#btnToday').on('click', function() {
@@ -124,8 +128,21 @@ $(document).ready(function() {
         $('#reportDate').val(today).trigger('change');
     });
 
-    $('#btnRefresh').on('click', function() {
-        loadDailyReport();
+    $('#btnNextDay').on('click', function() {
+        const currentDate = new Date($('#reportDate').val());
+        const nextDay = new Date(currentDate);
+        nextDay.setDate(currentDate.getDate() + 1);
+        
+        // Check if next day is not in the future
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        if (nextDay <= today) {
+            const nextDayStr = nextDay.toISOString().split('T')[0];
+            $('#reportDate').val(nextDayStr).trigger('change');
+        } else {
+            showAlert('نمی‌توان تاریخ آینده را انتخاب کرد', 'warning');
+        }
     });
 
     // Update report date display
@@ -184,6 +201,9 @@ $(document).ready(function() {
             success: function(response) {
                 $('#loadingIndicator').addClass('d-none');
                 $('.btn-outline-primary').prop('disabled', false);
+                
+                // Update next day button state based on selected date
+                updateNavigationButtons();
 
                 if (response.success && response.currencies && response.currencies.length > 0) {
                     displayReport(response.currencies, response.date);
@@ -197,10 +217,23 @@ $(document).ready(function() {
             error: function(xhr, status, error) {
                 $('#loadingIndicator').addClass('d-none');
                 $('.btn-outline-primary').prop('disabled', false);
+                updateNavigationButtons();
                 showAlert('خطا در بارگذاری گزارش. لطفاً دوباره تلاش کنید.', 'danger');
                 console.error('Report loading error:', error);
             }
         });
+    }
+
+    // Update navigation button states
+    function updateNavigationButtons() {
+        const selectedDate = new Date($('#reportDate').val());
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        // Disable next day button if selected date is today
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(selectedDate.getDate() + 1);
+        $('#btnNextDay').prop('disabled', nextDay > today);
     }
 
     // Helper function to show alerts
@@ -239,7 +272,7 @@ $(document).ready(function() {
             const neutralTransactions = currency.transactions.filter(t => t.profit == 0).length;
 
             const cardHtml = `
-                <div class="col-md-6 col-xl-4 mb-4">
+                <div class="col-12 col-md-6 mb-4">
                     <div class="card h-100 shadow-sm">
                         <div class="card-header bg-light text-dark text-center border-bottom">
                             <h5 class="card-title mb-1 fw-bold">${currency.currencyName}</h5>
