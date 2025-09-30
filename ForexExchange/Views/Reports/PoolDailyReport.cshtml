@@ -272,7 +272,7 @@ $(document).ready(function() {
             const neutralTransactions = currency.transactions.filter(t => t.profit == 0).length;
 
             const cardHtml = `
-                <div class="col-12 col-md-4 mb-4">
+                <div class="col-12 col-md-6 mb-4">
                     <div class="card h-100" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e8ecef;">
                         <div class="card-header text-center" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-bottom: 1px solid #dee2e6; color: #495057;">
                             <h5 class="card-title mb-1 fw-bold" style="color: #343a40;">${currency.currencyName}</h5>
@@ -313,7 +313,7 @@ $(document).ready(function() {
                                     <div class="col-4">
                                         <div class="stat-item" style="background: #f8f1f1; border-radius: 6px; padding: 8px; border: 1px solid #f0e1e1;">
                                             <div class="fw-bold" style="color: #5a4a4a;">${lossTransactions}</div>
-                                            <small style="color: #6c757d;">زیان‌ده</small>
+                                            <small style="color: #6c757d;">زیان‌ ده</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
@@ -338,7 +338,7 @@ $(document).ready(function() {
                                         currency.transactions.map(t => `
                                             <div class="transaction-item rounded p-3 mb-2" style="background: ${t.profit > 0 ? 'linear-gradient(135deg, #f8fdf8 0%, #f1f8f1 100%)' : t.profit < 0 ? 'linear-gradient(135deg, #fdf8f8 0%, #f8f1f1 100%)' : 'linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%)'}; border: 1px solid ${t.profit > 0 ? '#e8f5e8' : t.profit < 0 ? '#f5e8e8' : '#e9ecef'}; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
                                                 <!-- Transaction Header -->
-                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <div class="mb-2">
                                                     <div class="transaction-info">
                                                         <div class="fw-bold" style="color: #343a40;">${t.description}</div>
                                                         <small style="color: #6c757d;">
@@ -348,11 +348,6 @@ $(document).ready(function() {
                                                             </span>
                                                         </small>
                                                     </div>
-                                                    <div class="profit-indicator">
-                                                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8em; background: ${t.profit > 0 ? 'linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%)' : t.profit < 0 ? 'linear-gradient(135deg, #f8e8e8 0%, #f5c6cb 100%)' : 'linear-gradient(135deg, #e2e3e5 0%, #d1d3d4 100%)'}; color: ${t.profit > 0 ? '#2d5a2d' : t.profit < 0 ? '#5a2d2d' : '#495057'}; border: 1px solid ${t.profit > 0 ? '#c3e6c3' : t.profit < 0 ? '#e6c3c3' : '#ced4da'}; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" dir="ltr">
-                                                            ${safeFormatCurrency(t.profit, currency.currencyCode)}
-                                                        </span>
-                                                    </div>
                                                 </div>
                                                 
                                                 <!-- Transaction Details -->
@@ -361,21 +356,31 @@ $(document).ready(function() {
                                                         <div class="col-6">
                                                             <div class="detail-item mb-1">
                                                                 <small style="color: #6c757d;">مبلغ معامله:</small>
-                                                                <div class="fw-bold" style="color: #495057;"><span dir="ltr">${safeFormatCurrency(Math.abs(t.amount), currency.currencyCode)}</span></div>
+                                                                <div style="color: #adb5bd; font-weight: 400;"><span dir="ltr">${safeFormatCurrency(Math.abs(t.amount), currency.currencyCode)}</span></div>
                                                             </div>
                                                         </div>
                                                         <div class="col-6">
                                                             <div class="detail-item mb-1">
                                                                 <small style="color: #6c757d;">نرخ معامله:</small>
-                                                                <div class="fw-bold" style="color: #495057;"><span dir="ltr">${t.rate !== undefined && t.rate !== null ? safeFormatCurrency(t.rate, currency.currencyCode) : '-'}</span></div>
+                                                                <div style="color: #adb5bd; font-weight: 400;"><span dir="ltr">${t.rate !== undefined && t.rate !== null ? safeFormatCurrency(t.rate, currency.currencyCode) : '-'}</span></div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="row">
-                                                        <div class="col-12">
+                                                        <div class="col-6">
                                                             <div class="detail-item">
                                                                 <small style="color: #6c757d;">میانگین نرخ روز:</small>
-                                                                <div class="fw-bold" style="color: #4a5568;"><span dir="ltr">${t.averageRate !== undefined && t.averageRate !== null ? safeFormatCurrency(t.averageRate, currency.currencyCode) : '-'}</span></div>
+                                                                <div style="color: #adb5bd; font-weight: 400;"><span dir="ltr">${t.averageRate !== undefined && t.averageRate !== null ? safeFormatCurrency(t.averageRate, currency.currencyCode) : '-'}</span></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <div class="detail-item text-end">
+                                                                <small style="color: #6c757d;">سود/زیان:</small>
+                                                                <div>
+                                                                    <span style="padding: 0px 8px; border-radius: 4px; font-size: 0.9em; font-weight: 600; background: ${t.profit > 0 ? 'linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%)' : t.profit < 0 ? 'linear-gradient(135deg, #f8e8e8 0%, #f5c6cb 100%)' : 'linear-gradient(135deg, #e2e3e5 0%, #d1d3d4 100%)'}; color: ${t.profit > 0 ? '#1e4d1e' : t.profit < 0 ? '#4d1e1e' : '#495057'}; border: 1px solid ${t.profit > 0 ? '#c3e6c3' : t.profit < 0 ? '#e6c3c3' : '#ced4da'}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-shadow: 0 1px 2px rgba(0,0,0,0.15);" dir="ltr">
+                                                                        ${safeFormatCurrency(t.profit, currency.currencyCode)}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
