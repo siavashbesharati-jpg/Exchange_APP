@@ -244,10 +244,29 @@
 
         .transaction-type {
             font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
+            padding: 4px 14px;
+            border-radius: 12px;
             display: inline-block;
             font-weight: bold;
+            color: white !important;
+            text-align: center;
+            min-width: 45px;
+        }
+
+        .type-buy {
+            background: #155724 !important;
+        }
+
+        .type-sell {
+            background: #a70a0a !important;
+        }
+
+        .type-payment {
+            background: #b5c4d4 !important;
+        }
+
+        .type-receipt {
+            background: #69a508 !important;
         }
 
         .type-order {
@@ -261,8 +280,7 @@
         }
 
         .type-manual {
-            background: #95a5a6;
-            color: white;
+            color: black;
         }
 
         .amount-cell {
@@ -328,6 +346,44 @@
             .transaction-table th,
             .transaction-table td {
                 padding: 3px 2px;
+            }
+
+            .transaction-type {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .type-buy {
+                background: #155724 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .type-sell {
+                background: #fd7e14 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .type-payment {
+                background: #007bff !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .type-receipt {
+                background: #17a2b8 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             .receipt-header {
@@ -561,10 +617,40 @@
                                     <tr>
                                         <td>@transaction.TransactionDate.ToString("yyyy/MM/dd")</td>
                                         <td>
-                                            <span
-                                                class="transaction-type type-@(transaction.TransactionType.ToLower().Replace(" ", "-"))">
-                                                @transaction.TransactionType
-                                            </span>
+                                            @{
+                                                string typeClass = "transaction-type";
+                                                string transactionType = transaction.TransactionType.ToLower();
+                                                
+                                                if (transactionType.Contains("خرید"))
+                                                {
+                                                    typeClass = "transaction-type type-buy";
+                                                }
+                                                else if (transactionType.Contains("فروش"))
+                                                {
+                                                    typeClass = "transaction-type type-sell";
+                                                }
+                                                else if (transactionType.Contains("پرداخت"))
+                                                {
+                                                    typeClass = "transaction-type type-payment";
+                                                }
+                                                else if (transactionType.Contains("دریافت"))
+                                                {
+                                                    typeClass = "transaction-type type-receipt";
+                                                }
+                                                else if (transactionType.Contains("order") || transactionType.Contains("سفارش"))
+                                                {
+                                                    typeClass = "transaction-type type-order";
+                                                }
+                                                else if (transactionType.Contains("document") || transactionType.Contains("سند"))
+                                                {
+                                                    typeClass = "transaction-type type-document";
+                                                }
+                                                else if (transactionType.Contains("manual") || transactionType.Contains("دستی"))
+                                                {
+                                                    typeClass = "transaction-type type-manual";
+                                                }
+                                            }
+                                            <span class="@typeClass">@transaction.TransactionType</span>
                                         </td>
 
                                         <td style="text-align: center;">@transaction.CurrencyCode</td>
