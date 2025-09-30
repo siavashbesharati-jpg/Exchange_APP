@@ -42,7 +42,7 @@ namespace ForexExchange.Services
                 {
                     // Name uses gender as prefix
                     CustomerId = 100 + customerId,
-                    CustomerName = (customer.Gender ? "MR." : "MS.") + customer.FullName,
+                    CustomerName = (customer.Gender ? "Mr. " : "Ms. ") + customer.FullName,
                     FromDate = validFromDate,
                     ToDate = validToDate
                 };
