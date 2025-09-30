@@ -174,6 +174,9 @@ $(document).ready(function() {
                                     <h3 class="text-success mb-3 text-center" dir="ltr">
                                         ${formatCurrency(currency.dailyTransactionSum, currency.currencyCode)} 
                                     </h3>
+                                    <div class="mb-2 text-center">
+                                        <span class="badge bg-info text-dark" style="font-size: 0.95em;">میانگین نرخ روز: ${currency.averageRate ? formatCurrency(currency.averageRate, currency.currencyCode) : '-'}</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -191,10 +194,10 @@ $(document).ready(function() {
                                                     <small class="text-primary">${t.amount >= 0 ? 'خرید' : 'فروش'}</small>
                                                 </div>
                                                 <div class="text-end" dir="ltr" >
-                                                    <div class="fw-bold ${t.amount >= 0 ? 'text-success' : 'text-danger'}">
-                                                        ${formatCurrency(t.amount, currency.currencyCode)}
+                                                    <div class="fw-bold ${t.profit >= 0 ? 'text-success' : 'text-danger'}">
+                                                        سود: ${formatCurrency(t.profit, currency.currencyCode)}
                                                     </div>
-                                                    <small class="text-muted" >موجودی: <span dir="ltr"> ${formatCurrency(t.balanceAfter, currency.currencyCode)}</span></small>
+                                                    <small class="text-muted">نرخ معامله: ${t.rate ? formatCurrency(t.rate, currency.currencyCode) : '-'}</small>
                                                 </div>
                                             </div>
                                         </div>
