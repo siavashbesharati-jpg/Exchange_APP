@@ -471,7 +471,8 @@ namespace ForexExchange.Controllers
 
             // Load minimal customer data for dropdown (just ID and FullName)
             var customers = _context.Customers
-                .Where(c => c.IsActive && c.IsSystem == false);
+                .Where(c => c.IsActive && c.IsSystem == false)
+                .OrderBy(c => c.FullName);
 
             ViewBag.Customers = customers.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {
@@ -508,6 +509,7 @@ namespace ForexExchange.Controllers
 
                 var customers = await query
                     .Select(c => new { c.Id, c.FullName })
+                    .OrderBy(c => c.FullName)
                     .Take(50) // Limit results to prevent large responses
                     .ToListAsync();
 

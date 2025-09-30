@@ -40,7 +40,7 @@ namespace ForexExchange.Controllers
         {
             var customers = await _context.Customers
                 .Where(c => c.IsActive && c.IsSystem == false)
-                .OrderByDescending(c => c.CreatedAt)
+                .OrderBy(c => c.FullName)
                 .ToListAsync();
 
             return View(customers);
@@ -290,6 +290,7 @@ namespace ForexExchange.Controllers
                     id = c.Id,
                     text = $"{c.FullName} - {c.PhoneNumber}"
                 })
+                .OrderBy(c => c.text)
                 .Take(10)
                 .ToListAsync();
 

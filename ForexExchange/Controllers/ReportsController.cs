@@ -148,7 +148,7 @@ namespace ForexExchange.Controllers
                         }).ToList(),
                         totalBalanceIRR = c.Balances.Where(b => b.CurrencyCode == "IRR").Sum(b => b.Balance)
                     })
-                    .OrderByDescending(c => c.createdAt)
+                    .OrderBy(c => c.fullName)
                     .ToListAsync();
 
                 var totalCustomers = customers.Count;
