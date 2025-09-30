@@ -94,6 +94,62 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
+        /// Get formatted display for phone number with proper spacing for Persian/Iranian numbers
+        /// دریافت فرمت نمایشی با فاصله‌گذاری مناسب برای شماره‌های ایرانی
+        /// </summary>
+        /// <param name="normalizedPhoneNumber">Normalized phone number</param>
+        /// <returns>Formatted display (e.g., "+98 912 067 4032")</returns>
+        public static string GetFormattedDisplayFormat(string normalizedPhoneNumber)
+        {
+            if (string.IsNullOrWhiteSpace(normalizedPhoneNumber) || !normalizedPhoneNumber.StartsWith("00"))
+                return normalizedPhoneNumber;
+
+            string withoutPrefix = normalizedPhoneNumber.Substring(2); // Remove "00"
+            
+            // Check if it's Iranian number (starts with 98)
+            if (withoutPrefix.StartsWith("98") && withoutPrefix.Length >= 12)
+            {
+                string countryCode = withoutPrefix.Substring(0, 2); // "98"
+                string localNumber = withoutPrefix.Substring(2); // Remove country code
+                
+                // Format Iranian mobile numbers: +98 912 067 4032
+                if (localNumber.StartsWith("9") && localNumber.Length == 10)
+                {
+                    return $"+{countryCode} {localNumber.Substring(0, 3)} {localNumber.Substring(3, 3)} {localNumber.Substring(6, 4)}";
+                }
+                // Format Iranian landline numbers differently based on city
+                else if (localNumber.Length >= 8)
+                {
+                    // Most Iranian landlines: +98 21 1234 5678 (Tehran) or +98 311 123 4567 (Isfahan)
+                    if (localNumber.Length == 10 && (localNumber.StartsWith("21") || localNumber.StartsWith("26")))
+                    {
+                        // Tehran, Karaj: +98 21 1234 5678
+                        return $"+{countryCode} {localNumber.Substring(0, 2)} {localNumber.Substring(2, 4)} {localNumber.Substring(6, 4)}";
+                    }
+                    else if (localNumber.Length == 10)
+                    {
+                        // Three-digit area codes: +98 311 123 4567
+                        return $"+{countryCode} {localNumber.Substring(0, 3)} {localNumber.Substring(3, 3)} {localNumber.Substring(6, 4)}";
+                    }
+                    else
+                    {
+                        // Fallback for other patterns
+                        return $"+{countryCode} {localNumber}";
+                    }
+                }
+                else
+                {
+                    return $"+{countryCode} {localNumber}";
+                }
+            }
+            else
+            {
+                // Non-Iranian numbers - simple format with country code separation
+                return "+" + withoutPrefix;
+            }
+        }
+
+        /// <summary>
         /// Extract country code from normalized phone number
         /// رسید  کد کشور از شماره تلفن نرمال‌شده
         /// </summary>

@@ -513,13 +513,9 @@ namespace ForexExchange.Controllers
                     return Json(new { success = false, message = "کاربر یافت نشد" });
                 }
 
-                // Don't allow editing self
+                // Allow editing self - no restriction for basic info updates
                 var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser?.Id == userId)
-                {
-                    return Json(new { success = false, message = "شما نمی‌توانید اطلاعات خود را ویرایش کنید" });
-                }
-
+                
                 var oldEmail = user.Email;
                 var oldFullName = user.FullName;
 
@@ -550,9 +546,77 @@ namespace ForexExchange.Controllers
                     return Json(new { success = false, message = $"خطا در بروزرسانی: {errors}" });
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Json(new { success = false, message = "خطا در بروزرسانی اطلاعات کاربر" });
+            }
+        }
+
+        /// <summary>
+        /// Change Admin Password
+        /// تغییر رمز عبور ادمین
+        /// </summary>
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ChangeAdminPassword(string userId, string newPassword, string confirmPassword)
+        {
+            try
+            {
+                // Validate passwords match
+                if (newPassword != confirmPassword)
+                {
+                    return Json(new { success = false, message = "رمز عبور و تکرار آن باید یکسان باشند" });
+                }
+
+                // Validate password length
+                if (string.IsNullOrEmpty(newPassword) || newPassword.Length < 6)
+                {
+                    return Json(new { success = false, message = "رمز عبور باید حداقل ۶ کاراکتر باشد" });
+                }
+
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "کاربر یافت نشد" });
+                }
+
+                // Allow changing own password - remove restriction
+                var currentUser = await _userManager.GetUserAsync(User);
+
+                // Remove current password and set new one
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+                if (result.Succeeded)
+                {
+                    // Log the activity
+                    if (currentUser != null)
+                    {
+                        await _adminActivityService.LogActivityAsync(
+                            currentUser.Id,
+                            currentUser.UserName ?? "Unknown",
+                            AdminActivityType.UserUpdated,
+                            $"Password changed for user: {user.UserName ?? user.Email}",
+                            $"Admin {currentUser.UserName} changed password for user {user.UserName ?? user.Email}",
+                            "User",
+                            null,
+                            "[PROTECTED]",
+                            "[PASSWORD_CHANGED]",
+                            true
+                        );
+                    }
+
+                    return Json(new { success = true, message = "رمز عبور با موفقیت تغییر یافت" });
+                }
+                else
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    return Json(new { success = false, message = $"خطا در تغییر رمز عبور: {errors}" });
+                }
+            }
+            catch (Exception)
+            {
+                return Json(new { success = false, message = "خطا در تغییر رمز عبور" });
             }
         }
     }
