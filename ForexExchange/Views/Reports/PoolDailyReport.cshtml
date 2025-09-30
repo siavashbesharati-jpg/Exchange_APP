@@ -317,6 +317,15 @@ $(document).ready(function() {
                                 <small style="color: #6c757d;">مجموع سود/زیان روز</small>
                             </div>
 
+                            <!-- Weighted Average Rate -->
+                            ${currency.weightedAverageRate !== undefined && currency.weightedAverageRate !== null && currency.weightedAverageRate > 0 ? 
+                            `<div class="weighted-avg-section text-center mb-3">
+                                <div class="p-2" style="background: #f0f8ff; border-radius: 6px; border: 1px solid #d1e7ff;">
+                                    <div class="fw-bold" style="color: #0056b3;" dir="ltr">${safeFormatCurrency(currency.weightedAverageRate, currency.currencyCode)}</div>
+                                    <small style="color: #6c757d;">میانگین وزنی نرخ روز</small>
+                                </div>
+                            </div>` : ''}
+
                             <!-- Transaction Summary Stats -->
                             <div class="transaction-stats mb-3">
                                 <div class="row text-center">
@@ -386,7 +395,7 @@ $(document).ready(function() {
                                                         <div class="col-6">
                                                             <div class="detail-item">
                                                                 <small style="color: #6c757d;">میانگین نرخ روز:</small>
-                                                                <div style="color: #adb5bd; font-weight: 400;"><span dir="ltr">${t.averageRate !== undefined && t.averageRate !== null ? safeFormatCurrency(t.averageRate, currency.currencyCode) : '-'}</span></div>
+                                                                <div style="color: #adb5bd; font-weight: 400;"><span dir="ltr">${t.weightedAverageRate !== undefined && t.weightedAverageRate !== null ? safeFormatCurrency(t.weightedAverageRate, currency.currencyCode) : '-'}</span></div>
                                                             </div>
                                                         </div>
                                                         <div class="col-6">

@@ -592,7 +592,7 @@
                                 <div class="company-name">گروه تابان</div>
                                 <div class="company-website">https://taban-group.com</div>
                             </div>
-                            <div class="report-title">@Model.ReportTitle - @Model.EntityName</div>
+                            <div class="report-title">@Model.ReportTitle - @currencyGroup.First().CurrencyCode</div>
                         </div>
 
                         <table class="transaction-table">
@@ -600,7 +600,7 @@
                                 <tr>
                                     <th style="width: 13%;">تاریخ</th>
                                     <th style="width: 13%;">نوع</th>
-                                      <th style="width: 13%;">ارز</th>
+                                    <th style="width: 13%;">ارز</th>
                                     <th style="width: 13%;">شناسه تراکنش</th>
                                     <th style="width: 33%;">یادداشت</th>
                                     <th style="width: 15%;">مبلغ</th>
@@ -616,7 +616,7 @@
                                             @{
                                                 string typeClass = "transaction-type";
                                                 string transactionType = transaction.TransactionType.ToLower();
-                                                
+
                                                 if (transactionType.Contains("خرید"))
                                                 {
                                                     typeClass = "transaction-type type-buy";
