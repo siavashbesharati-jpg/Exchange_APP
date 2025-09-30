@@ -37,10 +37,10 @@ window.ForexCurrencyFormatter = (function() {
             // IRR: display value as-is with thousand separators (no rounding - backend handles that)
             result = new Intl.NumberFormat('en-US').format(numAmount);
         } else {
-            // Non-IRR: NO ROUNDING - preserve exact precision with up to 8 decimal places
+            // Non-IRR: show 3 decimal places for rates and amounts
             result = new Intl.NumberFormat('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 8
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 3
             }).format(numAmount);
         }
 

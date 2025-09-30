@@ -645,7 +645,7 @@ namespace ForexExchange.Controllers
                 var startOfDay = date.Date;
                 var endOfDay = startOfDay.AddDays(1).AddSeconds(-1);
 
-                // Get all active currencies
+                // Get all active currencies with their RatePriority
                 var currencies = await _context.Currencies
                     .Where(c => c.IsActive)
                     .OrderBy(c => c.DisplayOrder)
@@ -655,38 +655,123 @@ namespace ForexExchange.Controllers
 
                 foreach (var currency in currencies)
                 {
-                    // Get the latest balance at the end of the selected day
+                    // Get latest balance at end of day
                     var latestHistory = await _context.CurrencyPoolHistory
                         .Where(h => h.CurrencyCode == currency.Code && h.TransactionDate <= endOfDay)
                         .OrderByDescending(h => h.TransactionDate)
-                        .ThenByDescending(h => h.Id) // In case of same timestamp, use ID
+                        .ThenByDescending(h => h.Id)
                         .FirstOrDefaultAsync();
 
                     decimal latestBalance = latestHistory?.BalanceAfter ?? 0;
 
-                    // Get all transactions during the selected day (from 00:00:01 to 23:59:59)
-                    var transactions = await _context.CurrencyPoolHistory
-                        .Where(h => h.CurrencyCode == currency.Code && 
-                                   h.TransactionDate >= startOfDay && 
+                    // Get all transactions for the day
+                    var transactionsRaw = await _context.CurrencyPoolHistory
+                        .Where(h => h.CurrencyCode == currency.Code &&
+                                   h.TransactionDate >= startOfDay &&
                                    h.TransactionDate <= endOfDay)
                         .OrderBy(h => h.TransactionDate)
                         .ThenBy(h => h.Id)
-                        .Select(h => new
+                        .ToListAsync();
+
+                    // Extract rates and calculate profits
+                    var ratesForAverage = new List<decimal>();
+                    var transactionsWithRates = new List<(CurrencyPoolHistory historyRecord, decimal? rate, Currency? fromCurrency, Currency? toCurrency)>();
+
+                    foreach (var h in transactionsRaw)
+                    {
+                        decimal? transactionRate = null;
+                        Currency? fromCurrency = null;
+                        Currency? toCurrency = null;
+
+                        // Get rate and currency info from Order transactions only
+                        if (h.TransactionType == CurrencyPoolTransactionType.Order && h.ReferenceId.HasValue)
                         {
+                            var order = await _context.Orders
+                                .Include(o => o.FromCurrency)
+                                .Include(o => o.ToCurrency)
+                                .FirstOrDefaultAsync(o => o.Id == h.ReferenceId.Value);
+
+                            if (order != null && order.Rate > 0)
+                            {
+                                transactionRate = order.Rate;
+                                fromCurrency = order.FromCurrency;
+                                toCurrency = order.ToCurrency;
+                                
+                                // Only add valid exchange rates to average calculation
+                                ratesForAverage.Add(order.Rate);
+                            }
+                        }
+
+                        transactionsWithRates.Add((h, transactionRate, fromCurrency, toCurrency));
+                    }
+
+                    // Calculate average rate for the day
+                    decimal averageRate = ratesForAverage.Count > 0 ? ratesForAverage.Average() : 0;
+
+                    // Calculate profit for each transaction
+                    var transactions = new List<object>();
+                    decimal totalDailyProfit = 0;
+
+                    foreach (var item in transactionsWithRates)
+                    {
+                        var h = item.historyRecord;
+                        var rate = item.rate;
+                        var fromCurrency = item.fromCurrency;
+                        var toCurrency = item.toCurrency;
+
+                        decimal profit = 0;
+
+                        // Only calculate profit for Order transactions with valid rates
+                        if (rate.HasValue && rate.Value > 0 && averageRate > 0 && 
+                            fromCurrency != null && toCurrency != null)
+                        {
+                            // Determine conversion direction based on RatePriority (lower number = higher priority)
+                            // If FromCurrency has higher priority (lower number), we divide
+                            bool shouldDivide = fromCurrency!.RatePriority < toCurrency!.RatePriority;
+                            
+                            decimal transactionAmount = h.TransactionAmount;
+                            decimal convertedAmount;
+                            decimal reversedAmount;
+
+                            if (shouldDivide)
+                            {
+                                // Higher priority to lower priority: divide by rate, then multiply by average
+                                // Example: OMR(1) to USD(3): amount ÷ rate, then × averageRate
+                                convertedAmount = transactionAmount / rate.Value;
+                                reversedAmount = convertedAmount * averageRate;
+                            }
+                            else
+                            {
+                                // Lower priority to higher priority: multiply by rate, then divide by average  
+                                // Example: USD(3) to OMR(1): amount × rate, then ÷ averageRate
+                                convertedAmount = transactionAmount * rate.Value;
+                                reversedAmount = convertedAmount / averageRate;
+                            }
+
+                            // Profit = Original amount - Amount if converted at average rate
+                            profit = transactionAmount - reversedAmount;
+
+                        }
+
+                        totalDailyProfit += profit;
+
+                        transactions.Add(new {
                             time = h.TransactionDate.ToString("HH:mm:ss"),
                             type = h.TransactionType.ToString(),
                             description = h.Description ?? "",
                             amount = h.TransactionAmount,
                             balanceAfter = h.BalanceAfter,
-                            referenceId = h.ReferenceId
-                        })
-                        .ToListAsync();
+                            referenceId = h.ReferenceId,
+                            rate = rate,
+                            averageRate = averageRate,
+                            profit = profit
+                        });
+                    }
 
-                    // Calculate the sum of transactions for the selected day
-                    decimal dailyTransactionSum = transactions.Sum(t => t.amount);
+                    decimal dailyTransactionSum = transactionsRaw.Sum(t => t.TransactionAmount);
 
-                    // Only include currencies that have transactions or a balance
-                    if (transactions.Any() || latestBalance != 0)
+                    // Only include currencies with transactions or non-zero balance
+                    if (transactionsRaw.Any() || latestBalance != 0)
                     {
                         result.Add(new
                         {
@@ -694,7 +779,8 @@ namespace ForexExchange.Controllers
                             currencyName = currency.Name,
                             latestBalance,
                             dailyTransactionSum,
-                            transactionCount = transactions.Count,
+                            transactionCount = transactionsRaw.Count,
+                            totalDailyProfit,
                             transactions
                         });
                     }
@@ -706,65 +792,6 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error getting pool daily report for date: {Date}", date);
                 return Json(new { success = false, error = "خطا در دریافت گزارش روزانه صندوق" });
-            }
-        }
-
-        // GET: Reports/GetAdminData
-        [HttpGet]
-        public async Task<IActionResult> GetAdminData(DateTime? fromDate, DateTime? toDate)
-        {
-            try
-            {
-                fromDate ??= DateTime.Today.AddDays(-7);
-                toDate ??= DateTime.Today.AddDays(1);
-
-                var activities = new List<object>();
-
-                // Get recent orders as admin activities
-                var recentOrders = await _context.Orders
-                    .Include(o => o.Customer)
-                    .Include(o => o.FromCurrency)
-                    .Include(o => o.ToCurrency)
-                    .Where(o => o.CreatedAt >= fromDate && o.CreatedAt <= toDate)
-                    .Take(50)
-                    .Select(o => new
-                    {
-                        time = o.CreatedAt,
-                        user = o.Customer.FullName,
-                        type = "معامله",
-                        description = $"ایجاد معامله {o.FromCurrency.Code} به {o.ToCurrency.Code}",
-                        ip = "192.168.1.100", // You might want to store this in your model
-                        status = "موفق" // All orders are successful since FilledAmount is removed
-                    })
-                    .ToListAsync();
-
-                activities.AddRange(recentOrders);
-
-                var totalUsers = await _context.Customers.CountAsync(c => c.IsActive);
-                var todayLogins = await _context.Orders
-                    .Where(o => o.CreatedAt.Date == DateTime.Today)
-                    .Select(o => o.CustomerId)
-                    .Distinct()
-                    .CountAsync();
-                var adminActions = recentOrders.Count;
-                var securityEvents = 0; // You might want to add a security log table
-
-                return Json(new
-                {
-                    activities,
-                    stats = new
-                    {
-                        totalUsers,
-                        todayLogins,
-                        adminActions,
-                        securityEvents
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting admin data");
-                return Json(new { error = "خطا در دریافت اطلاعات مدیریت" });
             }
         }
 
