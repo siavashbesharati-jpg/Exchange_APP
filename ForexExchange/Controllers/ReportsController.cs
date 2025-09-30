@@ -693,8 +693,8 @@ namespace ForexExchange.Controllers
                         .ThenBy(h => h.Id)
                         .ToListAsync();
 
-                    // Extract rates and calculate profits
-                    var ratesForAverage = new List<decimal>();
+                    // Extract rates and calculate weighted average
+                    var ratesWithAmounts = new List<(decimal rate, decimal amount)>();
                     var transactionsWithRates = new List<(CurrencyPoolHistory historyRecord, decimal? rate, Currency? fromCurrency, Currency? toCurrency)>();
 
                     foreach (var h in transactionsRaw)
@@ -717,16 +717,30 @@ namespace ForexExchange.Controllers
                                 fromCurrency = order.FromCurrency;
                                 toCurrency = order.ToCurrency;
                                 
-                                // Only add valid exchange rates to average calculation
-                                ratesForAverage.Add(order.Rate);
+                                // Add to weighted average calculation with transaction amount as weight
+                                decimal transactionAmount = Math.Abs(h.TransactionAmount);
+                                if (transactionAmount > 0)
+                                {
+                                    ratesWithAmounts.Add((order.Rate, transactionAmount));
+                                }
                             }
                         }
 
                         transactionsWithRates.Add((h, transactionRate, fromCurrency, toCurrency));
                     }
 
-                    // Calculate average rate for the day
-                    decimal averageRate = ratesForAverage.Count > 0 ? ratesForAverage.Average() : 0;
+                    // Calculate weighted average rate for the day
+                    decimal weightedAverageRate = 0;
+                    if (ratesWithAmounts.Count > 0)
+                    {
+                        decimal totalWeightedRates = ratesWithAmounts.Sum(x => x.rate * x.amount);
+                        decimal totalWeights = ratesWithAmounts.Sum(x => x.amount);
+                        
+                        if (totalWeights > 0)
+                        {
+                            weightedAverageRate = totalWeightedRates / totalWeights;
+                        }
+                    }
 
                     // Calculate profit for each transaction
                     var transactions = new List<object>();
@@ -742,7 +756,7 @@ namespace ForexExchange.Controllers
                         decimal profit = 0;
 
                         // Only calculate profit for Order transactions with valid rates
-                        if (rate.HasValue && rate.Value > 0 && averageRate > 0 && 
+                        if (rate.HasValue && rate.Value > 0 && weightedAverageRate > 0 && 
                             fromCurrency != null && toCurrency != null)
                         {
                             decimal transactionAmount = Math.Abs(h.TransactionAmount); // Use absolute value for calculation
@@ -758,21 +772,21 @@ namespace ForexExchange.Controllers
                             {
                                 // Selling from pool: convert pool currency to target currency (divide by rate)
                                 convertedAmount = transactionAmount / rate.Value;
-                                reversedAmount = convertedAmount * averageRate;
+                                reversedAmount = convertedAmount * weightedAverageRate;
                             }
                             else
                             {
                                 // Buying to pool: convert source currency to pool currency (multiply by rate)
                                 convertedAmount = transactionAmount * rate.Value;
-                                reversedAmount = convertedAmount / averageRate;
+                                reversedAmount = convertedAmount / weightedAverageRate;
                             }
 
-                            // Profit = Original amount - Amount if converted at average rate
+                            // Profit = Original amount - Amount if converted at weighted average rate
                             profit = transactionAmount - reversedAmount;
 
                             // Debug logging to see what's happening
-                            _logger.LogInformation("Profit calc: Pool={Pool}, From={From}, To={To}, Selling={Selling}, Amount={Amount}, Rate={Rate}, AvgRate={AvgRate}, Converted={Converted}, Reversed={Reversed}, Profit={Profit}", 
-                                currency.Code, fromCurrency.Code, toCurrency.Code, isSellingFromPool, transactionAmount, rate.Value, averageRate, convertedAmount, reversedAmount, profit);
+                            _logger.LogInformation("Profit calc (Weighted Avg): Pool={Pool}, From={From}, To={To}, Selling={Selling}, Amount={Amount}, Rate={Rate}, WeightedAvgRate={WeightedAvgRate}, Converted={Converted}, Reversed={Reversed}, Profit={Profit}", 
+                                currency.Code, fromCurrency.Code, toCurrency.Code, isSellingFromPool, transactionAmount, rate.Value, weightedAverageRate, convertedAmount, reversedAmount, profit);
 
                         }
 
@@ -786,7 +800,7 @@ namespace ForexExchange.Controllers
                             balanceAfter = h.BalanceAfter,
                             referenceId = h.ReferenceId,
                             rate = rate,
-                            averageRate = averageRate,
+                            weightedAverageRate = weightedAverageRate,
                             profit = profit
                         });
                     }
@@ -804,6 +818,7 @@ namespace ForexExchange.Controllers
                             dailyTransactionSum,
                             transactionCount = transactionsRaw.Count,
                             totalDailyProfit,
+                            weightedAverageRate, // Include weighted average in response
                             transactions
                         });
                     }
