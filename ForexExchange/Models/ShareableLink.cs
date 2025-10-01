@@ -5,10 +5,9 @@ namespace ForexExchange.Models
 {
     public enum ShareableLinkType
     {
-        [Display(Name = "صورت حساب جامع")]
-        ComprehensiveStatement = 0,
-        [Display(Name = "صورت حساب معاملات")]
-        TransactionsStatement = 1
+        [Display(Name = "صورت حساب مشتری")]
+        CustomerReport,
+       
     }
 
     /// <summary>
@@ -92,8 +91,7 @@ namespace ForexExchange.Models
         {
             var linkTypeUrl = LinkType switch
             {
-                ShareableLinkType.ComprehensiveStatement => "comprehensive",
-                ShareableLinkType.TransactionsStatement => "transactions",
+                ShareableLinkType.CustomerReport => "CustomerReports",
                 _ => "unknown"
             };
             
