@@ -29,7 +29,7 @@ namespace ForexExchange.Controllers
         {
             // Validate token
             var shareableLink = await _shareableLinkService.GetValidLinkAsync(token);
-            if (shareableLink == null || shareableLink.LinkType != ShareableLinkType.ComprehensiveStatement)
+            if (shareableLink == null || shareableLink.LinkType != ShareableLinkType.CustomerReport)
             {
                 return View("LinkExpired");
             }
@@ -99,7 +99,7 @@ namespace ForexExchange.Controllers
         {
             // Validate token
             var shareableLink = await _shareableLinkService.GetValidLinkAsync(token);
-            if (shareableLink == null || shareableLink.LinkType != ShareableLinkType.TransactionsStatement)
+            if (shareableLink == null || shareableLink.LinkType != ShareableLinkType.CustomerReport)
             {
                 return View("LinkExpired");
             }
@@ -161,6 +161,24 @@ namespace ForexExchange.Controllers
             ViewBag.ShareableLink = shareableLink;
 
             return View(viewModel);
+        }
+
+        // GET: /Share/CustomerReports/{token}
+        [HttpGet("Share/CustomerReports/{token}")]
+        public async Task<IActionResult> CustomerReports(string token)
+        {
+            // Validate token
+            var shareableLink = await _shareableLinkService.GetValidLinkAsync(token);
+            if (shareableLink == null || shareableLink.LinkType != ShareableLinkType.CustomerReport)
+            {
+                return View("LinkExpired");
+            }
+
+            // Mark link as accessed
+            await _shareableLinkService.MarkLinkAccessedAsync(token);
+
+            // Redirect to Reports/CustomerReports with customerId parameter
+            return RedirectToAction("CustomerReports", "Reports", new { customerId = shareableLink.CustomerId });
         }
 
         // GET: /Share/error

@@ -15,16 +15,18 @@ public class HomeController : Controller
     // private readonly ITransactionSettlementService _settlementService;
     private readonly ICurrencyPoolService _poolService;
     private readonly CustomerDebtCreditService _debtCreditService;
+    private readonly IShareableLinkService _shareableLinkService;
 
 
 
-    public HomeController(ILogger<HomeController> logger, ForexDbContext context, /* ITransactionSettlementService settlementService, */ ICurrencyPoolService poolService, CustomerDebtCreditService debtCreditService)
+    public HomeController(ILogger<HomeController> logger, ForexDbContext context, /* ITransactionSettlementService settlementService, */ ICurrencyPoolService poolService, CustomerDebtCreditService debtCreditService, IShareableLinkService shareableLinkService)
     {
         _logger = logger;
         _context = context;
         // _settlementService = settlementService;
         _poolService = poolService;
         _debtCreditService = debtCreditService;
+        _shareableLinkService = shareableLinkService;
     }
 
     public async Task<IActionResult> Index()
@@ -182,6 +184,104 @@ public class HomeController : Controller
     public IActionResult FormatTest()
     {
         return View();
+    }
+
+    // GET: Home/ShareableLinks
+    [Authorize(Roles = "Admin,Manager,Staff")]
+    public async Task<IActionResult> ShareableLinks()
+    {
+        var links = await _context.ShareableLinks
+            .Include(sl => sl.Customer)
+            .OrderByDescending(sl => sl.CreatedAt)
+            .ToListAsync();
+        
+        return View(links);
+    }
+
+    // POST: Home/GenerateShareableLink
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Manager,Staff")]
+    public async Task<IActionResult> GenerateShareableLink(int customerId, ShareableLinkType linkType, int expirationDays = 7)
+    {
+        try
+        {
+            var customer = await _context.Customers.FindAsync(customerId);
+            if (customer == null)
+            {
+                TempData["ErrorMessage"] = "مشتری یافت نشد.";
+                return RedirectToAction("ShareableLinks");
+            }
+
+            var currentUser = User.Identity?.Name ?? "Admin";
+            var description = linkType switch
+            {
+                ShareableLinkType.CustomerReport => "لینک اشتراک گزارش مشتری",
+                _ => "لینک اشتراک"
+            };
+
+            var shareableLink = await _shareableLinkService.GenerateLinkAsync(
+                customerId,
+                linkType,
+                expirationDays,
+                description,
+                currentUser);
+
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fullUrl = shareableLink.GetShareableUrl(baseUrl);
+
+            TempData["SuccessMessage"] = $"لینک اشتراک با موفقیت ایجاد شد. لینک تا {expirationDays} روز آینده معتبر است.";
+            TempData["ShareableUrl"] = fullUrl;
+
+            return RedirectToAction("ShareableLinks");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating shareable link for customer {CustomerId}", customerId);
+            TempData["ErrorMessage"] = "خطا در ایجاد لینک اشتراک.";
+            return RedirectToAction("ShareableLinks");
+        }
+    }
+
+    // POST: Home/DeactivateShareableLink
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin,Manager,Staff")]
+    public async Task<IActionResult> DeactivateShareableLink(int linkId)
+    {
+        try
+        {
+            var success = await _shareableLinkService.DeactivateLinkAsync(linkId, User.Identity?.Name);
+            if (success)
+            {
+                TempData["SuccessMessage"] = "لینک اشتراک با موفقیت غیرفعال شد.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "لینک یافت نشد.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating shareable link {LinkId}", linkId);
+            TempData["ErrorMessage"] = "خطا در غیرفعال کردن لینک.";
+        }
+
+        return RedirectToAction("ShareableLinks");
+    }
+
+    // GET: Home/GetCustomers (for AJAX)
+    [HttpGet]
+    [Authorize(Roles = "Admin,Manager,Staff")]
+    public async Task<IActionResult> GetCustomers()
+    {
+        var customers = await _context.Customers
+            .Where(c => c.IsActive && !c.IsSystem)
+            .Select(c => new { id = c.Id, fullName = c.FullName })
+            .OrderBy(c => c.fullName)
+            .ToListAsync();
+
+        return Json(customers);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -4,8 +4,9 @@
 
 <div class="container-fluid">
     <!-- Header Section -->
-    
-    @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
+
+    @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") ||
+        User.IsInRole("Staff")))
     {
         <!-- First Section -->
         <div class="row mb-4">
@@ -16,7 +17,7 @@
                 </h4>
             </div>
         </div>
-        
+
         <div class="row mb-4">
             <!-- Pool Management -->
             <div class="col-lg-4 col-md-6 mb-4">
@@ -202,75 +203,99 @@
                 </div>
             </div>
         </div>
-
-        @if (User.IsInRole("Admin"))
-        {
-            <!-- Admin Only Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h4 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-shield-alt text-danger me-2"></i>
-                        مدیریت پیشرفته (فقط ادمین)
-                    </h4>
-                </div>
+    <!-- Sharlink Management Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+        <h4 class="border-bottom pb-2 mb-3">
+            <i class="fas fa-link text-warning me-2"></i>
+            مدیریت لینک‌های اشتراک‌گذاری سریع
+        </h4>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+            <div class="text-warning mb-3">
+                <i class="fas fa-share-alt fa-3x"></i>
             </div>
-
-            <div class="row mb-4">
-                <!-- Database Management (Admin Only) -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-dark mb-3">
-                                <i class="fas fa-database fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">مدیریت پایگاه داده</h5>
-                            <p class="card-text">پشتیبان‌گیری، بازیابی و پاکسازی پایگاه داده</p>
-                            <a href="@Url.Action("Index", "Database")" class="btn btn-dark">مدیریت پایگاه داده</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Settings (Admin Only) -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-danger mb-3">
-                                <i class="fas fa-cog fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">تنظیمات سیستم</h5>
-                            <p class="card-text">پیکربندی عمومی سیستم و کمیسیون‌ها</p>
-                            <a href="@Url.Action("Index", "Settings")" class="btn btn-danger">تنظیمات</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Admin Management (SuperAdmin Only) -->
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="text-warning mb-3">
-                                <i class="fas fa-user-shield fa-3x"></i>
-                            </div>
-                            <h5 class="card-title">مدیریت ادمین‌ها</h5>
-                            <p class="card-text">مدیریت کاربران ادمین و نقش‌های آنها</p>
-                            <a href="@Url.Action("ManageAdmins", "AdminManagement")" class="btn btn-warning">مدیریت ادمین‌ها</a>
-                        </div>
-                    </div>
-                </div>
+            <h5 class="card-title">مدیریت Sharlink</h5>
+            <p class="card-text">ایجاد و مدیریت لینک‌های سریع برای اشتراک‌گذاری عملیات مالی</p>
+            <a href="@Url.Action("Index", "Share")" class="btn btn-warning">مدیریت Sharlink</a>
             </div>
-        }
-    }
-    else
+        </div>
+        </div>
+    </div>
+    
+
+    @if (User.IsInRole("Admin"))
     {
-        <!-- Access Denied -->
-        <div class="row">
+        <!-- Admin Only Section -->
+        <div class="row mb-4">
             <div class="col-12">
-                <div class="alert alert-warning text-center">
-                    <h4>دسترسی محدود</h4>
-                    <p>برای دسترسی به این بخش، باید با حساب مدیریتی وارد شوید.</p>
-                    <a href="@Url.Action("Login", "Account")" class="btn btn-primary">ورود به سیستم</a>
+                <h4 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-shield-alt text-danger me-2"></i>
+                    مدیریت پیشرفته (فقط ادمین)
+                </h4>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Database Management (Admin Only) -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-dark mb-3">
+                            <i class="fas fa-database fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت پایگاه داده</h5>
+                        <p class="card-text">پشتیبان‌گیری، بازیابی و پاکسازی پایگاه داده</p>
+                        <a href="@Url.Action("Index", "Database")" class="btn btn-dark">مدیریت پایگاه داده</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Settings (Admin Only) -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-danger mb-3">
+                            <i class="fas fa-cog fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">تنظیمات سیستم</h5>
+                        <p class="card-text">پیکربندی عمومی سیستم و کمیسیون‌ها</p>
+                        <a href="@Url.Action("Index", "Settings")" class="btn btn-danger">تنظیمات</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Management (SuperAdmin Only) -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-warning mb-3">
+                            <i class="fas fa-user-shield fa-3x"></i>
+                        </div>
+                        <h5 class="card-title">مدیریت ادمین‌ها</h5>
+                        <p class="card-text">مدیریت کاربران ادمین و نقش‌های آنها</p>
+                        <a href="@Url.Action("ManageAdmins", "AdminManagement")" class="btn btn-warning">مدیریت ادمین‌ها</a>
+                    </div>
                 </div>
             </div>
         </div>
     }
+}
+else
+{
+    <!-- Access Denied -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning text-center">
+                <h4>دسترسی محدود</h4>
+                <p>برای دسترسی به این بخش، باید با حساب مدیریتی وارد شوید.</p>
+                <a href="@Url.Action("Login", "Account")" class="btn btn-primary">ورود به سیستم</a>
+            </div>
+        </div>
+    </div>
+}
 </div>
