@@ -176,8 +176,8 @@
                                                 <div class="btn-group" role="group">
                                                     @if (link.IsValid)
                                                     {
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                                onclick="copyLinkToClipboard('@link.GetShareableUrl($"{Context.Request.Scheme}://{Context.Request.Host}")')">
+                                                        <button type="button" class="btn btn-sm btn-outline-primary copy-link-btn" 
+                                                                data-url="@link.GetShareableUrl($"{Context.Request.Scheme}://{Context.Request.Host}")">
                                                             <i class="fas fa-copy"></i>
                                                         </button>
                                                         <a href="@link.GetShareableUrl($"{Context.Request.Scheme}://{Context.Request.Host}")" 
@@ -222,6 +222,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         loadCustomers();
+        setupCopyLinkButtons();
     });
 
     function loadCustomers() {
@@ -238,6 +239,16 @@
             .catch(error => {
                 console.error('Error loading customers:', error);
             });
+    }
+
+    function setupCopyLinkButtons() {
+        // Add event listeners to all copy link buttons
+        document.querySelectorAll('.copy-link-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const url = this.getAttribute('data-url');
+                copyLinkToClipboard(url, this);
+            });
+        });
     }
 
     function copyToClipboard() {
@@ -260,19 +271,18 @@
         }, 2000);
     }
 
-    function copyLinkToClipboard(url) {
+    function copyLinkToClipboard(url, buttonElement) {
         navigator.clipboard.writeText(url).then(() => {
             // Show success feedback
-            const button = event.target.closest('button');
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-check"></i>';
-            button.classList.remove('btn-outline-primary');
-            button.classList.add('btn-success');
+            const originalText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fas fa-check"></i>';
+            buttonElement.classList.remove('btn-outline-primary');
+            buttonElement.classList.add('btn-success');
             
             setTimeout(() => {
-                button.innerHTML = originalText;
-                button.classList.remove('btn-success');
-                button.classList.add('btn-outline-primary');
+                buttonElement.innerHTML = originalText;
+                buttonElement.classList.remove('btn-success');
+                buttonElement.classList.add('btn-outline-primary');
             }, 2000);
         }).catch(err => {
             console.error('Error copying to clipboard:', err);
