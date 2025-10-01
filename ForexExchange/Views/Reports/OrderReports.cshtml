@@ -113,6 +113,7 @@
     </div>
 </div>
 
+@section Scripts {
 <script>
 let ordersData = []; // Store orders data for sorting
 let currentSort = { column: null, direction: 'asc' };
@@ -125,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
     document.getElementById('toDate').value = today.toISOString().split('T')[0];
     
-    // Load currencies for filter selects
+    // Load currencies for filter selters
     loadCurrenciesForFilters();
     
     // Add click event listeners to sortable headers
@@ -337,6 +338,7 @@ function formatNumber(num) {
     return num.toLocaleString('fa-IR');
 }
 </script>
+}
 
 <style>
 .avatar-sm {
