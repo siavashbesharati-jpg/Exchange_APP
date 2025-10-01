@@ -1,0 +1,822 @@
+@model ForexExchange.Models.Customer
+@{
+    ViewData["Title"] = "پروفایل من - " + Model.FullName;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@{
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+
+<input type="hidden" name="__RequestVerificationToken" value="@requestToken" />
+<input type="hidden" id="currentCustomerId" value="@Model.Id" />
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <h2><i class="fas fa-user-circle text-primary me-2"></i>پروفایل مالی من</h2>
+                <div class="d-flex gap-2">
+                    @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+                    {
+                        <a href="@Url.Action("Index", "Customers")" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-right me-1"></i>بازگشت به لیست مشتریان
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-1"></i>صفحه اصلی
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        اطلاعات شخصی
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="mb-1"><strong>@Model.FullName</strong></h6>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-phone me-1"></i> @Model.PhoneNumber
+                                @if (!string.IsNullOrEmpty(Model.Email))
+                                {
+                                    <span class="mx-2">|</span>
+                                    <i class="fas fa-envelope me-1"></i> @Model.Email
+                                }
+                            </p>
+                            @if (!string.IsNullOrEmpty(Model.NationalId))
+                            {
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-id-card me-1"></i> کد ملی: @Model.NationalId
+                                </p>
+                            }
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-calendar me-1"></i> 
+                                عضویت: @Model.CreatedAt.ToString("yyyy/MM/dd")
+                            </p>
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-hashtag me-1"></i> 
+                                کد مشتری: @Model.Id
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters (simplified for customer view) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">از تاریخ</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="fromDate">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('fromDate')"
+                                    title="پاک کردن">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">تا تاریخ</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="toDate">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearDate('toDate')"
+                                    title="پاک کردن">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">فیلتر ارز</label>
+                            <select class="form-select" id="currencyFilter">
+                                <option value="">همه ارزها</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-primary w-100" onclick="loadData()">
+                                <i class="fas fa-search me-1"></i>
+                                نمایش تاریخچه
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Timeline Content -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-3">
+                <div class="card-header bg-gradient-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>
+                            تاریخچه مالی
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-light btn-sm" onclick="exportTimelineData()">
+                                <i class="fas fa-file-excel me-1"></i>دریافت اکسل 
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="openBankReceipt()">
+                                <i class="fas fa-receipt me-1"></i> چاپ گزارش
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Customer Info Header -->
+                    <div id="customerInfoHeader" class="bg-light p-3 border-bottom" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-1">اطلاعات مشتری</h6>
+                                <p class="mb-0" id="customerInfoText">@Model.FullName</p>
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <h6 class="mb-1">بازه زمانی گزارش</h6>
+                                <p class="mb-0" id="reportPeriodText">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Balance Summary -->
+                    <div id="balanceSummarySection" class="p-3 border-bottom bg-light" style="display: none;">
+                        <h6 class="mb-3 text-center">
+                            <i class="fas fa-wallet text-primary me-2"></i>
+                            موجودی‌های فعلی
+                        </h6>
+                        <div id="balanceSummaryContent" class="row">
+                            <!-- Balance cards will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Financial Timeline Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="timelineTable">
+                            <thead class="table-dark sticky-top">
+                                <tr class="text-center">
+                                    <th width="12%">تاریخ</th>
+                                    <th width="15%">نوع</th>
+                                    <th width="10%">ارز</th>
+                                    <th width="15%">مقدار</th>
+                                    <th width="15%">موجودی</th>
+                                    <th width="33%">توضیحات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timelineTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                        <br>برای مشاهده تاریخچه مالی خود، روی دکمه "نمایش تاریخچه" کلیک کنید
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Timeline Pagination -->
+                    <div class="p-3 border-top bg-light">
+                        <nav id="timelinePagination" class="d-flex justify-content-center">
+                            <!-- Pagination will be inserted here -->
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Popup -->
+<div id="transactionDetailPopup" style="display:none; position:fixed; z-index:1050;"></div>
+
+<script>
+    let currentPage = { timeline: 1 };
+    let pageSize = 10000; // Disabled pagination - load all records
+    let currentTimeline = null;
+    let currentCustomerId = @Model.Id; // Set from server
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Load currencies for filter
+        loadCurrencies();
+
+        // Initialize empty table
+        showEmptyState();
+
+        // Date filter change event
+        document.getElementById('fromDate').addEventListener('change', function () {
+            loadDataForActiveTab();
+        });
+        document.getElementById('toDate').addEventListener('change', function () {
+            loadDataForActiveTab();
+        });
+
+        // Currency filter change event
+        document.getElementById('currencyFilter').addEventListener('change', function () {
+            loadDataForActiveTab();
+        });
+
+        // Auto-load data for current customer
+        loadData();
+    });
+
+    function loadCurrencies() {
+        fetch('@Url.Action("GetCurrencies", "Api")')
+            .then(response => {
+                return response.json();
+            })
+            .then(currencies => {
+                const select = document.getElementById('currencyFilter');
+                select.innerHTML = '<option value="">همه ارزها</option>';
+
+                if (Array.isArray(currencies)) {
+                    currencies.forEach(currency => {
+                        select.innerHTML += `<option value="${currency.code}">${currency.name} (${currency.code})</option>`;
+                    });
+                } else {
+                    console.error('Unexpected currency data format:', currencies);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading currencies:', error);
+                const select = document.getElementById('currencyFilter');
+                select.innerHTML = '<option value="">خطا در بارگذاری ارزها</option>';
+            });
+    }
+
+    function loadData() {
+        loadDataForActiveTab();
+    }
+
+    function loadDataForActiveTab() {
+        // Reset pagination to page 1 when filters change
+        currentPage.timeline = 1;
+        loadCustomerTimeline(1);
+    }
+
+    function showEmptyState() {
+        // Show empty state for timeline
+        document.getElementById('timelineTableBody').innerHTML =
+            '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-chart-line fa-2x mb-2"></i><br>برای مشاهده تاریخچه مالی خود، روی دکمه "نمایش تاریخچه" کلیک کنید</td></tr>';
+    }
+
+    function clearDate(inputId) {
+        document.getElementById(inputId).value = '';
+        // Reset pagination to page 1 when clearing dates
+        currentPage.timeline = 1;
+        loadDataForActiveTab();
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB'); // Georgian format: DD/MM/YYYY
+    }
+
+    // ========== FINANCIAL TIMELINE FUNCTIONS (BANK STYLE) ==========
+
+    function loadCustomerTimeline(page = 1) {
+        // Use the current customer's ID (no selection needed)
+        const customerId = currentCustomerId;
+        const fromDate = document.getElementById('fromDate').value || null;
+        const toDate = document.getElementById('toDate').value || null;
+        const currencyCode = document.getElementById('currencyFilter').value || null;
+
+        // Show loading state
+        showTimelineLoading();
+        showTimelineSections();
+
+        // Update current page
+        currentPage.timeline = page;
+
+        $.get('@Url.Action("GetCustomerTimeline", "CustomerFinancialHistory")', {
+            customerId: customerId,
+            fromDate: fromDate,
+            toDate: toDate,
+            currencyCode: currencyCode,
+            page: page,
+            pageSize: pageSize
+        })
+            .done(function (response) {
+                if (response.success) {
+                    currentTimeline = response.data;
+                    renderBankStyleTimeline(response.data);
+                    updateCustomerInfo(response.data);
+                    
+                    // Pagination disabled - clear pagination container
+                    document.getElementById('timelinePagination').innerHTML = '';
+                } else {
+                    showTimelineError('خطا در بارگذاری تاریخچه: ' + response.message);
+                }
+            })
+            .fail(function () {
+                showTimelineError('خطا در ارتباط با سرور');
+            });
+    }
+
+    function renderBankStyleTimeline(timeline) {
+        const tbody = document.getElementById('timelineTableBody');
+
+        if (!timeline.transactions || timeline.transactions.length === 0) {
+            tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                    <br>تراکنشی در بازه زمانی انتخاب شده یافت نشد
+                </td>
+            </tr>
+        `;
+            return;
+        }
+
+        let timelineHtml = '';
+
+        // Group transactions by currency for bank-style presentation
+        const currencyGroups = {};
+        timeline.transactions.forEach(transaction => {
+            if (!currencyGroups[transaction.currencyCode]) {
+                currencyGroups[transaction.currencyCode] = [];
+            }
+            currencyGroups[transaction.currencyCode].push(transaction);
+        });
+
+        // Render each currency group
+        Object.entries(currencyGroups).forEach(([currency, transactions]) => {
+            // Currency header row
+            timelineHtml += `
+            <tr class="table-info">
+                <td colspan="6" class="fw-bold text-center">
+                    <i class="fas fa-coins me-2"></i>
+                    تراکنش‌های ${currency}
+                    <small class="ms-2">(${transactions.length} تراکنش)</small>
+                </td>
+            </tr>
+        `;
+
+            // Add transaction rows
+            transactions.forEach(transaction => {
+                // Transaction types: OrderSell=1, OrderBuy=2, DocumentCredit=3, DocumentDebit=4, ManualAdjustment=5
+                const isOrderTransaction = transaction.type === 1 || transaction.type === 2; // OrderSell or OrderBuy
+                const isManualTransaction = transaction.type === 5 || !transaction.referenceId; // ManualAdjustment type or no referenceId
+
+                let typeText, transactionId, clickHandler, cursorStyle;
+
+                if (isManualTransaction) {
+                    // Manual transaction - no click handler for customers
+                    typeText = 'تعدیل دستی';
+                    transactionId = '';
+                    clickHandler = '';
+                    cursorStyle = 'cursor: default;';
+                } else {
+                    // Order or Document transaction - clickable
+                    typeText = isOrderTransaction ? 'معامله' : 'سند';
+                    transactionId = transaction.referenceId;
+                    clickHandler = isOrderTransaction ?
+                        `onclick="goToOrderDetail(${transactionId})"` :
+                        `onclick="goToDocumentDetail(${transactionId})"`;
+                    cursorStyle = 'cursor: pointer;';
+                }
+
+                const formattedAmount = formatCurrency(transaction.amount, currency);
+                const formattedBalance = formatCurrency(transaction.runningBalance, currency);
+
+                const rowType = isManualTransaction ? 'manual' : (isOrderTransaction ? 'order' : 'document');
+                timelineHtml += `
+                <tr class="transaction-row" style="${cursorStyle}" data-type="${rowType}" data-ref-id="${transactionId}" ${clickHandler}>
+                    <td class="text-center">${formatDate(transaction.transactionDate)}</td>
+                    <td class="text-center">
+                        ${isManualTransaction ?
+                        `<span class="badge bg-info">${typeText}</span>` :
+                        `<a href="#" class="text-decoration-none">${typeText} #${transactionId}</a>`
+                    }
+                    </td>
+                    <td class="text-center">${currency}</td>
+                    <td class="text-center ltr-direction skip-auto-format ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}" data-debug-amount="${transaction.amount}" data-debug-formatted="${formattedAmount}" data-no-format="true" data-skip-format="true">${formattedAmount}</td>
+                    <td class="text-center ltr-direction skip-auto-format fw-bold" data-debug-balance="${transaction.runningBalance}" data-debug-formatted="${formattedBalance}" data-no-format="true" data-skip-format="true">${formattedBalance}</td>
+                    <td class="text-start">
+                        <small class="text-muted">${transaction.description || '-'}</small>
+                    </td>
+                </tr>
+            `;
+            });
+
+            // Add spacing row
+            timelineHtml += `<tr><td colspan="6" style="height: 15px; border: none;"></td></tr>`;
+        });
+
+        tbody.innerHTML = timelineHtml;
+        
+        renderBalanceSummary(timeline.finalBalances);
+
+        // Add hover events to transaction rows
+        setTimeout(() => {
+            document.querySelectorAll('.transaction-row').forEach(row => {
+                row.addEventListener('mouseenter', function(e) {
+                    const type = this.getAttribute('data-type');
+                    const refId = this.getAttribute('data-ref-id');
+                    showTransactionHoverPopup(type, refId, e);
+                });
+                row.addEventListener('mouseleave', function() {
+                    hideTransactionHoverPopup();
+                });
+            });
+        }, 100);
+    }
+
+    function updateCustomerInfo(timeline) {
+        document.getElementById('customerInfoText').textContent = timeline.customerName;
+        const fromDate = timeline.fromDate ? new Date(timeline.fromDate).toLocaleDateString('en-GB') : 'ابتدای زمان';
+        const toDate = timeline.toDate ? new Date(timeline.toDate).toLocaleDateString('en-GB') : 'انتهای زمان';
+        document.getElementById('reportPeriodText').textContent = `${fromDate} تا ${toDate}`;
+    }
+
+    function renderBalanceSummary(balances) {
+        const container = document.getElementById('balanceSummaryContent');
+
+        if (!balances || Object.keys(balances).length === 0) {
+            container.innerHTML = '<div class="col-12 text-center text-muted">موجودی‌ای یافت نشد</div>';
+            return;
+        }
+
+        let balanceHtml = '';
+        Object.entries(balances).forEach(([currency, amount]) => {
+            const isPositive = amount >= 0;
+            const colorClass = isPositive ? 'success' : 'danger';
+            const iconClass = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+
+            balanceHtml += `
+            <div class="col-md-3 mb-2">
+                <div class="d-flex align-items-center p-2 bg-white rounded shadow-sm">
+                    <div class="me-2">
+                        <i class="fas ${iconClass} text-${colorClass}"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="text-center">
+                            <span class="badge bg-primary mb-1">${currency}</span>
+                        </div>
+                        <h6 class="mb-0 text-${colorClass} text-center ltr-direction">
+                            ${formatCurrency(amount, currency)}
+                        </h6>
+                        <small class="text-muted d-block text-center">${isPositive ? 'بستانکار' : 'بدهکار'}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+        });
+
+        container.innerHTML = balanceHtml;
+    }
+
+    function showTimelineLoading() {
+        document.getElementById('timelineTableBody').innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <br><br>در حال بارگذاری تاریخچه مالی...
+            </td>
+        </tr>
+    `;
+    }
+
+    function showTimelineError(message) {
+        document.getElementById('timelineTableBody').innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-5 text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <br>${message}
+            </td>
+        </tr>
+    `;
+    }
+
+    function showTimelineSections() {
+        document.getElementById('customerInfoHeader').style.display = 'block';
+        document.getElementById('balanceSummarySection').style.display = 'block';
+    }
+
+    function exportTimelineData() {
+        const fromDate = document.getElementById('fromDate').value || null;
+        const toDate = document.getElementById('toDate').value || null;
+
+        const params = new URLSearchParams({
+            customerId: currentCustomerId,
+            fromDate: fromDate,
+            toDate: toDate
+        });
+
+        // For now, show success message - Excel export can be implemented later
+        alert('دریافت تاریخچه مالی به فرمت اکسل در ادامه پیاده‌سازی خواهد شد');
+    }
+
+    function openBankReceipt() {
+        const fromDate = document.getElementById('fromDate').value || '';
+        const toDate = document.getElementById('toDate').value || '';
+        const currencyCode = document.getElementById('currencyFilter').value || '';
+
+        // Build URL with query parameters
+        const params = new URLSearchParams({
+            customerId: currentCustomerId,
+            fromDate: fromDate,
+            toDate: toDate,
+            currencyCode: currencyCode
+        });
+
+        // Open bank receipt page in new window
+        const url = '@Url.Action("PrintFinancialReport", "CustomerFinancialHistory")?' + params.toString();
+        window.open(url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+    }
+
+    // Navigation functions for clickable rows
+    function goToOrderDetail(orderId) {
+        window.open(`/Orders/Details/${orderId}`, '_blank');
+    }
+
+    function goToDocumentDetail(documentId) {
+        window.open(`/AccountingDocuments/Details/${documentId}`, '_blank');
+    }
+
+    // Transaction hover popup logic (same as CustomerReports.cshtml)
+    let transactionPopupTimeout;
+    let currentTransactionPopup = null;
+
+    function showTransactionHoverPopup(type, refId, event) {
+        clearTimeout(transactionPopupTimeout);
+        transactionPopupTimeout = setTimeout(() => {
+            if (type === 'manual' || !refId) {
+                showTransactionPopupHtml(`<div class='popup-header'><h6><i class="fas fa-edit me-2"></i>تراکنش دستی</h6></div>
+                <div class="popup-body p-3"><div class="text-center text-muted"><i class="fas fa-info-circle me-2"></i>این تراکنش به صورت دستی ایجاد شده و جزئیات خاصی ندارد</div></div>`, event);
+            } else if (type === 'order') {
+                fetchOrderDetailPopup(refId, event);
+            } else if (type === 'document') {
+                fetchDocumentDetailPopup(refId, event);
+            }
+        }, 250);
+    }
+
+    function hideTransactionHoverPopup() {
+        clearTimeout(transactionPopupTimeout);
+        if (currentTransactionPopup) {
+            currentTransactionPopup.style.display = 'none';
+            currentTransactionPopup = null;
+        }
+    }
+
+    function showTransactionPopupHtml(html, event) {
+        const popup = document.getElementById('transactionDetailPopup');
+        popup.innerHTML = html;
+        popup.style.display = 'block';
+        // Position popup
+        const rect = event.target.closest('tr').getBoundingClientRect();
+        popup.style.left = (rect.left + rect.width + 10) + 'px';
+        popup.style.top = rect.top + 'px';
+        popup.className = 'transaction-hover-popup';
+        currentTransactionPopup = popup;
+        // Adjust if off screen
+        setTimeout(() => {
+            const popupRect = popup.getBoundingClientRect();
+            if (popupRect.right > window.innerWidth) {
+                popup.style.left = (rect.left - popupRect.width - 10) + 'px';
+            }
+            if (popupRect.bottom > window.innerHeight) {
+                popup.style.top = (window.innerHeight - popupRect.height - 10) + 'px';
+            }
+        }, 0);
+    }
+
+    async function fetchOrderDetailPopup(orderId, event) {
+        try {
+            const response = await fetch(`/Orders/GetOrderDetails/${orderId}`);
+            const data = await response.json();
+            if (data.error) {
+                showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات معامله</div>', event);
+                return;
+            }
+            // Render order details with proper Persian formatting
+            let html = `<div class='popup-header'><h6><i class="fas fa-exchange-alt me-2"></i>جزئیات معامله  #${data.id}</h6></div>
+            <div class='popup-body p-3'>
+                <div class="row g-2">
+                    <div class="col-6"><small class="text-muted">مشتری:</small><div>${data.customerName}</div></div>
+                    <div class="col-6"><small class="text-muted">تاریخ ایجاد:</small><div>${new Date(data.createdAt).toLocaleDateString('fa-IR')}</div></div>
+
+                    <div class="col-6"><small class="text-muted"> دریافت می کنیم  :</small><div class="fw-bold text-primary">${data.fromCurrencyName}</div></div>
+                    <div class="col-6"><small class="text-muted"> پرداخت می کنیم :</small><div class="fw-bold text-success">${data.toCurrencyName}</div></div>
+                    <div class="col-6"><small class="text-muted">مبلغ دربافتی :</small><div>${formatCurrency(data.fromAmount, data.toCurrency)}</div></div>
+                    <div class="col-6"><small class="text-muted">مبلغ پردختی :</small><div>${formatCurrency(data.toAmount, data.toCurrency)}</div></div>
+                    <div class="col-6"><small class="text-muted">نرخ :</small><div class="ltr-direction">${formatNumber(data.exchangeRate)}</div></div>
+                    ${data.updatedAt ? `<div class="col-6"><small class="text-muted">تاریخ بروزرسانی:</small><div>${new Date(data.updatedAt)}</div></div>` : '<div class="col-6"></div>'}
+                    ${data.notes ? `<div class="col-12"><small class="text-muted">یادداشت:</small><div class="text-truncate" title="${data.notes}">${data.notes}</div></div>` : ''}
+                </div>
+            </div>
+            <div class="popup-footer"><small class="text-muted">برای مشاهده جزئیات بیشتر کلیک کنید</small></div>`;
+            showTransactionPopupHtml(html, event);
+        } catch (err) {
+            console.error('Error fetching order details:', err);
+            showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات </div>', event);
+        }
+    }
+
+    async function fetchDocumentDetailPopup(docId, event) {
+        try {
+            const response = await fetch(`/Reports/GetDocumentDetails/${docId}`);
+            const data = await response.json();
+            if (data.error) {
+                showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات سند</div>', event);
+                return;
+            }
+            // Render document details with consistent styling
+            let html = `<div class='popup-header'><h6><i class="fas fa-file-invoice me-2"></i>جزئیات سند #${data.id}</h6></div>
+            <div class='popup-body p-3'>
+                <div class="row g-2">
+                    <div class="col-6"><small class="text-muted">نوع سند:</small><div>${data.documentType === 'Cash' ? 'نقدی' : 'حواله'}</div></div>
+                    <div class="col-6"><small class="text-muted">مبلغ:</small><div class="fw-bold text-success">${formatCurrency(data.amount, data.currencyCode)}</div></div>
+                    <div class="col-6"><small class="text-muted">پرداخت کننده:</small><div>${data.payerCustomer ? data.payerCustomer.fullName : 'سیستم'}</div></div>
+                    <div class="col-6"><small class="text-muted">دریافت کننده:</small><div>${data.receiverCustomer ? data.receiverCustomer.fullName : 'سیستم'}</div></div>
+                    <div class="col-6"><small class="text-muted">تاریخ:</small><div>${new Date(data.documentDate).toLocaleDateString('fa-IR')}</div></div>
+                    <div class="col-6"><small class="text-muted">وضعیت:</small><div><span class="badge ${data.isVerified ? 'bg-success' : 'bg-warning'}">${data.isVerified ? 'تایید شده' : 'در انتظار تایید'}</span></div></div>
+                    ${data.description ? `<div class="col-12"><small class="text-muted">شرح:</small><div class="text-truncate" title="${data.description}">${data.description}</div></div>` : ''}
+                    ${data.notes ? `<div class="col-12"><small class="text-muted">یادداشت:</small><div class="text-truncate" title="${data.notes}">${data.notes}</div></div>` : ''}
+                </div>
+            </div>
+            <div class="popup-footer"><small class="text-muted">برای مشاهده جزئیات بیشتر کلیک کنید</small></div>`;
+            showTransactionPopupHtml(html, event);
+        } catch (err) {
+            console.error('Error fetching document details:', err);
+            showTransactionPopupHtml('<div class="popup-body p-3 text-danger">خطا در دریافت اطلاعات سند</div>', event);
+        }
+    }
+
+    // Utility functions for formatting
+    function formatNumber(amount) {
+        if (!amount && amount !== 0) return '-';
+        return new Intl.NumberFormat('fa-IR').format(amount);
+    }
+
+    function formatCurrency(amount, currencyCode = 'IRR') {
+        if (!amount && amount !== 0) return '-';
+        const formattedAmount = formatNumber(amount);
+        return `${formattedAmount} ${currencyCode || ''}`;
+    }
+</script>
+
+<style>
+    .card {
+        border-radius: 15px;
+        border: 3px solid #e9ecef;
+    }
+
+    .card:hover {
+        border-color: #e9ecef;
+        transition: border-color 0.3s ease;
+    }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        background-color: #343a40;
+        color: white;
+    }
+
+    /* Center align all table content by default */
+    .table td,
+    .table th {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.375em 0.75em;
+    }
+
+    .btn {
+        border-radius: 8px;
+        border-width: 2px;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius: 8px;
+        border: 2px solid #ced4da;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #6c757d;
+        box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+    }
+
+    /* LTR direction for numbers */
+    .ltr-direction {
+        direction: ltr;
+    }
+
+    /* Clickable elements */
+    a:not(.btn):not(.page-link) {
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    a:not(.btn):not(.page-link):hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+    /* Loading states */
+    .spinner-border {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    /* Timeline Bank Style Enhancements */
+    .transaction-row:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+    .table-info td {
+        background-color: #d1ecf1 !important;
+        border-color: #b8daff !important;
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(87deg, #5e72e4 0, #825ee4 100%) !important;
+    }
+
+    #timelineTable thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #343a40 !important;
+    }
+
+    .transaction-hover-popup {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        max-width: 350px;
+        font-size: 0.875rem;
+        pointer-events: none;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+    .transaction-hover-popup .popup-header {
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 7px 7px 0 0;
+    }
+    .transaction-hover-popup .popup-header h6 {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #495057;
+    }
+    .transaction-hover-popup .popup-body {
+        padding: 12px;
+    }
+    .transaction-hover-popup .popup-footer {
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        border-radius: 0 0 7px 7px;
+        text-align: center;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    #timelineTableBody tr:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+    /* Mobile responsiveness */
+    @@media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+    }
+</style>

@@ -203,7 +203,7 @@ namespace ForexExchange.Controllers
 
                     if (result.Succeeded)
                     {
-                        return RedirectToLocal(returnUrl);
+                        return await RedirectToLocal(returnUrl);
                     }
                     if (result.IsLockedOut)
                     {
@@ -291,7 +291,7 @@ namespace ForexExchange.Controllers
             return View(model);
         }
 
-        private IActionResult RedirectToLocal(string? returnUrl)
+        private async Task<IActionResult> RedirectToLocal(string? returnUrl)
         {
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -299,7 +299,18 @@ namespace ForexExchange.Controllers
             }
             else
             {
-                return RedirectToAction("Dashboard", "Home");
+                // Check if user is a customer and redirect to their profile
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null && user.Role == UserRole.Customer && user.CustomerId.HasValue)
+                {
+                    // Redirect customers directly to their financial profile with ID in URL
+                    return RedirectToAction("CustomerReports", "Customers", new { id = user.CustomerId.Value });
+                }
+                else
+                {
+                    // For admin/staff users, go to dashboard
+                    return RedirectToAction("Dashboard", "Home");
+                }
             }
         }
     }

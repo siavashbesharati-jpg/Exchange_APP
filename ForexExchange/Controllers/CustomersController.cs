@@ -409,6 +409,86 @@ namespace ForexExchange.Controllers
             }
         }
 
+        // GET: Customers/Profile - Redirects to CustomerReports with ID in URL
+        [Authorize] // Allow all authenticated users, not just admins
+        public async Task<IActionResult> Profile(int? id)
+        {
+            // If user is Admin/Manager/Staff, they can view any customer profile with ID
+            if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+            {
+                if (!id.HasValue)
+                {
+                    return NotFound("شناسه مشتری الزامی است");
+                }
+
+                // Redirect to CustomerReports with the ID in URL
+                return RedirectToAction("CustomerReports", new { id = id.Value });
+            }
+            else
+            {
+                // For regular customers, redirect to their own CustomerReports page
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.CustomerId == null)
+                {
+                    TempData["ErrorMessage"] = "شما مجاز به مشاهده این صفحه نیستید";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                // Redirect to CustomerReports with customer ID in URL
+                return RedirectToAction("CustomerReports", new { id = user.CustomerId.Value });
+            }
+        }
+
+        // GET: Customers/CustomerReports/{id} - Customer reports page with ID in URL
+        [Authorize]
+        [Route("Customers/CustomerReports/{id:int}")]
+        public async Task<IActionResult> CustomerReports(int id)
+        {
+            // If user is Admin/Manager/Staff, they can view any customer reports
+            if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+            {
+                var customer = await _context.Customers
+                    .Include(c => c.Balances)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (customer == null)
+                {
+                    return NotFound("مشتری یافت نشد");
+                }
+
+                return View(customer);
+            }
+            else
+            {
+                // For regular customers, ensure they can only access their own data
+                var user = await _userManager.GetUserAsync(User);
+                if (user?.CustomerId == null)
+                {
+                    TempData["ErrorMessage"] = "شما مجاز به مشاهده این صفحه نیستید";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                // Check if the requested ID matches the logged-in customer's ID
+                if (user.CustomerId.Value != id)
+                {
+                    TempData["ErrorMessage"] = "شما فقط مجاز به مشاهده اطلاعات خود هستید";
+                    return RedirectToAction("CustomerReports", new { id = user.CustomerId.Value });
+                }
+
+                var customer = await _context.Customers
+                    .Include(c => c.Balances)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (customer == null)
+                {
+                    TempData["ErrorMessage"] = "اطلاعات مشتری یافت نشد";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                return View(customer);
+            }
+        }
+
         private bool CustomerExists(int id)
         {
             return _context.Customers.Any(e => e.Id == id);
