@@ -54,7 +54,7 @@ namespace ForexExchange.Controllers
             {
                 // Normalize phone number
                 string normalizedPhoneNumber = PhoneNumberService.NormalizePhoneNumber(model.PhoneNumber);
-                
+
                 // Validate normalized phone number
                 if (!PhoneNumberService.IsValidNormalizedPhoneNumber(normalizedPhoneNumber))
                 {
@@ -184,11 +184,18 @@ namespace ForexExchange.Controllers
                     Console.WriteLine($"+++++ User {user.PhoneNumber} found with normalized input: {normalizedPhoneNumber}");
                     // Ensure FullName claim is present for navbar display
                     var userClaims = await _userManager.GetClaimsAsync(user);
-                    if (!userClaims.Any(c => c.Type == "FullName"))
+                    var existingFullNameClaim = userClaims.FirstOrDefault(c => c.Type == "FullName");
+
+                    var fullNameValue = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : (user.UserName ?? "کاربر");
+                    
+                    if (existingFullNameClaim != null)
                     {
-                        var fullNameValue = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : (user.UserName ?? "کاربر");
-                        await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FullName", fullNameValue));
+                        // Remove old claim and add updated one
+                        await _userManager.RemoveClaimAsync(user, existingFullNameClaim);
                     }
+                    
+                    await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FullName", fullNameValue));
+
                     var result = await _signInManager.PasswordSignInAsync(
                         user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true);
 
@@ -213,7 +220,7 @@ namespace ForexExchange.Controllers
                     ModelState.AddModelError(string.Empty, "شماره تلفن یا رمز عبور اشتباه است.");
                 }
             }
-           
+
 
             return View(model);
         }
