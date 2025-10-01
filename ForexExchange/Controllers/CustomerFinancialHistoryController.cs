@@ -35,14 +35,48 @@ namespace ForexExchange.Controllers
         /// Get complete customer financial timeline
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> GetCustomerTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null, int page = 1, int pageSize = 10)
+        [AllowAnonymous] // Allow anonymous access for shareable links
+        public async Task<IActionResult> GetCustomerTimeline(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null, int page = 1, int pageSize = 10, string? token = null)
         {
             try
             {
                 if (customerId <= 0)
                     return BadRequest("Invalid customer ID");
 
+                // For anonymous users, validate token
+                if ((User.Identity?.IsAuthenticated != true))
+                {
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        return Unauthorized("Token required for anonymous access");
+                    }
+
+                    // Validate token
+                    var shareableLinkService = HttpContext.RequestServices.GetRequiredService<IShareableLinkService>();
+                    var shareableLink = await shareableLinkService.GetValidLinkAsync(token);
+                    
+                    if (shareableLink == null || 
+                        shareableLink.LinkType != ShareableLinkType.CustomerReport || 
+                        shareableLink.CustomerId != customerId)
+                    {
+                        return Unauthorized("Invalid or expired token");
+                    }
+                }
+
                 var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate, currencyCode);
+                
+                // Check if user is admin to determine what to show in description field
+                bool isAdmin = User.IsInRole("Admin");
+                
+                // For non-admin users (anonymous or non-admin roles), replace description with notes
+                if (timeline?.Transactions != null && !isAdmin)
+                {
+                    foreach (var transaction in timeline.Transactions)
+                    {
+                        // Replace description with notes for non-admin users
+                        transaction.Description = transaction.Notes ?? "";
+                    }
+                }
                 
                 // Apply pagination to transactions
                 if (timeline?.Transactions != null)
@@ -194,12 +228,33 @@ namespace ForexExchange.Controllers
         /// Display customer timeline in bank receipt format
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> PrintFinancialReport(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null)
+        [AllowAnonymous] // Allow anonymous access for shareable links
+        public async Task<IActionResult> PrintFinancialReport(int customerId, DateTime? fromDate = null, DateTime? toDate = null, string? currencyCode = null, string? token = null)
         {
             try
             {
                 if (customerId <= 0)
                     return BadRequest("Invalid customer ID");
+
+                // For anonymous users, validate token
+                if ((User.Identity?.IsAuthenticated != true))
+                {
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        return Unauthorized("Token required for anonymous access");
+                    }
+
+                    // Validate token
+                    var shareableLinkService = HttpContext.RequestServices.GetRequiredService<IShareableLinkService>();
+                    var shareableLink = await shareableLinkService.GetValidLinkAsync(token);
+                    
+                    if (shareableLink == null || 
+                        shareableLink.LinkType != ShareableLinkType.CustomerReport || 
+                        shareableLink.CustomerId != customerId)
+                    {
+                        return Unauthorized("Invalid or expired token");
+                    }
+                }
 
                 var timeline = await _historyService.GetCustomerTimelineAsync(customerId, fromDate, toDate, currencyCode);
                 

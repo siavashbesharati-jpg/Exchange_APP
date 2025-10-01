@@ -177,8 +177,8 @@ namespace ForexExchange.Controllers
             // Mark link as accessed
             await _shareableLinkService.MarkLinkAccessedAsync(token);
 
-            // Redirect to Reports/CustomerReports with customerId parameter
-            return RedirectToAction("CustomerReports", "Reports", new { customerId = shareableLink.CustomerId });
+            // Redirect to Reports/CustomerReports with token parameter (secure)
+            return RedirectToAction("CustomerReports", "Reports", new { token = token });
         }
 
         // GET: /Share/error

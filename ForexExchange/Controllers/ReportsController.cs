@@ -74,12 +74,54 @@ namespace ForexExchange.Controllers
         }
 
         // GET: Reports/CustomerReports
-        public IActionResult CustomerReports(int? customerId = null)
+        [AllowAnonymous] // Allow anonymous access for shareable links
+        public async Task<IActionResult> CustomerReports(int? customerId = null, string? token = null)
         {
-            // Pass customerId to the view via ViewBag for link access mode
-            ViewBag.CustomerId = customerId;
-            ViewBag.IsLinkAccess = customerId.HasValue;
+            // Check if this is a token-based access (shareable link)
+            if (!string.IsNullOrEmpty(token))
+            {
+                // Validate token via ShareableLinkService
+                var shareableLinkService = HttpContext.RequestServices.GetRequiredService<IShareableLinkService>();
+                var shareableLink = await shareableLinkService.GetValidLinkAsync(token);
+                
+                if (shareableLink == null || shareableLink.LinkType != ShareableLinkType.CustomerReport)
+                {
+                    return View("LinkExpired");
+                }
+                
+                // Mark link as accessed
+                await shareableLinkService.MarkLinkAccessedAsync(token);
+                
+                // Use the customer ID from the validated token
+                ViewBag.CustomerId = shareableLink.CustomerId;
+                ViewBag.IsLinkAccess = true;
+                ViewBag.Token = token; // Pass token to view for API calls
+                
+                return View();
+            }
             
+            // Legacy support for direct customerId parameter (should be removed after migration)
+            if (customerId.HasValue)
+            {
+                // This is potentially unsafe - log a warning
+                _logger.LogWarning("Direct customerId access detected from IP: {IP} for CustomerId: {CustomerId}", 
+                    Request.HttpContext.Connection.RemoteIpAddress, customerId);
+                    
+                // For now, allow but mark as potentially unsafe
+                ViewBag.CustomerId = customerId;
+                ViewBag.IsLinkAccess = true;
+                ViewBag.IsUnsafeAccess = true; // Flag for unsafe access
+                
+                return View();
+            }
+            
+            // Normal authenticated access
+            if (!User.IsInRole("Admin") && !User.IsInRole("Staff"))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+            
+            ViewBag.IsLinkAccess = false;
             return View();
         }
 
@@ -513,23 +555,55 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/GetDocumentDetails/{id}
         [HttpGet]
-        public async Task<IActionResult> GetDocumentDetails(int id)
+        [AllowAnonymous] // Allow anonymous access for shareable links
+        public async Task<IActionResult> GetDocumentDetails(int id, int? customerId = null, string? token = null)
         {
             try
             {
-                var document = await _context.AccountingDocuments
+                // For anonymous access via shareable links, validate token
+                if ((User.Identity?.IsAuthenticated != true))
+                {
+                    if (customerId == null || string.IsNullOrEmpty(token))
+                    {
+                        return Json(new { error = "دسترسی غیرمجاز" });
+                    }
+
+                    // Validate token
+                    var shareableLinkService = HttpContext.RequestServices.GetRequiredService<IShareableLinkService>();
+                    var shareableLink = await shareableLinkService.GetValidLinkAsync(token);
+                    
+                    if (shareableLink == null || 
+                        shareableLink.LinkType != ShareableLinkType.CustomerReport || 
+                        shareableLink.CustomerId != customerId.Value)
+                    {
+                        return Json(new { error = "دسترسی غیرمجاز" });
+                    }
+                }
+
+                var query = _context.AccountingDocuments
                     .Include(ad => ad.PayerCustomer)
                     .Include(ad => ad.ReceiverCustomer)
                     .Include(ad => ad.PayerBankAccount)
                     .Include(ad => ad.ReceiverBankAccount)
-                    .Where(ad => ad.Id == id)
-                    .FirstOrDefaultAsync();
+                    .Where(ad => ad.Id == id);
+
+                // If customerId is provided (anonymous access), validate document involves the customer
+                if (customerId.HasValue)
+                {
+                    query = query.Where(ad => (ad.PayerCustomer != null && ad.PayerCustomer.Id == customerId.Value) || 
+                                            (ad.ReceiverCustomer != null && ad.ReceiverCustomer.Id == customerId.Value));
+                }
+
+                var document = await query.FirstOrDefaultAsync();
 
                 if (document == null)
                 {
                     return Json(new { error = "سند یافت نشد" });
                 }
 
+                // Check if user is admin to determine what to show in description field
+                bool isAdmin = User.IsInRole("Admin");
+                
                 var result = new
                 {
                     id = document.Id,
@@ -537,18 +611,27 @@ namespace ForexExchange.Controllers
                     documentDate = document.DocumentDate,
                     amount = document.Amount,
                     currencyCode = document.CurrencyCode,
-                    description = document.Description,
+                    description = isAdmin ? document.Description : (document.Notes ?? ""), // Show notes for non-admin
                     notes = document.Notes,
                     referenceNumber = document.ReferenceNumber,
 
-                    // Payer information
+                    // Check if both sides are customers (customer-to-customer transaction)
+                    isBothSidesCustomers = document.PayerCustomer != null && document.ReceiverCustomer != null,
+
+                    // For anonymous access (shareable link), mask other customer info
+                    isAnonymousAccess = customerId.HasValue && (User.Identity?.IsAuthenticated != true),
+
+                    // Payer information (masked if anonymous and not the viewing customer)
                     payerType = document.PayerType.ToString(),
                     payerCustomer = document.PayerCustomer != null ? new
                     {
                         id = document.PayerCustomer.Id,
-                        fullName = document.PayerCustomer.FullName,
-                        phoneNumber = document.PayerCustomer.PhoneNumber,
-                        email = document.PayerCustomer.Email
+                        fullName = (customerId.HasValue && (User.Identity?.IsAuthenticated != true) && document.PayerCustomer.Id != customerId.Value) 
+                            ? "سیستم" : document.PayerCustomer.FullName,
+                        phoneNumber = (customerId.HasValue && (User.Identity?.IsAuthenticated != true) && document.PayerCustomer.Id != customerId.Value) 
+                            ? "" : document.PayerCustomer.PhoneNumber,
+                        email = (customerId.HasValue && (User.Identity?.IsAuthenticated != true) && document.PayerCustomer.Id != customerId.Value) 
+                            ? "" : document.PayerCustomer.Email
                     } : null,
                     payerBankAccount = document.PayerBankAccount != null ? new
                     {
@@ -558,14 +641,17 @@ namespace ForexExchange.Controllers
                         accountHolderName = document.PayerBankAccount.AccountHolderName
                     } : null,
 
-                    // Receiver information
+                    // Receiver information (masked if anonymous and not the viewing customer)
                     receiverType = document.ReceiverType.ToString(),
                     receiverCustomer = document.ReceiverCustomer != null ? new
                     {
                         id = document.ReceiverCustomer.Id,
-                        fullName = document.ReceiverCustomer.FullName,
-                        phoneNumber = document.ReceiverCustomer.PhoneNumber,
-                        email = document.ReceiverCustomer.Email
+                        fullName = (customerId.HasValue && (User.Identity?.IsAuthenticated != true) && document.ReceiverCustomer.Id != customerId.Value) 
+                            ? "سیستم" : document.ReceiverCustomer.FullName,
+                        phoneNumber = (customerId.HasValue && (User.Identity?.IsAuthenticated != true) && document.ReceiverCustomer.Id != customerId.Value) 
+                            ? "" : document.ReceiverCustomer.PhoneNumber,
+                        email = (customerId.HasValue && (User.Identity?.IsAuthenticated != true) && document.ReceiverCustomer.Id != customerId.Value) 
+                            ? "" : document.ReceiverCustomer.Email
                     } : null,
                     receiverBankAccount = document.ReceiverBankAccount != null ? new
                     {

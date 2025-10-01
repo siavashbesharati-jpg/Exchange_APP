@@ -273,16 +273,44 @@ namespace ForexExchange.Controllers
 
         // GET: Orders/GetOrderDetails/5 (for AJAX popup)
         [HttpGet]
-        public async Task<IActionResult> GetOrderDetails(int id)
+        [AllowAnonymous] // Allow anonymous access for shareable links
+        public async Task<IActionResult> GetOrderDetails(int id, int? customerId = null, string? token = null)
         {
             try
             {
-                var order = await _context.Orders
+                // For anonymous access via shareable links, validate token
+                if ((User.Identity?.IsAuthenticated != true))
+                {
+                    if (customerId == null || string.IsNullOrEmpty(token))
+                    {
+                        return Json(new { error = "دسترسی غیرمجاز" });
+                    }
+
+                    // Validate token
+                    var shareableLinkService = HttpContext.RequestServices.GetRequiredService<IShareableLinkService>();
+                    var shareableLink = await shareableLinkService.GetValidLinkAsync(token);
+                    
+                    if (shareableLink == null || 
+                        shareableLink.LinkType != ShareableLinkType.CustomerReport || 
+                        shareableLink.CustomerId != customerId.Value)
+                    {
+                        return Json(new { error = "دسترسی غیرمجاز" });
+                    }
+                }
+
+                var query = _context.Orders
                     .Include(o => o.Customer)
                     .Include(o => o.FromCurrency)
                     .Include(o => o.ToCurrency)
-                    .Where(o => o.Id == id)
-                    .FirstOrDefaultAsync();
+                    .Where(o => o.Id == id);
+
+                // If customerId is provided (anonymous access), validate order belongs to customer
+                if (customerId.HasValue)
+                {
+                    query = query.Where(o => o.CustomerId == customerId.Value);
+                }
+
+                var order = await query.FirstOrDefaultAsync();
 
                 if (order == null)
                 {
