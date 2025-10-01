@@ -26,7 +26,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="row mb-4">
+    <div class="row mb-4" id="filtersSection">
         <div class="col-12">
             <div class="card shadow-sm border-3">
                 <div class="card-body">
@@ -51,24 +51,23 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">مشتری <span class="text-danger">*</span></label>
-                            @if (isLinkAccess)
-                            {
-                                <!-- Link access mode: Show customer name only -->
-                                <div class="form-control bg-light" id="customerNameDisplay">
-                                    <i class="fas fa-spinner fa-spin me-2"></i>در حال بارگذاری...
-                                </div>
-                                <input type="hidden" id="customerFilter" value="@customerId" />
-                            }
-                            else
-                            {
+
+                        @if (isLinkAccess)
+                        {
+
+                            <input type="hidden" id="customerFilter" value="@customerId" />
+                        }
+                        else
+                        {
+                            <div class="col-md-2">
+                                <label class="form-label">مشتری <span class="text-danger">*</span></label>
                                 <!-- Normal mode: Show dropdown -->
                                 <select class="form-select" id="customerFilter">
                                     <option value="">انتخاب مشتری</option>
                                 </select>
-                            }
-                        </div>
+                            </div>
+                        }
+
                         <div class="col-md-2">
                             <label class="form-label">ارز</label>
                             <select class="form-select" id="currencyFilter">
@@ -97,12 +96,12 @@
                     <div class="row g-3">
                         <div class="col-md-2">
                             <label class="form-label">&nbsp;</label>
-                            <button id="manualBalanceBtn" class="btn btn-success w-100" onclick="openManualBalanceModal()"
-                                title="افزودن تعدیل دستی">
+                            <button id="manualBalanceBtn" class="btn btn-success w-100"
+                                onclick="openManualBalanceModal()" title="افزودن تعدیل دستی">
                                 <i class="fas fa-plus me-1"></i>تعدیل دستی
                             </button>
                         </div>
-                      
+
                     </div>
                 </div>
             </div>
@@ -124,13 +123,13 @@
                         </h5>
                         <div class="d-flex gap-2">
                             <button class="btn btn-light btn-sm" onclick="exportTimelineData()">
-                                <i class="fas fa-file-excel me-1"></i>دریافت اکسل 
+                                <i class="fas fa-file-excel me-1"></i>دریافت اکسل
                             </button>
                             @* <button class="btn btn-outline-light btn-sm" onclick="printTimeline()">
                                 <i class="fas fa-print me-1"></i>چاپ
                             </button> *@
                             <button class="btn btn-success btn-sm" onclick="openBankReceipt()">
-                                <i class="fas fa-receipt me-1"></i> چاپ 
+                                <i class="fas fa-receipt me-1"></i> چاپ
                             </button>
                         </div>
                     </div>
@@ -280,6 +279,22 @@
             loadCustomerForLinkAccess(linkCustomerId);
             // Hide admin actions for link access
             document.querySelector('.row.mb-4:nth-of-type(2)').style.display = 'none';
+
+            // Ensure filter section is visible for shareable link access
+            const filterSection = document.getElementById('filtersSection');
+            if (filterSection) {
+                filterSection.style.display = 'block';
+                filterSection.style.visibility = 'visible';
+            }
+
+            // Add a visual indicator that this is shareable link access
+            const filterCard = document.querySelector('#filtersSection .card-body');
+            if (filterCard && !filterCard.querySelector('.shareable-link-indicator')) {
+                const indicator = document.createElement('div');
+                indicator.className = 'alert alert-info shareable-link-indicator mt-2 mb-3';
+                indicator.innerHTML = '<i class="fas fa-link me-2"></i>شما در حال مشاهده گزارش از طریق لینک اشتراکی هستید';
+                filterCard.insertBefore(indicator, filterCard.firstChild);
+            }
         } else {
             // Normal mode: Load customers for filter (only when not in link access mode)
             loadCustomers();
@@ -361,11 +376,11 @@
             })
             .then(data => {
                 const customerNameDisplay = document.getElementById('customerNameDisplay');
-                
+
                 if (data.success && data.customerName) {
                     customerNameDisplay.innerHTML = `<i class="fas fa-user me-2"></i>${data.customerName}`;
                     customerNameDisplay.classList.add('text-primary');
-                    
+
                     // Automatically load this customer's data
                     setTimeout(() => {
                         loadDataForActiveTab();
@@ -487,7 +502,7 @@
                     currentTimeline = response.data;
                     renderBankStyleTimeline(response.data);
                     updateCustomerInfo(response.data);
-                    
+
                     // Pagination disabled - clear pagination container
                     document.getElementById('timelinePagination').innerHTML = '';
                 } else {
@@ -582,13 +597,13 @@
                     <td class="text-start">
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">${transaction.description || '-'}</small>
-                            ${isManualTransaction ? 
-                                `<button type="button" class="btn btn-sm btn-outline-danger" 
+                            ${isManualTransaction ?
+                        `<button type="button" class="btn btn-sm btn-outline-danger" 
                                     onclick="deleteManualTransaction(${transaction.id}, '${currency}', ${transaction.amount})" 
                                     title="حذف تعدیل دستی">
                                     <i class="fas fa-trash fa-xs"></i>
                                 </button>` : ''
-                            }
+                    }
                         </div>
                     </td>
                 </tr>
@@ -600,18 +615,18 @@
         });
 
         tbody.innerHTML = timelineHtml;
-        
+
         renderBalanceSummary(timeline.finalBalances);
 
         // Add hover events to transaction rows
         setTimeout(() => {
             document.querySelectorAll('.transaction-row').forEach(row => {
-                row.addEventListener('mouseenter', function(e) {
+                row.addEventListener('mouseenter', function (e) {
                     const type = this.getAttribute('data-type');
                     const refId = this.getAttribute('data-ref-id');
                     showTransactionHoverPopup(type, refId, e);
                 });
-                row.addEventListener('mouseleave', function() {
+                row.addEventListener('mouseleave', function () {
                     hideTransactionHoverPopup();
                 });
             });
@@ -804,10 +819,10 @@
 
     function openBankReceipt() {
         // Use linkCustomerId if in link access mode, otherwise get from dropdown
-        const customerId = isLinkAccess && linkCustomerId ? 
-            linkCustomerId : 
+        const customerId = isLinkAccess && linkCustomerId ?
+            linkCustomerId :
             document.getElementById('customerFilter').value;
-            
+
         if (!customerId || !currentTimeline) {
             alert('لطفاً ابتدا مشتری را انتخاب کرده و تاریخچه مالی را بارگذاری کنید');
             return;
@@ -1004,8 +1019,8 @@
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
             },
-            body: 'transactionId=' + encodeURIComponent(transactionId) + 
-                  '&__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
+            body: 'transactionId=' + encodeURIComponent(transactionId) +
+                '&__RequestVerificationToken=' + encodeURIComponent(document.querySelector('input[name="__RequestVerificationToken"]')?.value || '')
         })
             .then(response => response.json())
             .then(result => {
@@ -1019,7 +1034,7 @@
                     }
                 } else {
                     alert('خطا در حذف تراکنش: ' + (result.error || result.message || 'خطای ناشناخته'));
-                    
+
                     // Restore button state on error
                     button.innerHTML = originalHtml;
                     button.disabled = false;
@@ -1027,7 +1042,7 @@
             })
             .catch(error => {
                 alert('خطا در ارسال درخواست: ' + error.message);
-                
+
                 // Restore button state on error
                 button.innerHTML = originalHtml;
                 button.disabled = false;
@@ -1092,7 +1107,7 @@
                     url += `&token=${accessToken}`;
                 }
             }
-            
+
             const response = await fetch(url);
             const data = await response.json();
             if (data.error) {
@@ -1133,7 +1148,7 @@
                     url += `&token=${accessToken}`;
                 }
             }
-            
+
             const response = await fetch(url);
             const data = await response.json();
             if (data.error) {
@@ -1142,7 +1157,7 @@
             }
             // Render document details with consistent styling
             let payerDisplay, receiverDisplay;
-            
+
             if (data.isBothSidesCustomers) {
                 // For customer-to-customer transactions in anonymous access
                 if (data.isAnonymousAccess) {
@@ -1397,26 +1412,30 @@
         background: white;
         border: 1px solid #ddd;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         max-width: 350px;
         font-size: 0.875rem;
         pointer-events: none;
         animation: fadeIn 0.2s ease-in-out;
     }
+
     .transaction-hover-popup .popup-header {
         background: #f8f9fa;
         padding: 8px 12px;
         border-bottom: 1px solid #dee2e6;
         border-radius: 7px 7px 0 0;
     }
+
     .transaction-hover-popup .popup-header h6 {
         margin: 0;
         font-size: 0.875rem;
         color: #495057;
     }
+
     .transaction-hover-popup .popup-body {
         padding: 12px;
     }
+
     .transaction-hover-popup .popup-footer {
         padding: 8px 12px;
         background: #f8f9fa;
@@ -1424,12 +1443,27 @@
         border-radius: 0 0 7px 7px;
         text-align: center;
     }
+
     @@keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
+
     #timelineTableBody tr:hover {
         background-color: #f8f9fa;
         transition: background-color 0.2s ease;
+    }
+
+    /* Ensure filters are always visible for shareable link access */
+    #filtersSection {
+        display: block !important;
+        visibility: visible !important;
     }
 </style>
