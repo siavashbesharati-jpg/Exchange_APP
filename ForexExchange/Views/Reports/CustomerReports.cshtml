@@ -1,5 +1,7 @@
 @{
     ViewData["Title"] = "گزارشات مشتریان";
+    var isLinkAccess = ViewBag.IsLinkAccess as bool? ?? false;
+    var customerId = ViewBag.CustomerId as int?;
 }
 
 @using Microsoft.AspNetCore.Antiforgery
@@ -51,9 +53,21 @@
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">مشتری <span class="text-danger">*</span></label>
-                            <select class="form-select" id="customerFilter">
-                                <option value="">انتخاب مشتری</option>
-                            </select>
+                            @if (isLinkAccess)
+                            {
+                                <!-- Link access mode: Show customer name only -->
+                                <div class="form-control bg-light" id="customerNameDisplay">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>در حال بارگذاری...
+                                </div>
+                                <input type="hidden" id="customerFilter" value="@customerId" />
+                            }
+                            else
+                            {
+                                <!-- Normal mode: Show dropdown -->
+                                <select class="form-select" id="customerFilter">
+                                    <option value="">انتخاب مشتری</option>
+                                </select>
+                            }
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">ارز</label>
@@ -253,13 +267,22 @@
     let currentPage = { timeline: 1 };
     let pageSize = 10000; // Disabled pagination - load all records
     let currentTimeline = null;
+    const isLinkAccess = @Json.Serialize(isLinkAccess);
+    const linkCustomerId = @Json.Serialize(customerId);
 
     document.addEventListener('DOMContentLoaded', function () {
         // Load currencies for filter
         loadCurrencies();
 
-        // Load customers for filter
-        loadCustomers();
+        if (isLinkAccess && linkCustomerId) {
+            // Link access mode: Load specific customer and their data
+            loadCustomerForLinkAccess(linkCustomerId);
+            // Hide admin actions for link access
+            document.querySelector('.row.mb-4:nth-of-type(2)').style.display = 'none';
+        } else {
+            // Normal mode: Load customers for filter (only when not in link access mode)
+            loadCustomers();
+        }
 
         // Initialize empty tables
         showEmptyState();
@@ -326,6 +349,35 @@
             .catch(error => {
                 const select = document.getElementById('customerFilter');
                 select.innerHTML = '<option value="">خطا در بارگذاری مشتریان</option>';
+            });
+    }
+
+    function loadCustomerForLinkAccess(customerId) {
+        // For link access, only get the specific customer name without exposing all customers
+        fetch(`@Url.Action("GetCustomerName", "Reports")?customerId=${customerId}`)
+            .then(response => {
+                return response.json();
+            })
+            .then(data => {
+                const customerNameDisplay = document.getElementById('customerNameDisplay');
+                
+                if (data.success && data.customerName) {
+                    customerNameDisplay.innerHTML = `<i class="fas fa-user me-2"></i>${data.customerName}`;
+                    customerNameDisplay.classList.add('text-primary');
+                    
+                    // Automatically load this customer's data
+                    setTimeout(() => {
+                        loadDataForActiveTab();
+                    }, 500);
+                } else {
+                    customerNameDisplay.innerHTML = '<i class="fas fa-exclamation-triangle me-2 text-danger"></i>مشتری یافت نشد';
+                    customerNameDisplay.classList.add('text-danger');
+                }
+            })
+            .catch(error => {
+                const customerNameDisplay = document.getElementById('customerNameDisplay');
+                customerNameDisplay.innerHTML = '<i class="fas fa-exclamation-triangle me-2 text-danger"></i>خطا در بارگذاری اطلاعات مشتری';
+                customerNameDisplay.classList.add('text-danger');
             });
     }
 

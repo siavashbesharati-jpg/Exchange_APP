@@ -74,8 +74,12 @@ namespace ForexExchange.Controllers
         }
 
         // GET: Reports/CustomerReports
-        public IActionResult CustomerReports()
+        public IActionResult CustomerReports(int? customerId = null)
         {
+            // Pass customerId to the view via ViewBag for link access mode
+            ViewBag.CustomerId = customerId;
+            ViewBag.IsLinkAccess = customerId.HasValue;
+            
             return View();
         }
 
@@ -1212,6 +1216,34 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error loading customers");
                 return Json(new { error = "خطا در بارگذاری مشتریان" });
+            }
+        }
+
+        // GET: Reports/GetCustomerName - Secure endpoint for link access mode
+        [HttpGet]
+        [AllowAnonymous] // Allow anonymous access for shareable links
+        public async Task<IActionResult> GetCustomerName(int customerId)
+        {
+            try
+            {
+                var customer = await _context.Customers
+                    .Where(c => c.Id == customerId && c.IsActive && !c.IsSystem)
+                    .Select(c => new { fullName = c.FullName })
+                    .FirstOrDefaultAsync();
+
+                if (customer != null)
+                {
+                    return Json(new { success = true, customerName = customer.fullName });
+                }
+                else
+                {
+                    return Json(new { success = false, error = "مشتری یافت نشد" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading customer name for ID: {CustomerId}", customerId);
+                return Json(new { success = false, error = "خطا در بارگذاری نام مشتری" });
             }
         }
 
