@@ -527,7 +527,7 @@ namespace ForexExchange.Services
             return package.GetAsByteArray();
         }
 
-        public byte[] GenerateOrdersExcel(List<object> orders, DateTime? fromDate = null, DateTime? toDate = null, string? fromCurrency = null, string? toCurrency = null, string? orderStatus = null)
+        public byte[] GenerateOrdersExcel(List<object> orders, DateTime? fromDate = null, DateTime? toDate = null, string? fromCurrency = null, string? toCurrency = null)
         {
             // Set license context for EPPlus 6
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -543,12 +543,12 @@ namespace ForexExchange.Services
             
             // Title
             worksheet.Cells[row, 1].Value = "گزارش معاملات";
-            worksheet.Cells[row, 1, row, 9].Merge = true;
-            StyleHeaderCell(worksheet.Cells[row, 1, row, 9], 16, true);
+            worksheet.Cells[row, 1, row, 8].Merge = true;
+            StyleHeaderCell(worksheet.Cells[row, 1, row, 8], 16, true);
             row += 2;
 
             // Filters applied
-            if (fromDate.HasValue || toDate.HasValue || !string.IsNullOrEmpty(fromCurrency) || !string.IsNullOrEmpty(toCurrency) || !string.IsNullOrEmpty(orderStatus))
+            if (fromDate.HasValue || toDate.HasValue || !string.IsNullOrEmpty(fromCurrency) || !string.IsNullOrEmpty(toCurrency))
             {
                 worksheet.Cells[row, 1].Value = "فیلترهای اعمال شده:";
                 StyleInfoCell(worksheet.Cells[row, 1]);
@@ -582,15 +582,6 @@ namespace ForexExchange.Services
                     StyleInfoCell(worksheet.Cells[row, 2]);
                     row++;
                 }
-
-                if (!string.IsNullOrEmpty(orderStatus))
-                {
-                    worksheet.Cells[row, 1].Value = "وضعیت:";
-                    worksheet.Cells[row, 2].Value = orderStatus;
-                    StyleInfoCell(worksheet.Cells[row, 1]);
-                    StyleInfoCell(worksheet.Cells[row, 2]);
-                    row++;
-                }
                 row++;
             }
 
@@ -603,9 +594,8 @@ namespace ForexExchange.Services
             worksheet.Cells[row, 6].Value = "به ارز";
             worksheet.Cells[row, 7].Value = "نرخ تبدیل";
             worksheet.Cells[row, 8].Value = "مبلغ نهایی";
-            worksheet.Cells[row, 9].Value = "وضعیت";
 
-            StyleHeaderRow(worksheet.Cells[row, 1, row, 9]);
+            StyleHeaderRow(worksheet.Cells[row, 1, row, 8]);
             row++;
 
             // Order data
@@ -619,10 +609,9 @@ namespace ForexExchange.Services
                 worksheet.Cells[row, 6].Value = order.toCurrency?.ToString();
                 worksheet.Cells[row, 7].Value = decimal.Parse(order.rate?.ToString() ?? "0");
                 worksheet.Cells[row, 8].Value = decimal.Parse(order.totalValue?.ToString() ?? "0");
-                worksheet.Cells[row, 9].Value = order.status?.ToString();
 
                 // Style data row
-                StyleDataRow(worksheet.Cells[row, 1, row, 9]);
+                StyleDataRow(worksheet.Cells[row, 1, row, 8]);
                 
                 // Format currency columns
                 worksheet.Cells[row, 5].Style.Numberformat.Format = "#,##0";

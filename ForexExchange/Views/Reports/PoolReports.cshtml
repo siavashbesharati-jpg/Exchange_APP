@@ -495,8 +495,15 @@
         const fromDate = document.getElementById('fromDate').value || null;
         const toDate = document.getElementById('toDate').value || null;
 
-        // For now, show success message - Excel export can be implemented later
-        alert('دریافت تاریخچه مالی به فرمت اکسل در ادامه پیاده‌سازی خواهد شد');
+        // Build URL with parameters
+        const params = new URLSearchParams();
+        params.append('type', 'pool');
+        params.append('currencyCode', currencyCode);
+        
+        if (fromDate) params.append('fromDate', fromDate);
+        if (toDate) params.append('toDate', toDate);
+
+        window.location.href = `@Url.Action("ExportToExcel", "Reports")?${params.toString()}`;
     }
 
     function printTimeline() {

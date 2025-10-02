@@ -45,16 +45,7 @@
                                 <option value="">در حال بارگذاری...</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">وضعیت</label>
-                            <select class="form-select" id="orderStatus">
-                                <option value="">همه</option>
-                                <option value="completed">تکمیل شده</option>
-                                <option value="pending">در انتظار</option>
-                                <option value="cancelled">لغو شده</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-success w-100" onclick="loadOrderReports()">
                                 <i class="fas fa-search me-1"></i>جستجو
@@ -91,13 +82,12 @@
                                     <th class="sortable" data-column="toCurrency">به ارز <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="rate">نرخ تبدیل <i class="fas fa-sort"></i></th>
                                     <th class="sortable" data-column="totalValue">مبلغ نهایی <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" data-column="status">وضعیت <i class="fas fa-sort"></i></th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
                             <tbody id="ordersTableBody">
                                 <tr>
-                                    <td colspan="10" class="text-center py-5">
+                                    <td colspan="9" class="text-center py-5">
                                         <div class="spinner-border text-success" role="status">
                                             <span class="visually-hidden">در حال بارگذاری...</span>
                                         </div>
@@ -190,12 +180,10 @@ function loadOrdersTable() {
     const toDate = document.getElementById('toDate').value;
     const fromCurrency = document.getElementById('fromCurrency').value;
     const toCurrency = document.getElementById('toCurrency').value;
-    const orderStatus = document.getElementById('orderStatus').value;
     
     const url = `@Url.Action("GetOrdersData", "Reports")?fromDate=${fromDate}&toDate=${toDate}` +
                 (fromCurrency ? `&fromCurrency=${fromCurrency}` : '') +
-                (toCurrency ? `&toCurrency=${toCurrency}` : '') +
-                (orderStatus ? `&orderStatus=${orderStatus}` : '');
+                (toCurrency ? `&toCurrency=${toCurrency}` : '');
     
     fetch(url)
     .then(response => response.json())
@@ -205,7 +193,7 @@ function loadOrdersTable() {
         if (data.error) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="text-center py-5 text-danger">
+                    <td colspan="9" class="text-center py-5 text-danger">
                         <i class="fas fa-exclamation-triangle"></i>
                         ${data.error}
                     </td>
@@ -220,7 +208,7 @@ function loadOrdersTable() {
         } else {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="text-center py-4 text-muted">
+                    <td colspan="9" class="text-center py-4 text-muted">
                         <i class="fas fa-inbox fa-2x mb-2"></i>
                         <p>هیچ معامله‌ای یافت نشد</p>
                     </td>
@@ -231,7 +219,7 @@ function loadOrdersTable() {
     .catch(error => {
         tbody.innerHTML = `
             <tr>
-                <td colspan="10" class="text-center py-4 text-danger">
+                <td colspan="9" class="text-center py-4 text-danger">
                     <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                     <p>خطا در بارگذاری اطلاعات</p>
                 </td>
@@ -262,11 +250,6 @@ function renderOrdersTable(orders) {
             <td><span class="badge bg-info">${order.toCurrency}</span></td>
             <td>${order.rate}</td>
             <td data-no-format="true" data-skip-format="true" class="skip-auto-format">${formatCurrency(order.totalValue, order.toCurrency)}</td>
-            <td>
-                <span class="badge ${order.status === 'تکمیل شده' ? 'bg-success' : 'bg-warning'}">
-                    ${order.status}
-                </span>
-            </td>
             <td>
                 <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails(${order.id})">
                     <i class="fas fa-eye"></i>
@@ -330,7 +313,20 @@ function viewOrderDetails(orderId) {
 }
 
 function exportOrderData() {
-    window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=orders';
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+    const fromCurrency = document.getElementById('fromCurrency').value;
+    const toCurrency = document.getElementById('toCurrency').value;
+    
+    const params = new URLSearchParams();
+    params.append('type', 'orders');
+    
+    if (fromDate) params.append('fromDate', fromDate);
+    if (toDate) params.append('toDate', toDate);
+    if (fromCurrency) params.append('fromCurrency', fromCurrency);
+    if (toCurrency) params.append('toCurrency', toCurrency);
+    
+    window.location.href = `@Url.Action("ExportToExcel", "Reports")?${params.toString()}`;
 }
 
 function formatNumber(num) {

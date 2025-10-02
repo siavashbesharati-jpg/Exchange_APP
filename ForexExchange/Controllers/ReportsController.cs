@@ -1909,7 +1909,7 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> ExportToExcel(string type, int? customerId = null, int? bankAccountId = null, 
             string? currencyCode = null, DateTime? fromDate = null, DateTime? toDate = null, 
             string? customer = null, string? referenceId = null, decimal? fromAmount = null, decimal? toAmount = null,
-            string? bankAccount = null)
+            string? bankAccount = null, string? fromCurrency = null, string? toCurrency = null, string? orderStatus = null)
         {
             try
             {
@@ -1917,6 +1917,7 @@ namespace ForexExchange.Controllers
                 {
                     "customer" => await ExportCustomerTimeline(customerId, fromDate, toDate, currencyCode),
                     "documents" => await ExportDocuments(fromDate, toDate, currencyCode, customer, referenceId, fromAmount, toAmount, bankAccount),
+                    "orders" => await ExportOrdersData(fromDate, toDate, fromCurrency, toCurrency),
                     "pool" => await ExportPoolTimeline(currencyCode, fromDate, toDate),
                     "bankaccount" => await ExportBankAccountTimeline(bankAccountId, fromDate, toDate),
                     _ => BadRequest("نوع گزارش نامعتبر است")
@@ -2097,6 +2098,84 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error exporting pool timeline for currency {CurrencyCode}", currencyCode);
                 return StatusCode(500, "خطا در تولید گزارش صندوق");
+            }
+        }
+
+        // Orders Excel Export
+        private async Task<IActionResult> ExportOrdersData(DateTime? fromDate, DateTime? toDate, string? fromCurrency, string? toCurrency)
+        {
+            try
+            {
+                // Format date range
+                DateTime? formattedFromDate = null;
+                DateTime? formattedToDate = null;
+                
+                if (fromDate.HasValue || toDate.HasValue)
+                {
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    formattedFromDate = fromDateTime;
+                    formattedToDate = toDateTime;
+                }
+
+                // Build query for orders
+                var query = _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.FromCurrency)
+                    .Include(o => o.ToCurrency)
+                    .AsQueryable();
+
+                // Apply date range filter
+                if (formattedFromDate.HasValue)
+                {
+                    query = query.Where(o => o.CreatedAt >= formattedFromDate.Value);
+                }
+                if (formattedToDate.HasValue)
+                {
+                    query = query.Where(o => o.CreatedAt <= formattedToDate.Value);
+                }
+
+                // Apply currency filters
+                if (!string.IsNullOrEmpty(fromCurrency))
+                {
+                    query = query.Where(o => o.FromCurrency.Code == fromCurrency);
+                }
+                if (!string.IsNullOrEmpty(toCurrency))
+                {
+                    query = query.Where(o => o.ToCurrency.Code == toCurrency);
+                }
+
+                // Get the orders
+                var orders = await query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Select(o => new
+                    {
+                        id = o.Id,
+                        createdAt = o.CreatedAt,
+                        customerName = o.Customer.FullName,
+                        fromCurrency = o.FromCurrency.Code,
+                        amount = o.FromAmount,
+                        toCurrency = o.ToCurrency.Code,
+                        rate = o.Rate,
+                        totalValue = o.ToAmount,
+                        status = "تکمیل شده" // All orders are complete
+                    })
+                    .ToListAsync();
+
+                // Generate Excel file
+                var excelData = _excelExportService.GenerateOrdersExcel(
+                    orders.Cast<object>().ToList(),
+                    formattedFromDate,
+                    formattedToDate,
+                    fromCurrency,
+                    toCurrency);
+
+                var fileName = $"گزارش_معاملات_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting orders data");
+                return StatusCode(500, "خطا در تولید گزارش معاملات");
             }
         }
 
