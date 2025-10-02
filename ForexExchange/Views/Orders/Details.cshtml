@@ -55,12 +55,12 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6"><strong>تاریخ ایجاد:</strong> @Model.CreatedAt.ToPersianDateTextify()
+                        <div class="col-md-6"><strong>تاریخ تراکنش:</strong> @Model.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")
                         </div>
                         @if (Model.UpdatedAt.HasValue)
                         {
                             <div class="col-md-6"><strong>آخرین بروزرسانی:</strong>
-                                @Model.UpdatedAt.Value.ToPersianDateTextify()</div>
+                                @Model.UpdatedAt.Value..ToString("yyyy/MM/dd HH:mm:ss")</div>
                         }
                     </div>
                 </div>

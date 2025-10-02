@@ -89,7 +89,7 @@ namespace ForexExchange.Controllers
 
         // GET: Orders
         public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString,
-            string currencyFilter, string statusFilter, string customerFilter, 
+            string currencyFilter, string statusFilter, string customerFilter, int? customerIdFilter,
             string orderIdFilter, string fromCurrencyFilter, string toCurrencyFilter,
             decimal? minAmountFilter, decimal? maxAmountFilter, 
             DateTime? fromDateFilter, DateTime? toDateFilter, int? page)
@@ -118,6 +118,7 @@ namespace ForexExchange.Controllers
             ViewData["CurrencyFilter"] = currencyFilter;
             ViewData["StatusFilter"] = statusFilter;
             ViewData["CustomerFilter"] = customerFilter;
+            ViewData["CustomerIdFilter"] = customerIdFilter;
             ViewData["OrderIdFilter"] = orderIdFilter;
             ViewData["FromCurrencyFilter"] = fromCurrencyFilter;
             ViewData["ToCurrencyFilter"] = toCurrencyFilter;
@@ -128,6 +129,9 @@ namespace ForexExchange.Controllers
 
             // Load currencies for dropdown filters
             ViewBag.Currencies = await _context.Currencies.OrderBy(c => c.Code).ToListAsync();
+            
+            // Load customers for dropdown filters ordered by FullName
+            ViewBag.Customers = await _context.Customers.OrderBy(c => c.FullName).ToListAsync();
 
 
             IQueryable<Order> ordersQuery;
@@ -149,6 +153,12 @@ namespace ForexExchange.Controllers
             if (!String.IsNullOrEmpty(customerFilter))
             {
                 ordersQuery = ordersQuery.Where(o => o.Customer.FullName == customerFilter);
+            }
+
+            // New filter: Customer ID (for dropdown selection)
+            if (customerIdFilter.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CustomerId == customerIdFilter.Value);
             }
 
             // Removed OrderType filtering

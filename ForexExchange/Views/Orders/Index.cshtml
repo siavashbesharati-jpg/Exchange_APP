@@ -37,14 +37,21 @@
         <div class="card-body">
             <form asp-action="Index" method="get">
                 <div class="row g-3">
-                    <!-- Customer Search -->
+                    <!-- Customer Dropdown -->
                     <div class="col-md-4">
-                        <label class="form-label">جستجو در نام مشتری</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-user"></i></span>
-                            <input type="text" name="SearchString" value="@ViewData["CurrentFilter"]" class="form-control"
-                                placeholder="نام مشتری...">
-                        </div>
+                        <label class="form-label">مشتری</label>
+                        <select name="customerIdFilter" id="customerSelect" class="form-select select2" style="width: 100%;">
+                            <option value="">همه مشتریان</option>
+                            @if (ViewBag.Customers != null)
+                            {
+                                @foreach (var customer in ViewBag.Customers)
+                                {
+                                    <option value="@customer.Id" selected="@(ViewData["CustomerIdFilter"]?.ToString() == customer.Id.ToString())">
+                                        @customer.FullName
+                                    </option>
+                                }
+                            }
+                        </select>
                     </div>
 
                     <!-- Order ID -->
@@ -116,7 +123,7 @@
                         <label class="form-label">از تاریخ</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                            <input type="date" name="fromDateFilter" value="@ViewData["FromDateFilter"]" class="form-control">
+                            <input type="date" name="fromDateFilter" value="@(ViewData["FromDateFilter"] ?? "")" class="form-control">
                         </div>
                     </div>
 
@@ -125,7 +132,7 @@
                         <label class="form-label">تا تاریخ</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                            <input type="date" name="toDateFilter" value="@ViewData["ToDateFilter"]" class="form-control">
+                            <input type="date" name="toDateFilter" value="@(ViewData["ToDateFilter"] ?? "")" class="form-control">
                         </div>
                     </div>
 
@@ -137,13 +144,14 @@
                             <input type="hidden" name="currencyFilter" value="@ViewData["CurrencyFilter"]" />
                             <input type="hidden" name="statusFilter" value="@ViewData["StatusFilter"]" />
                             <input type="hidden" name="customerFilter" value="@ViewData["CustomerFilter"]" />
+                            <input type="hidden" name="customerIdFilter" value="@ViewData["CustomerIdFilter"]" />
                             <input type="hidden" name="orderIdFilter" value="@ViewData["OrderIdFilter"]" />
                             <input type="hidden" name="fromCurrencyFilter" value="@ViewData["FromCurrencyFilter"]" />
                             <input type="hidden" name="toCurrencyFilter" value="@ViewData["ToCurrencyFilter"]" />
                             <input type="hidden" name="minAmountFilter" value="@ViewData["MinAmountFilter"]" />
                             <input type="hidden" name="maxAmountFilter" value="@ViewData["MaxAmountFilter"]" />
-                            <input type="hidden" name="fromDateFilter" value="@ViewData["FromDateFilter"]" />
-                            <input type="hidden" name="toDateFilter" value="@ViewData["ToDateFilter"]" />
+                            <input type="hidden" name="fromDateFilter" value="@(ViewData["FromDateFilter"] ?? "")" />
+                            <input type="hidden" name="toDateFilter" value="@(ViewData["ToDateFilter"] ?? "")" />
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search"></i> اعمال فیلترها
                             </button>
@@ -188,6 +196,7 @@
                                         asp-route-sortOrder="@ViewData["IdSortParm"]"
                                         asp-route-currentFilter="@ViewData["CurrentFilter"]"
                                         asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                        asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                         asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                         asp-route-statusFilter="@ViewData["StatusFilter"]"
                                         asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
@@ -204,6 +213,7 @@
                                         asp-route-sortOrder="@ViewData["CustomerSortParm"]"
                                         asp-route-currentFilter="@ViewData["CurrentFilter"]"
                                         asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                        asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                         asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                         asp-route-statusFilter="@ViewData["StatusFilter"]"
                                         asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
@@ -220,6 +230,7 @@
                                         asp-route-sortOrder="@ViewData["CurrencySortParm"]"
                                         asp-route-currentFilter="@ViewData["CurrentFilter"]"
                                         asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                        asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                         asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                         asp-route-statusFilter="@ViewData["StatusFilter"]"
                                         asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
@@ -236,6 +247,7 @@
                                         asp-route-sortOrder="@ViewData["AmountSortParm"]"
                                         asp-route-currentFilter="@ViewData["CurrentFilter"]"
                                         asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                        asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                         asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                         asp-route-statusFilter="@ViewData["StatusFilter"]"
                                         asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
@@ -252,6 +264,7 @@
                                         asp-route-sortOrder="@ViewData["RateSortParm"]"
                                         asp-route-currentFilter="@ViewData["CurrentFilter"]"
                                         asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                        asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                         asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                         asp-route-statusFilter="@ViewData["StatusFilter"]"
                                         asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
@@ -268,6 +281,7 @@
                                         asp-route-sortOrder="@ViewData["DateSortParm"]"
                                         asp-route-currentFilter="@ViewData["CurrentFilter"]"
                                         asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                        asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                         asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                         asp-route-statusFilter="@ViewData["StatusFilter"]"
                                         asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
@@ -277,7 +291,7 @@
                                         asp-route-maxAmountFilter="@ViewData["MaxAmountFilter"]"
                                         asp-route-fromDateFilter="@ViewData["FromDateFilter"]"
                                         asp-route-toDateFilter="@ViewData["ToDateFilter"]"
-                                        asp-route-page="1">تاریخ ثبت</a>
+                                        asp-route-page="1">تاریخ تراکشن</a>
                                 </th>
                                 <th>عملیات</th>
                             </tr>
@@ -316,7 +330,7 @@
                                             @item.Rate.ToString("N2")
                                         }
                                     </td>
-                                    <td>@item.CreatedAt.ToPersianDateTextify()</td>
+                                    <td>@item.CreatedAt</td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a asp-action="Details" asp-route-id="@item.Id"
@@ -364,6 +378,7 @@
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                                asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
                                                asp-route-fromCurrencyFilter="@ViewData["FromCurrencyFilter"]"
                                                asp-route-toCurrencyFilter="@ViewData["ToCurrencyFilter"]"
@@ -391,6 +406,7 @@
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                                asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
                                                asp-route-fromCurrencyFilter="@ViewData["FromCurrencyFilter"]"
                                                asp-route-toCurrencyFilter="@ViewData["ToCurrencyFilter"]"
@@ -417,6 +433,7 @@
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                                asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
                                                asp-route-fromCurrencyFilter="@ViewData["FromCurrencyFilter"]"
                                                asp-route-toCurrencyFilter="@ViewData["ToCurrencyFilter"]"
@@ -443,6 +460,7 @@
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                                asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
                                                asp-route-fromCurrencyFilter="@ViewData["FromCurrencyFilter"]"
                                                asp-route-toCurrencyFilter="@ViewData["ToCurrencyFilter"]"
@@ -463,6 +481,7 @@
                                                asp-route-currencyFilter="@ViewData["CurrencyFilter"]"
                                                asp-route-statusFilter="@ViewData["StatusFilter"]"
                                                asp-route-customerFilter="@ViewData["CustomerFilter"]"
+                                               asp-route-customerIdFilter="@ViewData["CustomerIdFilter"]"
                                                asp-route-orderIdFilter="@ViewData["OrderIdFilter"]"
                                                asp-route-fromCurrencyFilter="@ViewData["FromCurrencyFilter"]"
                                                asp-route-toCurrencyFilter="@ViewData["ToCurrencyFilter"]"
@@ -505,6 +524,22 @@
 
 @section Scripts {
     <script>
+        // Initialize Select2 for customer dropdown
+        $(document).ready(function() {
+            $('#customerSelect').select2({
+                placeholder: 'انتخاب مشتری...',
+                allowClear: true,
+                language: {
+                    noResults: function() {
+                        return "هیچ مشتری‌ای یافت نشد";
+                    },
+                    searching: function() {
+                        return "در حال جستجو...";
+                    }
+                }
+            });
+        });
+
         function confirmOrderDelete(orderId, fromCurrency, toCurrency) {
             if (confirm(`آیا از حذف معامله #${orderId} (${fromCurrency} به ${toCurrency}) اطمینان دارید؟\n\nاین عملیات تمام تأثیرات مالی معامله را برمی‌گرداند و غیرقابل بازگشت است.`)) {
                 // Create and submit delete form
