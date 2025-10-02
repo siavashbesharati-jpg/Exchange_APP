@@ -876,32 +876,6 @@ function hideSuccess() {
         successAlert.style.display = 'none';
     }, 300);
 }
-
-// Format currency with protection against auto-formatter
-function formatCurrency(amount, currencyCode = 'IRR') {
-    if (amount === null || amount === undefined || isNaN(amount)) return '0';
-    
-    try {
-        const numAmount = parseFloat(amount);
-        
-        // For IRR, show whole numbers
-        if (currencyCode === 'IRR') {
-            return new Intl.NumberFormat('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(numAmount);
-        }
-        
-        // For other currencies, preserve up to 8 decimal places but remove trailing zeros
-        return new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 8
-        }).format(numAmount);
-        
-    } catch (error) {
-        return amount.toString();
-    }
-}
 </script>
 
 <style>
