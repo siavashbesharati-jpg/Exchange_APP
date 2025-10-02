@@ -18,6 +18,7 @@ namespace ForexExchange.Controllers
         private readonly BankAccountFinancialHistoryService _bankAccountHistoryService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICentralFinancialService _centralFinancialService;
+        private readonly ExcelExportService _excelExportService;
 
 
 
@@ -28,7 +29,8 @@ namespace ForexExchange.Controllers
             PoolFinancialHistoryService poolHistoryService,
             BankAccountFinancialHistoryService bankAccountHistoryService,
             UserManager<ApplicationUser> userManager,
-             ICentralFinancialService centralFinancialService)
+             ICentralFinancialService centralFinancialService,
+             ExcelExportService excelExportService)
         {
             _context = context;
             _logger = logger;
@@ -37,6 +39,7 @@ namespace ForexExchange.Controllers
             _bankAccountHistoryService = bankAccountHistoryService;
             _userManager = userManager;
             _centralFinancialService = centralFinancialService;
+            _excelExportService = excelExportService;
         }
 
         /// <summary>
@@ -1896,6 +1899,254 @@ namespace ForexExchange.Controllers
 
 
 
+
+        #endregion
+
+        #region Excel Export Methods
+
+        // GET: Reports/ExportToExcel - Main export routing method
+        [HttpGet]
+        public async Task<IActionResult> ExportToExcel(string type, int? customerId = null, int? bankAccountId = null, 
+            string? currencyCode = null, DateTime? fromDate = null, DateTime? toDate = null, 
+            string? customer = null, string? referenceId = null, decimal? fromAmount = null, decimal? toAmount = null,
+            string? bankAccount = null)
+        {
+            try
+            {
+                return type.ToLower() switch
+                {
+                    "customer" => await ExportCustomerTimeline(customerId, fromDate, toDate, currencyCode),
+                    "documents" => await ExportDocuments(fromDate, toDate, currencyCode, customer, referenceId, fromAmount, toAmount, bankAccount),
+                    "pool" => await ExportPoolTimeline(currencyCode, fromDate, toDate),
+                    "bankaccount" => await ExportBankAccountTimeline(bankAccountId, fromDate, toDate),
+                    _ => BadRequest("نوع گزارش نامعتبر است")
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting {Type} report to Excel", type);
+                return StatusCode(500, "خطا در تولید فایل اکسل");
+            }
+        }
+
+        // Customer Timeline Excel Export
+        private async Task<IActionResult> ExportCustomerTimeline(int? customerId, DateTime? fromDate, DateTime? toDate, string? currencyCode)
+        {
+            if (!customerId.HasValue)
+            {
+                return BadRequest("شناسه مشتری الزامی است");
+            }
+
+            try
+            {
+                // Get customer name
+                var customer = await _context.Customers.FindAsync(customerId.Value);
+                if (customer == null)
+                {
+                    return NotFound("مشتری یافت نشد");
+                }
+
+                // Format date range
+                DateTime? formattedFromDate = null;
+                DateTime? formattedToDate = null;
+                
+                if (fromDate.HasValue || toDate.HasValue)
+                {
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    formattedFromDate = fromDateTime;
+                    formattedToDate = toDateTime;
+                }
+
+                // Get timeline data
+                var timeline = await _customerHistoryService.GetCustomerTimelineAsync(customerId.Value, formattedFromDate, formattedToDate, currencyCode);
+                
+                // Generate Excel file
+                var excelData = _excelExportService.GenerateCustomerTimelineExcel(
+                    customer.FullName, 
+                    timeline.Transactions.Cast<object>().ToList(), 
+                    timeline.FinalBalances, 
+                    formattedFromDate, 
+                    formattedToDate);
+
+                var fileName = $"گزارش_مالی_مشتری_{customer.FullName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting customer timeline for customer {CustomerId}", customerId);
+                return StatusCode(500, "خطا در تولید گزارش مالی مشتری");
+            }
+        }
+
+        // Documents Excel Export
+        private async Task<IActionResult> ExportDocuments(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, 
+            string? referenceId, decimal? fromAmount, decimal? toAmount, string? bankAccount)
+        {
+            try
+            {
+                // Format date range
+                var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+
+                var query = _context.AccountingDocuments
+                    .Include(ad => ad.PayerCustomer)
+                    .Include(ad => ad.ReceiverCustomer)
+                    .Include(ad => ad.PayerBankAccount)
+                    .Include(ad => ad.ReceiverBankAccount)
+                    .Where(ad => ad.DocumentDate >= fromDateTime && ad.DocumentDate <= toDateTime);
+
+                // Apply filters
+                if (!string.IsNullOrEmpty(currency))
+                {
+                    query = query.Where(ad => ad.CurrencyCode == currency);
+                }
+
+                if (!string.IsNullOrEmpty(customer) && int.TryParse(customer, out int customerId))
+                {
+                    query = query.Where(ad => ad.PayerCustomerId == customerId || ad.ReceiverCustomerId == customerId);
+                }
+
+                if (!string.IsNullOrEmpty(referenceId))
+                {
+                    query = query.Where(ad => ad.ReferenceNumber != null && ad.ReferenceNumber.Contains(referenceId));
+                }
+
+                if (fromAmount.HasValue)
+                {
+                    query = query.Where(ad => ad.Amount >= fromAmount.Value);
+                }
+
+                if (toAmount.HasValue)
+                {
+                    query = query.Where(ad => ad.Amount <= toAmount.Value);
+                }
+
+                if (!string.IsNullOrEmpty(bankAccount) && int.TryParse(bankAccount, out int bankAccountId))
+                {
+                    query = query.Where(ad => ad.PayerBankAccountId == bankAccountId || ad.ReceiverBankAccountId == bankAccountId);
+                }
+
+                var documents = await query
+                    .Select(ad => new
+                    {
+                        date = ad.DocumentDate,
+                        documentType = ad.Type.ToString(),
+                        amount = ad.Amount,
+                        referenceNumber = ad.ReferenceNumber,
+                        currencyCode = ad.CurrencyCode,
+                        description = ad.Description,
+                        payerName = ad.PayerCustomer != null ? ad.PayerCustomer.FullName : (ad.PayerBankAccount != null ? ad.PayerBankAccount.BankName + " - " + ad.PayerBankAccount.AccountNumber : "نامشخص"),
+                        receiverName = ad.ReceiverCustomer != null ? ad.ReceiverCustomer.FullName : (ad.ReceiverBankAccount != null ? ad.ReceiverBankAccount.BankName + " - " + ad.ReceiverBankAccount.AccountNumber : "نامشخص"),
+                        status = "تایید شده",
+                        createdAt = ad.CreatedAt
+                    })
+                    .ToListAsync();
+
+                // Generate Excel file
+                var excelData = _excelExportService.GenerateDocumentsExcel(
+                    documents.Cast<object>().ToList(), 
+                    fromDateTime, 
+                    toDateTime, 
+                    currency, 
+                    customer);
+
+                var fileName = $"گزارش_اسناد_حسابداری_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting documents report");
+                return StatusCode(500, "خطا در تولید گزارش اسناد حسابداری");
+            }
+        }
+
+        // Pool Timeline Excel Export
+        private async Task<IActionResult> ExportPoolTimeline(string? currencyCode, DateTime? fromDate, DateTime? toDate)
+        {
+            if (string.IsNullOrEmpty(currencyCode))
+            {
+                return BadRequest("کد ارز الزامی است");
+            }
+
+            try
+            {
+                // Format date range
+                DateTime? formattedFromDate = null;
+                DateTime? formattedToDate = null;
+                
+                if (fromDate.HasValue || toDate.HasValue)
+                {
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    formattedFromDate = fromDateTime;
+                    formattedToDate = toDateTime;
+                }
+
+                // Get timeline data
+                var timeline = await _poolHistoryService.GetPoolTimelineAsync(currencyCode, formattedFromDate, formattedToDate);
+
+                // Generate Excel file
+                var excelData = _excelExportService.GeneratePoolTimelineExcel(
+                    currencyCode, 
+                    timeline.Cast<object>().ToList(), 
+                    formattedFromDate, 
+                    formattedToDate);
+
+                var fileName = $"گزارش_صندوق_{currencyCode}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting pool timeline for currency {CurrencyCode}", currencyCode);
+                return StatusCode(500, "خطا در تولید گزارش صندوق");
+            }
+        }
+
+        // Bank Account Timeline Excel Export
+        private async Task<IActionResult> ExportBankAccountTimeline(int? bankAccountId, DateTime? fromDate, DateTime? toDate)
+        {
+            if (!bankAccountId.HasValue)
+            {
+                return BadRequest("شناسه حساب بانکی الزامی است");
+            }
+
+            try
+            {
+                // Get bank account name
+                var bankAccount = await _context.BankAccounts.FindAsync(bankAccountId.Value);
+                if (bankAccount == null)
+                {
+                    return NotFound("حساب بانکی یافت نشد");
+                }
+
+                // Format date range
+                DateTime? formattedFromDate = null;
+                DateTime? formattedToDate = null;
+                
+                if (fromDate.HasValue || toDate.HasValue)
+                {
+                    var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
+                    formattedFromDate = fromDateTime;
+                    formattedToDate = toDateTime;
+                }
+
+                // Get timeline data
+                var timeline = await _bankAccountHistoryService.GetBankAccountTimelineAsync(bankAccountId.Value, formattedFromDate, formattedToDate);
+
+                // Generate Excel file
+                var excelData = _excelExportService.GenerateBankAccountTimelineExcel(
+                    $"{bankAccount.BankName} - {bankAccount.AccountNumber}", 
+                    timeline.Cast<object>().ToList(), 
+                    formattedFromDate, 
+                    formattedToDate);
+
+                var fileName = $"گزارش_حساب_بانکی_{bankAccount.BankName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting bank account timeline for account {BankAccountId}", bankAccountId);
+                return StatusCode(500, "خطا در تولید گزارش حساب بانکی");
+            }
+        }
 
         #endregion
 

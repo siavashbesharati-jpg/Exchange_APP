@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="DNTPersianUtils.Core" Version="6.7.0" />
+    <PackageReference Include="EPPlus" Version="6.2.10" />
     <PackageReference Include="HtmlAgilityPack" Version="1.12.2" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.8" />

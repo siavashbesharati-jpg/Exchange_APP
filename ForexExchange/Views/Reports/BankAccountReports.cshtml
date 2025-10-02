@@ -9,8 +9,26 @@
             <div class="d-flex align-items-center justify-content-between">
                 <h2><i class="fas fa-university text-success me-2"></i>گزارشات حساب‌های بانکی</h2>
                 <div class="d-flex gap-2">
-                    <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-right me-1"></i>بازگشت
+                    <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-seconda    function exportToExcel() {
+        const bankAccountId = document.getElementById('bankAccountSelect').value;
+        if (!bankAccountId) {
+            alert('لطفاً ابتدا یک حساب بانکی انتخاب کنید');
+            return;
+        }
+
+        const fromDate = document.getElementById('fromDate').value || '';
+        const toDate = document.getElementById('toDate').value || '';
+
+        const params = new URLSearchParams({
+            type: 'bankaccount',
+            bankAccountId: bankAccountId,
+            fromDate: fromDate,
+            toDate: toDate
+        });
+
+        // Download Excel file
+        window.location.href = '@Url.Action("ExportToExcel", "Reports")?' + params.toString();
+    }                 <i class="fas fa-arrow-right me-1"></i>بازگشت
                     </a>
                 </div>
             </div>

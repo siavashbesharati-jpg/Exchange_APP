@@ -330,7 +330,7 @@
                                             @item.Rate.ToString("N2")
                                         }
                                     </td>
-                                    <td>@item.CreatedAt</td>
+                                    <td>@item.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a asp-action="Details" asp-route-id="@item.Id"

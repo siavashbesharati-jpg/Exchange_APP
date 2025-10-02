@@ -643,7 +643,29 @@
     }
 
     function exportDocumentData() {
-        window.location.href = '@Url.Action("ExportToExcel", "Reports")?type=documents';
+        const fromDate = document.getElementById('fromDate').value || '';
+        const toDate = document.getElementById('toDate').value || '';
+        const currency = document.getElementById('currency').value || '';
+        const customer = document.getElementById('customer').value || '';
+        const bankAccount = document.getElementById('bankAccount').value || '';
+        const referenceId = document.getElementById('referenceId').value || '';
+        const fromAmount = document.getElementById('fromAmount').value || '';
+        const toAmount = document.getElementById('toAmount').value || '';
+
+        const params = new URLSearchParams({
+            type: 'documents',
+            fromDate: fromDate,
+            toDate: toDate,
+            currencyCode: currency,
+            customer: customer,
+            bankAccount: bankAccount,
+            referenceId: referenceId,
+            fromAmount: fromAmount,
+            toAmount: toAmount
+        });
+
+        // Download Excel file
+        window.location.href = '@Url.Action("ExportToExcel", "Reports")?' + params.toString();
     }
 
     function formatNumber(num) {

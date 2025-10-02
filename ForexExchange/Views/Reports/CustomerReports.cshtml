@@ -690,17 +690,20 @@
             return;
         }
 
-        const fromDate = document.getElementById('fromDate').value || null;
-        const toDate = document.getElementById('toDate').value || null;
+        const fromDate = document.getElementById('fromDate').value || '';
+        const toDate = document.getElementById('toDate').value || '';
+        const currencyCode = document.getElementById('currencyFilter').value || '';
 
         const params = new URLSearchParams({
+            type: 'customer',
             customerId: customerId,
             fromDate: fromDate,
-            toDate: toDate
+            toDate: toDate,
+            currencyCode: currencyCode
         });
 
-        // For now, show success message - اکسل  export can be implemented later
-        alert('دریافت تاریخچه مالی به فرمت اکسل  در ادامه پیاده‌سازی خواهد شد');
+        // Download Excel file
+        window.location.href = '@Url.Action("ExportToExcel", "Reports")?' + params.toString();
     }
 
     function printTimeline() {

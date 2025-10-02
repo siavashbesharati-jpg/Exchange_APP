@@ -101,6 +101,8 @@ builder.Services.AddScoped<IOrderDataService, OrderDataService>();
 // Push notification services
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IVapidService, VapidService>();
+// Excel export service
+builder.Services.AddScoped<ExcelExportService>();
 
 // Central notification system
 builder.Services.AddScoped<INotificationHub>(serviceProvider =>
