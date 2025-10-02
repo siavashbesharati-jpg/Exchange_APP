@@ -89,7 +89,10 @@ namespace ForexExchange.Controllers
 
         // GET: Orders
         public async Task<IActionResult> Index(string sortOrder, string currentFilter, string searchString,
-            string currencyFilter, string statusFilter, string customerFilter, int? page)
+            string currencyFilter, string statusFilter, string customerFilter, 
+            string orderIdFilter, string fromCurrencyFilter, string toCurrencyFilter,
+            decimal? minAmountFilter, decimal? maxAmountFilter, 
+            DateTime? fromDateFilter, DateTime? toDateFilter, int? page)
         {
             ViewData["CurrentSort"] = sortOrder;
             ViewData["IdSortParm"] = String.IsNullOrEmpty(sortOrder) ? "id_desc" : "";
@@ -115,6 +118,16 @@ namespace ForexExchange.Controllers
             ViewData["CurrencyFilter"] = currencyFilter;
             ViewData["StatusFilter"] = statusFilter;
             ViewData["CustomerFilter"] = customerFilter;
+            ViewData["OrderIdFilter"] = orderIdFilter;
+            ViewData["FromCurrencyFilter"] = fromCurrencyFilter;
+            ViewData["ToCurrencyFilter"] = toCurrencyFilter;
+            ViewData["MinAmountFilter"] = minAmountFilter;
+            ViewData["MaxAmountFilter"] = maxAmountFilter;
+            ViewData["FromDateFilter"] = fromDateFilter?.ToString("yyyy-MM-dd");
+            ViewData["ToDateFilter"] = toDateFilter?.ToString("yyyy-MM-dd");
+
+            // Load currencies for dropdown filters
+            ViewBag.Currencies = await _context.Currencies.OrderBy(c => c.Code).ToListAsync();
 
 
             IQueryable<Order> ordersQuery;
@@ -152,6 +165,51 @@ namespace ForexExchange.Controllers
                     // Filter by currency code
                     ordersQuery = ordersQuery.Where(o => o.FromCurrency.Code == currencyFilter || o.ToCurrency.Code == currencyFilter);
                 }
+            }
+
+            // New filter: Order ID
+            if (!String.IsNullOrEmpty(orderIdFilter))
+            {
+                if (int.TryParse(orderIdFilter, out var orderId))
+                {
+                    ordersQuery = ordersQuery.Where(o => o.Id == orderId);
+                }
+            }
+
+            // New filter: From Currency
+            if (!String.IsNullOrEmpty(fromCurrencyFilter))
+            {
+                ordersQuery = ordersQuery.Where(o => o.FromCurrency.Code == fromCurrencyFilter);
+            }
+
+            // New filter: To Currency
+            if (!String.IsNullOrEmpty(toCurrencyFilter))
+            {
+                ordersQuery = ordersQuery.Where(o => o.ToCurrency.Code == toCurrencyFilter);
+            }
+
+            // New filter: Minimum Amount
+            if (minAmountFilter.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.FromAmount >= minAmountFilter.Value);
+            }
+
+            // New filter: Maximum Amount
+            if (maxAmountFilter.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.FromAmount <= maxAmountFilter.Value);
+            }
+
+            // New filter: From Date
+            if (fromDateFilter.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt.Date >= fromDateFilter.Value.Date);
+            }
+
+            // New filter: To Date
+            if (toDateFilter.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt.Date <= toDateFilter.Value.Date);
             }
 
             // Apply database-level sorting only for non-decimal fields
