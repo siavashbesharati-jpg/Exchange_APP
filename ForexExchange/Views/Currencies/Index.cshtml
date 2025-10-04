@@ -50,12 +50,12 @@
                     {
                         <tr>
                             <td>@c.Id</td>
-                            <td><span class="badge @(c.IsBaseCurrency ? "bg-secondary" : "bg-primary")">@c.Code</span></td>
+                            <td><span class="badge @(c.Code == "IRR" ? "bg-secondary" : "bg-primary")">@c.Code</span></td>
                             <td>@c.Name</td>
                             <td>@c.PersianName</td>
                             <td>@c.Symbol</td>
                             <td>
-                                @if (c.IsBaseCurrency)
+                                @if (c.Code == "IRR")
                                 {
                                     <span class="badge bg-dark">ارز پایه</span>
                                 }

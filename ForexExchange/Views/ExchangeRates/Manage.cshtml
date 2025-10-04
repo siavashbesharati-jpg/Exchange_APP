@@ -44,7 +44,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>ارز </th>
-                                        <th>نرخ خرید (تومان)</th>
+                                        <th>نرخ خرید (ریال عمان)</th>
                                         <th>آخرین بروزرسانی</th>
                                     </tr>
                                 </thead>
@@ -57,8 +57,8 @@
                                         foreach (var c in currencies)
                                         {
                                             int currencyKey = c.Id;
-                                            // Look for rates where this currency is FROM and IRR is TO (X → IRR)
-                                            var currentRate = Model.FirstOrDefault(r => r.FromCurrencyId == currencyKey && r.ToCurrency?.Code == "IRR");
+                                            // Look for rates where this currency is FROM and OMR is TO (X → OMR)
+                                            var currentRate = Model.FirstOrDefault(r => r.FromCurrencyId == currencyKey && r.ToCurrency?.Code == "OMR");
                                             string badgeClass = ((string)c.Code).ToUpper() switch
                                             {
                                                 "USD" => "bg-primary",
@@ -95,19 +95,22 @@
                         </div>
                         
                         <div class="text-center">
-                            <button type="submit" class="btn btn-success me-2" onclick="return confirm('آیا می‌خواهید نرخ‌های پایه (ارز→تومان) را بروزرسانی کنید؟')">
-                                بروزرسانی نرخ‌های ارز → تومان
+                            <button type="submit" class="btn btn-success me-2" onclick="return confirm('آیا می‌خواهید نرخ‌های پایه (ارز→ریال عمان) را بروزرسانی کنید؟')">
+                                بروزرسانی نرخ‌های ارز → ریال عمان
                             </button>
+                            <!-- DISABLED: Web scraping button
                             <button type="button" class="btn btn-primary" onclick="updateFromWeb()" title="بروزرسانی خودکار از وب">
                                 <i class="fas fa-globe"></i> بروزرسانی از وب
                             </button>
+                            -->
                         </div>
                     </form>
                     
-                    <!-- Hidden form for web update -->
+                    <!-- DISABLED: Hidden form for web update
                     <form id="webUpdateForm" asp-action="UpdateFromWeb" method="post" style="display: none;">
                         @Html.AntiForgeryToken()
                     </form>
+                    -->
                 </div>
             </div>
         </div>
@@ -119,7 +122,8 @@
         // Validate sell rate is higher than buy rate
         // No need to validate buy/sell rate difference in single-rate system
 
-        // Function to update rates from web
+        // DISABLED: Function to update rates from web
+        /*
         function updateFromWeb() {
             if (confirm('آیا می‌خواهید نرخ‌ها را از وب بروزرسانی کنید؟\nاین عمل ممکن است چند دقیقه طول بکشد.')) {
                 // Show loading indicator
@@ -140,5 +144,6 @@
                 form.submit();
             }
         }
+        */
     </script>
 }
