@@ -13,7 +13,7 @@
                                 <i class="fas fa-chart-line me-2"></i>
                                 گزارش روزانه صندوق ارزی
                             </h4>
-                            <p class="card-subtitle mb-0 opacity-75">تحلیل موجودی، تراکنش‌ها و سودآوری هر ارز</p>
+                            <p class="card-subtitle mb-0 opacity-75">تحلیل موجودی و تراکنش‌های هر ارز</p>
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="date-info">
@@ -208,7 +208,7 @@ $(document).ready(function() {
                 if (response.success && response.currencies && response.currencies.length > 0) {
                     displayReport(response.currencies, response.date);
                     $('#reportContent').removeClass('d-none');
-                    showAlert(`گزارش روز ${selectedDate} با موفقیت بارگذاری شد`, 'success', 3000);
+                    @* showAlert(`گزارش روز ${selectedDate} با موفقیت بارگذاری شد`, 'success', 3000); *@
                 } else {
                     $('#noDataMessage').removeClass('d-none');
                     showAlert('داده‌ای برای نمایش یافت نشد', 'info');
@@ -283,9 +283,6 @@ $(document).ready(function() {
 
         currencies.forEach(function(currency) {
             // Calculate summary statistics for better display
-            const profitableTransactions = currency.transactions.filter(t => t.profit > 0).length;
-            const lossTransactions = currency.transactions.filter(t => t.profit < 0).length;
-            const neutralTransactions = currency.transactions.filter(t => t.profit == 0).length;
 
             const cardHtml = `
                 <div class="col-12 col-md-6 mb-4">
@@ -299,52 +296,19 @@ $(document).ready(function() {
                             <div class="balance-section mb-3" style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
                                 <div class="text-center">
                                     <h4 class="mb-2" style="color: #adb5bd; text-shadow: none; font-weight: 400;">
-                                        <i class="fas fa-wallet me-2" style="color: #adb5bd; opacity: 0.6;"></i>
-                                        <span dir="ltr">${safeFormatCurrency(currency.latestBalance, currency.currencyCode)}</span>
+                                        <span dir="ltr" style="padding: 2px 6px; border-radius: 4px; background: ${currency.latestBalance >= 0 ? 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' : 'linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%)'}; color: ${currency.latestBalance >= 0 ? '#1565c0' : '#e65100'}; border: 1px solid ${currency.latestBalance >= 0 ? '#90caf9' : '#ffab40'};">${safeFormatCurrency(currency.latestBalance, currency.currencyCode)}</span>
                                     </h4>
                                     <small style="color: #6c757d;">موجودی پایان روز</small>
                                 </div>
                             </div>
 
-                            <!-- Profit Summary -->
-                            <div class="profit-summary text-center mb-3">
-                                <div class="d-flex justify-content-center align-items-center mb-2">
-                                    <span class="px-3 py-2" style="font-size: 1.1em; font-weight: 700; border-radius: 6px; background: ${currency.totalDailyProfit >= 0 ? 'linear-gradient(135deg, #e8f5e8 0%, #d1edcc 100%)' : 'linear-gradient(135deg, #f8e8e8 0%, #f0d1d1 100%)'}; color: ${currency.totalDailyProfit >= 0 ? '#1e4d1e' : '#4d1e1e'}; border: 1px solid ${currency.totalDailyProfit >= 0 ? '#c3e6c3' : '#e6c3c3'}; box-shadow: 0 4px 8px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1); text-shadow: 0 1px 2px rgba(0,0,0,0.2);" dir="ltr">
-                                        <i class="fas ${currency.totalDailyProfit >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'} me-1" style="opacity: 0.8;"></i>
-                                        ${safeFormatCurrency(currency.totalDailyProfit, currency.currencyCode)}
-                                    </span>
-                                </div>
-                                <small style="color: #6c757d;">مجموع سود/زیان روز</small>
-                            </div>
-
-                            <!-- Weighted Average Rate -->
-                            ${currency.weightedAverageRate !== undefined && currency.weightedAverageRate !== null && currency.weightedAverageRate > 0 ? 
-                            `<div class="weighted-avg-section text-center mb-3">
-                                <div class="p-2" style="background: #f0f8ff; border-radius: 6px; border: 1px solid #d1e7ff;">
-                                    <div class="fw-bold" style="color: #0056b3;" dir="ltr">${safeFormatCurrency(currency.weightedAverageRate, currency.currencyCode)}</div>
-                                    <small style="color: #6c757d;">میانگین وزنی نرخ روز</small>
-                                </div>
-                            </div>` : ''}
-
                             <!-- Transaction Summary Stats -->
                             <div class="transaction-stats mb-3">
                                 <div class="row text-center">
-                                    <div class="col-4">
-                                        <div class="stat-item" style="background: #f1f8f1; border-radius: 6px; padding: 8px; border: 1px solid #e1f0e1;">
-                                            <div class="fw-bold" style="color: #4a5a4a;">${profitableTransactions}</div>
-                                            <small style="color: #6c757d;">سودآور</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="stat-item" style="background: #f8f1f1; border-radius: 6px; padding: 8px; border: 1px solid #f0e1e1;">
-                                            <div class="fw-bold" style="color: #5a4a4a;">${lossTransactions}</div>
-                                            <small style="color: #6c757d;">زیان‌ ده</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
+                                    <div class="col-12">
                                         <div class="stat-item" style="background: #f1f5f8; border-radius: 6px; padding: 8px; border: 1px solid #e1ecf0;">
                                             <div class="fw-bold" style="color: #4a525a;">${currency.transactionCount}</div>
-                                            <small style="color: #6c757d;">کل</small>
+                                            <small style="color: #6c757d;">کل تراکنش‌های روز</small>
                                         </div>
                                     </div>
                                 </div>
@@ -361,7 +325,7 @@ $(document).ready(function() {
                                 <div class="transaction-list" style="max-height: 350px; overflow-y: auto;">
                                     ${currency.transactions.length > 0 ?
                                         currency.transactions.map(t => `
-                                            <div class="transaction-item rounded p-3 mb-2" style="background: ${t.profit > 0 ? 'linear-gradient(135deg, #f8fdf8 0%, #f1f8f1 100%)' : t.profit < 0 ? 'linear-gradient(135deg, #fdf8f8 0%, #f8f1f1 100%)' : 'linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%)'}; border: 1px solid ${t.profit > 0 ? '#e8f5e8' : t.profit < 0 ? '#f5e8e8' : '#e9ecef'}; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+                                            <div class="transaction-item rounded p-3 mb-2" style="background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%); border: 1px solid #e9ecef; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
                                                 <!-- Transaction Header -->
                                                 <div class="mb-2">
                                                     <div class="transaction-info">
@@ -388,24 +352,6 @@ $(document).ready(function() {
                                                             <div class="detail-item mb-1">
                                                                 <small style="color: #6c757d;">نرخ معامله:</small>
                                                                 <div style="color: #adb5bd; font-weight: 400;"><span dir="ltr">${t.rate !== undefined && t.rate !== null ? safeFormatCurrency(t.rate, currency.currencyCode) : '-'}</span></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-6">
-                                                            <div class="detail-item">
-                                                                <small style="color: #6c757d;">میانگین نرخ روز:</small>
-                                                                <div style="color: #adb5bd; font-weight: 400;"><span dir="ltr">${t.weightedAverageRate !== undefined && t.weightedAverageRate !== null ? safeFormatCurrency(t.weightedAverageRate, currency.currencyCode) : '-'}</span></div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <div class="detail-item text-end">
-                                                                <small style="color: #6c757d;">سود/زیان:</small>
-                                                                <div>
-                                                                    <span style="padding: 0px 8px; border-radius: 4px; font-size: 0.9em; font-weight: 600; background: ${t.profit > 0 ? 'linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%)' : t.profit < 0 ? 'linear-gradient(135deg, #f8e8e8 0%, #f5c6cb 100%)' : 'linear-gradient(135deg, #e2e3e5 0%, #d1d3d4 100%)'}; color: ${t.profit > 0 ? '#1e4d1e' : t.profit < 0 ? '#4d1e1e' : '#495057'}; border: 1px solid ${t.profit > 0 ? '#c3e6c3' : t.profit < 0 ? '#e6c3c3' : '#ced4da'}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-shadow: 0 1px 2px rgba(0,0,0,0.15);" dir="ltr">
-                                                                        ${safeFormatCurrency(t.profit, currency.currencyCode)}
-                                                                    </span>
-                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
