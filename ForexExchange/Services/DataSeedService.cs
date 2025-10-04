@@ -99,13 +99,13 @@ namespace ForexExchange.Services
             var now = DateTime.Now;
             var defaults = new List<Currency>
             {
-                new() { Code = "IRR", Name = "Iranian Toman", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = now },
-                new() { Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = now },
-                new() { Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = now },
-                new() { Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = now },
-                new() { Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = now },
-                new() { Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = now },
-                new() { Code = "CNY", Name = "Chinese Yuan", PersianName = "یوان چین", Symbol = "¥", IsActive = true, IsBaseCurrency = false, DisplayOrder = 7, CreatedAt = now },
+                new() { Code = "IRR", Name = "Iranian Toman", PersianName = "تومان", Symbol = "﷼", IsActive = true, DisplayOrder = 1, CreatedAt = now },
+                new() { Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, DisplayOrder = 2, CreatedAt = now },
+                new() { Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, DisplayOrder = 3, CreatedAt = now },
+                new() { Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, DisplayOrder = 4, CreatedAt = now },
+                new() { Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, DisplayOrder = 5, CreatedAt = now },
+                new() { Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, DisplayOrder = 6, CreatedAt = now },
+                new() { Code = "CNY", Name = "Chinese Yuan", PersianName = "یوان چین", Symbol = "¥", IsActive = true, DisplayOrder = 7, CreatedAt = now },
             };
 
             _context.Currencies.AddRange(defaults);
@@ -287,7 +287,7 @@ namespace ForexExchange.Services
                         Branch = "شعبه مرکزی",
                         CurrencyCode = currency.Code,
                         IsActive = true,
-                        IsDefault = currency.IsBaseCurrency, // Make base currency account default
+                        IsDefault = currency.Code == "IRR", // Make base currency account default
                         AccountBalance = Math.Round(initialBalance, 2),
                         CreatedAt = DateTime.Now,
                         Notes = $"حساب سیستم برای ارز {currency.Name} - ایجاد شده توسط DataSeedService"
@@ -316,7 +316,7 @@ namespace ForexExchange.Services
                 // DISABLED: Web scraping for exchange rates
                 // var rates = new Dictionary<string, decimal>();
                 // var currencies = await _context.Currencies
-                //     .Where(c => c.IsActive && !c.IsBaseCurrency)
+                //     .Where(c => c.IsActive && c.Code != "IRR")
                 //     .ToListAsync();
 
                 // foreach (var currency in currencies)
@@ -331,7 +331,7 @@ namespace ForexExchange.Services
                 var rates = new Dictionary<string, decimal>(); // Empty rates dictionary
 
                 var exchangeRates = new List<ExchangeRate>();
-                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "IRR");
                 if (baseCurrency == null)
                 {
                     _logger.LogError("Base currency not found in database");
@@ -506,7 +506,7 @@ namespace ForexExchange.Services
                 }
 
                 var currencies = await _context.Currencies
-                    .Where(c => c.IsActive && !c.IsBaseCurrency) // Don't create pool for base currency (IRR)
+                    .Where(c => c.IsActive && c.Code != "IRR") // Don't create pool for base currency (IRR)
                     .ToListAsync();
 
                 var random = new Random();

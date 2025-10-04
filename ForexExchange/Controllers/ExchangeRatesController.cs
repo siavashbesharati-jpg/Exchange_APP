@@ -185,6 +185,7 @@ namespace ForexExchange.Controllers
             return View(exchangeRate);
         }
 
+        /* DISABLED: UpdateAll method with Dictionary<string, decimal> - was causing ambiguity
         // POST: ExchangeRates/UpdateAll
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -193,8 +194,8 @@ namespace ForexExchange.Controllers
             try
             {
                 // Update rates for base currency to foreign currencies
-                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
-                var foreignCurrencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency)
+                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "OMR");
+                var foreignCurrencies = await _context.Currencies.Where(c => c.IsActive && c.Code != "OMR")
                     .OrderBy(c => c.DisplayOrder)
                     .ToListAsync();
 
@@ -270,6 +271,7 @@ namespace ForexExchange.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+        */
 
         // GET: API endpoint for current rates
         [HttpGet]
@@ -307,7 +309,7 @@ namespace ForexExchange.Controllers
 
             ViewBag.Currencies = await _context.Currencies
                 .AsNoTracking()
-                .Where(c => c.IsActive && !c.IsBaseCurrency)
+                .Where(c => c.IsActive && c.Code != "OMR")
                 .OrderBy(c => c.DisplayOrder)
                 .Select(c => new { c.Id, c.Code, c.PersianName })
                 .ToListAsync();
@@ -327,17 +329,17 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Manage));
             }
 
-            // Get base currency (IRR)
+            // Get base currency (OMR)
             var baseCurrency = await _context.Currencies
-                .FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                .FirstOrDefaultAsync(c => c.Code == "OMR");
 
             if (baseCurrency == null)
             {
-                TempData["ErrorMessage"] = "ارز پایه (تومان) در پایگاه داده یافت نشد";
+                TempData["ErrorMessage"] = "ارز پایه (ریال عمان) در پایگاه داده یافت نشد";
                 return RedirectToAction(nameof(Manage));
             }
 
-            var currencies = await _context.Currencies.Where(c => c.IsActive && !c.IsBaseCurrency)
+            var currencies = await _context.Currencies.Where(c => c.IsActive && c.Code != "OMR")
                 .OrderBy(c => c.DisplayOrder)
                 .ToListAsync();
 
@@ -349,7 +351,7 @@ namespace ForexExchange.Controllers
                 {
                     var rate = rates[currencyKey];
 
-                    // Look for existing rate with FROM=currency, TO=baseCurrency (X → IRR)
+                    // Look for existing rate with FROM=currency, TO=baseCurrency (X → OMR)
                     var existingRate = await _context.ExchangeRates
                         .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive); 
                     if (existingRate != null)
@@ -402,7 +404,7 @@ namespace ForexExchange.Controllers
                     return RedirectToAction(nameof(Manage));
                 }
 
-                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);
+                var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "OMR");
                 if (baseCurrency == null)
                 {
                     TempData["ErrorMessage"] = " هیچ ارزی در پایگاه داده یافت نشد";
@@ -415,7 +417,7 @@ namespace ForexExchange.Controllers
                 var scrapedMap = new Dictionary<int, decimal>();
                 foreach (var currency in Currecnies)
                 {
-                    if (currency.IsBaseCurrency) continue; // skip base
+                    if (currency.Code == "OMR") continue; // skip base
                     var rate = await _webScrapingService.GetCurrencyRateAsync(currency.Code);
                     if (rate == null || rate.HasValue == false)
                     {
@@ -450,7 +452,7 @@ namespace ForexExchange.Controllers
                         };
                         _context.Add(newRate);
                     }
-                    // Add/update reverse rate: baseCurrency -> currency (e.g., IRR -> USD)
+                    // Add/update reverse rate: baseCurrency -> currency (e.g., OMR -> USD)
                     var reverseRate = await _context.ExchangeRates
                         .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == currency.Id && r.IsActive);
                     var reverseValue = roundedRate > 0 ? _rateCalc.SafeRound(1 / roundedRate, 8) : 0;
@@ -475,7 +477,7 @@ namespace ForexExchange.Controllers
                         _context.Add(newReverse);
                     }
                     updatedCount++;
-                    _logger.LogInformation("Updated {Code}->IRR: Rate={Rate}",
+                    _logger.LogInformation("Updated {Code}->OMR: Rate={Rate}",
                         currency.Code, rate.Value);
                 }
 

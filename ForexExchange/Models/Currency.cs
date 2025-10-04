@@ -23,8 +23,6 @@ namespace ForexExchange.Models
         
         public bool IsActive { get; set; } = true;
         
-        public bool IsBaseCurrency { get; set; } = false; // True for Toman/IRR
-        
         public int DisplayOrder { get; set; }
         
         public int RatePriority { get; set; }
