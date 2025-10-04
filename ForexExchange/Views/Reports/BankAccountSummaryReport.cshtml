@@ -1,0 +1,369 @@
+@{
+    ViewData["Title"] = "گزارش خلاصه حساب‌های بانکی";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-university text-primary me-2"></i>گزارش خلاصه حساب‌های بانکی</h2>
+                <div class="d-flex align-items-center">
+                    <label for="reportDate" class="form-label me-2 mb-0">تاریخ:</label>
+                    <input type="date" class="form-control me-2" id="reportDate" style="width: auto;">
+                    <button type="button" class="btn btn-primary" onclick="loadBankAccountSummary()">
+                        <i class="fas fa-search me-1"></i>
+                        جستجو
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Navigation -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-center">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" id="btnPrevDay" onclick="changeDate(-1)">
+                        <i class="fas fa-chevron-right me-1"></i>
+                        روز قبل
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="setToday()">
+                        <i class="fas fa-calendar-day me-1"></i>
+                        امروز
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnNextDay" onclick="changeDate(1)">
+                        روز بعد
+                        <i class="fas fa-chevron-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">در حال بارگذاری...</span>
+        </div>
+        <p class="text-muted">در حال بارگذاری گزارش...</p>
+    </div>
+
+    <!-- Report Content -->
+    <div id="reportContent" class="d-none">
+        <!-- Bank Account Details Section -->
+        <div class="row">
+            <div class="col-12">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>
+                    جزئیات تراکنش‌های حساب‌های بانکی
+                </h4>
+                <div class="row" id="bankAccountCards">
+                    <!-- Bank account cards with transaction details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Data Message -->
+    <div id="noDataMessage" class="text-center py-5 d-none">
+        <div class="mb-4">
+            <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">داده‌ای برای نمایش وجود ندارد</h4>
+            <p class="text-muted mb-4">برای تاریخ انتخاب شده، هیچ تراکنش حساب بانکی یافت نشد.</p>
+            <button type="button" class="btn btn-outline-primary" onclick="loadBankAccountSummary()">
+                <i class="fas fa-refresh me-2"></i>
+                تلاش مجدد
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log('BankAccountSummaryReport page loaded');
+
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            $('#reportDate').val(today);
+
+            // Load report automatically
+            loadBankAccountSummary();
+
+            // Update navigation buttons
+            updateNavigationButtons();
+
+            // Load report when date changes
+            $('#reportDate').on('change', function () {
+                loadBankAccountSummary();
+                updateNavigationButtons();
+            });
+
+            // Load report when Enter is pressed in date input
+            $('#reportDate').on('keypress', function (e) {
+                if (e.which === 13) { // Enter key
+                    loadBankAccountSummary();
+                }
+            });
+
+            // Prevent future dates
+            $('#reportDate').on('change', function () {
+                const selectedDate = new Date($(this).val());
+                const today = new Date();
+
+                if (selectedDate > today) {
+                    const currentDate = new Date($(this).val());
+                    if (currentDate <= today) {
+                        const newDateStr = currentDate.toISOString().split('T')[0];
+                        $(this).val(newDateStr);
+                        $(this).trigger('change');
+                    }
+                }
+            });
+
+            function loadBankAccountSummary() {
+                const selectedDate = $('#reportDate').val();
+                console.log('loadBankAccountSummary called with date:', selectedDate);
+
+                if (!selectedDate) {
+                    showAlert('لطفاً تاریخ را انتخاب کنید', 'warning');
+                    return;
+                }
+
+                $('#loadingIndicator').removeClass('d-none');
+                $('#reportContent').addClass('d-none');
+                $('#noDataMessage').addClass('d-none');
+
+                // Update button states
+                $('.btn').prop('disabled', true);
+
+                console.log('Making AJAX request to GetBankAccountSummaryReport');
+
+                $.ajax({
+                    url: '/Reports/GetBankAccountSummaryReport',
+                    type: 'GET',
+                    data: { date: selectedDate },
+                    success: function (response) {
+                        console.log('AJAX success response:', response);
+                        $('#loadingIndicator').addClass('d-none');
+                        $('.btn').prop('disabled', false);
+
+                        updateNavigationButtons();
+
+                        if (response.success && response.data) {
+                            // Display bank account details if available
+                            if (response.bankAccounts && response.bankAccounts.length > 0) {
+                                console.log('About to display bank accounts:', response.bankAccounts);
+                                displayBankAccountDetails(response.bankAccounts);
+                            }
+
+                            $('#reportContent').removeClass('d-none');
+                        } else {
+                            $('#noDataMessage').removeClass('d-none');
+                            showAlert('داده‌ای برای نمایش یافت نشد', 'info');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX error - Status:', status, 'Error:', error);
+                        console.error('XHR response:', xhr.responseText);
+                        $('#loadingIndicator').addClass('d-none');
+                        $('.btn').prop('disabled', false);
+                        updateNavigationButtons();
+                        showAlert('خطا در بارگذاری گزارش. لطفاً دوباره تلاش کنید.', 'danger');
+                    }
+                });
+            }
+
+            function displayBankAccountDetails(bankAccounts) {
+                console.log('displayBankAccountDetails called with:', bankAccounts);
+                const container = $('#bankAccountCards');
+                container.empty();
+
+                bankAccounts.forEach(function (bankAccount, index) {
+                    console.log(`Processing bank account ${index}:`, bankAccount);
+                    console.log(`Bank account ${bankAccount.bankAccountName} has ${bankAccount.transactions.length} transactions`);
+
+                    // Log first few transactions to debug
+                    bankAccount.transactions.slice(0, 3).forEach((t, tIndex) => {
+                        console.log(`Transaction ${tIndex} for ${bankAccount.bankAccountName}:`, {
+                            amount: t.amount,
+                            type: typeof t.amount,
+                            description: t.description
+                        });
+                    });
+                    const cardHtml = `
+                    <div class="col-12 col-md-6 mb-4">
+                        <div class="card h-100" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #e8ecef;">
+                            <div class="card-header text-center" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-bottom: 1px solid #dee2e6; color: #495057;">
+                                <h5 class="card-title mb-1 fw-bold" style="color: #343a40;">${bankAccount.bankAccountName}</h5>
+                                <small style="color: #6c757d;">(${bankAccount.bankAccountNumber})</small>
+                            </div>
+                            <div class="card-body p-3">
+                                <!-- Balance Section -->
+                                <div class="balance-section mb-3" style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
+                                    <div class="text-center">
+                                        <h4 class="mb-2" style="color: #adb5bd; text-shadow: none; font-weight: 400;">
+                                            <span dir="ltr" style="padding: 2px 6px; border-radius: 4px; background: ${bankAccount.latestBalance >= 0 ? 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' : 'linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%)'}; color: ${bankAccount.latestBalance >= 0 ? '#1565c0' : '#e65100'}; border: 1px solid ${bankAccount.latestBalance >= 0 ? '#90caf9' : '#ffab40'};">${formatCurrency(bankAccount.latestBalance)}</span>
+                                        </h4>
+                                        <small style="color: #6c757d;">موجودی پایان روز</small>
+                                    </div>
+                                </div>
+
+                                <!-- Transaction Summary Stats -->
+                                <div class="transaction-stats mb-3">
+                                    <div class="row text-center">
+                                        <div class="col-12">
+                                            <div class="stat-item" style="background: #f1f5f8; border-radius: 6px; padding: 8px; border: 1px solid #e1ecf0;">
+                                                <div class="fw-bold" style="color: #4a525a;">${bankAccount.transactionCount}</div>
+                                                <small style="color: #6c757d;">کل تراکنش‌های روز</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-3">
+
+                                <!-- Transactions List -->
+                                <div class="transactions-section">
+                                    <h6 class="mb-3" style="color: #495057; border-bottom: 1px solid #e9ecef; padding-bottom: 8px;">
+                                        <i class="fas fa-exchange-alt me-2" style="color: #6c757d;"></i>
+                                        تراکنش‌های روز (${bankAccount.transactionCount})
+                                    </h6>
+                                    <div class="transaction-list" style="max-height: 350px; overflow-y: auto;">
+                                        ${bankAccount.transactions.length > 0 ?
+                            bankAccount.transactions.map(t => `
+                                                <div class="transaction-item rounded p-3 mb-2" style="background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%); border: 1px solid #e9ecef; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+                                                    <!-- Transaction Header -->
+                                                    <div class="mb-2">
+                                                        <div class="transaction-info">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <div>
+                                                                    <div class="fw-bold" style="color: #343a40;">${t.description}</div>
+                                                                    <small style="color: #6c757d;">
+                                                                        <i class="fas fa-clock me-1" style="opacity: 0.7;"></i>${t.time}
+                                                                        <span class="ms-2" style="font-size: 0.7em; padding: 2px 6px; border-radius: 4px; background: ${t.amount >= 0 ? 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' : 'linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%)'}; color: ${t.amount >= 0 ? '#1565c0' : '#e65100'}; border: 1px solid ${t.amount >= 0 ? '#90caf9' : '#ffab40'};">
+                                                                            ${t.amount >= 0 ? 'دریافت' : 'پرداخت'}
+                                                                        </span>
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                
+                                                    <!-- Transaction Details -->
+                                                    <div class="transaction-details">
+                                                        <div class="row">
+                                                            <div class="col-6">
+                                                                <div class="detail-item mb-1">
+                                                                    <small style="color: #6c757d;">مبلغ:</small>
+                                                                    <div style="color: #adb5bd; font-weight: 400;">
+                                                                        <span dir="ltr">${formatCurrency(Math.abs(t.amount))}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-6">
+                                                                <div class="detail-item mb-1">
+                                                                    <small style="color: #6c757d;">موجودی بعد:</small>
+                                                                    <div style="color: #adb5bd; font-weight: 400;">
+                                                                        <span dir="ltr">${formatCurrency(t.balanceAfter)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `).join('') :
+                            `<div class="text-center py-4">
+                                                <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                                                <p class="text-muted mb-0">هیچ تراکنشی در این روز ثبت نشده</p>
+                                             </div>`
+                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                    container.append(cardHtml);
+                });
+            }
+
+            function formatCurrency(amount) {
+                console.log(`formatCurrency called with amount: ${amount} (type: ${typeof amount})`);
+
+                if (amount === null || amount === undefined || isNaN(amount)) {
+                    console.log('Amount is null, undefined, or NaN, returning 0');
+                    return '0';
+                }
+
+                const numAmount = parseFloat(amount);
+                console.log(`Parsed amount: ${numAmount}`);
+
+                // For bank accounts: truncate decimal part, use English numbers
+                const truncated = Math.trunc(numAmount);
+                const result = new Intl.NumberFormat('en-US').format(truncated);
+                console.log(`Bank account formatting: ${numAmount} -> ${truncated} -> ${result}`);
+
+                console.log(`formatCurrency final result: ${result}`);
+                return result;
+            }
+
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('fa-IR');
+            }
+
+            function changeDate(days) {
+                const currentDate = new Date($('#reportDate').val());
+                currentDate.setDate(currentDate.getDate() + days);
+
+                const today = new Date();
+                if (currentDate <= today) {
+                    const newDateStr = currentDate.toISOString().split('T')[0];
+                    $('#reportDate').val(newDateStr);
+                    loadBankAccountSummary();
+                }
+            }
+
+            function setToday() {
+                const today = new Date().toISOString().split('T')[0];
+                $('#reportDate').val(today);
+                loadBankAccountSummary();
+            }
+
+            function updateNavigationButtons() {
+                const selectedDate = new Date($('#reportDate').val());
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+
+                const nextDay = new Date(selectedDate);
+                nextDay.setDate(selectedDate.getDate() + 1);
+                $('#btnNextDay').prop('disabled', nextDay > today);
+            }
+
+            function showAlert(message, type, duration = 5000) {
+                const alertId = 'alert-' + Date.now();
+                const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+                $('body').append(alertHtml);
+
+                setTimeout(function () {
+                    $(`#${alertId}`).alert('close');
+                }, duration);
+            }
+
+            // Make functions global for onclick handlers
+            window.loadBankAccountSummary = loadBankAccountSummary;
+            window.changeDate = changeDate;
+            window.setToday = setToday;
+        });
+    </script>
+}

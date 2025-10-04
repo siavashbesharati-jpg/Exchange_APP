@@ -126,6 +126,18 @@ namespace ForexExchange.Controllers
             return View();
         }
 
+        // GET: Reports/BankAccountSummaryReport
+        public IActionResult BankAccountSummaryReport()
+        {
+            return View();
+        }
+
+        // GET: Reports/CustomerSummaryReport
+        public IActionResult CustomerSummaryReport()
+        {
+            return View();
+        }
+
         // API Methods for Real Data
 
         // GET: Reports/GetCustomersData
@@ -1153,6 +1165,252 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error getting pool summary report for date: {Date}", date);
                 return Json(new { success = false, error = "خطا در دریافت گزارش خلاصه صندوق" });
+            }
+        }
+
+        // GET: Reports/GetBankAccountSummaryReport
+        [HttpGet]
+        public async Task<IActionResult> GetBankAccountSummaryReport(DateTime date)
+        {
+            try
+            {
+                _logger.LogInformation("Getting bank account summary report for date: {Date}", date);
+
+                // Don't allow future dates
+                if (date > DateTime.Today)
+                {
+                    return Json(new { success = false, error = "نمی‌توان گزارش آینده ایجاد کرد" });
+                }
+
+                // Get start and end of day
+                var startOfDay = date.Date;
+                var endOfDay = date.Date.AddDays(1).AddTicks(-1);
+
+                // Get all bank account transactions for the day
+                var bankAccountTransactions = await _context.BankAccountBalanceHistory
+                    .Include(h => h.BankAccount)
+                    .Where(h => h.TransactionDate >= startOfDay && h.TransactionDate <= endOfDay && !h.IsDeleted)
+                    .OrderBy(h => h.TransactionDate)
+                    .ToListAsync();
+
+                // Get all bank accounts with their current balances
+                var bankAccounts = await _context.BankAccountBalances
+                    .Include(b => b.BankAccount)
+                    .ToListAsync();
+
+                var bankAccountDetails = new List<object>();
+
+                foreach (var bankAccount in bankAccounts)
+                {
+                    var accountTransactions = bankAccountTransactions
+                        .Where(t => t.BankAccountId == bankAccount.BankAccountId)
+                        .ToList();
+
+                    var transactionDetails = accountTransactions.Select(t => new
+                    {
+                        amount = t.TransactionAmount,
+                        description = t.Description ?? "تراکنش بانکی",
+                        time = t.TransactionDate.ToString("HH:mm"),
+                        transactionType = t.TransactionType.ToString(),
+                        balanceBefore = t.BalanceBefore,
+                        balanceAfter = t.BalanceAfter
+                    }).ToList();
+
+                    bankAccountDetails.Add(new
+                    {
+                        bankAccountId = bankAccount.BankAccountId,
+                        bankAccountName = bankAccount.BankAccount?.BankName ?? "حساب نامشخص",
+                        bankAccountNumber = bankAccount.BankAccount?.AccountNumber ?? "نامشخص",
+                        latestBalance = bankAccount.Balance,
+                        transactionCount = accountTransactions.Count,
+                        transactions = transactionDetails
+                    });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    date = date.ToString("yyyy-MM-dd"),
+                    data = new { },
+                    bankAccounts = bankAccountDetails
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting bank account summary report for date: {Date}", date);
+                return Json(new { success = false, error = "خطا در دریافت گزارش خلاصه حساب‌های بانکی" });
+            }
+        }
+
+        // GET: Reports/GetCustomerSummaryReport
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerSummaryReport(DateTime date)
+        {
+            try
+            {
+                _logger.LogInformation("Getting customer summary report for date: {Date}", date);
+
+                // Don't allow future dates
+                if (date > DateTime.Today)
+                {
+                    return Json(new { success = false, error = "نمی‌توان گزارش آینده ایجاد کرد" });
+                }
+
+                // Get start and end of day
+                var startOfDay = date.Date;
+                var endOfDay = date.Date.AddDays(1).AddTicks(-1);
+
+                // Get all customer transactions for the day
+                var customerTransactions = await _context.CustomerBalanceHistory
+                    .Include(h => h.Customer)
+                    .Where(h => h.TransactionDate >= startOfDay && h.TransactionDate <= endOfDay && !h.IsDeleted)
+                    .OrderBy(h => h.TransactionDate)
+                    .ToListAsync();
+
+                // Group by currency
+                var currencyGroups = customerTransactions
+                    .GroupBy(t => t.CurrencyCode)
+                    .ToList();
+
+                var currencyDetails = new List<object>();
+                decimal totalIRR = 0;
+                decimal totalOMR = 0;
+
+                // Process IRR transactions
+                var irrTransactions = customerTransactions
+                    .Where(t => t.CurrencyCode == "IRR")
+                    .ToList();
+
+                if (irrTransactions.Any())
+                {
+                    // Get current total balance for IRR
+                    var irrBalance = await _context.CustomerBalances
+                        .Where(cb => cb.CurrencyCode == "IRR")
+                        .SumAsync(cb => cb.Balance);
+
+                    totalIRR = irrBalance;
+
+                    var transactionDetails = irrTransactions.Select(t => new
+                    {
+                        amount = t.TransactionAmount,
+                        currencyCode = t.CurrencyCode,
+                        description = t.Description ?? "تراکنش مشتری",
+                        time = t.TransactionDate.ToString("HH:mm"),
+                        customerName = t.Customer?.FullName ?? "مشتری نامشخص",
+                        transactionType = t.TransactionType.ToString(),
+                        balanceBefore = t.BalanceBefore,
+                        balanceAfter = t.BalanceAfter
+                    }).ToList();
+
+                    currencyDetails.Add(new
+                    {
+                        currencyCode = "IRR",
+                        currencyName = "ریال ایران",
+                        latestBalance = irrBalance,
+                        transactionCount = irrTransactions.Count,
+                        transactions = transactionDetails
+                    });
+                }
+
+                // Process OMR transactions
+                var omrTransactions = customerTransactions
+                    .Where(t => t.CurrencyCode == "OMR")
+                    .ToList();
+
+                if (omrTransactions.Any())
+                {
+                    // Get current total balance for OMR
+                    var omrBalance = await _context.CustomerBalances
+                        .Where(cb => cb.CurrencyCode == "OMR")
+                        .SumAsync(cb => cb.Balance);
+
+                    totalOMR = omrBalance;
+
+                    var transactionDetails = omrTransactions.Select(t => new
+                    {
+                        amount = t.TransactionAmount,
+                        currencyCode = t.CurrencyCode,
+                        description = t.Description ?? "تراکنش مشتری",
+                        time = t.TransactionDate.ToString("HH:mm"),
+                        customerName = t.Customer?.FullName ?? "مشتری نامشخص",
+                        transactionType = t.TransactionType.ToString(),
+                        balanceBefore = t.BalanceBefore,
+                        balanceAfter = t.BalanceAfter
+                    }).ToList();
+
+                    currencyDetails.Add(new
+                    {
+                        currencyCode = "OMR",
+                        currencyName = "ریال عمان",
+                        latestBalance = omrBalance,
+                        transactionCount = omrTransactions.Count,
+                        transactions = transactionDetails
+                    });
+                }
+
+                // Process other currencies and convert to OMR
+                var otherCurrencies = currencyGroups
+                    .Where(g => g.Key != "IRR" && g.Key != "OMR")
+                    .ToList();
+
+                foreach (var currencyGroup in otherCurrencies)
+                {
+                    var currencyCode = currencyGroup.Key;
+                    var currencyTransactions = currencyGroup.ToList();
+
+                    // Get current total balance for this currency
+                    var currentBalance = await _context.CustomerBalances
+                        .Where(cb => cb.CurrencyCode == currencyCode)
+                        .SumAsync(cb => cb.Balance);
+
+                    // Convert balance to OMR
+                    var balanceInOMR = await ConvertCurrencyToOMR(currentBalance, currencyCode, date);
+                    totalOMR += balanceInOMR;
+
+                    var transactionDetails = currencyTransactions.Select(t => new
+                    {
+                        amount = t.TransactionAmount,
+                        currencyCode = t.CurrencyCode,
+                        description = t.Description ?? "تراکنش مشتری",
+                        time = t.TransactionDate.ToString("HH:mm"),
+                        customerName = t.Customer?.FullName ?? "مشتری نامشخص",
+                        transactionType = t.TransactionType.ToString(),
+                        balanceBefore = t.BalanceBefore,
+                        balanceAfter = t.BalanceAfter,
+                        // Add conversion info for non-IRR/OMR currencies
+                        fromCurrencyCode = currencyCode,
+                        toCurrencyCode = "OMR"
+                    }).ToList();
+
+                    // Get currency name
+                    var currency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == currencyCode);
+
+                    currencyDetails.Add(new
+                    {
+                        currencyCode = currencyCode,
+                        currencyName = currency?.Name ?? currencyCode,
+                        latestBalance = currentBalance,
+                        transactionCount = currencyTransactions.Count,
+                        transactions = transactionDetails
+                    });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    date = date.ToString("yyyy-MM-dd"),
+                    data = new
+                    {
+                        irrBalance = totalIRR,
+                        omrBalance = totalOMR
+                    },
+                    currencies = currencyDetails
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting customer summary report for date: {Date}", date);
+                return Json(new { success = false, error = "خطا در دریافت گزارش خلاصه مشتریان" });
             }
         }
 
