@@ -100,11 +100,7 @@ namespace ForexExchange.Controllers
             return View();
         }
 
-        // GET: Reports/PoolDailyReport
-        public IActionResult PoolDailyReport()
-        {
-            return View();
-        }
+       
 
         // GET: Reports/BankAccountReports
         public IActionResult BankAccountReports()
