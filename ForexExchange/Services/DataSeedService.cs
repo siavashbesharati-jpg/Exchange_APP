@@ -60,9 +60,10 @@ namespace ForexExchange.Services
                 // Create bank accounts for system customer (one per currency)
                 await SeedSystemBankAccountsAsync();
 
-                // // Seed 5-10 test customers (as requested by user)
-                // await SeedTestCustomersAsync();
+                 await SeedTestCustomersAsync();
 
+                // Seed default system settings including branding
+                await SeedDefaultSettingsAsync();
 
                 // // Initialize customer balances using CentralFinancialService (with complete audit trail)
                 // await SeedCustomerBalancesAsync();
@@ -99,13 +100,13 @@ namespace ForexExchange.Services
             var now = DateTime.Now;
             var defaults = new List<Currency>
             {
-                new() { Code = "IRR", Name = "Iranian Toman", PersianName = "تومان", Symbol = "﷼", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = now },
-                new() { Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = now },
-                new() { Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = now },
-                new() { Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = now },
-                new() { Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = now },
-                new() { Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = now },
-                new() { Code = "CNY", Name = "Chinese Yuan", PersianName = "یوان چین", Symbol = "¥", IsActive = true, IsBaseCurrency = false, DisplayOrder = 7, CreatedAt = now },
+                new() { Code = "IRR", Name = "Iranian Toman", PersianName = "تومان", Symbol = "تومان", IsActive = true, IsBaseCurrency = true, DisplayOrder = 1, CreatedAt = now ,RatePriority = 8},
+                new() { Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, IsBaseCurrency = false, DisplayOrder = 2, CreatedAt = now ,RatePriority = 1},
+                new() { Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, IsBaseCurrency = false, DisplayOrder = 3, CreatedAt = now ,RatePriority = 4},
+                new() { Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, IsBaseCurrency = false, DisplayOrder = 4, CreatedAt = now,RatePriority = 3},
+                new() { Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, IsBaseCurrency = false, DisplayOrder = 5, CreatedAt = now ,RatePriority = 2},
+                new() { Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, IsBaseCurrency = false, DisplayOrder = 6, CreatedAt = now ,RatePriority = 6},
+                new() { Code = "CNY", Name = "Chinese Yuan", PersianName = "یوان چین", Symbol = "¥", IsActive = true, IsBaseCurrency = false, DisplayOrder = 7, CreatedAt = now, RatePriority =  5},
             };
 
             _context.Currencies.AddRange(defaults);
@@ -138,8 +139,6 @@ namespace ForexExchange.Services
             var adminUsers = new[]
             {
                 new { Phone = "00989120674032", Email = "siavash@taban-gorpup.com", FullName = "سیاوش", Password = "09120674032" },
-                new { Phone = "00989391377624", Email = "elahe@taban-gorpup.com", FullName = "الهه", Password = "09391377624" },
-                new { Phone = "00989194810612", Email = "behnam@taban-gorpup.com", FullName = "بهنام", Password = "09194810612" }
             };
 
             foreach (var adminData in adminUsers)
@@ -446,7 +445,13 @@ namespace ForexExchange.Services
                 }
 
                 var random = new Random();
-                var persianFirstNames = new[] { "علی", "محمد", "حسن", "حسین", "احمد", "مهدی", "رضا", "امیر", "سعید", "محسن", "فاطمه", "زهرا", "مریم", "آیدا", "نرگس", "پریسا", "سارا", "نازنین", "مینا", "شیما" };
+                
+                // Persian male names
+                var persianMaleNames = new[] { "علی", "محمد", "حسن", "حسین", "احمد", "مهدی", "رضا", "امیر", "سعید", "محسن", "حامد", "مسعود", "فرهاد", "بهروز", "کیوان", "آرمان", "پوریا", "آرین", "سینا", "دانیال" };
+                
+                // Persian female names
+                var persianFemaleNames = new[] { "فاطمه", "زهرا", "مریم", "آیدا", "نرگس", "پریسا", "سارا", "نازنین", "مینا", "شیما", "الهام", "نیلوفر", "مهسا", "طاهره", "زینب", "نگار", "ریحانه", "سمیرا", "لیلا", "مهناز" };
+                
                 var persianLastNames = new[] { "احمدی", "محمدی", "حسینی", "رضایی", "موسوی", "کریمی", "حسنی", "صادقی", "مرادی", "علوی", "قاسمی", "بابایی", "نوری", "صالحی", "طاهری", "کاظمی", "جعفری", "رحیمی", "فروغی", "کامرانی" };
 
                 var customers = new List<Customer>();
@@ -454,11 +459,24 @@ namespace ForexExchange.Services
 
                 // Create 5-10 customers (random number)
                 var customerCount = random.Next(5, 11);
-                _logger.LogInformation($"Creating {customerCount} test customers using CentralFinancialService");
+                _logger.LogInformation($"Creating {customerCount} test customers with proper gender assignment");
 
                 for (int i = 1; i <= customerCount; i++)
                 {
-                    var firstName = persianFirstNames[random.Next(persianFirstNames.Length)];
+                    // Randomly choose gender first
+                    bool isMale = random.Next(0, 2) == 0;
+                    
+                    // Select appropriate name based on gender
+                    string firstName;
+                    if (isMale)
+                    {
+                        firstName = persianMaleNames[random.Next(persianMaleNames.Length)];
+                    }
+                    else
+                    {
+                        firstName = persianFemaleNames[random.Next(persianFemaleNames.Length)];
+                    }
+                    
                     var lastName = persianLastNames[random.Next(persianLastNames.Length)];
 
                     var customer = new Customer
@@ -470,6 +488,7 @@ namespace ForexExchange.Services
                         Address = $"تهران، خیابان {random.Next(1, 50)}، پلاک {random.Next(1, 200)}",
                         IsActive = true,
                         IsSystem = false,
+                        Gender = isMale, // true for male, false for female
                         CreatedAt = now.AddDays(-random.Next(1, 365)) // Random creation date within last year
                     };
 
@@ -479,7 +498,7 @@ namespace ForexExchange.Services
                 _context.Customers.AddRange(customers);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Created {customerCount} test customers successfully");
+                _logger.LogInformation($"Created {customerCount} test customers successfully with proper gender assignment");
             }
             catch (Exception ex)
             {
@@ -541,239 +560,78 @@ namespace ForexExchange.Services
         }
 
         /// <summary>
-        /// Seed 20-30 orders per customer using CentralFinancialService
+        /// Seed default system settings including website branding
         /// </summary>
-        private async Task SeedCustomerOrdersAsync()
+        private async Task SeedDefaultSettingsAsync()
         {
             try
             {
-                // Check if orders already exist
-                var existingOrderCount = await _context.Orders.CountAsync();
-                if (existingOrderCount > 50)
-                {
-                    _logger.LogInformation($"{existingOrderCount} orders already exist, skipping order seeding");
-                    return;
-                }
-
-                var customers = await _context.Customers
-                    .Where(c => !c.IsSystem)
-                    .Include(c => c.Orders) // Include existing orders
-                    .ToListAsync();
-
-                var currencies = await _context.Currencies
-                    .Where(c => c.IsActive)
-                    .ToListAsync();
-
-                var exchangeRates = await _context.ExchangeRates
-                    .Where(er => er.IsActive)
-                    .ToListAsync();
-
-                var random = new Random();
                 var now = DateTime.Now;
-                var totalOrdersCreated = 0;
+                var settingsToAdd = new List<SystemSettings>();
 
-                _logger.LogInformation($"Creating 20-30 orders per customer using CentralFinancialService");
-
-                foreach (var customer in customers)
+                // Define all default settings with their keys
+                var defaultSettingsData = new Dictionary<string, (string Value, string Description, string DataType)>
                 {
-                    var orderCount = random.Next(20, 31); // 20-30 orders per customer
-
-                    for (int i = 0; i < orderCount; i++)
-                    {
-                        var fromCurrency = currencies[random.Next(currencies.Count)];
-                        var toCurrency = currencies[random.Next(currencies.Count)];
-
-                        // Make sure from and to currencies are different
-                        while (toCurrency.Id == fromCurrency.Id)
-                        {
-                            toCurrency = currencies[random.Next(currencies.Count)];
-                        }
-
-                        var amount = (decimal)(random.NextDouble() * 5000 + 100); // Random amount between 100-5100
-
-                        // Find exchange rate or calculate reasonable rate
-                        var rate = exchangeRates.FirstOrDefault(er =>
-                            er.FromCurrencyId == fromCurrency.Id && er.ToCurrencyId == toCurrency.Id);
-
-                        var exchangeRate = rate?.Rate ?? (decimal)(random.NextDouble() * 2 + 0.5); // Random rate if not found
-                        var totalAmount = amount * exchangeRate;
-
-                        // Create order entity
-                        var order = new Order
-                        {
-                            CustomerId = customer.Id,
-                            FromCurrencyId = fromCurrency.Id,
-                            ToCurrencyId = toCurrency.Id,
-                            FromCurrency = fromCurrency,
-                            ToCurrency = toCurrency,
-                            FromAmount = Math.Round(amount, 2),
-                            Rate = exchangeRate,
-                            ToAmount = Math.Round(totalAmount, 2),
-                            CreatedAt = now.AddDays(-random.Next(1, 365)), // Random date within last year
-                            Notes = $"Test order created by DataSeedService"
-                        };
-
-                        // Save order first
-                        _context.Orders.Add(order);
-                        await _context.SaveChangesAsync();
-
-                        // Process order creation using CentralFinancialService for dual-currency impact
-                        await _centralFinancialService.ProcessOrderCreationAsync(order, "DataSeedService");
-
-                        totalOrdersCreated++;
-
-
-                    }
-
-                    _logger.LogInformation($"Created {orderCount} orders for customer {customer.FullName}");
-                }
-
-                _logger.LogInformation($"Successfully created {totalOrdersCreated} total orders using CentralFinancialService");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to seed customer orders");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Seed 20-30 accounting documents per customer using CentralFinancialService
-        /// </summary>
-        private async Task SeedCustomerAccountingDocumentsAsync()
-        {
-            try
-            {
-                // Check if documents already exist
-                var existingDocCount = await _context.AccountingDocuments.CountAsync();
-                if (existingDocCount > 50)
-                {
-                    _logger.LogInformation($"{existingDocCount} accounting documents already exist, skipping document seeding");
-                    return;
-                }
-
-                var customers = await _context.Customers.Where(c => !c.IsSystem).ToListAsync();
-                var systemCustomer = await _context.Customers.FirstOrDefaultAsync(c => c.IsSystem);
-                var currencies = await _context.Currencies.Where(c => c.IsActive)
-                    .OrderBy(c => c.DisplayOrder)
-                    .ToListAsync();
-
-                if (systemCustomer == null)
-                {
-                    _logger.LogError("System customer not found");
-                    return;
-                }
-
-                // Load system bank accounts (one per currency)
-                var systemBankAccounts = await _context.BankAccounts
-                    .Where(ba => ba.CustomerId == systemCustomer.Id && ba.IsActive)
-                    .ToListAsync();
-
-                var random = new Random();
-                var now = DateTime.Now;
-                var totalDocumentsCreated = 0;
-
-                var descriptions = new[] {
-                    "واریز نقدی", "برداشت نقدی", "تبدیل ارز", "کارمزد معامله",
-                    "واریز بانکی", "برداشت بانکی", "تسویه حساب", "پرداخت کمیسیون",
-                    "انتقال وجه", "دریافت حواله", "پرداخت حواله", "سود سپرده"
+                    // Website Branding Settings
+                    { SettingKeys.WebsiteName, ("سامانه معاملات تابان", "نام وب‌سایت", "string") },
+                    { SettingKeys.CompanyName, ("گروه تابان", "نام شرکت", "string") },
+                    { SettingKeys.CompanyWebsite, ("https://taban-group.com", "وب‌سایت شرکت", "string") },
+                    
+                    // Financial Settings
+                    { SettingKeys.CommissionRate, ("0.5", "نرخ کمیسیون پیش‌فرض (درصد)", "decimal") },
+                    { SettingKeys.ExchangeFeeRate, ("0.2", "کارمزد تبدیل ارز (درصد)", "decimal") },
+                    { SettingKeys.MinTransactionAmount, ("10000", "حداقل مبلغ تراکنش (تومان)", "decimal") },
+                    { SettingKeys.MaxTransactionAmount, ("1000000000", "حداکثر مبلغ تراکنش (تومان)", "decimal") },
+                    { SettingKeys.DailyTransactionLimit, ("5000000000", "محدودیت تراکنش روزانه (تومان)", "decimal") },
+                    
+                    // System Settings
+                    { SettingKeys.SystemMaintenance, ("false", "حالت تعمیرات سیستم", "bool") },
+                    { SettingKeys.DefaultCurrency, ("USD", "کد ارز پیش‌فرض سیستم", "string") },
+                    { SettingKeys.RateUpdateInterval, ("60", "بازه بروزرسانی نرخ ارز (دقیقه)", "int") },
+                    { SettingKeys.NotificationEnabled, ("true", "فعال‌سازی سیستم اعلان‌ها", "bool") },
+                    { SettingKeys.BackupEnabled, ("true", "فعال‌سازی پشتیبان‌گیری خودکار", "bool") }
                 };
 
-                _logger.LogInformation($"Creating 20-30 accounting documents per customer using CentralFinancialService");
-
-                foreach (var customer in customers)
+                // Check each setting and add only if it doesn't exist
+                foreach (var (settingKey, (value, description, dataType)) in defaultSettingsData)
                 {
-                    var docCount = random.Next(20, 31); // 20-30 documents per customer
+                    var existingSetting = await _context.SystemSettings
+                        .FirstOrDefaultAsync(s => s.SettingKey == settingKey);
 
-                    for (int i = 0; i < docCount; i++)
+                    if (existingSetting == null)
                     {
-                        var currency = currencies[random.Next(currencies.Count)];
-                        var amount = (decimal)(random.NextDouble() * 3000 + 50); // Random amount between 50-3050
-                        var isPayment = random.NextDouble() > 0.5; // 50% payments, 50% receipts
-                        var description = descriptions[random.Next(descriptions.Length)];
-
-                        // Create accounting document entity
-                        var document = new AccountingDocument
+                        settingsToAdd.Add(new SystemSettings
                         {
-                            Type = random.NextDouble() > 0.5 ? DocumentType.Cash : DocumentType.Havala,
-                            Title = description,
-                            Description = $"Test document created by DataSeedService - {description}",
-                            Amount = Math.Round(amount, 2),
-                            CurrencyCode = currency.Code,
-                            DocumentDate = now.AddDays(-random.Next(1, 365)), // Random date within last year
-                            CreatedAt = DateTime.UtcNow,
-                            IsVerified = true, // Auto-verify for testing
-                            VerifiedAt = DateTime.UtcNow,
-                            VerifiedBy = "DataSeedService",
-                            Notes = "Generated by DataSeedService for testing",
-                            ReferenceNumber = $"REF{DateTime.UtcNow.Ticks}{random.Next(1000, 9999)}"
-                        };
-
-                        // Set payer and receiver based on transaction type
-                        if (isPayment)
-                        {
-                            // Customer pays to system
-                            document.PayerCustomerId = customer.Id;
-                            document.PayerType = PayerType.Customer;
-                            document.ReceiverCustomerId = systemCustomer.Id;
-                            document.ReceiverType = ReceiverType.Customer; // System customer is still a Customer type
-                        }
-                        else
-                        {
-                            // System pays to customer  
-                            document.PayerCustomerId = systemCustomer.Id;
-                            document.PayerType = PayerType.Customer; // System customer is still a Customer type
-                            document.ReceiverCustomerId = customer.Id;
-                            document.ReceiverType = ReceiverType.Customer;
-                        }
-
-                        // Assign system bank account based on transaction currency and direction
-                        var systemBankAccount = systemBankAccounts.FirstOrDefault(ba => ba.CurrencyCode == currency.Code);
-                        if (systemBankAccount != null)
-                        {
-                            if (isPayment)
-                            {
-                                // Customer pays to system - system receives to bank account
-                                document.ReceiverBankAccountId = systemBankAccount.Id;
-                                _logger.LogDebug($"Assigned system bank account {systemBankAccount.AccountNumber} ({currency.Code}) as receiver for document {document.ReferenceNumber}");
-                            }
-                            else
-                            {
-                                // System pays to customer - system pays from bank account
-                                document.PayerBankAccountId = systemBankAccount.Id;
-                                _logger.LogDebug($"Assigned system bank account {systemBankAccount.AccountNumber} ({currency.Code}) as payer for document {document.ReferenceNumber}");
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogWarning($"No system bank account found for currency {currency.Code} - document {document.ReferenceNumber} will not have bank account assignment");
-                        }
-
-                        // Save document first
-                        _context.AccountingDocuments.Add(document);
-                        await _context.SaveChangesAsync();
-
-                        // Process document using CentralFinancialService for proper balance updates
-                        await _centralFinancialService.ProcessAccountingDocumentAsync(document, "DataSeedService");
-
-                        totalDocumentsCreated++;
+                            SettingKey = settingKey,
+                            SettingValue = value,
+                            Description = description,
+                            DataType = dataType,
+                            IsActive = true,
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            UpdatedBy = "DataSeedService"
+                        });
                     }
-
-                    _logger.LogInformation($"Created {docCount} accounting documents for customer {customer.FullName}");
                 }
 
-                _logger.LogInformation($"Successfully created {totalDocumentsCreated} total accounting documents using CentralFinancialService");
-                _logger.LogInformation($"System bank accounts used: {systemBankAccounts.Count} accounts covering currencies: {string.Join(", ", systemBankAccounts.Select(ba => ba.CurrencyCode))}");
-
+                if (settingsToAdd.Any())
+                {
+                    _context.SystemSettings.AddRange(settingsToAdd);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"Successfully seeded {settingsToAdd.Count} new default system settings");
+                }
+                else
+                {
+                    _logger.LogInformation("All default system settings already exist, skipping settings seeding");
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to seed customer accounting documents");
+                _logger.LogError(ex, "Error occurred while seeding default system settings");
                 throw;
             }
         }
 
-    
     }
 }
 

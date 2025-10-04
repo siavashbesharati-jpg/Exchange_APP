@@ -1,0 +1,11 @@
+@model ForexExchange.ViewComponents.BrandingInfo
+
+@{
+    ViewData["WebsiteName"] = Model.WebsiteName;
+    ViewData["CompanyName"] = Model.CompanyName;
+    ViewData["CompanyWebsite"] = Model.CompanyWebsite;
+    ViewData["LogoUrl"] = Model.LogoUrl;
+}
+
+<!-- This ViewComponent provides branding data to the layout -->
+<!-- The actual rendering is handled by the layout itself -->

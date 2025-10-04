@@ -103,6 +103,8 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<IVapidService, VapidService>();
 // Excel export service
 builder.Services.AddScoped<ExcelExportService>();
+// File upload service for logo management
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 
 // Central notification system
 builder.Services.AddScoped<INotificationHub>(serviceProvider =>

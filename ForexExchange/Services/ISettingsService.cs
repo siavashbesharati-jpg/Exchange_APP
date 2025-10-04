@@ -15,6 +15,13 @@ namespace ForexExchange.Services
         Task<decimal> GetMaxTransactionAmountAsync();
         Task<decimal> GetDailyTransactionLimitAsync();
         Task<bool> IsSystemMaintenanceAsync();
+        
+        // Website Branding Methods
+        Task<string> GetWebsiteNameAsync();
+        Task<string> GetCompanyNameAsync();
+        Task<string> GetCompanyWebsiteAsync();
+        Task<string?> GetLogoPathAsync();
+        Task SetBrandingAsync(string websiteName, string companyName, string companyWebsite, string? logoPath = null, string updatedBy = "Admin");
     }
 
     public class SettingsService : ISettingsService
@@ -107,7 +114,13 @@ namespace ForexExchange.Services
                 DefaultCurrencyCode = await GetSettingAsync(SettingKeys.DefaultCurrency, "USD"),
                 RateUpdateInterval = await GetSettingAsync(SettingKeys.RateUpdateInterval, 60),
                 NotificationEnabled = await GetSettingAsync(SettingKeys.NotificationEnabled, true),
-                BackupEnabled = await GetSettingAsync(SettingKeys.BackupEnabled, true)
+                BackupEnabled = await GetSettingAsync(SettingKeys.BackupEnabled, true),
+                
+                // Website Branding Settings
+                WebsiteName = await GetSettingAsync(SettingKeys.WebsiteName, "سامانه معاملات تابان"),
+                CompanyName = await GetSettingAsync(SettingKeys.CompanyName, "گروه تابان"),
+                CompanyWebsite = await GetSettingAsync(SettingKeys.CompanyWebsite, "https://taban-group.com"),
+                LogoPath = await GetSettingAsync<string?>(SettingKeys.WebsiteLogoPath, null)
             };
         }
 
@@ -123,6 +136,16 @@ namespace ForexExchange.Services
             await SetSettingAsync(SettingKeys.RateUpdateInterval, settings.RateUpdateInterval, "بازه بروزرسانی نرخ ارز به دقیقه", updatedBy);
             await SetSettingAsync(SettingKeys.NotificationEnabled, settings.NotificationEnabled, "فعال‌سازی سیستم اعلان‌ها", updatedBy);
             await SetSettingAsync(SettingKeys.BackupEnabled, settings.BackupEnabled, "فعال‌سازی پشتیبان‌گیری خودکار", updatedBy);
+            
+            // Update Website Branding Settings
+            await SetSettingAsync(SettingKeys.WebsiteName, settings.WebsiteName, "نام وب‌سایت", updatedBy);
+            await SetSettingAsync(SettingKeys.CompanyName, settings.CompanyName, "نام شرکت", updatedBy);
+            await SetSettingAsync(SettingKeys.CompanyWebsite, settings.CompanyWebsite, "وب‌سایت شرکت", updatedBy);
+            
+            if (!string.IsNullOrEmpty(settings.LogoPath))
+            {
+                await SetSettingAsync(SettingKeys.WebsiteLogoPath, settings.LogoPath, "مسیر لوگو وب‌سایت", updatedBy);
+            }
         }
 
         public async Task<decimal> GetCommissionRateAsync()
@@ -203,6 +226,49 @@ namespace ForexExchange.Services
                 return "datetime";
 
             return "string";
+        }
+
+        // Website Branding Methods Implementation
+        public async Task<string> GetWebsiteNameAsync()
+        {
+            return await GetSettingAsync(SettingKeys.WebsiteName, "سامانه معاملات تابان");
+        }
+
+        public async Task<string> GetCompanyNameAsync()
+        {
+            return await GetSettingAsync(SettingKeys.CompanyName, "گروه تابان");
+        }
+
+        public async Task<string> GetCompanyWebsiteAsync()
+        {
+            return await GetSettingAsync(SettingKeys.CompanyWebsite, "https://taban-group.com");
+        }
+
+        public async Task<string?> GetLogoPathAsync()
+        {
+            return await GetSettingAsync<string?>(SettingKeys.WebsiteLogoPath, null);
+        }
+
+        public async Task SetBrandingAsync(string websiteName, string companyName, string companyWebsite, string? logoPath = null, string updatedBy = "Admin")
+        {
+            try
+            {
+                await SetSettingAsync(SettingKeys.WebsiteName, websiteName, "نام وب‌سایت", updatedBy);
+                await SetSettingAsync(SettingKeys.CompanyName, companyName, "نام شرکت", updatedBy);
+                await SetSettingAsync(SettingKeys.CompanyWebsite, companyWebsite, "وب‌سایت شرکت", updatedBy);
+                
+                if (!string.IsNullOrEmpty(logoPath))
+                {
+                    await SetSettingAsync(SettingKeys.WebsiteLogoPath, logoPath, "مسیر لوگو وب‌سایت", updatedBy);
+                }
+
+                _logger.LogInformation($"Website branding updated by {updatedBy}: Website={websiteName}, Company={companyName}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error updating website branding by {updatedBy}");
+                throw;
+            }
         }
     }
 }

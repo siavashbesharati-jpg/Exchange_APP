@@ -2,35 +2,42 @@
 <html lang="fa" dir="rtl">
 
 <head>
+    @{
+        // Get dynamic branding data
+        await Component.InvokeAsync("Branding");
+        var websiteName = ViewData["WebsiteName"]?.ToString() ?? "سامانه معاملات تابان";
+        var logoUrl = ViewData["LogoUrl"]?.ToString() ?? "/favicon/android-chrome-512x512.png";
+    }
+    
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - سامانه معاملات تابان </title>
+    <title>@ViewData["Title"] - @websiteName</title>
 
     <!-- Open Graph Tags for WhatsApp and Social Media -->
-    <meta property="og:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? "سامانه معاملات تابان")" />
+    <meta property="og:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? websiteName)" />
     <meta property="og:description"
-        content="@(ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
-    <meta property="og:image" content="@(ViewData["OGImage"] ?? Url.Content("~/images/og-image.jpg"))" />
-    <meta property="og:image:alt" content="@(ViewData["OGImageAlt"] ?? "لوگو سامانه معاملات تابان")" />
+        content="@(ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
+    <meta property="og:image" content="@(ViewData["OGImage"] ?? Url.Content(logoUrl))" />
+    <meta property="og:image:alt" content="@(ViewData["OGImageAlt"] ?? $"لوگو {websiteName}")" />
     <meta property="og:url"
         content="@(ViewData["OGUrl"] ?? (Context.Request.Scheme + "://" + Context.Request.Host + Context.Request.Path))" />
     <meta property="og:type" content="@(ViewData["OGType"] ?? "website")" />
-    <meta property="og:site_name" content="سامانه معاملات تابان" />
+    <meta property="og:site_name" content="@websiteName" />
     <meta property="og:locale" content="fa_IR" />
 
     <!-- Twitter Card Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="@(ViewData["TwitterTitle"] ?? ViewData["Title"] ?? "سامانه معاملات تابان")" />
+    <meta name="twitter:title" content="@(ViewData["TwitterTitle"] ?? ViewData["Title"] ?? websiteName)" />
     <meta name="twitter:description"
-        content="@(ViewData["TwitterDescription"] ?? ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
+        content="@(ViewData["TwitterDescription"] ?? ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
     <meta name="twitter:image"
-        content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? Url.Content("~/images/og-image.jpg"))" />
+        content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? Url.Content(logoUrl))" />
 
     <!-- WhatsApp Specific -->
-    <meta property="whatsapp:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? "سامانه معاملات تابان")" />
+    <meta property="whatsapp:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? websiteName)" />
     <meta property="whatsapp:description"
-        content="@(ViewData["OGDescription"] ?? "سامانه معاملات ارز تابان - بهترین نرخ‌های روز، معاملات امن و سریع")" />
-    <meta property="whatsapp:image" content="@(ViewData["OGImage"] ?? Url.Content("~/images/og-image.jpg"))" />
+        content="@(ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
+    <meta property="whatsapp:image" content="@(ViewData["OGImage"] ?? Url.Content(logoUrl))" />
 
     <!-- Bootstrap 5 RTL -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">

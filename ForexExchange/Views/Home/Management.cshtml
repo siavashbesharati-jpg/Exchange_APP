@@ -244,6 +244,22 @@
                     </div>
                 </div>
 
+                <!-- Website Branding (Admin Only) -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="text-purple mb-3" style="color: #6f42c1;">
+                                <i class="fas fa-palette fa-3x"></i>
+                            </div>
+                            <h5 class="card-title">برندینگ وب‌سایت</h5>
+                            <p class="card-text">مدیریت نام وب‌سایت، لوگو و اطلاعات شرکت</p>
+                            <a href="@Url.Action("Branding", "Settings")" class="btn btn-outline-purple" style="border-color: #6f42c1; color: #6f42c1;">
+                                <i class="fas fa-paint-brush me-1"></i>مدیریت برندینگ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Admin Management (SuperAdmin Only) -->
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100">
@@ -274,3 +290,49 @@
         </div>
     }
 </div>
+
+<style>
+    /* Purple button styling for branding card */
+    .btn-outline-purple {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-purple:hover {
+        background-color: #6f42c1 !important;
+        border-color: #6f42c1 !important;
+        color: white !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+    }
+    
+    .text-purple:hover {
+        color: #5a32a3 !important;
+    }
+    
+    /* Card hover effects */
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* Icon pulse animation for branding */
+    .fa-palette {
+        animation: pulse-purple 2s infinite;
+    }
+    
+    @@keyframes pulse-purple {
+        0% {
+            color: #6f42c1;
+        }
+        50% {
+            color: #8b5fbf;
+        }
+        100% {
+            color: #6f42c1;
+        }
+    }
+</style>

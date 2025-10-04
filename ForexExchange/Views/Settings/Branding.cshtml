@@ -1,0 +1,261 @@
+@model ForexExchange.Models.BrandingSettingsViewModel
+
+@{
+    ViewData["Title"] = "تنظیمات برندینگ وب‌سایت";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-palette text-primary"></i>
+            تنظیمات برندینگ وب‌سایت
+        </h2>
+        <a href="@Url.Action("Index", "Settings")" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-right me-1"></i>بازگشت به تنظیمات
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit"></i>
+                        ویرایش اطلاعات برندینگ
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Branding" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        @Html.HiddenFor(m => m.CurrentLogoPath)
+
+                        <div class="row g-4">
+                            <!-- Website Name -->
+                            <div class="col-12">
+                                <label asp-for="WebsiteName" class="form-label">
+                                    <i class="fas fa-globe me-1"></i>نام وب‌سایت
+                                </label>
+                                <input asp-for="WebsiteName" class="form-control" placeholder="نام وب‌سایت خود را وارد کنید" />
+                                <span asp-validation-for="WebsiteName" class="text-danger small"></span>
+                                <div class="form-text">این نام در عنوان صفحات و محتوای وب‌سایت نمایش داده می‌شود</div>
+                            </div>
+
+                            <!-- Company Name -->
+                            <div class="col-12">
+                                <label asp-for="CompanyName" class="form-label">
+                                    <i class="fas fa-building me-1"></i>نام شرکت
+                                </label>
+                                <input asp-for="CompanyName" class="form-control" placeholder="نام شرکت خود را وارد کنید" />
+                                <span asp-validation-for="CompanyName" class="text-danger small"></span>
+                                <div class="form-text">این نام در گزارشات و اسناد چاپی نمایش داده می‌شود</div>
+                            </div>
+
+                            <!-- Company Website -->
+                            <div class="col-12">
+                                <label asp-for="CompanyWebsite" class="form-label">
+                                    <i class="fas fa-link me-1"></i>وب‌سایت شرکت
+                                </label>
+                                <input asp-for="CompanyWebsite" class="form-control" placeholder="https://example.com" type="url" />
+                                <span asp-validation-for="CompanyWebsite" class="text-danger small"></span>
+                                <div class="form-text">آدرس وب‌سایت رسمی شرکت</div>
+                            </div>
+
+                            <!-- Logo Upload -->
+                            <div class="col-12">
+                                <label asp-for="LogoFile" class="form-label">
+                                    <i class="fas fa-image me-1"></i>لوگو جدید
+                                </label>
+                                <input asp-for="LogoFile" class="form-control" type="file" accept="image/*" onchange="previewLogo(this)" />
+                                <span asp-validation-for="LogoFile" class="text-danger small"></span>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    فرمت‌های مجاز: JPG، PNG، GIF، BMP، WebP | حداکثر حجم: 5 مگابایت
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="col-12">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save me-2"></i>ذخیره تغییرات
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye"></i>
+                        پیش‌نمایش لوگو
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="logo-preview-container mb-3">
+                        <img id="logoPreview" src="@Model.LogoUrl" alt="پیش‌نمایش لوگو" class="img-fluid rounded shadow-sm" style="max-height: 200px; max-width: 100%;" />
+                    </div>
+                    <div class="current-logo-info">
+                        @if (!string.IsNullOrEmpty(Model.CurrentLogoPath))
+                        {
+                            <div class="badge bg-success mb-2">
+                                <i class="fas fa-check me-1"></i>لوگو فعلی موجود است
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="badge bg-warning mb-2">
+                                <i class="fas fa-exclamation-triangle me-1"></i>لوگو پیش‌فرض
+                            </div>
+                        }
+                    </div>
+                    <small class="text-muted">
+                        لوگو در تمام صفحات وب‌سایت و گزارشات چاپی نمایش داده می‌شود
+                    </small>
+                </div>
+            </div>
+
+            <!-- Preview of Website Title -->
+            <div class="card mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-desktop me-1"></i>
+                        پیش‌نمایش عنوان
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="website-title-preview p-3 bg-light rounded">
+                        <div class="d-flex align-items-center">
+                            <img id="titleLogoPreview" src="@Model.LogoUrl" alt="لوگو" style="width: 32px; height: 32px;" class="me-2 rounded" />
+                            <span id="websiteNamePreview" class="fw-bold">@Model.WebsiteName</span>
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        این عنوان در نوار بالای مرورگر نمایش داده می‌شود
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Preview logo when file is selected
+        function previewLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    document.getElementById('logoPreview').src = e.target.result;
+                    document.getElementById('titleLogoPreview').src = e.target.result;
+                };
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Update website name preview as user types
+        document.getElementById('@Html.IdFor(m => m.WebsiteName)').addEventListener('input', function(e) {
+            document.getElementById('websiteNamePreview').textContent = e.target.value || 'سامانه معاملات تابان';
+        });
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const logoFile = document.getElementById('@Html.IdFor(m => m.LogoFile)');
+            
+            if (logoFile.files.length > 0) {
+                const file = logoFile.files[0];
+                const maxSize = 5 * 1024 * 1024; // 5MB
+                
+                if (file.size > maxSize) {
+                    e.preventDefault();
+                    alert('حجم فایل لوگو نمی‌تواند بیش از 5 مگابایت باشد.');
+                    return false;
+                }
+                
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    e.preventDefault();
+                    alert('لطفاً فایل تصویری معتبر انتخاب کنید (JPG، PNG، GIF، BMP، WebP).');
+                    return false;
+                }
+            }
+        });
+
+        // Auto-update website name preview on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const websiteNameInput = document.getElementById('@Html.IdFor(m => m.WebsiteName)');
+            if (websiteNameInput.value) {
+                document.getElementById('websiteNamePreview').textContent = websiteNameInput.value;
+            }
+        });
+    </script>
+}
+
+<style>
+    .logo-preview-container {
+        min-height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        background: #f8f9fa;
+    }
+
+    .website-title-preview {
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .website-title-preview:hover {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .card-header {
+        border-bottom: none;
+    }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    .btn-primary {
+        background: linear-gradient(45deg, #0d6efd, #0b5ed7);
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+    }
+</style>

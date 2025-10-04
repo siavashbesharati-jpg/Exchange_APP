@@ -481,15 +481,23 @@
 </head>
 
 <body>
+    @{
+        // Get dynamic branding data for print view
+        await Component.InvokeAsync("Branding");
+        var companyName = ViewData["CompanyName"]?.ToString() ?? "گروه تابان";
+        var companyWebsite = ViewData["CompanyWebsite"]?.ToString() ?? "https://taban-group.com";
+        var logoUrl = ViewData["LogoUrl"]?.ToString() ?? "/favicon/favicon-32x32.png";
+    }
+    
     <div class="receipt-container">
         <!-- Header -->
         <div class="receipt-header">
             <div class="company-logo">
-                <img src="~/favicon/favicon-32x32.png" alt="لوگو گروه تابان" />
+                <img src="@logoUrl" alt="لوگو @companyName" />
             </div>
             <div class="company-info">
-                <div class="company-name">گروه تابان</div>
-                <div class="company-website">https://taban-group.com</div>
+                <div class="company-name">@companyName</div>
+                <div class="company-website">@companyWebsite</div>
             </div>
             <div class="report-title">@Model.ReportTitle</div>
         </div>
@@ -590,11 +598,11 @@
                         <!-- Print Header for each page -->
                         <div class="print-header">
                             <div class="company-logo">
-                                <img src="~/favicon/favicon-32x32.png" alt="لوگو گروه تابان" />
+                                <img src="@logoUrl" alt="لوگو @companyName" />
                             </div>
                             <div class="company-info">
-                                <div class="company-name">گروه تابان</div>
-                                <div class="company-website">https://taban-group.com</div>
+                                <div class="company-name">@companyName</div>
+                                <div class="company-website">@companyWebsite</div>
                             </div>
                             <div class="report-title">@Model.ReportTitle - @currencyGroup.First().CurrencyCode</div>
                         </div>
@@ -705,8 +713,8 @@
             </div>
             <div class="disclaimer">
                 این گزارش به صورت خودکار تولید شده و نیاز به امضا ندارد •
-                صحت اطلاعات با گروه تابان قابل بررسی است •
-                https://taban-group.com
+                صحت اطلاعات با @companyName قابل بررسی است •
+                @companyWebsite
             </div>
         </div>
     </div>

@@ -4,6 +4,7 @@ namespace ForexExchange.Models
 {
     public class SystemSettings
     {
+        [Key]
         public int Id { get; set; }
 
         [Required]
@@ -42,6 +43,12 @@ namespace ForexExchange.Models
         public const string RateUpdateInterval = "RATE_UPDATE_INTERVAL";
         public const string NotificationEnabled = "NOTIFICATION_ENABLED";
         public const string BackupEnabled = "BACKUP_ENABLED";
+
+        // Website Branding Settings
+        public const string WebsiteName = "WEBSITE_NAME";
+        public const string WebsiteLogoPath = "WEBSITE_LOGO_PATH";
+        public const string CompanyName = "COMPANY_NAME";
+        public const string CompanyWebsite = "COMPANY_WEBSITE";
     }
 
     // Settings view model for management interface
@@ -83,5 +90,23 @@ namespace ForexExchange.Models
 
         [Display(Name = "فعال‌سازی پشتیبان‌گیری خودکار")]
         public bool BackupEnabled { get; set; }
+
+        // Website Branding Settings
+        [Display(Name = "نام وب‌سایت")]
+        [StringLength(100, ErrorMessage = "نام وب‌سایت نمی‌تواند بیش از 100 کاراکتر باشد")]
+        public string WebsiteName { get; set; } = "سامانه معاملات تابان";
+
+        [Display(Name = "نام شرکت")]
+        [StringLength(100, ErrorMessage = "نام شرکت نمی‌تواند بیش از 100 کاراکتر باشد")]
+        public string CompanyName { get; set; } = "گروه تابان";
+
+        [Display(Name = "وب‌سایت شرکت")]
+        [StringLength(200, ErrorMessage = "آدرس وب‌سایت نمی‌تواند بیش از 200 کاراکتر باشد")]
+        [Url(ErrorMessage = "لطفاً آدرس وب‌سایت معتبر وارد کنید")]
+        public string CompanyWebsite { get; set; } = "https://taban-group.com";
+
+        [Display(Name = "مسیر لوگو")]
+        [StringLength(500, ErrorMessage = "مسیر لوگو نمی‌تواند بیش از 500 کاراکتر باشد")]
+        public string? LogoPath { get; set; }
     }
 }

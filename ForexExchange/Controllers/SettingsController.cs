@@ -13,12 +13,18 @@ namespace ForexExchange.Controllers
         private readonly ISettingsService _settingsService;
         private readonly ForexDbContext _context;
         private readonly ILogger<SettingsController> _logger;
+        private readonly IFileUploadService _fileUploadService;
 
-        public SettingsController(ISettingsService settingsService, ForexDbContext context, ILogger<SettingsController> logger)
+        public SettingsController(
+            ISettingsService settingsService, 
+            ForexDbContext context, 
+            ILogger<SettingsController> logger,
+            IFileUploadService fileUploadService)
         {
             _settingsService = settingsService;
             _context = context;
             _logger = logger;
+            _fileUploadService = fileUploadService;
         }
 
         // GET: Settings
@@ -242,6 +248,90 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error getting exchange fee rate");
                 return Json(new { success = false, message = "خطا در دریافت کارمزد تبدیل" });
+            }
+        }
+
+        // GET: Settings/Branding
+        public async Task<IActionResult> Branding()
+        {
+            try
+            {
+                var settings = await _settingsService.GetSystemSettingsAsync();
+                var model = new BrandingSettingsViewModel
+                {
+                    WebsiteName = settings.WebsiteName,
+                    CompanyName = settings.CompanyName,
+                    CompanyWebsite = settings.CompanyWebsite,
+                    CurrentLogoPath = settings.LogoPath,
+                    LogoUrl = _fileUploadService.GetLogoUrl(settings.LogoPath)
+                };
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading branding settings");
+                TempData["ErrorMessage"] = "خطا در بارگیری تنظیمات برندینگ.";
+                return View(new BrandingSettingsViewModel());
+            }
+        }
+
+        // POST: Settings/Branding
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Branding(BrandingSettingsViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                // Reload current logo if validation fails
+                var currentSettings = await _settingsService.GetSystemSettingsAsync();
+                model.CurrentLogoPath = currentSettings.LogoPath;
+                model.LogoUrl = _fileUploadService.GetLogoUrl(currentSettings.LogoPath);
+                return View(model);
+            }
+
+            try
+            {
+                var currentUser = User.Identity?.Name ?? "Admin";
+                string? newLogoPath = null;
+
+                // Handle logo upload if provided
+                if (model.LogoFile != null && model.LogoFile.Length > 0)
+                {
+                    var uploadResult = await _fileUploadService.UploadLogoAsync(model.LogoFile, currentUser);
+                    if (!uploadResult.Success)
+                    {
+                        ModelState.AddModelError("LogoFile", uploadResult.Error ?? "خطا در آپلود لوگو");
+                        return View(model);
+                    }
+
+                    newLogoPath = uploadResult.FilePath;
+
+                    // Delete old logo if exists
+                    if (!string.IsNullOrEmpty(model.CurrentLogoPath))
+                    {
+                        await _fileUploadService.DeleteFileAsync(model.CurrentLogoPath);
+                    }
+                }
+
+                // Update branding settings
+                await _settingsService.SetBrandingAsync(
+                    model.WebsiteName, 
+                    model.CompanyName, 
+                    model.CompanyWebsite, 
+                    newLogoPath, 
+                    currentUser);
+
+                TempData["SuccessMessage"] = "تنظیمات برندینگ با موفقیت بروزرسانی شد.";
+                _logger.LogInformation($"Branding settings updated by {currentUser}");
+
+                return RedirectToAction(nameof(Branding));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating branding settings");
+                TempData["ErrorMessage"] = "خطا در بروزرسانی تنظیمات برندینگ.";
+                return View(model);
             }
         }
     }
