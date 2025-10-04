@@ -313,19 +313,22 @@ namespace ForexExchange.Services
         {
             try
             {
-                var rates = new Dictionary<string, decimal>();
-                var currencies = await _context.Currencies
-                    .Where(c => c.IsActive && !c.IsBaseCurrency)
-                    .ToListAsync();
+                // DISABLED: Web scraping for exchange rates
+                // var rates = new Dictionary<string, decimal>();
+                // var currencies = await _context.Currencies
+                //     .Where(c => c.IsActive && !c.IsBaseCurrency)
+                //     .ToListAsync();
 
-                foreach (var currency in currencies)
-                {
-                    var rateResult = await _webScrapingService.GetCurrencyRateAsync(currency.Code);
-                    if (rateResult.HasValue)
-                    {
-                        rates[currency.Code] = rateResult.Value;
-                    }
-                }
+                // foreach (var currency in currencies)
+                // {
+                //     var rateResult = await _webScrapingService.GetCurrencyRateAsync(currency.Code);
+                //     if (rateResult.HasValue)
+                //     {
+                //         rates[currency.Code] = rateResult.Value;
+                //     }
+                // }
+
+                var rates = new Dictionary<string, decimal>(); // Empty rates dictionary
 
                 var exchangeRates = new List<ExchangeRate>();
                 var baseCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.IsBaseCurrency);

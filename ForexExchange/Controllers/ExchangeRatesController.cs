@@ -384,8 +384,14 @@ namespace ForexExchange.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "Admin,Manager,Staff")]
-        public async Task<IActionResult> UpdateFromWeb()
+        public IActionResult UpdateFromWeb()
         {
+            // DISABLED: Web scraping functionality
+            TempData["ErrorMessage"] = "بروزرسانی از وب غیرفعال شده است.";
+            return RedirectToAction(nameof(Manage), new { refresh = DateTime.Now.Ticks });
+        }
+            
+            /* DISABLED CODE:
             try
             {
                 _logger.LogInformation("Starting web scraping update for exchange rates");
@@ -502,7 +508,7 @@ namespace ForexExchange.Controllers
                 TempData["ErrorMessage"] = "خطا در بروزرسانی نرخ‌ها از وب. لطفاً دوباره تلاش کنید.";
             }
             return RedirectToAction(nameof(Manage), new { refresh = DateTime.Now.Ticks });
-        }
+            */
 
         // Upsert cross rates among all non-base currencies using fresh currency->base map
     private async Task UpsertCrossRatesFromBaseAsync(int baseCurrencyId, Dictionary<int, decimal> map)

@@ -98,16 +98,19 @@
                             <button type="submit" class="btn btn-success me-2" onclick="return confirm('آیا می‌خواهید نرخ‌های پایه (ارز→تومان) را بروزرسانی کنید؟')">
                                 بروزرسانی نرخ‌های ارز → تومان
                             </button>
+                            <!-- DISABLED: Web scraping button
                             <button type="button" class="btn btn-primary" onclick="updateFromWeb()" title="بروزرسانی خودکار از وب">
                                 <i class="fas fa-globe"></i> بروزرسانی از وب
                             </button>
+                            -->
                         </div>
                     </form>
                     
-                    <!-- Hidden form for web update -->
+                    <!-- DISABLED: Hidden form for web update
                     <form id="webUpdateForm" asp-action="UpdateFromWeb" method="post" style="display: none;">
                         @Html.AntiForgeryToken()
                     </form>
+                    -->
                 </div>
             </div>
         </div>
@@ -119,7 +122,8 @@
         // Validate sell rate is higher than buy rate
         // No need to validate buy/sell rate difference in single-rate system
 
-        // Function to update rates from web
+        // DISABLED: Function to update rates from web
+        /*
         function updateFromWeb() {
             if (confirm('آیا می‌خواهید نرخ‌ها را از وب بروزرسانی کنید؟\nاین عمل ممکن است چند دقیقه طول بکشد.')) {
                 // Show loading indicator
@@ -140,5 +144,6 @@
                 form.submit();
             }
         }
+        */
     </script>
 }
