@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Services
 {
@@ -60,7 +61,8 @@ namespace ForexExchange.Services
         /// </summary>
         protected string FormatCurrencyAmount(decimal amount)
         {
-            return amount.ToString("N0");
+            // Use unified formatting: IRR truncates decimals, others show 2 decimals
+            return amount.FormatCurrency("IRR");
         }
 
         /// <summary>

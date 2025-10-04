@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Services
 {
@@ -356,8 +357,9 @@ namespace ForexExchange.Services
                 JsonSerializer.Serialize(details),
                 "CurrencyPool",
                 poolId,
-                oldBalance.ToString("N0"),
-                newBalance.ToString("N0")
+                // Use unified formatting - all IRR values truncate decimals
+                oldBalance.FormatCurrency("IRR"),
+                newBalance.FormatCurrency("IRR")
             );
         }
 

@@ -1,21 +1,26 @@
 /**
- * Universal Currency Formatter for Exchange Application
+ * UNIFIED Currency Formatter for Exchange Application
  * 
- * Provides consistent formatting for all currency amounts with:
- * - Comma separation (thousands separators)
- * - IRR: No decimals (whole numbers only)
- * - Non-IRR: 3 decimal places with proper rounding
+ * GLOBAL FORMATTING RULES (NO ROUNDING - ONLY TRUNCATION):
+ * - IRR: Drop all decimal places (truncate) - Example: 234000.534 → 234,000
+ * - Non-IRR: Drop after 2 decimal places (truncate) - Example: 23.4567 → 23.45
+ * 
+ * This is the ONLY frontend formatting script that should be used globally.
+ * Other formatting files have been deprecated:
+ * - currency-amount-formatter.js.DEPRECATED
+ * - auto-currency-display-formatter.js.DEPRECATED  
+ * - currency-form-helper.js.DEPRECATED
  * 
  * Usage: formatCurrency(amount, currencyCode)
- * Example: formatCurrency(1234.567, 'USD') -> "1,234.568"
- * Example: formatCurrency(1234567.89, 'IRR') -> "1,234,568"
+ * Example: formatCurrency(23.4567, 'USD') → "23.45"
+ * Example: formatCurrency(234000.534, 'IRR') → "234,000"
  */
 
 window.ForexCurrencyFormatter = (function() {
     'use strict';
 
     /**
-     * Main currency formatting function
+     * Main currency formatting function - GLOBAL UNIFIED FORMATTER
      * @param {number} amount - The numeric amount to format
      * @param {string} currencyCode - The currency code (e.g., 'IRR', 'USD', 'EUR')
      * @returns {string} Formatted currency string
@@ -34,18 +39,19 @@ window.ForexCurrencyFormatter = (function() {
         
         let result;
         if (isIRR) {
-            // IRR: display value as-is with thousand separators (no decimals)
+            // IRR: truncate all decimal places (no rounding)
+            const truncatedValue = Math.trunc(numAmount);
             result = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
-            }).format(numAmount);
+            }).format(truncatedValue);
         } else {
-            // Non-IRR: show 3 decimal places for rates and amounts (truncated, not rounded)
-            const truncated = Math.floor(numAmount * 1000) / 1000;
+            // Non-IRR: truncate to exactly 2 decimal places (no rounding)
+            const truncatedToTwoDecimals = Math.trunc(numAmount * 100) / 100;
             result = new Intl.NumberFormat('en-US', {
-                minimumFractionDigits: 3,
-                maximumFractionDigits: 3
-            }).format(truncated);
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(truncatedToTwoDecimals);
         }
 
         return result;
@@ -63,9 +69,9 @@ window.ForexCurrencyFormatter = (function() {
     }
 
     /**
-     * Format currency for input fields (no trailing zeros for display)
+     * Format currency for input fields (clean numeric values)
      * @param {number} amount - The numeric amount
-     * @param {string} currencyCode - The currency code
+     * @param name="currencyCode">The currency code
      * @returns {string} Formatted string suitable for input fields
      */
     function formatCurrencyForInput(amount, currencyCode = '') {
@@ -77,12 +83,12 @@ window.ForexCurrencyFormatter = (function() {
         const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
         
         if (isIRR) {
-            // IRR: return value as-is (no rounding - backend handles that)
-            return numAmount.toString();
+            // IRR: truncate all decimal places
+            return Math.trunc(numAmount).toString();
         } else {
-            // For inputs, show up to 3 decimals but remove trailing zeros
-            const rounded = Math.round(numAmount * 1000) / 1000;
-            return rounded.toString();
+            // Non-IRR: truncate to exactly 2 decimal places
+            const truncated = Math.trunc(numAmount * 100) / 100;
+            return truncated.toString();
         }
     }
 
@@ -116,8 +122,8 @@ window.ForexCurrencyFormatter = (function() {
         const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
         
         if (isIRR) {
-            // IRR should be whole numbers
-            return Number.isInteger(parseFloat(amount));
+            // IRR should be whole numbers (after truncation)
+            return Math.trunc(parseFloat(amount)) === parseFloat(amount);
         }
         
         return true; // Non-IRR can have decimals

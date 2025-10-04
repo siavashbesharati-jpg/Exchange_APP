@@ -297,7 +297,12 @@
 
             if (fromAmount && rate && rate > 0) {
                 let toAmount = direction === "divide" ? fromAmount / rate : fromAmount * rate;
-                toAmount = toCode.toUpperCase() === 'IRR' ? Math.round(toAmount) : Math.round(toAmount * 1000) / 1000;
+                // Use unified formatter: IRR = truncate decimals, non-IRR = truncate to 2 decimals
+                if (toCode.toUpperCase() === 'IRR') {
+                    toAmount = Math.trunc(toAmount);
+                } else {
+                    toAmount = Math.trunc(toAmount * 100) / 100;
+                }
                 document.getElementById('calcToAmountInput').value = toAmount;
             } else document.getElementById('calcToAmountInput').value = '';
         }
@@ -310,7 +315,12 @@
 
             if (toAmount && rate && rate > 0) {
                 let fromAmount = direction === "divide" ? toAmount * rate : toAmount / rate;
-                fromAmount = fromCode.toUpperCase() === 'IRR' ? Math.round(fromAmount) : Math.round(fromAmount * 1000) / 1000;
+                // Use unified formatter: IRR = truncate decimals, non-IRR = truncate to 2 decimals
+                if (fromCode.toUpperCase() === 'IRR') {
+                    fromAmount = Math.trunc(fromAmount);
+                } else {
+                    fromAmount = Math.trunc(fromAmount * 100) / 100;
+                }
                 document.getElementById('calcFromAmountInput').value = fromAmount;
             } else document.getElementById('calcFromAmountInput').value = '';
         }

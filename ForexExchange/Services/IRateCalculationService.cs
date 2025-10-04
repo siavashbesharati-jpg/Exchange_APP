@@ -61,13 +61,13 @@ namespace ForexExchange.Services
                 result = fromAmount / rate;
                 // For IRR->Foreign, the target currency gets foreign rounding (3 decimals)
                 // We don't know the target currency here, so we assume it's not IRR
-                return result.RoundToCurrencyDefaults(null); // null means non-IRR (3 decimals)
+                return result.TruncateToCurrencyDefaults(null); // null means non-IRR (2 decimals truncated)
             }
             else
             {
                 result = fromAmount * rate;
                 // For Foreign->IRR, the target currency is IRR, so use IRR rounding (nearest 1000)
-                return result.RoundToCurrencyDefaults("IRR");
+                return result.TruncateToCurrencyDefaults("IRR");
             }
         }
 
@@ -86,7 +86,7 @@ namespace ForexExchange.Services
             }
             
             // Round based on target currency
-            return result.RoundToCurrencyDefaults(toCurrencyCode);
+            return result.TruncateToCurrencyDefaults(toCurrencyCode);
         }
 
         public decimal SafeRound(decimal value, int decimals = 4)

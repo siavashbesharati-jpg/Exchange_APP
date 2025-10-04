@@ -10,31 +10,28 @@ namespace ForexExchange.Extensions
     {
         /// <summary>
         /// Format decimal value with thousand separators based on currency code
+        /// GLOBAL FORMATTING RULE: IRR = no decimals (truncate), non-IRR = 2 decimals (truncate)
         /// </summary>
         /// <param name="value">The decimal value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
         /// <returns>Formatted string with thousand separators</returns>
         public static string FormatCurrency(this decimal value, string? currencyCode = null)
         {
-            // For IRR, display the value as-is with thousand separators (no division)
+            // For IRR, truncate all decimal places and display with thousand separators
             if (currencyCode == "IRR")
             {
-                return value.ToString("N0", CultureInfo.InvariantCulture);
+                var truncatedValue = Math.Truncate(value);
+                return truncatedValue.ToString("N0", CultureInfo.InvariantCulture);
             }
             
-            // For non-IRR currencies, format with up to 8 decimal places and remove trailing zeros.
-            var formatted = value.ToString("N8", CultureInfo.InvariantCulture);
-            
-            if (formatted.Contains('.'))
-            {
-                formatted = formatted.TrimEnd('0').TrimEnd('.');
-            }
-            
-            return formatted;
+            // For non-IRR currencies, truncate to exactly 2 decimal places (no rounding)
+            var truncatedToTwoDecimals = Math.Truncate(value * 100) / 100;
+            return truncatedToTwoDecimals.ToString("N2", CultureInfo.InvariantCulture);
         }
 
         /// <summary>
         /// Format double value with thousand separators based on currency code
+        /// GLOBAL FORMATTING RULE: IRR = no decimals (truncate), non-IRR = 2 decimals (truncate)
         /// </summary>
         /// <param name="value">The double value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
@@ -46,6 +43,7 @@ namespace ForexExchange.Extensions
 
         /// <summary>
         /// Format float value with thousand separators based on currency code
+        /// GLOBAL FORMATTING RULE: IRR = no decimals (truncate), non-IRR = 2 decimals (truncate)
         /// </summary>
         /// <param name="value">The float value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
@@ -98,24 +96,24 @@ namespace ForexExchange.Extensions
         }
 
         /// <summary>
-        /// Rounds a decimal value based on currency-specific rules.
-        /// For IRR, rounds to the nearest 1000. For others, rounds to 3 decimal places.
+        /// Truncate a decimal value based on currency-specific rules (NO ROUNDING).
+        /// For IRR, truncates all decimal places. For others, truncates to 2 decimal places.
         /// This affects the actual value, not just the display format.
         /// </summary>
-        /// <param name="value">The decimal value to round.</param>
+        /// <param name="value">The decimal value to truncate.</param>
         /// <param name="currencyCode">The currency code (e.g., "IRR").</param>
-        /// <returns>The rounded decimal value.</returns>
-        public static decimal RoundToCurrencyDefaults(this decimal value, string? currencyCode)
+        /// <returns>The truncated decimal value.</returns>
+        public static decimal TruncateToCurrencyDefaults(this decimal value, string? currencyCode)
         {
             if (currencyCode == "IRR")
             {
-                // For IRR, round to the nearest 1000 using banker's rounding
-                return Math.Round(value / 1000, 0, MidpointRounding.AwayFromZero) * 1000;
+                // For IRR, truncate all decimal places (no rounding)
+                return Math.Truncate(value);
             }
             else
             {
-                // For other currencies, round to 3 decimal places.
-                return Math.Round(value, 3, MidpointRounding.AwayFromZero);
+                // For other currencies, truncate to exactly 2 decimal places (no rounding)
+                return Math.Truncate(value * 100) / 100;
             }
         }
     }
