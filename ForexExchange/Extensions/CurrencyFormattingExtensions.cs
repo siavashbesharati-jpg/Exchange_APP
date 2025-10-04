@@ -11,6 +11,7 @@ namespace ForexExchange.Extensions
         /// <summary>
         /// Format decimal value with thousand separators based on currency code
         /// GLOBAL FORMATTING RULE: IRR = no decimals (truncate), non-IRR = 2 decimals (truncate)
+        /// Trailing zeros after decimal point are removed: 23.60 → 23.6, 23.00 → 23
         /// </summary>
         /// <param name="value">The decimal value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
@@ -26,12 +27,21 @@ namespace ForexExchange.Extensions
             
             // For non-IRR currencies, truncate to exactly 2 decimal places (no rounding)
             var truncatedToTwoDecimals = Math.Truncate(value * 100) / 100;
-            return truncatedToTwoDecimals.ToString("N2", CultureInfo.InvariantCulture);
+            var formatted = truncatedToTwoDecimals.ToString("N2", CultureInfo.InvariantCulture);
+            
+            // Remove trailing zeros after decimal point: 23.60 → 23.6, 23.00 → 23
+            if (formatted.Contains('.'))
+            {
+                formatted = formatted.TrimEnd('0').TrimEnd('.');
+            }
+            
+            return formatted;
         }
 
         /// <summary>
         /// Format double value with thousand separators based on currency code
         /// GLOBAL FORMATTING RULE: IRR = no decimals (truncate), non-IRR = 2 decimals (truncate)
+        /// Trailing zeros after decimal point are removed: 23.60 → 23.6, 23.00 → 23
         /// </summary>
         /// <param name="value">The double value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>
@@ -44,6 +54,7 @@ namespace ForexExchange.Extensions
         /// <summary>
         /// Format float value with thousand separators based on currency code
         /// GLOBAL FORMATTING RULE: IRR = no decimals (truncate), non-IRR = 2 decimals (truncate)
+        /// Trailing zeros after decimal point are removed: 23.60 → 23.6, 23.00 → 23
         /// </summary>
         /// <param name="value">The float value to format</param>
         /// <param name="currencyCode">Currency code (IRR, USD, EUR, etc.)</param>

@@ -4,6 +4,7 @@
  * GLOBAL FORMATTING RULES (NO ROUNDING - ONLY TRUNCATION):
  * - IRR: Drop all decimal places (truncate) - Example: 234000.534 → 234,000
  * - Non-IRR: Drop after 2 decimal places (truncate) - Example: 23.4567 → 23.45
+ * - Trailing zeros removed: 23.60 → 23.6, 23.00 → 23
  * 
  * This is the ONLY frontend formatting script that should be used globally.
  * Other formatting files have been deprecated:
@@ -12,7 +13,7 @@
  * - currency-form-helper.js.DEPRECATED
  * 
  * Usage: formatCurrency(amount, currencyCode)
- * Example: formatCurrency(23.4567, 'USD') → "23.45"
+ * Example: formatCurrency(23.60, 'USD') → "23.6"
  * Example: formatCurrency(234000.534, 'IRR') → "234,000"
  */
 
@@ -52,6 +53,11 @@ window.ForexCurrencyFormatter = (function() {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(truncatedToTwoDecimals);
+            
+            // Remove trailing zeros after decimal point: 23.60 → 23.6, 23.00 → 23
+            if (result.includes('.')) {
+                result = result.replace(/\.?0+$/, '');
+            }
         }
 
         return result;
