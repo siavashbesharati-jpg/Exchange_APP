@@ -1,0 +1,335 @@
+@{
+    ViewData["Title"] = "گزارش خلاصه صندوق";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-coins text-primary me-2"></i>گزارش خلاصه صندوق</h2>
+                <div class="d-flex align-items-center">
+                    <label for="reportDate" class="form-label me-2 mb-0">تاریخ:</label>
+                    <input type="date" class="form-control me-2" id="reportDate" style="width: auto;">
+                    <button type="button" class="btn btn-primary" onclick="loadPoolSummary()">
+                        <i class="fas fa-search me-1"></i>
+                        جستجو
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Navigation -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-center">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" id="btnPrevDay" onclick="changeDate(-1)">
+                        <i class="fas fa-chevron-right me-1"></i>
+                        روز قبل
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="setToday()">
+                        <i class="fas fa-calendar-day me-1"></i>
+                        امروز
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnNextDay" onclick="changeDate(1)">
+                        روز بعد
+                        <i class="fas fa-chevron-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">در حال بارگذاری...</span>
+        </div>
+        <p class="text-muted">در حال بارگذاری گزارش...</p>
+    </div>
+
+    <!-- Report Content -->
+    <div id="reportContent" class="d-none">
+        <div class="row">
+            <!-- IRR Balance Card -->
+            <div class="col-md-6 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-success text-white text-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-coins me-2"></i>
+                            موجودی صندوق - ریال ایران
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="display-4 text-success mb-3" id="irrAmount">0</div>
+                        <p class="text-muted mb-0">IRR</p>
+                        <hr>
+                        <div class="row">
+                            <div class="col">
+                                <i class="fas fa-calendar-alt text-muted me-1"></i>
+                                <span class="text-muted" id="irrDate">تاریخ گزارش</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OMR Balance Card -->
+            <div class="col-md-6 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-warning text-white text-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-coins me-2"></i>
+                            موجودی صندوق - ریال عمان
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="display-4 text-warning mb-3" id="omrAmount">0</div>
+                        <p class="text-muted mb-0">OMR</p>
+                        <hr>
+                        <div class="row">
+                            <div class="col">
+                                <i class="fas fa-exchange-alt text-muted me-1"></i>
+                                <span class="text-muted">تبدیل شده از ارزهای غیر ریالی</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Info -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            اطلاعات گزارش
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="bg-light rounded p-3">
+                                    <i class="fas fa-calendar text-primary mb-2"></i>
+                                    <p class="mb-1 fw-bold">تاریخ گزارش</p>
+                                    <p class="mb-0 text-muted" id="reportDateDisplay">-</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="bg-light rounded p-3">
+                                    <i class="fas fa-coins text-success mb-2"></i>
+                                    <p class="mb-1 fw-bold">ریال ایران</p>
+                                    <p class="mb-0 text-muted">موجودی مستقیم</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="bg-light rounded p-3">
+                                    <i class="fas fa-exchange-alt text-warning mb-2"></i>
+                                    <p class="mb-1 fw-bold">ریال عمان</p>
+                                    <p class="mb-0 text-muted">تبدیل شده از سایر ارزها</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Data Message -->
+    <div id="noDataMessage" class="text-center py-5 d-none">
+        <div class="mb-4">
+            <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">داده‌ای برای نمایش وجود ندارد</h4>
+            <p class="text-muted mb-4">برای تاریخ انتخاب شده، هیچ موجودی صندوق یافت نشد.</p>
+            <button type="button" class="btn btn-outline-primary" onclick="loadPoolSummary()">
+                <i class="fas fa-refresh me-2"></i>
+                تلاش مجدد
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    console.log('PoolSummaryReport page loaded');
+    
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    $('#reportDate').val(today);
+    
+    // Load report automatically
+    loadPoolSummary();
+    
+    // Update navigation buttons
+    updateNavigationButtons();
+
+    // Load report when date changes
+    $('#reportDate').on('change', function() {
+        loadPoolSummary();
+        updateNavigationButtons();
+    });
+
+    // Load report when Enter is pressed in date input
+    $('#reportDate').on('keypress', function(e) {
+        if (e.which === 13) { // Enter key
+            loadPoolSummary();
+        }
+    });
+
+    // Prevent future dates
+    $('#reportDate').on('change', function() {
+        const selectedDate = new Date($(this).val());
+        const today = new Date();
+        
+        if (selectedDate > today) {
+            const currentDate = new Date($(this).val());
+            if (currentDate <= today) {
+                const newDateStr = currentDate.toISOString().split('T')[0];
+                $(this).val(newDateStr);
+                $(this).trigger('change');
+            }
+        }
+    });
+
+    function loadPoolSummary() {
+        const selectedDate = $('#reportDate').val();
+        console.log('loadPoolSummary called with date:', selectedDate);
+        
+        if (!selectedDate) {
+            showAlert('لطفاً تاریخ را انتخاب کنید', 'warning');
+            return;
+        }
+
+        $('#loadingIndicator').removeClass('d-none');
+        $('#reportContent').addClass('d-none');
+        $('#noDataMessage').addClass('d-none');
+
+        // Update button states
+        $('.btn').prop('disabled', true);
+
+        console.log('Making AJAX request to GetPoolSummaryReport');
+
+        $.ajax({
+            url: '/Reports/GetPoolSummaryReport',
+            type: 'GET',
+            data: { date: selectedDate },
+            success: function(response) {
+                console.log('AJAX success response:', response);
+                $('#loadingIndicator').addClass('d-none');
+                $('.btn').prop('disabled', false);
+                
+                updateNavigationButtons();
+
+                if (response.success && response.data) {
+                    displayPoolSummary(response.data, response.date);
+                    $('#reportContent').removeClass('d-none');
+                } else {
+                    $('#noDataMessage').removeClass('d-none');
+                    showAlert('داده‌ای برای نمایش یافت نشد', 'info');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error - Status:', status, 'Error:', error);
+                console.error('XHR response:', xhr.responseText);
+                $('#loadingIndicator').addClass('d-none');
+                $('.btn').prop('disabled', false);
+                updateNavigationButtons();
+                showAlert('خطا در بارگذاری گزارش. لطفاً دوباره تلاش کنید.', 'danger');
+            }
+        });
+    }
+
+    function displayPoolSummary(data, reportDate) {
+        console.log('Displaying pool summary:', data);
+        
+        // Format and display IRR amount
+        const formattedIRR = formatCurrency(data.irrBalance, 'IRR');
+        $('#irrAmount').text(formattedIRR);
+        
+        // Format and display OMR amount
+        const formattedOMR = formatCurrency(data.omrBalance, 'OMR');
+        $('#omrAmount').text(formattedOMR);
+        
+        // Update dates
+        const formattedDate = formatDate(reportDate);
+        $('#irrDate').text(formattedDate);
+        $('#reportDateDisplay').text(formattedDate);
+    }
+
+    function formatCurrency(amount, currencyCode) {
+        if (currencyCode === 'IRR') {
+            // For IRR: truncate decimal part, remove trailing zeros
+            const truncated = Math.trunc(amount);
+            return new Intl.NumberFormat('fa-IR').format(truncated);
+        } else {
+            // For non-IRR: truncate to 2 decimal places, remove trailing zeros
+            const truncated = Math.trunc(amount * 100) / 100;
+            const formatted = new Intl.NumberFormat('en-US', { 
+                minimumFractionDigits: 0, 
+                maximumFractionDigits: 2 
+            }).format(truncated);
+            return formatted.replace(/\.?0+$/, ''); // Remove trailing zeros
+        }
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fa-IR');
+    }
+
+    function changeDate(days) {
+        const currentDate = new Date($('#reportDate').val());
+        currentDate.setDate(currentDate.getDate() + days);
+        
+        const today = new Date();
+        if (currentDate <= today) {
+            const newDateStr = currentDate.toISOString().split('T')[0];
+            $('#reportDate').val(newDateStr);
+            loadPoolSummary();
+        }
+    }
+
+    function setToday() {
+        const today = new Date().toISOString().split('T')[0];
+        $('#reportDate').val(today);
+        loadPoolSummary();
+    }
+
+    function updateNavigationButtons() {
+        const selectedDate = new Date($('#reportDate').val());
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(selectedDate.getDate() + 1);
+        $('#btnNextDay').prop('disabled', nextDay > today);
+    }
+
+    function showAlert(message, type, duration = 5000) {
+        const alertId = 'alert-' + Date.now();
+        const alertHtml = `
+            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                 style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        $('body').append(alertHtml);
+        
+        setTimeout(function() {
+            $(`#${alertId}`).alert('close');
+        }, duration);
+    }
+
+    // Make functions global for onclick handlers
+    window.loadPoolSummary = loadPoolSummary;
+    window.changeDate = changeDate;
+    window.setToday = setToday;
+});
+</script>
+}

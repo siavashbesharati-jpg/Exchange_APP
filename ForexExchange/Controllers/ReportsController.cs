@@ -57,7 +57,7 @@ namespace ForexExchange.Controllers
 
             // Ensure fromDate starts at 00:00:01
             var fromDateTime = new DateTime(from.Year, from.Month, from.Day, 0, 0, 1);
-            
+
             // Ensure toDate ends at 23:59:00
             var toDateTime = new DateTime(to.Year, to.Month, to.Day, 23, 59, 0);
 
@@ -120,6 +120,12 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/AllCustomersBalances
         public IActionResult AllCustomersBalances()
+        {
+            return View();
+        }
+
+        // GET: Reports/PoolSummaryReport
+        public IActionResult PoolSummaryReport()
         {
             return View();
         }
@@ -719,7 +725,7 @@ namespace ForexExchange.Controllers
                                 transactionRate = order.Rate;
                                 fromCurrency = order.FromCurrency;
                                 toCurrency = order.ToCurrency;
-                                
+
                                 // Add to weighted average calculation with transaction amount as weight
                                 decimal transactionAmount = Math.Abs(h.TransactionAmount);
                                 if (transactionAmount > 0)
@@ -738,7 +744,7 @@ namespace ForexExchange.Controllers
                     {
                         decimal totalWeightedRates = ratesWithAmounts.Sum(x => x.rate * x.amount);
                         decimal totalWeights = ratesWithAmounts.Sum(x => x.amount);
-                        
+
                         if (totalWeights > 0)
                         {
                             weightedAverageRate = totalWeightedRates / totalWeights;
@@ -759,7 +765,7 @@ namespace ForexExchange.Controllers
                         decimal profit = 0;
 
                         // Only calculate profit for Order transactions with valid rates
-                        if (rate.HasValue && rate.Value > 0 && weightedAverageRate > 0 && 
+                        if (rate.HasValue && rate.Value > 0 && weightedAverageRate > 0 &&
                             fromCurrency != null && toCurrency != null)
                         {
                             decimal transactionAmount = Math.Abs(h.TransactionAmount); // Use absolute value for calculation
@@ -788,14 +794,15 @@ namespace ForexExchange.Controllers
                             profit = transactionAmount - reversedAmount;
 
                             // Debug logging to see what's happening
-                            _logger.LogInformation("Profit calc (Weighted Avg): Pool={Pool}, From={From}, To={To}, Selling={Selling}, Amount={Amount}, Rate={Rate}, WeightedAvgRate={WeightedAvgRate}, Converted={Converted}, Reversed={Reversed}, Profit={Profit}", 
+                            _logger.LogInformation("Profit calc (Weighted Avg): Pool={Pool}, From={From}, To={To}, Selling={Selling}, Amount={Amount}, Rate={Rate}, WeightedAvgRate={WeightedAvgRate}, Converted={Converted}, Reversed={Reversed}, Profit={Profit}",
                                 currency.Code, fromCurrency.Code, toCurrency.Code, isSellingFromPool, transactionAmount, rate.Value, weightedAverageRate, convertedAmount, reversedAmount, profit);
 
                         }
 
                         totalDailyProfit += profit;
 
-                        transactions.Add(new {
+                        transactions.Add(new
+                        {
                             time = h.TransactionDate.ToString("HH:mm:ss"),
                             type = h.TransactionType.ToString(),
                             description = h.Description ?? "",
@@ -833,6 +840,122 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error getting pool daily report for date: {Date}", date);
                 return Json(new { success = false, error = "خطا در دریافت گزارش روزانه صندوق" });
+            }
+        }
+
+        // GET: Reports/GetPoolSummaryReport
+        [HttpGet]
+        public async Task<IActionResult> GetPoolSummaryReport(DateTime date)
+        {
+            try
+            {
+                _logger.LogInformation("GetPoolSummaryReport called with date: {Date}", date);
+
+                // Validate date
+                if (date > DateTime.Today)
+                {
+                    return Json(new { error = "تاریخ انتخاب شده نمی‌تواند در آینده باشد" });
+                }
+
+                var endOfDay = date.AddDays(1).AddSeconds(-1);
+
+                // Get all active currencies
+                var currencies = await _context.Currencies
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.DisplayOrder)
+                    .ToListAsync();
+
+                var result = new
+                {
+                    irrBalance = 0m,
+                    omrBalance = 0m,
+                    date = date.ToString("yyyy-MM-dd")
+                };
+
+                decimal totalIRR = 0m;
+                decimal totalOMR = 0m;
+
+                foreach (var currency in currencies)
+                {
+                    // Get latest balance at end of day for this currency
+                    var latestHistory = await _context.CurrencyPoolHistory
+                        .Where(h => h.CurrencyCode == currency.Code && h.TransactionDate <= endOfDay)
+                        .OrderByDescending(h => h.TransactionDate)
+                        .ThenByDescending(h => h.Id)
+                        .FirstOrDefaultAsync();
+
+                    var balance = latestHistory?.BalanceAfter ?? 0;
+
+                    if (balance == 0) continue; // Skip zero balances
+
+                    if (currency.Code == "IRR")
+                    {
+                        totalIRR += balance;
+                    }
+                    else
+                    {
+                        // Convert non-IRR currency to OMR
+                        var convertedToOMR = await ConvertCurrencyToOMR(balance, currency.Code, date);
+                        totalOMR += convertedToOMR;
+                    }
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    date = date.ToString("yyyy-MM-dd"),
+                    data = new
+                    {
+                        irrBalance = totalIRR,
+                        omrBalance = totalOMR
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pool summary report for date: {Date}", date);
+                return Json(new { success = false, error = "خطا در دریافت گزارش خلاصه صندوق" });
+            }
+        }
+
+        private async Task<decimal> ConvertCurrencyToOMR(decimal amount, string fromCurrencyCode, DateTime date)
+        {
+            try
+            {
+                if (fromCurrencyCode == "OMR") return amount; // Already OMR
+
+                // Get exchange rate from database
+                var fromCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == fromCurrencyCode);
+                var omrCurrency = await _context.Currencies.FirstOrDefaultAsync(c => c.Code == "OMR");
+
+                if (fromCurrency == null || omrCurrency == null)
+                {
+                    _logger.LogWarning("Could not find currency for conversion: {FromCurrency} to OMR", fromCurrencyCode);
+                    return 0;
+                }
+
+                // Get the most recent exchange rate on or before the specified date
+                var exchangeRate = await _context.ExchangeRates
+                    .Where(er => ((er.FromCurrencyId == fromCurrency.Id && er.ToCurrencyId == omrCurrency.Id)))
+                    .OrderByDescending(er => er.UpdatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (exchangeRate == null)
+                {
+                    _logger.LogWarning("No exchange rate found for {FromCurrency} to OMR on or before {Date}", fromCurrencyCode, date);
+                    return 0;
+                }
+
+                _logger.LogWarning(" *****   {amount} / {exchangeRate.Rate}", amount, exchangeRate.Rate);
+
+                // Direct conversion: fromCurrency -> OMR
+                return amount * (exchangeRate.Rate);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error converting {Amount} {FromCurrency} to OMR for date {Date}", amount, fromCurrencyCode, date);
+                return 0;
             }
         }
 
@@ -1386,7 +1509,7 @@ namespace ForexExchange.Controllers
                 // Format date range if dates are provided
                 DateTime? formattedFromDate = null;
                 DateTime? formattedToDate = null;
-                
+
                 if (fromDate.HasValue || toDate.HasValue)
                 {
                     var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
@@ -1832,7 +1955,7 @@ namespace ForexExchange.Controllers
                     amount: amount,
                     reason: reason,
                     transactionDate: transactionDate,
-                    performedBy: currentUser?.FullName?? "نامشخص",
+                    performedBy: currentUser?.FullName ?? "نامشخص",
                     performingUserId: currentUser?.Id
                 );
                 var summary = new[]
@@ -1906,8 +2029,8 @@ namespace ForexExchange.Controllers
 
         // GET: Reports/ExportToExcel - Main export routing method
         [HttpGet]
-        public async Task<IActionResult> ExportToExcel(string type, int? customerId = null, int? bankAccountId = null, 
-            string? currencyCode = null, DateTime? fromDate = null, DateTime? toDate = null, 
+        public async Task<IActionResult> ExportToExcel(string type, int? customerId = null, int? bankAccountId = null,
+            string? currencyCode = null, DateTime? fromDate = null, DateTime? toDate = null,
             string? customer = null, string? referenceId = null, decimal? fromAmount = null, decimal? toAmount = null,
             string? bankAccount = null, string? fromCurrency = null, string? toCurrency = null, string? orderStatus = null)
         {
@@ -1950,7 +2073,7 @@ namespace ForexExchange.Controllers
                 // Format date range
                 DateTime? formattedFromDate = null;
                 DateTime? formattedToDate = null;
-                
+
                 if (fromDate.HasValue || toDate.HasValue)
                 {
                     var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
@@ -1960,13 +2083,13 @@ namespace ForexExchange.Controllers
 
                 // Get timeline data
                 var timeline = await _customerHistoryService.GetCustomerTimelineAsync(customerId.Value, formattedFromDate, formattedToDate, currencyCode);
-                
+
                 // Generate Excel file
                 var excelData = _excelExportService.GenerateCustomerTimelineExcel(
-                    customer.FullName, 
-                    timeline.Transactions.Cast<object>().ToList(), 
-                    timeline.FinalBalances, 
-                    formattedFromDate, 
+                    customer.FullName,
+                    timeline.Transactions.Cast<object>().ToList(),
+                    timeline.FinalBalances,
+                    formattedFromDate,
                     formattedToDate);
 
                 var fileName = $"گزارش_مالی_مشتری_{customer.FullName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
@@ -1980,7 +2103,7 @@ namespace ForexExchange.Controllers
         }
 
         // Documents Excel Export
-        private async Task<IActionResult> ExportDocuments(DateTime? fromDate, DateTime? toDate, string? currency, string? customer, 
+        private async Task<IActionResult> ExportDocuments(DateTime? fromDate, DateTime? toDate, string? currency, string? customer,
             string? referenceId, decimal? fromAmount, decimal? toAmount, string? bankAccount)
         {
             try
@@ -2044,10 +2167,10 @@ namespace ForexExchange.Controllers
 
                 // Generate Excel file
                 var excelData = _excelExportService.GenerateDocumentsExcel(
-                    documents.Cast<object>().ToList(), 
-                    fromDateTime, 
-                    toDateTime, 
-                    currency, 
+                    documents.Cast<object>().ToList(),
+                    fromDateTime,
+                    toDateTime,
+                    currency,
                     customer);
 
                 var fileName = $"گزارش_اسناد_حسابداری_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
@@ -2073,7 +2196,7 @@ namespace ForexExchange.Controllers
                 // Format date range
                 DateTime? formattedFromDate = null;
                 DateTime? formattedToDate = null;
-                
+
                 if (fromDate.HasValue || toDate.HasValue)
                 {
                     var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
@@ -2086,9 +2209,9 @@ namespace ForexExchange.Controllers
 
                 // Generate Excel file
                 var excelData = _excelExportService.GeneratePoolTimelineExcel(
-                    currencyCode, 
-                    timeline.Cast<object>().ToList(), 
-                    formattedFromDate, 
+                    currencyCode,
+                    timeline.Cast<object>().ToList(),
+                    formattedFromDate,
                     formattedToDate);
 
                 var fileName = $"گزارش_صندوق_{currencyCode}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
@@ -2109,7 +2232,7 @@ namespace ForexExchange.Controllers
                 // Format date range
                 DateTime? formattedFromDate = null;
                 DateTime? formattedToDate = null;
-                
+
                 if (fromDate.HasValue || toDate.HasValue)
                 {
                     var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
@@ -2199,7 +2322,7 @@ namespace ForexExchange.Controllers
                 // Format date range
                 DateTime? formattedFromDate = null;
                 DateTime? formattedToDate = null;
-                
+
                 if (fromDate.HasValue || toDate.HasValue)
                 {
                     var (fromDateTime, toDateTime) = FormatDateRange(fromDate, toDate);
@@ -2212,9 +2335,9 @@ namespace ForexExchange.Controllers
 
                 // Generate Excel file
                 var excelData = _excelExportService.GenerateBankAccountTimelineExcel(
-                    $"{bankAccount.BankName} - {bankAccount.AccountNumber}", 
-                    timeline.Cast<object>().ToList(), 
-                    formattedFromDate, 
+                    $"{bankAccount.BankName} - {bankAccount.AccountNumber}",
+                    timeline.Cast<object>().ToList(),
+                    formattedFromDate,
                     formattedToDate);
 
                 var fileName = $"گزارش_حساب_بانکی_{bankAccount.BankName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";

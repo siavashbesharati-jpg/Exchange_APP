@@ -78,6 +78,19 @@
             </div>
         </div>
 
+        <!-- Pool Summary Report -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('poolsummary')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-chart-pie text-info"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">گزارش خلاصه صندوق</h5>
+                    <p class="text-muted small">موجودی کل صندوق در IRR و OMR</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Order Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('order')">
@@ -193,6 +206,9 @@ function navigateToReport(type) {
             break;
         case 'pooldaily':
             url = '@Url.Action("PoolDailyReport", "Reports")';
+            break;
+        case 'poolsummary':
+            url = '@Url.Action("PoolSummaryReport", "Reports")';
             break;
         case 'order':
             url = '@Url.Action("OrderReports", "Reports")';
