@@ -332,8 +332,8 @@ namespace ForexExchange.Services
         private string GetOrderNotificationMessage(Order order, string action)
         {
             var customerName = order.Customer?.FullName ?? "مشتری ناشناس";
-            var fromCurrency = order.FromCurrency?.Code ?? "ارز نامشخص";
-            var toCurrency = order.ToCurrency?.Code ?? "ارز نامشخص";
+            var fromCurrency = order.FromCurrency?.PersianName ?? "ارز نامشخص";
+            var toCurrency = order.ToCurrency?.PersianName ?? "ارز نامشخص";
 
             return action switch
             {
