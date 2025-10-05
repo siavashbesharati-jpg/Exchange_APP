@@ -2545,8 +2545,8 @@ namespace ForexExchange.Controllers
                 var poolBalances = await CalculatePoolBalancesForDate(date);
 
                 // Calculate Grand Totals
-                var grandTotalIRR = customerBalances.irrTotal + bankAccountBalances.irrTotal + poolBalances.irrTotal;
-                var grandTotalOMR = customerBalances.omrTotal + bankAccountBalances.omrTotal + poolBalances.omrTotal;
+                var grandTotalIRR = (decimal)customerBalances.irrTotal + (decimal)bankAccountBalances.irrTotal + (decimal)poolBalances.irrTotal;
+                var grandTotalOMR = (decimal)customerBalances.omrTotal + (decimal)bankAccountBalances.omrTotal + (decimal)poolBalances.omrTotal;
 
                 var result = new
                 {
