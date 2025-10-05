@@ -1,7 +1,16 @@
 @model ForexExchange.Models.FinancialReportViewModel
+@inject ForexExchange.Services.ISettingsService SettingsService
+@inject ForexExchange.Services.IFileUploadService FileUploadService
 @{
     ViewData["Title"] = Model.ReportTitle;
     Layout = null; // No layout for print-friendly page
+    
+    // Get dynamic branding data directly from service
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
+    var logoPath = await SettingsService.GetLogoPathAsync();
+    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
 }
 @using ForexExchange.Extensions
 
@@ -11,7 +20,11 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
+    <title>@ViewData["Title"] - @websiteName</title>
+    
+    <!-- Dynamic Favicon -->
+    <link rel="icon" type="image/png" href="@logoUrl">
+    <link rel="shortcut icon" href="@logoUrl">
     <style>
         * {
             margin: 0;
@@ -481,14 +494,6 @@
 </head>
 
 <body>
-    @{
-        // Get dynamic branding data for print view
-        await Component.InvokeAsync("Branding");
-        var companyName = ViewData["CompanyName"]?.ToString() ?? "گروه تابان";
-        var companyWebsite = ViewData["CompanyWebsite"]?.ToString() ?? "https://taban-group.com";
-        var logoUrl = ViewData["LogoUrl"]?.ToString() ?? "/favicon/favicon-32x32.png";
-    }
-    
     <div class="receipt-container">
         <!-- Header -->
         <div class="receipt-header">

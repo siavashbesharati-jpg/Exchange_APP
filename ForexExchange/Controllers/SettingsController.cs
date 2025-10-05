@@ -293,7 +293,7 @@ namespace ForexExchange.Controllers
             try
             {
                 var currentUser = User.Identity?.Name ?? "Admin";
-                string? newLogoPath = null;
+                string? logoPathToSave = null;
 
                 // Handle logo upload if provided
                 if (model.LogoFile != null && model.LogoFile.Length > 0)
@@ -305,7 +305,7 @@ namespace ForexExchange.Controllers
                         return View(model);
                     }
 
-                    newLogoPath = uploadResult.FilePath;
+                    logoPathToSave = uploadResult.FilePath;
 
                     // Delete old logo if exists
                     if (!string.IsNullOrEmpty(model.CurrentLogoPath))
@@ -313,13 +313,18 @@ namespace ForexExchange.Controllers
                         await _fileUploadService.DeleteFileAsync(model.CurrentLogoPath);
                     }
                 }
+                else
+                {
+                    // Keep the current logo path if no new logo is uploaded
+                    logoPathToSave = model.CurrentLogoPath;
+                }
 
                 // Update branding settings
                 await _settingsService.SetBrandingAsync(
                     model.WebsiteName, 
                     model.CompanyName, 
                     model.CompanyWebsite, 
-                    newLogoPath, 
+                    logoPathToSave, 
                     currentUser);
 
                 TempData["SuccessMessage"] = "تنظیمات برندینگ با موفقیت بروزرسانی شد.";

@@ -257,12 +257,10 @@ namespace ForexExchange.Services
                 await SetSettingAsync(SettingKeys.CompanyName, companyName, "نام شرکت", updatedBy);
                 await SetSettingAsync(SettingKeys.CompanyWebsite, companyWebsite, "وب‌سایت شرکت", updatedBy);
                 
-                if (!string.IsNullOrEmpty(logoPath))
-                {
-                    await SetSettingAsync(SettingKeys.WebsiteLogoPath, logoPath, "مسیر لوگو وب‌سایت", updatedBy);
-                }
+                // Always update logo path (even if null) to ensure consistency
+                await SetSettingAsync(SettingKeys.WebsiteLogoPath, logoPath ?? "", "مسیر لوگو وب‌سایت", updatedBy);
 
-                _logger.LogInformation($"Website branding updated by {updatedBy}: Website={websiteName}, Company={companyName}");
+                _logger.LogInformation($"Website branding updated by {updatedBy}: Website={websiteName}, Company={companyName}, Logo={logoPath ?? "default"}");
             }
             catch (Exception ex)
             {

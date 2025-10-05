@@ -1,13 +1,18 @@
-﻿<!DOCTYPE html>
+﻿@inject ForexExchange.Services.ISettingsService SettingsService
+@inject ForexExchange.Services.IFileUploadService FileUploadService
+@{
+    // Get dynamic branding data directly from service
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
+    var logoPath = await SettingsService.GetLogoPathAsync();
+    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
+}
+
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 
 <head>
-    @{
-        // Get dynamic branding data
-        await Component.InvokeAsync("Branding");
-        var websiteName = ViewData["WebsiteName"]?.ToString() ?? "سامانه معاملات تابان";
-        var logoUrl = ViewData["LogoUrl"]?.ToString() ?? "/favicon/android-chrome-512x512.png";
-    }
     
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -62,10 +67,11 @@
     <link rel="stylesheet" href="~/ForexExchange.styles.css" asp-append-version="true" />
 
     <!-- Favicon -->
-    <link rel="apple-touch-icon" sizes="180x180" href="~/favicon/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="~/favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="~/favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="@logoUrl">
+    <link rel="icon" type="image/png" sizes="32x32" href="@logoUrl">
+    <link rel="icon" type="image/png" sizes="16x16" href="@logoUrl">
     <link rel="manifest" href="~/favicon/site.webmanifest">
+    <link rel="shortcut icon" href="@logoUrl">
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
 
@@ -247,6 +253,52 @@
 </head>
 
 <body>
+
+    <!-- Website Header with Logo and Branding -->
+    <header class="bg-white border-bottom shadow-sm mb-4">
+        <div class="container">
+            <div class="row align-items-center py-3">
+                <div class="col-auto">
+                    <img src="@logoUrl" alt="@websiteName" class="logo-img" style="height: 50px; width: auto; object-fit: contain;" />
+                </div>
+                <div class="col">
+                    <h1 class="h4 mb-0 text-primary fw-bold">@websiteName</h1>
+                    <small class="text-muted">@companyName</small>
+                </div>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="col-auto">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>
+                                @User.Identity.Name
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                                {
+                                    <li><a class="dropdown-item" href="@Url.Action("Index", "Settings")">
+                                        <i class="fas fa-cog me-2"></i>تنظیمات
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+                                <li><a class="dropdown-item" href="@Url.Action("Logout", "Account")">
+                                    <i class="fas fa-sign-out-alt me-2"></i>خروج
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="col-auto">
+                        <a href="@Url.Action("Login", "Account")" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i>ورود
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </header>
 
     <!-- Connection Status Indicator -->
     <div id="connectionStatus" class="connection-status">
