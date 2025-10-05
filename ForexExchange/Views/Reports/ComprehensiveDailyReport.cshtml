@@ -1,0 +1,558 @@
+@{
+    ViewData["Title"] = "گزارش جامع روزانه";
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-chart-pie text-primary me-2"></i>گزارش جامع روزانه</h2>
+                <div class="d-flex align-items-center">
+                    <label for="reportDate" class="form-label me-2 mb-0">تاریخ:</label>
+                    <input type="date" class="form-control me-2" id="reportDate" style="width: auto;">
+                    <button type="button" class="btn btn-primary" onclick="loadComprehensiveReport()">
+                        <i class="fas fa-search me-1"></i>
+                        جستجو
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Navigation -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-center">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" id="btnPrevDay" onclick="changeDate(-1)">
+                        <i class="fas fa-chevron-right me-1"></i>
+                        روز قبل
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="setToday()">
+                        <i class="fas fa-calendar-day me-1"></i>
+                        امروز
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnNextDay" onclick="changeDate(1)">
+                        روز بعد
+                        <i class="fas fa-chevron-left ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">در حال بارگذاری...</span>
+        </div>
+        <p class="text-muted">در حال بارگذاری گزارش جامع...</p>
+    </div>
+
+    <!-- Report Content -->
+    <div id="reportContent" class="d-none">
+        <!-- Grand Totals Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="mb-3">
+                    <i class="fas fa-calculator me-2 text-success"></i>
+                    مجموع کل سیستم
+                </h4>
+                <div class="row">
+                    <!-- Total IRR Card -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-success" style="box-shadow: 0 6px 20px rgba(40, 167, 69, 0.2);">
+                            <div class="card-header bg-success text-white text-center">
+                                <h5 class="card-title mb-0 fw-bold">
+                                    <i class="fas fa-coins me-2"></i>
+                                    مجموع کل تومان (IRR)
+                                </h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-success mb-0" id="grandTotalIRR" dir="ltr">0</h2>
+                                <small class="text-muted">تومان</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total OMR Card -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-info" style="box-shadow: 0 6px 20px rgba(23, 162, 184, 0.2);">
+                            <div class="card-header bg-info text-white text-center">
+                                <h5 class="card-title mb-0 fw-bold">
+                                    <i class="fas fa-money-bill-wave me-2"></i>
+                                    مجموع کل ریال عمانی (OMR)
+                                </h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="text-info mb-0" id="grandTotalOMR" dir="ltr">0</h2>
+                                <small class="text-muted">ریال عمانی</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Section -->
+        <div class="row">
+            <div class="col-12">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-bar me-2 text-primary"></i>
+                    جزئیات بخش‌های مختلف
+                </h4>
+                
+                <!-- Customers Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-users me-2"></i>
+                                        موجودی مشتریان
+                                    </h5>
+                                    <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#customerDetails" aria-expanded="false">
+                                        <i class="fas fa-chevron-down"></i>
+                                        جزئیات
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 text-center">
+                                        <h6 class="text-muted">تومان (IRR)</h6>
+                                        <h4 class="text-primary" id="customerIRR" dir="ltr">0</h4>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <h6 class="text-muted">ریال عمانی (OMR)</h6>
+                                        <h4 class="text-primary" id="customerOMR" dir="ltr">0</h4>
+                                    </div>
+                                </div>
+                                
+                                <!-- Collapsible Details -->
+                                <div class="collapse mt-3" id="customerDetails">
+                                    <hr>
+                                    <div id="customerDetailsList">
+                                        <!-- Customer details will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Accounts Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-university me-2"></i>
+                                        موجودی حساب‌های بانکی
+                                    </h5>
+                                    <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#bankAccountDetails" aria-expanded="false">
+                                        <i class="fas fa-chevron-down"></i>
+                                        جزئیات
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 text-center">
+                                        <h6 class="text-muted">تومان (IRR)</h6>
+                                        <h4 class="text-warning" id="bankAccountIRR" dir="ltr">0</h4>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <h6 class="text-muted">ریال عمانی (OMR)</h6>
+                                        <h4 class="text-warning" id="bankAccountOMR" dir="ltr">0</h4>
+                                    </div>
+                                </div>
+                                
+                                <!-- Collapsible Details -->
+                                <div class="collapse mt-3" id="bankAccountDetails">
+                                    <hr>
+                                    <div id="bankAccountDetailsList">
+                                        <!-- Bank account details will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pools Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-coins me-2"></i>
+                                        موجودی صندوق‌ها
+                                    </h5>
+                                    <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#poolDetails" aria-expanded="false">
+                                        <i class="fas fa-chevron-down"></i>
+                                        جزئیات
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 text-center">
+                                        <h6 class="text-muted">تومان (IRR)</h6>
+                                        <h4 class="text-secondary" id="poolIRR" dir="ltr">0</h4>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <h6 class="text-muted">ریال عمانی (OMR)</h6>
+                                        <h4 class="text-secondary" id="poolOMR" dir="ltr">0</h4>
+                                    </div>
+                                </div>
+                                
+                                <!-- Collapsible Details -->
+                                <div class="collapse mt-3" id="poolDetails">
+                                    <hr>
+                                    <div id="poolDetailsList">
+                                        <!-- Pool details will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Data Message -->
+    <div id="noDataMessage" class="text-center py-5 d-none">
+        <div class="mb-4">
+            <i class="fas fa-chart-pie fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">داده‌ای برای نمایش وجود ندارد</h4>
+            <p class="text-muted mb-4">برای تاریخ انتخاب شده، هیچ داده مالی یافت نشد.</p>
+            <button type="button" class="btn btn-outline-primary" onclick="loadComprehensiveReport()">
+                <i class="fas fa-refresh me-2"></i>
+                تلاش مجدد
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log('ComprehensiveDailyReport page loaded');
+
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            $('#reportDate').val(today);
+
+            // Load report automatically
+            loadComprehensiveReport();
+
+            // Update navigation buttons
+            updateNavigationButtons();
+
+            // Load report when date changes
+            $('#reportDate').on('change', function () {
+                loadComprehensiveReport();
+                updateNavigationButtons();
+            });
+
+            // Load report when Enter is pressed in date input
+            $('#reportDate').on('keypress', function (e) {
+                if (e.which === 13) { // Enter key
+                    loadComprehensiveReport();
+                }
+            });
+
+            // Prevent future dates
+            $('#reportDate').on('change', function () {
+                const selectedDate = new Date($(this).val());
+                const today = new Date();
+
+                if (selectedDate > today) {
+                    const currentDate = new Date($(this).val());
+                    if (currentDate <= today) {
+                        const newDateStr = currentDate.toISOString().split('T')[0];
+                        $(this).val(newDateStr);
+                        $(this).trigger('change');
+                    }
+                }
+            });
+
+            function loadComprehensiveReport() {
+                const selectedDate = $('#reportDate').val();
+                console.log('loadComprehensiveReport called with date:', selectedDate);
+
+                if (!selectedDate) {
+                    showAlert('لطفاً تاریخ را انتخاب کنید', 'warning');
+                    return;
+                }
+
+                $('#loadingIndicator').removeClass('d-none');
+                $('#reportContent').addClass('d-none');
+                $('#noDataMessage').addClass('d-none');
+
+                // Update button states
+                $('.btn').prop('disabled', true);
+
+                console.log('Making AJAX request to GetComprehensiveDailyReport');
+
+                $.ajax({
+                    url: '/Reports/GetComprehensiveDailyReport',
+                    type: 'GET',
+                    data: { date: selectedDate },
+                    success: function (response) {
+                        console.log('AJAX success response:', response);
+                        $('#loadingIndicator').addClass('d-none');
+                        $('.btn').prop('disabled', false);
+
+                        updateNavigationButtons();
+
+                        if (response.success && response.data) {
+                            // Update grand totals
+                            $('#grandTotalIRR').text(formatCurrency(response.data.grandTotals.irrTotal, 'IRR'));
+                            $('#grandTotalOMR').text(formatCurrency(response.data.grandTotals.omrTotal, 'OMR'));
+
+                            // Update customer balances
+                            $('#customerIRR').text(formatCurrency(response.data.customers.irrTotal, 'IRR'));
+                            $('#customerOMR').text(formatCurrency(response.data.customers.omrTotal, 'OMR'));
+
+                            // Update bank account balances
+                            $('#bankAccountIRR').text(formatCurrency(response.data.bankAccounts.irrTotal, 'IRR'));
+                            $('#bankAccountOMR').text(formatCurrency(response.data.bankAccounts.omrTotal, 'OMR'));
+
+                            // Update pool balances
+                            $('#poolIRR').text(formatCurrency(response.data.pools.irrTotal, 'IRR'));
+                            $('#poolOMR').text(formatCurrency(response.data.pools.omrTotal, 'OMR'));
+
+                            // Populate details
+                            populateCustomerDetails(response.data.customers.details);
+                            populateBankAccountDetails(response.data.bankAccounts.details);
+                            populatePoolDetails(response.data.pools.details);
+
+                            $('#reportContent').removeClass('d-none');
+                        } else {
+                            $('#noDataMessage').removeClass('d-none');
+                            showAlert('داده‌ای برای نمایش یافت نشد', 'info');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('AJAX error - Status:', status, 'Error:', error);
+                        console.error('XHR response:', xhr.responseText);
+                        $('#loadingIndicator').addClass('d-none');
+                        $('.btn').prop('disabled', false);
+                        updateNavigationButtons();
+                        showAlert('خطا در بارگذاری گزارش جامع. لطفاً دوباره تلاش کنید.', 'danger');
+                    }
+                });
+            }
+
+            function formatCurrency(amount, currencyCode) {
+                console.log(`formatCurrency called with amount: ${amount} (type: ${typeof amount}), currencyCode: ${currencyCode}`);
+
+                if (amount === null || amount === undefined || isNaN(amount)) {
+                    console.log('Amount is null, undefined, or NaN, returning 0');
+                    return '0';
+                }
+
+                const numAmount = parseFloat(amount);
+                console.log(`Parsed amount: ${numAmount}`);
+
+                const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
+
+                let result;
+                if (isIRR) {
+                    // For IRR: truncate decimal part, use English numbers
+                    const truncated = Math.trunc(numAmount);
+                    result = new Intl.NumberFormat('en-US').format(truncated);
+                    console.log(`IRR formatting: ${numAmount} -> ${truncated} -> ${result}`);
+                } else {
+                    // For OMR: show up to 3 decimal places, remove trailing zeros
+                    const formatted = new Intl.NumberFormat('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 3
+                    }).format(numAmount);
+                    result = formatted.replace(/\.0+$/, ''); // Remove trailing zeros after decimal point only
+                    console.log(`OMR formatting: ${numAmount} -> ${formatted} -> ${result}`);
+                }
+
+                console.log(`formatCurrency final result: ${result}`);
+                return result;
+            }
+
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('fa-IR');
+            }
+
+            function changeDate(days) {
+                const currentDate = new Date($('#reportDate').val());
+                currentDate.setDate(currentDate.getDate() + days);
+
+                const today = new Date();
+                if (currentDate <= today) {
+                    const newDateStr = currentDate.toISOString().split('T')[0];
+                    $('#reportDate').val(newDateStr);
+                    loadComprehensiveReport();
+                }
+            }
+
+            function setToday() {
+                const today = new Date().toISOString().split('T')[0];
+                $('#reportDate').val(today);
+                loadComprehensiveReport();
+            }
+
+            function updateNavigationButtons() {
+                const selectedDate = new Date($('#reportDate').val());
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+
+                const nextDay = new Date(selectedDate);
+                nextDay.setDate(selectedDate.getDate() + 1);
+                $('#btnNextDay').prop('disabled', nextDay > today);
+            }
+
+            function showAlert(message, type, duration = 5000) {
+                const alertId = 'alert-' + Date.now();
+                const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+                $('body').append(alertHtml);
+
+                setTimeout(function () {
+                    $(`#${alertId}`).alert('close');
+                }, duration);
+            }
+
+            function populateCustomerDetails(customers) {
+                const container = $('#customerDetailsList');
+                container.empty();
+
+                if (!customers || customers.length === 0) {
+                    container.html('<p class="text-muted text-center">هیچ مشتری با موجودی غیرصفر یافت نشد</p>');
+                    return;
+                }
+
+                customers.forEach(function(customer) {
+                    const currencyBalancesHtml = customer.currencyBalances.map(cb => `
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                            <span class="badge bg-secondary">${cb.currency}</span>
+                            <span dir="ltr">${formatCurrency(cb.balance, cb.currency)}</span>
+                            ${cb.omrEquivalent > 0 ? `<small class="text-muted" dir="ltr">(≈ ${formatCurrency(cb.omrEquivalent, 'OMR')} OMR)</small>` : ''}
+                        </div>
+                    `).join('');
+
+                    const customerHtml = `
+                        <div class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-1">${customer.customerName}</h6>
+                                    <small class="text-muted">${customer.phoneNumber}</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <small class="text-muted">تومان</small>
+                                    <div dir="ltr" class="fw-bold text-primary">${formatCurrency(customer.irrTotal, 'IRR')}</div>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <small class="text-muted">OMR</small>
+                                    <div dir="ltr" class="fw-bold text-primary">${formatCurrency(customer.omrTotal, 'OMR')}</div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">جزئیات ارزها:</small>
+                                ${currencyBalancesHtml}
+                            </div>
+                        </div>
+                    `;
+                    container.append(customerHtml);
+                });
+            }
+
+            function populateBankAccountDetails(bankAccounts) {
+                const container = $('#bankAccountDetailsList');
+                container.empty();
+
+                if (!bankAccounts || bankAccounts.length === 0) {
+                    container.html('<p class="text-muted text-center">هیچ حساب بانکی با موجودی غیرصفر یافت نشد</p>');
+                    return;
+                }
+
+                bankAccounts.forEach(function(account) {
+                    const accountHtml = `
+                        <div class="border rounded p-3 mb-3" style="background-color: #fff8e1;">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6 class="mb-1">${account.bankName}</h6>
+                                    <small class="text-muted">${account.accountNumber}</small>
+                                    <br><small class="text-muted">${account.customerName}</small>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <small class="text-muted">ارز</small>
+                                    <div class="fw-bold">${account.currency}</div>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <small class="text-muted">موجودی</small>
+                                    <div dir="ltr" class="fw-bold text-warning">${formatCurrency(account.balance, account.currency)}</div>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <small class="text-muted">معادل OMR</small>
+                                    <div dir="ltr" class="fw-bold text-warning">${account.omrEquivalent > 0 ? formatCurrency(account.omrEquivalent, 'OMR') : 'N/A'}</div>
+                                </div>
+                            </div>
+                            ${account.transactionDate ? `<div class="mt-2"><small class="text-muted">آخرین تراکنش: ${formatDate(account.transactionDate)}</small></div>` : ''}
+                        </div>
+                    `;
+                    container.append(accountHtml);
+                });
+            }
+
+            function populatePoolDetails(pools) {
+                const container = $('#poolDetailsList');
+                container.empty();
+
+                if (!pools || pools.length === 0) {
+                    container.html('<p class="text-muted text-center">هیچ صندوق ارزی با موجودی غیرصفر یافت نشد</p>');
+                    return;
+                }
+
+                pools.forEach(function(pool) {
+                    const poolHtml = `
+                        <div class="border rounded p-3 mb-3" style="background-color: #f0f0f0;">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6 class="mb-1">${pool.currencyName}</h6>
+                                    <small class="text-muted">${pool.currencyCode}</small>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <small class="text-muted">موجودی صندوق</small>
+                                    <div dir="ltr" class="fw-bold text-secondary">${formatCurrency(pool.balance, pool.currencyCode)}</div>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <small class="text-muted">معادل OMR</small>
+                                    <div dir="ltr" class="fw-bold text-secondary">${pool.omrEquivalent > 0 ? formatCurrency(pool.omrEquivalent, 'OMR') : 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div class="mt-2"><small class="text-muted">آخرین به‌روزرسانی: ${formatDate(pool.transactionDate)}</small></div>
+                        </div>
+                    `;
+                    container.append(poolHtml);
+                });
+            }
+
+            // Make functions global for onclick handlers
+            window.loadComprehensiveReport = loadComprehensiveReport;
+            window.changeDate = changeDate;
+            window.setToday = setToday;
+        });
+    </script>
+}

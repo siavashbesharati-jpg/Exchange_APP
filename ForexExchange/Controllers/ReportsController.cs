@@ -2521,6 +2521,305 @@ namespace ForexExchange.Controllers
 
         #endregion
 
+        // GET: Reports/ComprehensiveDailyReport
+        public IActionResult ComprehensiveDailyReport()
+        {
+            return View();
+        }
+
+        // GET: Reports/GetComprehensiveDailyReport
+        [HttpGet]
+        public async Task<IActionResult> GetComprehensiveDailyReport(DateTime date)
+        {
+            try
+            {
+                _logger.LogInformation("Starting comprehensive daily report for date: {Date}", date);
+
+                // Calculate Customer Balances with details
+                var customerBalances = await CalculateCustomerBalancesForDate(date);
+                
+                // Calculate Bank Account Balances with details
+                var bankAccountBalances = await CalculateBankAccountBalancesForDate(date);
+                
+                // Calculate Pool Balances with details
+                var poolBalances = await CalculatePoolBalancesForDate(date);
+
+                // Calculate Grand Totals
+                var grandTotalIRR = customerBalances.irrTotal + bankAccountBalances.irrTotal + poolBalances.irrTotal;
+                var grandTotalOMR = customerBalances.omrTotal + bankAccountBalances.omrTotal + poolBalances.omrTotal;
+
+                var result = new
+                {
+                    reportDate = date.ToString("yyyy-MM-dd"),
+                    customers = new 
+                    { 
+                        irrTotal = customerBalances.irrTotal, 
+                        omrTotal = customerBalances.omrTotal,
+                        details = customerBalances.details
+                    },
+                    bankAccounts = new 
+                    { 
+                        irrTotal = bankAccountBalances.irrTotal, 
+                        omrTotal = bankAccountBalances.omrTotal,
+                        details = bankAccountBalances.details
+                    },
+                    pools = new 
+                    { 
+                        irrTotal = poolBalances.irrTotal, 
+                        omrTotal = poolBalances.omrTotal,
+                        details = poolBalances.details
+                    },
+                    grandTotals = new { irrTotal = grandTotalIRR, omrTotal = grandTotalOMR }
+                };
+
+                _logger.LogInformation("Comprehensive daily report completed for date: {Date}", date);
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating comprehensive daily report for date: {Date}", date);
+                return Json(new { success = false, message = "خطا در تولید گزارش جامع روزانه" });
+            }
+        }
+
+        private async Task<dynamic> CalculateCustomerBalancesForDate(DateTime date)
+        {
+            decimal irrTotal = 0;
+            decimal omrTotal = 0;
+            var details = new List<object>();
+
+            try
+            {
+                _logger.LogInformation("Calculating customer balances for date: {Date} using CustomerBalanceHistory", date);
+
+                var customers = await _context.Customers
+                    .Where(c => c.IsActive)
+                    .ToListAsync();
+
+                _logger.LogInformation("Found {Count} active customers", customers.Count);
+
+                foreach (var customer in customers)
+                {
+                    // Get customer balance snapshot for the specified date (uses CustomerBalanceHistory internally)
+                    var snapshot = await _customerHistoryService.GetBalanceSnapshotAsync(customer.Id, date);
+                    
+                    decimal customerIrrTotal = 0;
+                    decimal customerOmrTotal = 0;
+                    var currencyBalances = new List<object>();
+                    
+                    foreach (var balance in snapshot.Balances)
+                    {
+                        if (balance.Value != 0) // Only include non-zero balances
+                        {
+                            if (balance.Key == "IRR")
+                            {
+                                irrTotal += balance.Value;
+                                customerIrrTotal += balance.Value;
+                            }
+                            else
+                            {
+                                // Convert to OMR
+                                var omrEquivalent = await ConvertCurrencyToOMR(balance.Value, balance.Key, date);
+                                omrTotal += omrEquivalent;
+                                customerOmrTotal += omrEquivalent;
+                            }
+                            
+                            currencyBalances.Add(new
+                            {
+                                currency = balance.Key,
+                                balance = balance.Value,
+                                omrEquivalent = balance.Key == "IRR" ? 0 : await ConvertCurrencyToOMR(balance.Value, balance.Key, date)
+                            });
+                        }
+                    }
+                    
+                    if (currencyBalances.Any()) // Only add customers with non-zero balances
+                    {
+                        details.Add(new
+                        {
+                            customerId = customer.Id,
+                            customerName = (customer.Gender ? "Mr. " : "Ms. ") + customer.FullName,
+                            phoneNumber = customer.PhoneNumber,
+                            irrTotal = customerIrrTotal,
+                            omrTotal = customerOmrTotal,
+                            currencyBalances,
+                            source = "CustomerBalanceHistory"
+                        });
+                    }
+                }
+
+                _logger.LogInformation("Customer totals from history - IRR: {IRR}, OMR: {OMR}, Details count: {Count}", irrTotal, omrTotal, details.Count);
+                return new { irrTotal, omrTotal, details };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating customer balances for date: {Date}", date);
+                return new { irrTotal = 0m, omrTotal = 0m, details = new List<object>() };
+            }
+        }
+
+        private async Task<dynamic> CalculateBankAccountBalancesForDate(DateTime date)
+        {
+            decimal irrTotal = 0;
+            decimal omrTotal = 0;
+            var details = new List<object>();
+
+            try
+            {
+                _logger.LogInformation("Calculating bank account balances for date: {Date} using BankAccountBalanceHistory", date);
+
+                // First, let's check if we have any bank account balance history records at all
+                var totalRecords = await _context.BankAccountBalanceHistory
+                    .Where(h => !h.IsDeleted)
+                    .CountAsync();
+
+                _logger.LogInformation("Total non-deleted BankAccountBalanceHistory records: {Total}", totalRecords);
+
+                if (totalRecords == 0)
+                {
+                    _logger.LogWarning("No BankAccountBalanceHistory records found! This means no bank account transactions have been processed through the history system.");
+                    
+                    // Let's also check if we have bank accounts at all
+                    var bankAccountsCount = await _context.BankAccounts.CountAsync();
+                    _logger.LogInformation("Total BankAccounts in system: {Count}", bankAccountsCount);
+                    
+                    return new { irrTotal = 0m, omrTotal = 0m, details = new List<object>() };
+                }
+
+                // Check records up to the specified date
+                var recordsUpToDate = await _context.BankAccountBalanceHistory
+                    .Where(h => !h.IsDeleted && h.TransactionDate <= date)
+                    .CountAsync();
+
+                _logger.LogInformation("BankAccountBalanceHistory records up to date {Date}: {Count}", date, recordsUpToDate);
+
+                // Get the latest balance history for each bank account on or before the specified date
+                var latestBalances = await _context.BankAccountBalanceHistory
+                    .Where(h => !h.IsDeleted && h.TransactionDate <= date)
+                    .Include(h => h.BankAccount)
+                        .ThenInclude(ba => ba.Customer)
+                    .GroupBy(h => h.BankAccountId)
+                    .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                                  .ThenByDescending(h => h.Id)
+                                  .First())
+                    .ToListAsync();
+
+                _logger.LogInformation("Found {Count} latest bank account balance records for date {Date}", latestBalances.Count, date);
+
+                foreach (var balanceHistory in latestBalances)
+                {
+                    _logger.LogInformation("Bank Account {BankAccountId} ({AccountNumber}) - Balance: {Balance} on {Date}", 
+                        balanceHistory.BankAccountId, balanceHistory.BankAccount?.AccountNumber, balanceHistory.BalanceAfter, balanceHistory.TransactionDate);
+
+                    // Include all balances, even zero ones, for debugging
+                    var currencyCode = balanceHistory.BankAccount?.CurrencyCode ?? "Unknown";
+                    
+                    // Get currency info for Persian name
+                    var currencyInfo = await _context.Currencies
+                        .Where(c => c.Code == currencyCode)
+                        .FirstOrDefaultAsync();
+                    
+                    if (currencyCode == "IRR")
+                    {
+                        irrTotal += balanceHistory.BalanceAfter;
+                    }
+                    else
+                    {
+                        // Convert to OMR
+                        var omrEquivalent = await ConvertCurrencyToOMR(balanceHistory.BalanceAfter, currencyCode, date);
+                        omrTotal += omrEquivalent;
+                    }
+                    
+                    details.Add(new
+                    {
+                        bankAccountId = balanceHistory.BankAccountId,
+                        accountNumber = balanceHistory.BankAccount?.AccountNumber ?? "N/A",
+                        bankName = balanceHistory.BankAccount?.BankName ?? "N/A",
+                        ownerName = balanceHistory.BankAccount?.Customer?.FullName ?? "N/A",
+                        currencyCode = currencyCode,
+                        currencyName = currencyInfo?.PersianName ?? currencyCode,
+                        balance = balanceHistory.BalanceAfter,
+                        omrEquivalent = currencyCode == "IRR" ? 0 : await ConvertCurrencyToOMR(balanceHistory.BalanceAfter, currencyCode, date),
+                        transactionDate = balanceHistory.TransactionDate,
+                        source = "BankAccountBalanceHistory"
+                    });
+                }
+
+                _logger.LogInformation("Bank account totals from history - IRR: {IRR}, OMR: {OMR}, Details count: {Count}", irrTotal, omrTotal, details.Count);
+                return new { irrTotal, omrTotal, details };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating bank account balances for date: {Date}", date);
+                return new { irrTotal = 0m, omrTotal = 0m, details = new List<object>() };
+            }
+        }
+
+        private async Task<dynamic> CalculatePoolBalancesForDate(DateTime date)
+        {
+            decimal irrTotal = 0;
+            decimal omrTotal = 0;
+            var details = new List<object>();
+
+            try
+            {
+                _logger.LogInformation("Calculating pool balances for date: {Date} using CurrencyPoolHistory", date);
+
+                // Get the latest balance history for each currency pool on or before the specified date
+                var latestBalances = await _context.CurrencyPoolHistory
+                    .Where(h => !h.IsDeleted && h.TransactionDate <= date)
+                    .GroupBy(h => h.CurrencyCode)
+                    .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                                  .ThenByDescending(h => h.Id)
+                                  .First())
+                    .ToListAsync();
+
+                _logger.LogInformation("Found {Count} latest pool balance records for date {Date}", latestBalances.Count, date);
+
+                foreach (var balanceHistory in latestBalances)
+                {
+                    _logger.LogInformation("Currency Pool {Currency} - Balance: {Balance} on {Date}", 
+                        balanceHistory.CurrencyCode, balanceHistory.BalanceAfter, balanceHistory.TransactionDate);
+
+                    if (balanceHistory.BalanceAfter != 0)
+                    {
+                        var currencyInfo = await _context.Currencies
+                            .Where(c => c.Code == balanceHistory.CurrencyCode)
+                            .FirstOrDefaultAsync();
+                            
+                        if (balanceHistory.CurrencyCode == "IRR")
+                        {
+                            irrTotal += balanceHistory.BalanceAfter;
+                        }
+                        else
+                        {
+                            // Convert to OMR
+                            var omrEquivalent = await ConvertCurrencyToOMR(balanceHistory.BalanceAfter, balanceHistory.CurrencyCode, date);
+                            omrTotal += omrEquivalent;
+                        }
+                        
+                        details.Add(new
+                        {
+                            currencyCode = balanceHistory.CurrencyCode,
+                            currencyName = currencyInfo?.PersianName ?? balanceHistory.CurrencyCode,
+                            balance = balanceHistory.BalanceAfter,
+                            omrEquivalent = balanceHistory.CurrencyCode == "IRR" ? 0 : await ConvertCurrencyToOMR(balanceHistory.BalanceAfter, balanceHistory.CurrencyCode, date),
+                            transactionDate = balanceHistory.TransactionDate,
+                            source = "CurrencyPoolHistory"
+                        });
+                    }
+                }
+
+                _logger.LogInformation("Pool totals from history - IRR: {IRR}, OMR: {OMR}, Details count: {Count}", irrTotal, omrTotal, details.Count);
+                return new { irrTotal, omrTotal, details };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating pool balances for date: {Date}", date);
+                return new { irrTotal = 0m, omrTotal = 0m, details = new List<object>() };
+            }
+        }
+
         #region Excel Export Methods
 
         // GET: Reports/ExportToExcel - Main export routing method

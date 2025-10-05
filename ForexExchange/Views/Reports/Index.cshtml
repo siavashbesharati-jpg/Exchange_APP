@@ -132,6 +132,19 @@
             </div>
         </div>
 
+        <!-- Comprehensive Daily Report -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card report-card comprehensive-daily-card h-100 shadow-sm border-0" onclick="navigateToReport('comprehensivedaily')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-calculator text-white"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">گزارش جامع روزانه</h5>
+                    <p class="text-white-50 small">مجموع کل IRR و OMR برای مشتریان، بانک‌ها و صندوق‌ها</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Comprehensive Reports -->
         <div class="col-md-6 col-lg-4">
             <div class="card report-card comprehensive-card h-100 shadow-sm border-0" onclick="navigateToReport('comprehensive')">
@@ -186,6 +199,20 @@
     color: white;
 }
 
+.comprehensive-daily-card {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: 3px solid #20c997;
+}
+
+.comprehensive-daily-card:hover {
+    border-color: #1a9f7b;
+}
+
+.comprehensive-daily-card .card-title {
+    color: white;
+}
+
 @@media (max-width: 768px) {
     .report-card {
         margin-bottom: 1rem;
@@ -237,6 +264,9 @@ function navigateToReport(type) {
             break;
         case 'comprehensive':
             url = '@Url.Action("Comprehensive", "Reports")';
+            break;
+        case 'comprehensivedaily':
+            url = '@Url.Action("ComprehensiveDailyReport", "Reports")';
             break;
         default:
             url = '@Url.Action("CustomerReports", "Reports")';
