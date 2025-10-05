@@ -862,7 +862,7 @@ namespace ForexExchange.Services
                                 "Manual" => CustomerBalanceTransactionType.Manual,
                                 _ => CustomerBalanceTransactionType.AccountingDocument
                             };
-                            var note = $"{transactionType} - مبلغ: {transaction.Amount:N0} {transaction.CurrencyCode}";
+                            var note = $"{transactionType} - مبلغ: {transaction.Amount} {transaction.CurrencyCode}";
                             if (!string.IsNullOrEmpty(transaction.transactionCode))
                                 note += $" - شناسه تراکنش: {transaction.transactionCode}";
 
@@ -1000,14 +1000,14 @@ namespace ForexExchange.Services
                 {
                     // Description includes customer info (from order.Notes)
 
-                    var Description = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                    var Description = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount} {order.FromCurrency?.Code ?? ""} → {order.ToAmount} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate}";
                     if (!string.IsNullOrEmpty(order.Notes))
-                        Description += $" - توضیحات: {order.Notes}";
+                        Description += $" - توضیحات : {order.Notes}";
                     history.Description = Description;
 
 
                     // Note includes transaction details without customer info
-                    var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                    var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount} {order.FromCurrency?.Code ?? ""} → {order.ToAmount} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate}";
                     if (!string.IsNullOrEmpty(order.Notes))
                     {
                         note += $" - توضیحات: {order.Notes}";
@@ -1031,14 +1031,14 @@ namespace ForexExchange.Services
                 {
                     // Description includes customer info (from document.Notes)
 
-                    var Description = $"{document.Title} - مبلغ: {document.Amount:N0} {document.CurrencyCode} - از: {document.PayerDisplayText} → به: {document.ReceiverDisplayText}";
+                    var Description = $"{document.Title} - مبلغ: {document.Amount} {document.CurrencyCode} - از: {document.PayerDisplayText} → به: {document.ReceiverDisplayText}";
                     if (!string.IsNullOrEmpty(document.Description))
                         Description += $" - توضیحات: {document.Description}";
                     history.Description = Description;
 
 
                     // Note includes transaction details without customer info
-                    var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount:N0} {document.CurrencyCode}";
+                    var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount} {document.CurrencyCode}";
                     if (!string.IsNullOrEmpty(document.ReferenceNumber))
                     {
                         note += $" -  شماره تراکنش: {document.ReferenceNumber}";
