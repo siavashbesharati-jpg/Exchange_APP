@@ -295,11 +295,18 @@
             const rate = parseFloat(document.getElementById('calcRateInput').value);
             const toCode = getCurrencyCodeById(document.getElementById('toCurrencySelect').value, 'toCurrencySelect') || '';
 
+            // Only update ToAmount if we have valid inputs for calculation
             if (fromAmount && rate && rate > 0) {
                 let toAmount = direction === "divide" ? fromAmount / rate : fromAmount * rate;
-                toAmount = toCode.toUpperCase() === 'IRR' ? Math.round(toAmount) : Math.round(toAmount * 1000) / 1000;
+                // Use unified formatter: IRR = truncate decimals, non-IRR = truncate to 2 decimals
+                if (toCode.toUpperCase() === 'IRR') {
+                    toAmount = Math.trunc(toAmount);
+                } else {
+                    toAmount = Math.trunc(toAmount * 100) / 100;
+                }
                 document.getElementById('calcToAmountInput').value = toAmount;
-            } else document.getElementById('calcToAmountInput').value = '';
+            }
+            // Don't clear ToAmount if calculation fails - preserve user input
         }
 
         function calculateToAmountChange() {
@@ -308,11 +315,18 @@
             const direction = getCalcDirection();
             const fromCode = getCurrencyCodeById(document.getElementById('fromCurrencySelect').value, 'fromCurrencySelect') || '';
 
+            // Only update FromAmount if we have valid inputs for calculation
             if (toAmount && rate && rate > 0) {
                 let fromAmount = direction === "divide" ? toAmount * rate : toAmount / rate;
-                fromAmount = fromCode.toUpperCase() === 'IRR' ? Math.round(fromAmount) : Math.round(fromAmount * 1000) / 1000;
+                // Use unified formatter: IRR = truncate decimals, non-IRR = truncate to 2 decimals
+                if (fromCode.toUpperCase() === 'IRR') {
+                    fromAmount = Math.trunc(fromAmount);
+                } else {
+                    fromAmount = Math.trunc(fromAmount * 100) / 100;
+                }
                 document.getElementById('calcFromAmountInput').value = fromAmount;
-            } else document.getElementById('calcFromAmountInput').value = '';
+            }
+            // Don't clear FromAmount if calculation fails - preserve user input
         }
 
         function getOrderPreviewData() {
@@ -343,9 +357,22 @@
             $('#fromCurrencySelect,#toCurrencySelect').on('select2:select', function () {
                 $('#calcFromAmountLabel').text($("#fromCurrencySelect").select2('data')[0].text);
                 $('#calcToAmountLabel').text($("#toCurrencySelect").select2('data')[0].text);
-                document.getElementById('calcFromAmountInput').value = '';
-                document.getElementById('calcToAmountInput').value = '';
-                document.getElementById('calcRateInput').value = '';
+                
+                // Only clear values if user is not currently focused on them
+                const activeElement = document.activeElement;
+                const fromAmountInput = document.getElementById('calcFromAmountInput');
+                const toAmountInput = document.getElementById('calcToAmountInput');
+                const rateInput = document.getElementById('calcRateInput');
+                
+                if (activeElement !== fromAmountInput) {
+                    fromAmountInput.value = '';
+                }
+                if (activeElement !== toAmountInput) {
+                    toAmountInput.value = '';
+                }
+                if (activeElement !== rateInput) {
+                    rateInput.value = '';
+                }
 
                 const f = $('#fromCurrencySelect').val();
                 const t = $('#toCurrencySelect').val();

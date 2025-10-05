@@ -125,8 +125,8 @@ namespace ForexExchange.Services
                     customerName = order.Customer?.FullName,
                     action = action,
                     amount = order.FromAmount,
-                    fromCurrency = order.FromCurrency?.Code,
-                    toCurrency = order.ToCurrency?.Code,
+                    fromCurrency = order.FromCurrency?.PersianName,
+                    toCurrency = order.ToCurrency?.PersianName,
                     timestamp = DateTime.Now
                 });
                 
@@ -332,8 +332,8 @@ namespace ForexExchange.Services
         private string GetOrderNotificationMessage(Order order, string action)
         {
             var customerName = order.Customer?.FullName ?? "مشتری ناشناس";
-            var fromCurrency = order.FromCurrency?.Code ?? "ارز نامشخص";
-            var toCurrency = order.ToCurrency?.Code ?? "ارز نامشخص";
+            var fromCurrency = order.FromCurrency?.PersianName ?? "ارز نامشخص";
+            var toCurrency = order.ToCurrency?.PersianName ?? "ارز نامشخص";
 
             return action switch
             {

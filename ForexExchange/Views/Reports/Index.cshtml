@@ -65,18 +65,13 @@
             </div>
         </div>
 
-        <!-- Pool Daily Report -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('pooldaily')">
-                <div class="card-body text-center p-4">
-                    <div class="report-icon mb-3">
-                        <i class="fas fa-calendar-day text-secondary"></i>
-                    </div>
-                    <h5 class="card-title fw-bold">گزارش روزانه صندوق</h5>
-                    <p class="text-muted small">تراکنش‌های روزانه هر ارز در صندوق</p>
-                </div>
-            </div>
-        </div>
+  
+
+     
+
+      
+
+    
 
         <!-- Order Reports -->
         <div class="col-md-6 col-lg-4">
@@ -104,18 +99,20 @@
             </div>
         </div>
 
-        <!-- Comprehensive Reports -->
+        <!-- Comprehensive Daily Report -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card comprehensive-card h-100 shadow-sm border-0" onclick="navigateToReport('comprehensive')">
+            <div class="card report-card comprehensive-daily-card h-100 shadow-sm border-0" onclick="navigateToReport('comprehensivedaily')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
-                        <i class="fas fa-chart-pie text-white"></i>
+                        <i class="fas fa-calculator text-white"></i>
                     </div>
-                    <h5 class="card-title fw-bold">گزارش جامع</h5>
-                    <p class="text-white-50 small">نمای کلی از تمامی فعالیت‌های سیستم</p>
+                    <h5 class="card-title fw-bold">گزارش جامع روزانه</h5>
+                    <p class="text-white-50 small">مجموع کل IRR و OMR برای مشتریان، بانک‌ها و صندوق‌ها</p>
                 </div>
             </div>
         </div>
+
+       
 
     </div>
 </div>
@@ -158,6 +155,20 @@
     color: white;
 }
 
+.comprehensive-daily-card {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: 3px solid #20c997;
+}
+
+.comprehensive-daily-card:hover {
+    border-color: #1a9f7b;
+}
+
+.comprehensive-daily-card .card-title {
+    color: white;
+}
+
 @@media (max-width: 768px) {
     .report-card {
         margin-bottom: 1rem;
@@ -191,8 +202,15 @@ function navigateToReport(type) {
         case 'pool':
             url = '@Url.Action("PoolReports", "Reports")';
             break;
-        case 'pooldaily':
-            url = '@Url.Action("PoolDailyReport", "Reports")';
+      
+        case 'poolsummary':
+            url = '@Url.Action("PoolSummaryReport", "Reports")';
+            break;
+        case 'bankaccountsummary':
+            url = '@Url.Action("BankAccountSummaryReport", "Reports")';
+            break;
+        case 'customersummary':
+            url = '@Url.Action("CustomerSummaryReport", "Reports")';
             break;
         case 'order':
             url = '@Url.Action("OrderReports", "Reports")';
@@ -202,6 +220,9 @@ function navigateToReport(type) {
             break;
         case 'comprehensive':
             url = '@Url.Action("Comprehensive", "Reports")';
+            break;
+        case 'comprehensivedaily':
+            url = '@Url.Action("ComprehensiveDailyReport", "Reports")';
             break;
         default:
             url = '@Url.Action("CustomerReports", "Reports")';

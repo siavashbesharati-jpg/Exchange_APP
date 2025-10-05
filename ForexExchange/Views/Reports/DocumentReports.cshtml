@@ -32,9 +32,7 @@
                     <h2><i class="fas fa-file-invoice text-warning me-2"></i>گزارشات اسناد حسابداری</h2>
                     <p class="text-muted">تحلیل اسناد حسابداری، رسیدها و گزارشات مالی تفصیلی</p>
                 </div>
-                <a href="@Url.Action("Index", "Reports")" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-right me-1"></i>بازگشت به فهرست گزارشات
-                </a>
+               
             </div>
         </div>
     </div>
@@ -203,7 +201,7 @@
     let documentsData = []; // Store documents data for sorting
     let currentSort = { column: null, direction: 'asc' };
     let currentPage = 1;
-    let pageSize = 10;
+    let pageSize = 40;
 
     document.addEventListener('DOMContentLoaded', function () {
         // Don't set default dates - let users choose to filter by date or not

@@ -2,6 +2,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Drawing;
 using ForexExchange.Models;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Services
 {
@@ -89,7 +90,8 @@ namespace ForexExchange.Services
             foreach (var balance in finalBalances.OrderBy(b => b.Key))
             {
                 worksheet.Cells[row, 1].Value = balance.Key;
-                worksheet.Cells[row, 2].Value = balance.Value.ToString("N0");
+                // Use unified formatting - all IRR values truncate decimals
+                worksheet.Cells[row, 2].Value = balance.Value.FormatCurrency("IRR");
                 worksheet.Cells[row, 3].Value = $"جزئیات {balance.Key}";
                 
                 StyleDataRow(worksheet.Cells[row, 1, row, 3]);
@@ -140,7 +142,8 @@ namespace ForexExchange.Services
 
             // Final balance
             worksheet.Cells[row, 1].Value = "موجودی نهایی:";
-            worksheet.Cells[row, 2].Value = finalBalance.ToString("N0");
+            // Use unified formatting - all IRR values truncate decimals
+            worksheet.Cells[row, 2].Value = finalBalance.FormatCurrency("IRR");
             StyleInfoCell(worksheet.Cells[row, 1]);
             StyleInfoCell(worksheet.Cells[row, 2]);
             worksheet.Cells[row, 2].Style.Numberformat.Format = "#,##0";

@@ -55,10 +55,10 @@ namespace ForexExchange.Services
                 return new OrderDataResult { IsSuccess = false, ErrorMessage = "ارز انتخاب شده یافت نشد." };
 
             // Apply currency-specific rounding (same logic for both preview and create)
-            var roundedFromAmount = dto.FromAmount.RoundToCurrencyDefaults(fromCurrency.Code);
-            var roundedToAmount = dto.ToAmount.RoundToCurrencyDefaults(toCurrency.Code);
+            var truncatedFromAmount = dto.FromAmount.TruncateToCurrencyDefaults(fromCurrency.Code);
+            var truncatedToAmount = dto.ToAmount.TruncateToCurrencyDefaults(toCurrency.Code);
 
-            _logger.LogInformation($"[PrepareOrderFromFormData] Applied rounding - FromAmount: {dto.FromAmount} → {roundedFromAmount}, ToAmount: {dto.ToAmount} → {roundedToAmount}");
+            _logger.LogInformation($"[PrepareOrderFromFormData] Applied truncation - FromAmount: {dto.FromAmount} → {truncatedFromAmount}, ToAmount: {dto.ToAmount} → {truncatedToAmount}");
 
             // Create Order object with validated and rounded data
             var order = new Order
@@ -66,8 +66,8 @@ namespace ForexExchange.Services
                 CustomerId = dto.CustomerId,
                 FromCurrencyId = dto.FromCurrencyId,
                 ToCurrencyId = dto.ToCurrencyId,
-                FromAmount = roundedFromAmount,
-                ToAmount = roundedToAmount,  // Use user-entered ToAmount (not calculated)
+                FromAmount = truncatedFromAmount,
+                ToAmount = truncatedToAmount,  // Use user-entered ToAmount (not calculated)
                 Rate = dto.Rate,
                 CreatedAt = dto.CreatedAt ?? DateTime.Now,
                 Notes = dto.Notes,

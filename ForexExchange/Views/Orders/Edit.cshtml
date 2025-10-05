@@ -241,13 +241,13 @@
                             }
                         }
 
-                        // Apply proper precision based on currencies involved
+                        // Apply proper precision based on currencies involved using unified formatting
                         if ((fromCode && fromCode.toUpperCase() === 'IRR') || (toCode && toCode.toUpperCase() === 'IRR')) {
-                            // If IRR is involved, round to whole numbers
-                            displayRate = Math.round(displayRate);
+                            // If IRR is involved, truncate to whole numbers (no rounding)
+                            displayRate = Math.trunc(displayRate);
                         } else {
-                            // If both currencies are non-IRR, preserve 2 decimal places
-                            displayRate = Math.round(displayRate * 100) / 100;
+                            // If both currencies are non-IRR, truncate to 2 decimal places (no rounding)
+                            displayRate = Math.trunc(displayRate * 100) / 100;
                         }
 
 
@@ -278,12 +278,14 @@
                     // FROM is IRR, TO is foreign currency
                     // Display rate shows foreign currency per IRR (inverted), so divide
                     toAmount = fromAmount / rate;
-                    toAmount = Math.round(toAmount * 1000) / 1000;
+                    // Use unified formatting: truncate to 2 decimals for non-IRR
+                    toAmount = Math.trunc(toAmount * 100) / 100;
                 } else if (toCode && toCode.toUpperCase() === 'IRR') {
                     // FROM is foreign currency, TO is IRR
                     // Display rate shows IRR per foreign currency (direct), so multiply
                     toAmount = fromAmount * rate;
-                    toAmount = Math.round(toAmount);
+                    // Use unified formatting: truncate decimals for IRR
+                    toAmount = Math.trunc(toAmount);
                 } else {
                     // Both currencies are non-IRR
                     if (window.calcRateInverted) {
@@ -293,7 +295,8 @@
                         // Rate is direct
                         toAmount = fromAmount * rate;
                     }
-                    toAmount = Math.round(toAmount * 1000) / 1000;
+                    // Use unified formatting: truncate to 2 decimals for non-IRR
+                    toAmount = Math.trunc(toAmount * 100) / 100;
                 }
                 
                 document.getElementById('calcToAmountInput').value = toAmount;
@@ -323,12 +326,14 @@
                     // FROM is IRR, TO is foreign currency
                     // Display rate shows foreign currency per IRR (inverted), so multiply
                     fromAmount = toAmount * rate;
-                    fromAmount = Math.round(fromAmount);
+                    // Use unified formatting: truncate decimals for IRR
+                    fromAmount = Math.trunc(fromAmount);
                 } else if (toCode && toCode.toUpperCase() === 'IRR') {
                     // FROM is foreign currency, TO is IRR
                     // Display rate shows IRR per foreign currency (direct), so divide
                     fromAmount = toAmount / rate;
-                    fromAmount = Math.round(fromAmount * 1000) / 1000;
+                    // Use unified formatting: truncate to 2 decimals for non-IRR
+                    fromAmount = Math.trunc(fromAmount * 100) / 100;
                 } else {
                     // Both currencies are non-IRR
                     if (window.calcRateInverted) {
@@ -338,7 +343,8 @@
                         // Rate is direct, so divide
                         fromAmount = toAmount / rate;
                     }
-                    fromAmount = Math.round(fromAmount * 1000) / 1000;
+                    // Use unified formatting: truncate to 2 decimals for non-IRR
+                    fromAmount = Math.trunc(fromAmount * 100) / 100;
                 }
                 
                 document.getElementById('calcFromAmountInput').value = fromAmount;
@@ -614,16 +620,21 @@
             rateInput.addEventListener('input', function() {
                 var rateValue = parseFloat(this.value);
                 if (!isNaN(rateValue) && rateValue > 0) {
-                    // Get from currency code to determine rounding precision using Select2
+                    // Get from currency code to determine truncation precision using Select2
                     const fromSelect = $('#fromCurrencySelect');
                     let fromCode = null;
                     if (fromSelect.val()) {
                         const fromData = fromSelect.select2('data')[0];
                         fromCode = fromData.text.split(' - ')[0].trim();
                     }
-                    const roundingFactor = (fromCode && fromCode.toUpperCase() === 'IRR') ? 10000000 : 100;
-                    var roundedRate = Math.round(rateValue * roundingFactor) / roundingFactor;
-                    if (roundedRate !== rateValue) { this.value = roundedRate; }
+                    // Use unified formatting: IRR = truncate decimals, non-IRR = truncate to 2 decimals
+                    var truncatedRate;
+                    if (fromCode && fromCode.toUpperCase() === 'IRR') {
+                        truncatedRate = Math.trunc(rateValue);
+                    } else {
+                        truncatedRate = Math.trunc(rateValue * 100) / 100;
+                    }
+                    if (truncatedRate !== rateValue) { this.value = truncatedRate; }
                 }
                 updateCalculation();
             });

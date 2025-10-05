@@ -44,7 +44,7 @@ namespace ForexExchange.Controllers
         // POST: Currencies/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Code,Name,PersianName,Symbol,IsActive,IsBaseCurrency,DisplayOrder,RatePriority")] Currency model)
+        public async Task<IActionResult> Create([Bind("Code,Name,PersianName,Symbol,IsActive,DisplayOrder,RatePriority")] Currency model)
         {
             // Normalize
             model.Code = model.Code?.Trim().ToUpperInvariant() ?? string.Empty;
@@ -57,9 +57,10 @@ namespace ForexExchange.Controllers
                 ModelState.AddModelError("Code", "کد ارز باید یکتا باشد.");
             }
 
-            if (model.IsBaseCurrency && await _context.Currencies.AnyAsync(c => c.IsBaseCurrency))
+            // IRR validation handled separately - only one IRR currency allowed
+            if (model.Code == "IRR" && await _context.Currencies.AnyAsync(c => c.Code == "IRR"))
             {
-                ModelState.AddModelError("IsBaseCurrency", "فقط یک ارز پایه مجاز است.");
+                ModelState.AddModelError("Code", "فقط یک ارز IRR مجاز است.");
             }
 
             if (!ModelState.IsValid)
@@ -88,7 +89,7 @@ namespace ForexExchange.Controllers
         // POST: Currencies/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Code,Name,PersianName,Symbol,IsActive,IsBaseCurrency,DisplayOrder,RatePriority,CreatedAt")] Currency model)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Code,Name,PersianName,Symbol,IsActive,DisplayOrder,RatePriority,CreatedAt")] Currency model)
         {
             if (id != model.Id) return NotFound();
 
@@ -103,15 +104,16 @@ namespace ForexExchange.Controllers
                 ModelState.AddModelError("Code", "کد ارز باید یکتا باشد.");
             }
 
-            if (model.IsBaseCurrency && await _context.Currencies.AnyAsync(c => c.IsBaseCurrency && c.Id != model.Id))
+            // IRR validation handled separately - only one IRR currency allowed
+            if (model.Code == "IRR" && await _context.Currencies.AnyAsync(c => c.Code == "IRR" && c.Id != model.Id))
             {
-                ModelState.AddModelError("IsBaseCurrency", "فقط یک ارز پایه مجاز است.");
+                ModelState.AddModelError("Code", "فقط یک ارز IRR مجاز است.");
             }
 
-            // Prevent deactivating base currency
-            if (!model.IsActive && model.IsBaseCurrency)
+            // Prevent deactivating IRR currency
+            if (!model.IsActive && model.Code == "IRR")
             {
-                ModelState.AddModelError("IsActive", "غیرفعال کردن ارز پایه مجاز نیست.");
+                ModelState.AddModelError("IsActive", "غیرفعال کردن ارز IRR مجاز نیست.");
             }
 
             if (!ModelState.IsValid)
@@ -143,9 +145,9 @@ namespace ForexExchange.Controllers
             var currency = await _context.Currencies.FindAsync(id);
             if (currency == null) return NotFound();
 
-            if (currency.IsBaseCurrency && currency.IsActive == true)
+            if (currency.Code == "IRR" && currency.IsActive == true)
             {
-                TempData["ErrorMessage"] = "غیرفعال کردن ارز پایه مجاز نیست.";
+                TempData["ErrorMessage"] = "غیرفعال کردن ارز IRR مجاز نیست.";
                 return RedirectToAction(nameof(Index));
             }
 

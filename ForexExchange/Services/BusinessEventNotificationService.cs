@@ -66,7 +66,7 @@ namespace ForexExchange.Services
                 var toCurrency = await _context.Currencies.FindAsync(order.ToCurrencyId);
 
                 var title = "🔔 معامله جدید ثبت شد";
-                var body = $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}";
+                var body = $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.PersianName} → {order.ToAmount:N0} {toCurrency?.PersianName}";
 
                 var payload = JsonSerializer.Serialize(new
                 {
@@ -106,7 +106,7 @@ namespace ForexExchange.Services
                 var currency = await _context.Currencies.FindAsync(document.CurrencyCode);
 
                 var title = "📄 سند حسابداری جدید";
-                var body = $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode}";
+                var body = $"{document.Title}: {document.Amount:N0} {currency?.PersianName ?? document.CurrencyCode}";
                 
                 if (payerCustomer != null)
                 {
@@ -195,7 +195,7 @@ namespace ForexExchange.Services
                 var currency = await _context.Currencies.FindAsync(document.CurrencyCode);
 
                 var title = "✅ تأیید سند حسابداری";
-                var body = $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode} تأیید شد";
+                var body = $"{document.Title}: {document.Amount:N0} {currency?.PersianName ?? document.CurrencyCode} تأیید شد";
 
                 var payload = JsonSerializer.Serialize(new
                 {

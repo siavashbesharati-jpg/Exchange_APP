@@ -458,13 +458,13 @@ namespace ForexExchange.Controllers
 
 
                 _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", order.Id);
-
+                _logger.LogInformation($"Order currency : {order.FromCurrency.PersianName}");
                 // Log admin activity and send notifications
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser != null)
                 {
                     await _adminActivityService.LogOrderCreatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-
+                    
                     // Send notifications through central hub (replaces individual notification calls)
                     await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCreated, currentUser.Id);
                 }

@@ -331,14 +331,14 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Comprehensive rebuild of all financial balances based on new IsFrozen strategy:
-        /// - Pool balances rebuilt from non-deleted AND non-frozen orders only with coherent history starting from zero
-        /// - Bank account balances rebuilt from non-deleted AND non-frozen documents only with coherent history starting from zero
+        /// - Pool balances rebuilt from non-deleted AND non-frozen orders only with coherent history
+        /// - Bank account balances rebuilt from non-deleted AND non-frozen documents only with coherent history
         /// - Customer balance history rebuilt from non-deleted orders, documents, and manual records (including frozen orders/documents)
         /// - Active buy/sell counts recalculated properly based on non-frozen orders
         ///
         /// This ensures frozen historical records don't affect current balance calculations
         /// but are preserved for customer balance history audit trail, including manual adjustments.
-        /// Creates coherent balance history chains starting from zero before first non-frozen record.
+        /// Creates coherent balance history chains with proper BalanceBefore/BalanceAfter tracking.
         /// </summary>
         public async Task RebuildAllFinancialBalancesAsync(string performedBy = "System")
         {
@@ -438,9 +438,9 @@ namespace ForexExchange.Services
 
                 logMessages.Add("✓ Reset all balances to zero using bulk updates");
 
-                // STEP 2: Create coherent pool history starting from zero for each currency
+                // STEP 2: Create coherent pool history for each currency
                 logMessages.Add("");
-                logMessages.Add("STEP 2: Creating coherent pool history with zero-starting balance chains...");
+                logMessages.Add("STEP 2: Creating coherent pool history...");
 
                 // Load active orders with required data only (eliminate N+1 queries)
                 var activeOrders = await _context.Orders
@@ -507,26 +507,6 @@ namespace ForexExchange.Services
                     var currencyTransactions = currencyGroup.OrderBy(x => x.TransactionDate).ToList();
 
                     if (!currencyTransactions.Any()) continue;
-
-                    // Find the earliest transaction for this currency
-                    var firstTransaction = currencyTransactions.First();
-                    var zeroDateTime = firstTransaction.TransactionDate.AddMinutes(-1);
-
-                    // Create zero-starting pool history record
-                    poolHistoryRecords.Add(new CurrencyPoolHistory
-                    {
-                        CurrencyCode = currencyCode,
-                        TransactionType = CurrencyPoolTransactionType.ManualEdit,
-                        ReferenceId = null,
-                        BalanceBefore = 0,
-                        TransactionAmount = 0,
-                        BalanceAfter = 0,
-                        Description = "Zero-start balance for coherent history chain (non-frozen records only)",
-                        TransactionDate = zeroDateTime,
-                        CreatedAt = DateTime.UtcNow,
-                        CreatedBy = performedBy,
-                        IsDeleted = false
-                    });
 
                     // Process transactions chronologically for this currency
                     decimal runningBalance = 0;
@@ -612,9 +592,9 @@ namespace ForexExchange.Services
                 await _context.SaveChangesAsync();
                 logMessages.Add($"✓ Created coherent pool history for {currencyGroups.Count} currencies with {activeOrders.Count} active orders");
 
-                // STEP 3: Create coherent bank account balance history starting from zero
+                // STEP 3: Create coherent bank account balance history
                 logMessages.Add("");
-                logMessages.Add("STEP 3: Creating coherent bank account balance history with zero-starting balance chains...");
+                logMessages.Add("STEP 3: Creating coherent bank account balance history...");
 
                 // Load active documents efficiently
                 var activeDocuments = await _context.AccountingDocuments
@@ -687,26 +667,6 @@ namespace ForexExchange.Services
                     var bankTransactions = bankGroup.OrderBy(x => x.TransactionDate).ToList();
 
                     if (!bankTransactions.Any()) continue;
-
-                    // Find the earliest transaction for this bank account
-                    var firstTransaction = bankTransactions.First();
-                    var zeroDateTime = firstTransaction.TransactionDate.AddMinutes(-1);
-
-                    // Create zero-starting bank account balance history record
-                    bankHistoryRecords.Add(new BankAccountBalanceHistory
-                    {
-                        BankAccountId = bankAccountId,
-                        TransactionType = BankAccountTransactionType.ManualEdit,
-                        ReferenceId = null,
-                        BalanceBefore = 0,
-                        TransactionAmount = 0,
-                        BalanceAfter = 0,
-                        Description = "Zero-start balance for coherent history chain (non-frozen records only)",
-                        TransactionDate = zeroDateTime,
-                        CreatedAt = DateTime.UtcNow,
-                        CreatedBy = performedBy,
-                        IsDeleted = false
-                    });
 
                     // Process transactions chronologically for this bank account
                     decimal runningBalance = 0;
@@ -902,7 +862,7 @@ namespace ForexExchange.Services
                                 "Manual" => CustomerBalanceTransactionType.Manual,
                                 _ => CustomerBalanceTransactionType.AccountingDocument
                             };
-                            var note = $"{transactionType} - مبلغ: {transaction.Amount:N0} {transaction.CurrencyCode}";
+                            var note = $"{transactionType} - مبلغ: {transaction.Amount} {transaction.CurrencyCode}";
                             if (!string.IsNullOrEmpty(transaction.transactionCode))
                                 note += $" - شناسه تراکنش: {transaction.transactionCode}";
 
@@ -980,7 +940,7 @@ namespace ForexExchange.Services
                 logMessages.Add("");
                 logMessages.Add("=== REBUILD COMPLETED SUCCESSFULLY ===");
                 logMessages.Add($"Finished at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                logMessages.Add("✅ All balance histories now start from zero with coherent balance chains");
+                logMessages.Add("✅ All balance histories rebuilt with coherent balance chains");
                 logMessages.Add("✅ Active buy/sell counts recalculated based on non-frozen orders only");
                 logMessages.Add("✅ Frozen records excluded from pool/bank calculations but included in customer history");
                 logMessages.Add("✅ Manual customer balance adjustments preserved in complete customer history");
@@ -1040,14 +1000,14 @@ namespace ForexExchange.Services
                 {
                     // Description includes customer info (from order.Notes)
 
-                    var Description = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                    var Description = $"معامله {order.CurrencyPair} - مشتری: {order.Customer?.FullName ?? "نامشخص"} - مقدار: {order.FromAmount} {order.FromCurrency?.Code ?? ""} → {order.ToAmount} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate}";
                     if (!string.IsNullOrEmpty(order.Notes))
-                        Description += $" - توضیحات: {order.Notes}";
+                        Description += $" - توضیحات : {order.Notes}";
                     history.Description = Description;
 
 
                     // Note includes transaction details without customer info
-                    var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount:N0} {order.FromCurrency?.Code ?? ""} → {order.ToAmount:N0} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate:N4}";
+                    var note = $"{order.CurrencyPair} - مقدار: {order.FromAmount} {order.FromCurrency?.Code ?? ""} → {order.ToAmount} {order.ToCurrency?.Code ?? ""} - نرخ: {order.Rate}";
                     if (!string.IsNullOrEmpty(order.Notes))
                     {
                         note += $" - توضیحات: {order.Notes}";
@@ -1071,14 +1031,14 @@ namespace ForexExchange.Services
                 {
                     // Description includes customer info (from document.Notes)
 
-                    var Description = $"{document.Title} - مبلغ: {document.Amount:N0} {document.CurrencyCode} - از: {document.PayerDisplayText} → به: {document.ReceiverDisplayText}";
+                    var Description = $"{document.Title} - مبلغ: {document.Amount} {document.CurrencyCode} - از: {document.PayerDisplayText} → به: {document.ReceiverDisplayText}";
                     if (!string.IsNullOrEmpty(document.Description))
                         Description += $" - توضیحات: {document.Description}";
                     history.Description = Description;
 
 
                     // Note includes transaction details without customer info
-                    var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount:N0} {document.CurrencyCode}";
+                    var note = $"{document.Type.GetDisplayName()} - مبلغ: {document.Amount} {document.CurrencyCode}";
                     if (!string.IsNullOrEmpty(document.ReferenceNumber))
                     {
                         note += $" -  شماره تراکنش: {document.ReferenceNumber}";

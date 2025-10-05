@@ -78,7 +78,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IBankStatementService, BankStatementService>();
 builder.Services.AddScoped<ICurrencyPoolService, CurrencyPoolService>();
 builder.Services.AddScoped<IDataSeedService, DataSeedService>();
-builder.Services.AddScoped<IWebScrapingService, WebScrapingService>();
+// DISABLED: Web scraping service - using null implementation
+builder.Services.AddScoped<IWebScrapingService>(provider => new NullWebScrapingService());
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IRateCalculationService, RateCalculationService>();
 builder.Services.AddScoped<CustomerDebtCreditService>();

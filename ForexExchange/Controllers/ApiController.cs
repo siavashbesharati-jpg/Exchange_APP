@@ -117,7 +117,7 @@ namespace ForexExchange.Controllers
                     {
                         // Try cross-rate via base currency (IRR)
                         var baseCurrencyId = await _context.Currencies
-                            .Where(c => c.IsBaseCurrency)
+                            .Where(c => c.Code == "IRR")
                             .Select(c => c.Id)
                             .FirstOrDefaultAsync();
 
