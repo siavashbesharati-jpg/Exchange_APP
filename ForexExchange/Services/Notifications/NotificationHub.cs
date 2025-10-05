@@ -229,7 +229,7 @@ namespace ForexExchange.Services.Notifications
 
             var message = eventType switch
             {
-                NotificationEventType.OrderCreated => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.Symbol} → {order.ToAmount:N0} {toCurrency?.Symbol}",
+                NotificationEventType.OrderCreated => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"}: {order.FromAmount:N0} {fromCurrency?.PersianName} → {order.ToAmount:N0} {toCurrency?.PersianName}",
                 NotificationEventType.OrderDeleted => $"معامله #{order.Id} برای {customer?.FullName ?? "نامعلوم"} لغو شد",
                 _ => $"رویداد معامله #{order.Id}"
             };
@@ -268,8 +268,8 @@ namespace ForexExchange.Services.Notifications
                     ["customerId"] = order.CustomerId,
                     ["amount"] = order.FromAmount,
                     ["totalAmount"] = order.ToAmount,
-                    ["fromCurrency"] = fromCurrency?.Symbol ?? "",
-                    ["toCurrency"] = toCurrency?.Symbol ?? "",
+                    ["fromCurrency"] = fromCurrency?.PersianName ?? "",
+                    ["toCurrency"] = toCurrency?.PersianName ?? "",
                     ["oldStatus"] = oldStatus ?? "",
                     ["newStatus"] = newStatus ?? ""
                 }
@@ -292,9 +292,9 @@ namespace ForexExchange.Services.Notifications
 
             var message = eventType switch
             {
-                NotificationEventType.AccountingDocumentCreated => $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode}",
-                NotificationEventType.AccountingDocumentVerified => $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode} تأیید شد",
-                NotificationEventType.AccountingDocumentDeleted => $"{document.Title}: {document.Amount:N0} {currency?.Symbol ?? document.CurrencyCode} حذف شد",
+                NotificationEventType.AccountingDocumentCreated => $"{document.Title}: {document.Amount:N0} {currency?.PersianName ?? document.CurrencyCode}",
+                NotificationEventType.AccountingDocumentVerified => $"{document.Title}: {document.Amount:N0} {currency?.PersianName ?? document.CurrencyCode} تأیید شد",
+                NotificationEventType.AccountingDocumentDeleted => $"{document.Title}: {document.Amount:N0} {currency?.PersianName ?? document.CurrencyCode} حذف شد",
                 _ => $"رویداد سند #{document.Id}"
             };
 

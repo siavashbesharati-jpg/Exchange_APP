@@ -125,8 +125,8 @@ namespace ForexExchange.Services
                     customerName = order.Customer?.FullName,
                     action = action,
                     amount = order.FromAmount,
-                    fromCurrency = order.FromCurrency?.Code,
-                    toCurrency = order.ToCurrency?.Code,
+                    fromCurrency = order.FromCurrency?.PersianName,
+                    toCurrency = order.ToCurrency?.PersianName,
                     timestamp = DateTime.Now
                 });
                 
