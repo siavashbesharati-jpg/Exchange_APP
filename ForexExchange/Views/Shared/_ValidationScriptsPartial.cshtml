@@ -1,2 +1,24 @@
-<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
-<script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+<script>
+// Ensure jQuery is loaded before validation scripts
+(function() {
+    function loadValidationScripts() {
+        if (typeof jQuery !== 'undefined') {
+            // jQuery is available, load validation scripts
+            var validationScript = document.createElement('script');
+            validationScript.src = '@Url.Content("~/lib/jquery-validation/dist/jquery.validate.min.js")';
+            validationScript.onload = function() {
+                var unobtrusiveScript = document.createElement('script');
+                unobtrusiveScript.src = '@Url.Content("~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js")';
+                document.head.appendChild(unobtrusiveScript);
+            };
+            document.head.appendChild(validationScript);
+        } else {
+            // jQuery not yet available, wait and try again
+            setTimeout(loadValidationScripts, 100);
+        }
+    }
+    
+    // Start checking for jQuery
+    loadValidationScripts();
+})();
+</script>
