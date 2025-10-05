@@ -2711,8 +2711,10 @@ namespace ForexExchange.Controllers
                     _logger.LogInformation("Bank Account {BankAccountId} ({AccountNumber}) - Balance: {Balance} on {Date}", 
                         balanceHistory.BankAccountId, balanceHistory.BankAccount?.AccountNumber, balanceHistory.BalanceAfter, balanceHistory.TransactionDate);
 
-                    // Include all balances, even zero ones, for debugging
-                    var currencyCode = balanceHistory.BankAccount?.CurrencyCode ?? "Unknown";
+                    // Ensure currency code is not null or empty
+                    var currencyCode = !string.IsNullOrEmpty(balanceHistory.BankAccount?.CurrencyCode) 
+                        ? balanceHistory.BankAccount.CurrencyCode 
+                        : "IRR"; // Default to IRR if not specified
                     
                     // Get currency info for Persian name
                     var currencyInfo = await _context.Currencies
@@ -2735,8 +2737,8 @@ namespace ForexExchange.Controllers
                         bankAccountId = balanceHistory.BankAccountId,
                         accountNumber = balanceHistory.BankAccount?.AccountNumber ?? "N/A",
                         bankName = balanceHistory.BankAccount?.BankName ?? "N/A",
-                        ownerName = balanceHistory.BankAccount?.Customer?.FullName ?? "N/A",
-                        currencyCode = currencyCode,
+                        customerName = balanceHistory.BankAccount?.Customer?.FullName ?? "N/A", // Fixed field name
+                        currency = currencyCode, // Fixed field name
                         currencyName = currencyInfo?.PersianName ?? currencyCode,
                         balance = balanceHistory.BalanceAfter,
                         omrEquivalent = currencyCode == "IRR" ? 0 : await ConvertCurrencyToOMR(balanceHistory.BalanceAfter, currencyCode, date),
