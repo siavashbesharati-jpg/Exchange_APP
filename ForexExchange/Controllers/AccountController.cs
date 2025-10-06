@@ -14,16 +14,20 @@ namespace ForexExchange.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ForexDbContext _context;
 
+        private readonly ISettingsService _settingsService;
+
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager,
+            ISettingsService settingsService,
             ForexDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _context = context;
+            _settingsService = settingsService;
         }
 
         // GET: /Account/Register
@@ -157,9 +161,21 @@ namespace ForexExchange.Controllers
         }
 
         // GET: /Account/Login
-        public IActionResult Login(string? returnUrl = null)
+        public async Task<IActionResult> Login(string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
+            var setting = await _settingsService.GetSystemSettingsAsync();
+            ViewData["WebsiteName"] = setting.WebsiteName;
+            if (setting.IsDemoMode)
+            {
+                var model = new LoginViewModel()
+                {
+                    PhoneNumber = "09120674032",
+                    Password = "09120674032"
+                };
+                return View(model);
+
+            }
             return View();
         }
 
@@ -187,13 +203,13 @@ namespace ForexExchange.Controllers
                     var existingFullNameClaim = userClaims.FirstOrDefault(c => c.Type == "FullName");
 
                     var fullNameValue = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : (user.UserName ?? "کاربر");
-                    
+
                     if (existingFullNameClaim != null)
                     {
                         // Remove old claim and add updated one
                         await _userManager.RemoveClaimAsync(user, existingFullNameClaim);
                     }
-                    
+
                     await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FullName", fullNameValue));
 
                     var result = await _signInManager.PasswordSignInAsync(
