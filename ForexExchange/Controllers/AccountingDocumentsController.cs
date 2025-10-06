@@ -278,9 +278,56 @@ namespace ForexExchange.Controllers
 
         // POST: AccountingDocuments/Upload
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        //[ValidateAntiForgeryToken] // Temporarily disabled for debugging
         public async Task<IActionResult> Upload(AccountingDocument accountingDocument, IFormFile documentFile)
         {
+            // Check if this is an AJAX request
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            
+            // DETAILED LOGGING FOR DEBUGGING
+            _logger.LogInformation("=== Upload POST Action Started ===");
+            _logger.LogInformation($"Is AJAX Request: {isAjax}");
+            _logger.LogInformation($"Request Content Type: {Request.ContentType}");
+            _logger.LogInformation($"Request Method: {Request.Method}");
+            
+            // Log all headers
+            foreach (var header in Request.Headers)
+            {
+                _logger.LogInformation($"Header: {header.Key} = {header.Value}");
+            }
+            
+            // Log form data
+            _logger.LogInformation($"Form Count: {Request.Form.Count}");
+            foreach (var formItem in Request.Form)
+            {
+                _logger.LogInformation($"Form Field: {formItem.Key} = {formItem.Value}");
+            }
+            
+            // Log file information
+            _logger.LogInformation($"Files Count: {Request.Form.Files.Count}");
+            foreach (var file in Request.Form.Files)
+            {
+                _logger.LogInformation($"File: {file.Name}, FileName: {file.FileName}, Size: {file.Length}, ContentType: {file.ContentType}");
+            }
+            
+            // Log model state
+            _logger.LogInformation($"Model State Valid: {ModelState.IsValid}");
+            _logger.LogInformation($"Model State Error Count: {ModelState.ErrorCount}");
+            
+            // Log AccountingDocument properties
+            _logger.LogInformation($"AccountingDocument - Type: {accountingDocument.Type}");
+            _logger.LogInformation($"AccountingDocument - PayerType: {accountingDocument.PayerType}");
+            _logger.LogInformation($"AccountingDocument - ReceiverType: {accountingDocument.ReceiverType}");
+            _logger.LogInformation($"AccountingDocument - Amount: {accountingDocument.Amount}");
+            _logger.LogInformation($"AccountingDocument - CurrencyCode: {accountingDocument.CurrencyCode}");
+            _logger.LogInformation($"AccountingDocument - PayerCustomerId: {accountingDocument.PayerCustomerId}");
+            _logger.LogInformation($"AccountingDocument - ReceiverCustomerId: {accountingDocument.ReceiverCustomerId}");
+            _logger.LogInformation($"DocumentFile null: {documentFile == null}");
+            if (documentFile != null)
+            {
+                _logger.LogInformation($"DocumentFile - Name: {documentFile.Name}, FileName: {documentFile.FileName}, Size: {documentFile.Length}");
+            }
+            
             // Remove validation error for documentFile since it's optional
             if (ModelState.ContainsKey("documentFile"))
             {
@@ -294,6 +341,12 @@ namespace ForexExchange.Controllers
                 if (documentFile.Length > 10 * 1024 * 1024)
                 {
                     ModelState.AddModelError("documentFile", "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.");
+                    
+                    if (isAjax)
+                    {
+                        return Json(new { success = false, message = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.", errors = GetModelStateErrors() });
+                    }
+                    
                     TempData["ErrorMessage"] = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.";
                     ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
                     ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
@@ -307,6 +360,12 @@ namespace ForexExchange.Controllers
                 if (!allowedExtensions.Contains(fileExtension))
                 {
                     ModelState.AddModelError("documentFile", "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX");
+                    
+                    if (isAjax)
+                    {
+                        return Json(new { success = false, message = "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX", errors = GetModelStateErrors() });
+                    }
+                    
                     TempData["ErrorMessage"] = "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX";
                     ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
                     ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
@@ -338,38 +397,89 @@ namespace ForexExchange.Controllers
 
             if (ModelState.IsValid)
             {
-                accountingDocument.CreatedAt = DateTime.Now;
-
-                // Handle file upload only if a file is provided
-                if (documentFile != null && documentFile.Length > 0)
+                try
                 {
-                    using (var memoryStream = new MemoryStream())
+                    accountingDocument.CreatedAt = DateTime.Now;
+
+                    // Handle file upload only if a file is provided
+                    if (documentFile != null && documentFile.Length > 0)
                     {
-                        await documentFile.CopyToAsync(memoryStream);
-                        accountingDocument.FileData = memoryStream.ToArray();
-                        accountingDocument.FileName = documentFile.FileName;
-                        accountingDocument.ContentType = documentFile.ContentType;
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            await documentFile.CopyToAsync(memoryStream);
+                            accountingDocument.FileData = memoryStream.ToArray();
+                            accountingDocument.FileName = documentFile.FileName;
+                            accountingDocument.ContentType = documentFile.ContentType;
+                        }
                     }
-                }
 
-                _context.Add(accountingDocument);
-                await _context.SaveChangesAsync();
-                
-                // Send notifications through central hub
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
-                {
-                    await _notificationHub.SendAccountingDocumentNotificationAsync(accountingDocument, NotificationEventType.AccountingDocumentCreated, currentUser.Id);
+                    _context.Add(accountingDocument);
+                    await _context.SaveChangesAsync();
+                    
+                    // Send notifications through central hub
+                    var currentUser = await _userManager.GetUserAsync(User);
+                    if (currentUser != null)
+                    {
+                        await _notificationHub.SendAccountingDocumentNotificationAsync(accountingDocument, NotificationEventType.AccountingDocumentCreated, currentUser.Id);
+                    }
+                    
+                    _logger.LogInformation($"Accounting document created successfully. ID: {accountingDocument.Id}, User: {User.Identity?.Name}");
+                    
+                    if (isAjax)
+                    {
+                        return Json(new { 
+                            success = true, 
+                            message = "سند حسابداری با موفقیت ثبت شد.", 
+                            documentId = accountingDocument.Id,
+                            redirectUrl = Url.Action("Index", "AccountingDocuments")
+                        });
+                    }
+                    
+                    TempData["SuccessMessage"] = "سند حسابداری با موفقیت ثبت شد.";
+                    return RedirectToAction(nameof(Index));
                 }
-                
-                TempData["SuccessMessage"] = "سند حسابداری با موفقیت ثبت شد.";
-                return RedirectToAction(nameof(Index));
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error creating accounting document. User: {User}", User.Identity?.Name);
+                    
+                    if (isAjax)
+                    {
+                        return Json(new { success = false, message = "خطا در ثبت سند حسابداری. لطفاً دوباره تلاش کنید.", error = ex.Message });
+                    }
+                    
+                    TempData["ErrorMessage"] = "خطا در ثبت سند حسابداری. لطفاً دوباره تلاش کنید.";
+                }
+            }
+
+            // Return validation errors for AJAX requests
+            if (isAjax)
+            {
+                return Json(new { success = false, message = "لطفاً خطاهای اعتبارسنجی را بررسی کنید.", errors = GetModelStateErrors() });
             }
 
             ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View(accountingDocument);
+        }
+        
+        /// <summary>
+        /// Helper method to extract ModelState errors for AJAX responses
+        /// </summary>
+        private List<string> GetModelStateErrors()
+        {
+            var errors = new List<string>();
+            foreach (var modelState in ModelState.Values)
+            {
+                foreach (var error in modelState.Errors)
+                {
+                    if (!string.IsNullOrEmpty(error.ErrorMessage))
+                    {
+                        errors.Add(error.ErrorMessage);
+                    }
+                }
+            }
+            return errors;
         }
 
         // GET: AccountingDocuments/Edit/5

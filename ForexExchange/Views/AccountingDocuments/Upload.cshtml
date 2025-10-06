@@ -1451,16 +1451,350 @@
             }
         }
 
-        // Confirm submit button handler
+        // Confirm submit button handler - AJAX Implementation
         document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
-            // Hide modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
-            modal.hide();
-
-            // Submit the original form directly (preserves all values)
+            console.log('=== AJAX Form Submission Started ===');
+            
+            const confirmBtn = this;
+            const originalText = confirmBtn.innerHTML;
+            
+            // Show loading state
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ثبت...';
+            
+            // Prepare form data
             const form = document.querySelector('form');
-            form.submit();
+            console.log('Form element:', form);
+            console.log('Form action:', form.action);
+            console.log('Form method:', form.method);
+            console.log('Form enctype:', form.enctype);
+            
+            const formData = new FormData();
+            
+            // Add all form fields to FormData
+            const formElements = form.elements;
+            console.log(`Total form elements: ${formElements.length}`);
+            
+            for (let i = 0; i < formElements.length; i++) {
+                const element = formElements[i];
+                console.log(`Element ${i}:`, {
+                    name: element.name,
+                    type: element.type,
+                    tagName: element.tagName,
+                    value: element.value,
+                    disabled: element.disabled,
+                    checked: element.checked,
+                    required: element.required
+                });
+                
+                if (element.name && !element.disabled && element.type !== 'submit' && element.type !== 'button') {
+                    if (element.type === 'file') {
+                        // Handle file upload - only append if file is selected
+                        if (element.files && element.files.length > 0) {
+                            console.log(`Appending file: ${element.name} = ${element.files[0].name} (${element.files[0].size} bytes)`);
+                            formData.append(element.name, element.files[0]);
+                        } else {
+                            console.log(`No file selected for: ${element.name}`);
+                        }
+                    } else if (element.type === 'checkbox') {
+                        // Handle checkboxes - append true/false values
+                        const value = element.checked ? 'true' : 'false';
+                        console.log(`Appending checkbox: ${element.name} = ${value}`);
+                        formData.append(element.name, value);
+                    } else if (element.type === 'radio') {
+                        // Handle radio buttons - only append if checked
+                        if (element.checked) {
+                            console.log(`Appending radio (checked): ${element.name} = ${element.value}`);
+                            formData.append(element.name, element.value);
+                        } else {
+                            console.log(`Skipping radio (not checked): ${element.name}`);
+                        }
+                    } else if (element.tagName === 'SELECT') {
+                        // Handle select elements - always append value (even if empty for validation)
+                        console.log(`Appending select: ${element.name} = '${element.value}'`);
+                        formData.append(element.name, element.value || '');
+                    } else {
+                        // Handle all other input types - always append value for proper validation
+                        console.log(`Appending input: ${element.name} = '${element.value}'`);
+                        formData.append(element.name, element.value || '');
+                    }
+                } else {
+                    console.log(`Skipping element: ${element.name} (disabled: ${element.disabled}, type: ${element.type})`);
+                }
+            }
+            
+            // Ensure required anti-forgery token is included
+            const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (antiForgeryToken) {
+                console.log(`Anti-forgery token found: ${antiForgeryToken.value.substring(0, 20)}...`);
+                
+                // Check if token was already added during form processing
+                let tokenAlreadyAdded = false;
+                for (let [key, value] of formData.entries()) {
+                    if (key === '__RequestVerificationToken') {
+                        tokenAlreadyAdded = true;
+                        console.log('Anti-forgery token already in FormData, skipping duplicate');
+                        break;
+                    }
+                }
+                
+                if (!tokenAlreadyAdded) {
+                    formData.append('__RequestVerificationToken', antiForgeryToken.value);
+                    console.log('Anti-forgery token added to FormData');
+                }
+            } else {
+                console.error('Anti-forgery token NOT found!');
+                alert('خطا: توکن امنیتی یافت نشد. لطفاً صفحه را رفرش کنید.');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+                return;
+            }
+            
+            // Debug: Log final FormData contents
+            console.log('=== Final FormData Contents ===');
+            console.log('Form action:', form.action);
+            console.log('Form method:', form.method);
+            console.log('Form enctype:', form.enctype);
+            
+            let formDataCount = 0;
+            for (let [key, value] of formData.entries()) {
+                formDataCount++;
+                if (value instanceof File) {
+                    console.log(`${formDataCount}. ${key} = File: ${value.name} (${value.size} bytes, ${value.type})`);
+                } else {
+                    console.log(`${formDataCount}. ${key} = '${value}'`);
+                }
+            }
+            
+            console.log(`Total FormData entries: ${formDataCount}`);
+            
+            // Basic validation before sending
+            const requiredFields = ['Type', 'PayerType', 'ReceiverType', 'Amount', 'CurrencyCode'];
+            const missingFields = [];
+            
+            for (let field of requiredFields) {
+                let found = false;
+                for (let [key, value] of formData.entries()) {
+                    if (key === field && value && value.trim() !== '') {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    missingFields.push(field);
+                }
+            }
+            
+            if (missingFields.length > 0) {
+                console.error('Missing required fields:', missingFields);
+                alert(`فیلدهای اجباری خالی هستند: ${missingFields.join(', ')}`);
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+                return;
+            }
+            
+            if (formDataCount === 0) {
+                console.error('ERROR: No FormData entries found!');
+                alert('خطا: هیچ داده‌ای برای ارسال یافت نشد.');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+                return;
+            }
+            
+            // Send AJAX request
+            console.log('=== Sending AJAX Request ===');
+            console.log('URL:', form.action);
+            console.log('Method: POST');
+            console.log('Body: FormData (see above)');
+            console.log('Headers: X-Requested-With = XMLHttpRequest');
+            
+            const startTime = Date.now();
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                    // Note: Don't manually set Content-Type when using FormData
+                    // The browser will set it automatically with the boundary
+                }
+            })
+            .then(response => {
+                const responseTime = Date.now() - startTime;
+                console.log('=== Response Received ===');
+                console.log(`Response time: ${responseTime}ms`);
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
+                console.log('Response ok:', response.ok);
+                console.log('Response headers:');
+                for (let [key, value] of response.headers.entries()) {
+                    console.log(`  ${key}: ${value}`);
+                }
+                
+                if (response.ok) {
+                    // Check if response is JSON or HTML
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        return response.text().then(text => ({ isHtml: true, content: text }));
+                    }
+                } else {
+                    // Try to get error details from response
+                    const contentType = response.headers.get('content-type');
+                    console.log('Error response content-type:', contentType);
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(errorData => {
+                            console.log('Error JSON data:', errorData);
+                            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                        });
+                    } else {
+                        return response.text().then(errorText => {
+                            console.log('Error response body length:', errorText.length);
+                            console.log('Error response body (first 500 chars):', errorText.substring(0, 500));
+                            
+                            // Check if it's an anti-forgery token error
+                            if (errorText.includes('antiforgery') || errorText.includes('verification') || errorText.includes('token')) {
+                                throw new Error('خطای احراز هویت: لطفاً صفحه را رفرش کنید و دوباره تلاش کنید.');
+                            }
+                            
+                            // Check if it's a model validation error
+                            if (errorText.includes('validation') || errorText.includes('ModelState')) {
+                                throw new Error('خطای اعتبارسنجی داده‌ها: لطفاً فیلدهای اجباری را پر کنید.');
+                            }
+                            
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        });
+                    }
+                }
+            })
+            .then(data => {
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+                modal.hide();
+                
+                if (data.isHtml) {
+                    // Handle HTML response (fallback)
+                    if (data.content.includes('class="alert alert-success"') || data.content.includes('TempData["SuccessMessage"]')) {
+                        showSuccessMessage('سند حسابداری با موفقیت ثبت شد.');
+                        setTimeout(() => {
+                            window.location.href = '@Url.Action("Index", "AccountingDocuments")';
+                        }, 2000);
+                    } else {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(data.content, 'text/html');
+                        const errorAlerts = doc.querySelectorAll('.alert-danger, .text-danger');
+                        
+                        let errorMessages = [];
+                        errorAlerts.forEach(alert => {
+                            if (alert.textContent.trim()) {
+                                errorMessages.push(alert.textContent.trim());
+                            }
+                        });
+                        
+                        if (errorMessages.length > 0) {
+                            showErrorMessage('خطاهای اعتبارسنجی:', errorMessages);
+                        } else {
+                            showSuccessMessage('عملیات با موفقیت انجام شد.');
+                        }
+                    }
+                } else {
+                    // Handle JSON response
+                    if (data.success) {
+                        showSuccessMessage(data.message || 'سند حسابداری با موفقیت ثبت شد.');
+                        
+                        // Reset form
+                        form.reset();
+                        
+                        // Redirect after a delay
+                        if (data.redirectUrl) {
+                            setTimeout(() => {
+                                window.location.href = data.redirectUrl;
+                            }, 2000);
+                        } else {
+                            setTimeout(() => {
+                                window.location.href = '@Url.Action("Index", "AccountingDocuments")';
+                            }, 2000);
+                        }
+                    } else {
+                        // Show error messages
+                        if (data.errors && data.errors.length > 0) {
+                            showErrorMessage(data.message || 'خطاهای اعتبارسنجی:', data.errors);
+                        } else {
+                            showErrorMessage('خطا در ثبت سند:', [data.message || 'خطای نامشخص رخ داده است.']);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('AJAX Error:', error);
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+                modal.hide();
+                
+                showErrorMessage('خطا در ارسال اطلاعات:', [error.message]);
+            })
+            .finally(() => {
+                // Restore button state
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+            });
         });
+        
+        // Helper function to show success messages
+        function showSuccessMessage(message) {
+            // Remove any existing alerts
+            removeExistingAlerts();
+            
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show';
+            successAlert.innerHTML = `
+                <i class="fas fa-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(successAlert, container.firstChild);
+            window.scrollTo(0, 0);
+        }
+        
+        // Helper function to show error messages
+        function showErrorMessage(title, messages) {
+            // Remove any existing alerts
+            removeExistingAlerts();
+            
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+            
+            let messageList = '';
+            if (Array.isArray(messages)) {
+                messageList = '<ul class="mb-0 mt-2">' + messages.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
+            } else {
+                messageList = `<div class="mt-2">${messages}</div>`;
+            }
+            
+            errorAlert.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> <strong>${title}</strong>
+                ${messageList}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(errorAlert, container.firstChild);
+            window.scrollTo(0, 0);
+        }
+        
+        // Helper function to remove existing alerts
+        function removeExistingAlerts() {
+            const existingAlerts = document.querySelectorAll('.alert:not(.alert-info)');
+            existingAlerts.forEach(alert => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            });
+        }
         
         } // End of initializePageScripts function
     </script>
