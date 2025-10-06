@@ -54,7 +54,7 @@
                     <!-- What is Exsora System -->
                     <div class="row mb-5" id="overview">
                         <div class="col-12">
-                            <div class="card bg-gradient-primary text-white">
+                            <div class="card bg-gradient-primary text-black">
                                 <div class="card-body text-center">
                                     <i class="fas fa-university display-3 mb-3"></i>
                                     <h2>سامانه صرافی اکسورا چیست؟</h2>
@@ -121,7 +121,7 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-lg-4">
-                                            <div class="card bg-gradient-info text-white mb-3">
+                                            <div class="card bg-gradient-info text-black mb-3">
                                                 <div class="card-body text-center">
                                                     <i class="fas fa-handshake display-4 mb-3"></i>
                                                     <h5>مدیریت معاملات</h5>
@@ -149,7 +149,7 @@
                                             </div>
                                         </div>
                                         <div class="col-lg-4">
-                                            <div class="card bg-gradient-success text-white">
+                                            <div class="card bg-gradient-success text-black">
                                                 <div class="card-body text-center">
                                                     <i class="fas fa-chart-line display-4 mb-3"></i>
                                                     <h5>کنترل مالی</h5>
@@ -432,7 +432,7 @@
                                         <div class="col-md-4">
                                             <div class="text-center mb-4">
                                                 <div class="bg-warning rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                                    <i class="fas fa-headset text-white fa-2x"></i>
+                                                    <i class="fas fa-headset text-dark fa-2x"></i>
                                                 </div>
                                                 <h5 class="mt-3">پشتیبانی ۲۴/۷</h5>
                                                 <p class="text-muted">تیم پشتیبانی همیشه آماده کمک به شماست</p>
@@ -514,7 +514,7 @@
                     <div class="row mb-5" id="quick-start">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-header bg-gradient-primary text-white">
+                                <div class="card-header bg-gradient-primary text-black">
                                     <h3 class="mb-0">
                                         <i class="fas fa-play-circle me-2"></i>
                                         راهنمای شروع سریع
@@ -807,7 +807,7 @@
                     <!-- Contact Support -->
                     <div class="row" id="support">
                         <div class="col-12">
-                            <div class="card bg-gradient-primary text-white">
+                            <div class="card bg-gradient-primary text-black ">
                                 <div class="card-body text-center">
                                     <i class="fas fa-headset display-3 mb-3"></i>
                                     <h3>نیاز به راهنمایی بیشتر دارید؟</h3>
@@ -819,7 +819,7 @@
                                                     <a href="https://wa.me/989120674032" target="_blank" class="btn btn-success btn-lg w-100">
                                                         <i class="fab fa-whatsapp me-2"></i>
                                                         واتساپ
-                                                        <br><small>09120674032</small>
+                                                        <br><small class="no-format">09120674032</small>
                                                     </a>
                                                 </div>
                                                 <div class="col-md-4">
@@ -851,6 +851,22 @@
 </div>
 
 @section Scripts {
+    <style>
+        /* Prevent phone number formatting */
+        .no-format {
+            white-space: nowrap !important;
+        }
+        
+        /* Ensure proper text contrast */
+        .bg-warning .text-white {
+            color: #212529 !important;
+        }
+        
+        .card-body .text-white {
+            color: #fff !important;
+        }
+    </style>
+    
     <script>
         // Add smooth scrolling for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -863,6 +879,35 @@
                         block: 'start'
                     });
                 }
+            });
+        });
+        
+        // Prevent number formatting for phone numbers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all elements with no-format class and protect them from formatting
+            const noFormatElements = document.querySelectorAll('.no-format');
+            noFormatElements.forEach(element => {
+                const originalText = element.textContent;
+                element.setAttribute('data-original', originalText);
+                
+                // Override any global formatting that might affect this element
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                            const current = element.textContent;
+                            const original = element.getAttribute('data-original');
+                            if (current !== original && original) {
+                                element.textContent = original;
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(element, {
+                    childList: true,
+                    characterData: true,
+                    subtree: true
+                });
             });
         });
     </script>

@@ -189,7 +189,7 @@
                                     <div class="col-md-4">
                                         <a href="https://wa.me/989120674032" target="_blank" rel="noopener" class="d-flex align-items-center p-2 bg-white rounded border text-decoration-none">
                                             <i class="fab fa-whatsapp text-success me-2"></i>
-                                            <small class="text-muted">09120674032</small>
+                                            <small class="text-muted no-format">09120674032</small>
                                         </a>
                                     </div>
                                     <div class="col-md-4">
@@ -238,8 +238,44 @@
 }
 
 @section Scripts {
+    <style>
+        /* Prevent phone number formatting */
+        .no-format {
+            white-space: nowrap !important;
+        }
+    </style>
+    
     <script>
         // Simple page with only display functionality - no calculator needed
         console.log('OMR Exchange Rates Display - No Calculator');
+        
+        // Prevent number formatting for phone numbers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all elements with no-format class and protect them from formatting
+            const noFormatElements = document.querySelectorAll('.no-format');
+            noFormatElements.forEach(element => {
+                const originalText = element.textContent;
+                element.setAttribute('data-original', originalText);
+                
+                // Override any global formatting that might affect this element
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                            const current = element.textContent;
+                            const original = element.getAttribute('data-original');
+                            if (current !== original && original) {
+                                element.textContent = original;
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(element, {
+                    childList: true,
+                    characterData: true,
+                    subtree: true
+                });
+            });
+        });
     </script>
 }
