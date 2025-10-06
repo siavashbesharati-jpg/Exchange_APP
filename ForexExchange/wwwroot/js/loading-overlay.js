@@ -36,6 +36,8 @@ function showLoadingOverlay(text = 'در حال پردازش...', subtext = 'ل�
         loadingSubtext.textContent = subtext;
     }
     
+    // Use style.display instead of CSS classes to override any inline styles
+    overlay.style.display = 'flex';
     overlay.classList.add('show');
     document.body.style.overflow = 'hidden';
 }
@@ -51,6 +53,8 @@ function hideLoadingOverlay() {
         return;
     }
     
+    // Use style.display to ensure it's properly hidden
+    overlay.style.display = 'none';
     overlay.classList.remove('show');
     document.body.style.overflow = '';
 }
