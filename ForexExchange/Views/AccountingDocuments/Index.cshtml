@@ -436,23 +436,71 @@
 
         function confirmDocument(documentId) {
             if (confirm('آیا از تأیید این سند حسابداری اطمینان دارید؟ این عملیات ترازها را بروزرسانی خواهد کرد.')) {
-                // Create and submit confirmation form
-                var form = document.createElement('form');
-                form.method = 'post';
-                form.action = '@Url.Action("Confirm", "AccountingDocuments")/' + documentId;
+                // Find the confirm button and show loading state
+                const confirmBtn = document.querySelector(`button[onclick="confirmDocument(${documentId})"]`);
+                const originalText = confirmBtn.innerHTML;
                 
-                // Get anti-forgery token from hidden form
-                var hiddenToken = document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]');
-                if (hiddenToken) {
-                    var tokenInput = document.createElement('input');
-                    tokenInput.type = 'hidden';
-                    tokenInput.name = '__RequestVerificationToken';
-                    tokenInput.value = hiddenToken.value;
-                    form.appendChild(tokenInput);
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                // Get anti-forgery token
+                const hiddenToken = document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]');
+                if (!hiddenToken) {
+                    alert('خطا: توکن امنیتی یافت نشد. لطفاً صفحه را رفرش کنید.');
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = originalText;
+                    return;
                 }
                 
-                document.body.appendChild(form);
-                form.submit();
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('__RequestVerificationToken', hiddenToken.value);
+                
+                // Send AJAX request
+                fetch(`@Url.Action("Confirm", "AccountingDocuments")/${documentId}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        showSuccessMessage(data.message);
+                        
+                        // Update the UI to show confirmed status
+                        const statusCell = confirmBtn.closest('td');
+                        statusCell.innerHTML = `
+                            <span class="badge bg-success">
+                                <i class="fas fa-check"></i> تأیید شده
+                            </span>
+                            <br><small class="text-muted">${data.verifiedAt || 'امروز'}</small>
+                        `;
+                    } else {
+                        // Show error message
+                        showErrorMessage('خطا در تأیید سند:', [data.message]);
+                        
+                        // Restore button state
+                        confirmBtn.disabled = false;
+                        confirmBtn.innerHTML = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('AJAX Error:', error);
+                    showErrorMessage('خطا در ارسال درخواست:', [error.message]);
+                    
+                    // Restore button state
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = originalText;
+                });
             }
         }
 
@@ -480,6 +528,59 @@
                 document.body.appendChild(form);
                 form.submit();
             }
+        }
+        
+        // Helper function to show success messages
+        function showSuccessMessage(message) {
+            // Remove any existing alerts
+            removeExistingAlerts();
+            
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show';
+            successAlert.innerHTML = `
+                <i class="fas fa-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(successAlert, container.firstChild);
+            window.scrollTo(0, 0);
+        }
+        
+        // Helper function to show error messages
+        function showErrorMessage(title, messages) {
+            // Remove any existing alerts
+            removeExistingAlerts();
+            
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+            
+            let messageList = '';
+            if (Array.isArray(messages)) {
+                messageList = '<ul class="mb-0 mt-2">' + messages.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
+            } else {
+                messageList = `<div class="mt-2">${messages}</div>`;
+            }
+            
+            errorAlert.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> <strong>${title}</strong>
+                ${messageList}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(errorAlert, container.firstChild);
+            window.scrollTo(0, 0);
+        }
+        
+        // Helper function to remove existing alerts
+        function removeExistingAlerts() {
+            const existingAlerts = document.querySelectorAll('.alert:not(.alert-info)');
+            existingAlerts.forEach(alert => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            });
         }
     </script>
 }

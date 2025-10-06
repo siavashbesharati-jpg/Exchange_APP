@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using ForexExchange.Services;
 using Microsoft.AspNetCore.Identity;
 using ForexExchange.Services.Notifications;
+using ForexExchange.Helpers;
 
 namespace ForexExchange.Controllers
 {
@@ -656,6 +657,9 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirm(int id)
         {
+            // Check if this is an AJAX request
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+            
             try
             {
                 var accountingDocument = await _context.AccountingDocuments
@@ -667,6 +671,10 @@ namespace ForexExchange.Controllers
                     
                 if (accountingDocument == null)
                 {
+                    if (isAjax)
+                    {
+                        return Json(new { success = false, message = "سند حسابداری یافت نشد." });
+                    }
                     TempData["ErrorMessage"] = "سند حسابداری یافت نشد.";
                     return RedirectToAction(nameof(Index));
                 }
@@ -677,7 +685,12 @@ namespace ForexExchange.Controllers
                 {
                     if (accountingDocument.PayerBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
                     {
-                        TempData["ErrorMessage"] = $"ارز حساب بانکی پرداخت کننده ({accountingDocument.PayerBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
+                        var errorMsg = $"ارز حساب بانکی پرداخت کننده ({accountingDocument.PayerBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
+                        if (isAjax)
+                        {
+                            return Json(new { success = false, message = errorMsg });
+                        }
+                        TempData["ErrorMessage"] = errorMsg;
                         return RedirectToAction("Details", new { id });
                     }
                 }
@@ -687,7 +700,12 @@ namespace ForexExchange.Controllers
                 {
                     if (accountingDocument.ReceiverBankAccount.CurrencyCode != accountingDocument.CurrencyCode)
                     {
-                        TempData["ErrorMessage"] = $"ارز حساب بانکی دریافت کننده ({accountingDocument.ReceiverBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
+                        var errorMsg = $"ارز حساب بانکی دریافت کننده ({accountingDocument.ReceiverBankAccount.CurrencyCode}) با ارز سند ({accountingDocument.CurrencyCode}) مطابقت ندارد.";
+                        if (isAjax)
+                        {
+                            return Json(new { success = false, message = errorMsg });
+                        }
+                        TempData["ErrorMessage"] = errorMsg;
                         return RedirectToAction("Details", new { id });
                     }
                 }
@@ -713,18 +731,39 @@ namespace ForexExchange.Controllers
                         await _notificationHub.SendAccountingDocumentNotificationAsync(accountingDocument, NotificationEventType.AccountingDocumentVerified, currentUser.Id);
                     }
 
+                    if (isAjax)
+                    {
+                        return Json(new { 
+                            success = true, 
+                            message = "سند حسابداری با موفقیت تأیید شد و ترازها بروزرسانی گردید.",
+                            documentId = id,
+                            verifiedAt = accountingDocument.VerifiedAt?.ToPersianDateTextify()
+                        });
+                    }
                     TempData["SuccessMessage"] = "سند حسابداری با موفقیت تأیید شد و ترازها بروزرسانی گردید.";
                 }
                 else
                 {
+                    if (isAjax)
+                    {
+                        return Json(new { success = false, message = "این سند قبلاً تأیید شده است." });
+                    }
                     TempData["InfoMessage"] = "این سند قبلاً تأیید شده است.";
                 }
             }
             catch (Exception ex)
             {
+                if (isAjax)
+                {
+                    return Json(new { success = false, message = $"خطا در تأیید سند: {ex.Message}" });
+                }
                 TempData["ErrorMessage"] = $"خطا در تأیید سند: {ex.Message}";
             }
 
+            if (isAjax)
+            {
+                return Json(new { success = false, message = "خطای نامشخص در تأیید سند." });
+            }
             return RedirectToAction(nameof(Index));
         }
 
