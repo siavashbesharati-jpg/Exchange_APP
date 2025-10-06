@@ -162,41 +162,84 @@
     {
         <div class="row mt-4">
             <div class="col-12">
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-dark">
+                <div class="card border-primary shadow-lg">
+                    <div class="card-header bg-gradient-primary text-white">
                         <h6 class="card-title mb-0">
-                            <i class="fas fa-code me-2"></i>
-                            تماس با تیم توسعه 
+                            <i class="fas fa-headset me-2"></i>
+                            پشتیبانی توسعه‌دهندگان (حالت نمایشی)
                         </h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bg-light">
                         <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                                        <i class="fab fa-whatsapp text-white fa-lg"></i>
+                            <div class="col-md-7">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-laptop-code text-white fa-lg"></i>
                                     </div>
                                     <div>
-                                        <h6 class="mb-1">سوال یا نیاز به پشتیبانی دارید؟</h6>
-                                        <p class="text-muted mb-0 small">
-                                            در حالت نمایشی، برای دریافت راهنمایی یا گزارش مشکل با تیم توسعه تماس بگیرید
+                                        <h5 class="mb-1 text-primary">نیاز به راهنمایی دارید؟</h5>
+                                        <p class="text-muted mb-0">
+                                            در حالت نمایشی، تیم توسعه آماده پاسخگویی و رفع مشکلات شماست
                                         </p>
                                     </div>
                                 </div>
+                                
+                                <!-- Contact Methods -->
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center p-2 bg-white rounded border">
+                                            <i class="fab fa-whatsapp text-success me-2"></i>
+                                            <small class="text-muted">واتساپ</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center p-2 bg-white rounded border">
+                                            <i class="fas fa-envelope text-danger me-2"></i>
+                                            <small class="text-muted">ایمیل</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center p-2 bg-white rounded border">
+                                            <i class="fas fa-globe text-info me-2"></i>
+                                            <small class="text-muted">وب‌سایت</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4 text-end">
-                                <a href="https://wa.me/989120674032" target="_blank" class="btn btn-success">
-                                    <i class="fab fa-whatsapp me-2"></i>
-                                    09120674032
-                                </a>
-                                <div class="mt-2">
-                                    <a href="@Url.Action("Help", "Home")" class="btn btn-outline-info btn-sm">
-                                        <i class="fas fa-book me-1"></i>
-                                        راهنمای کامل
+                            <div class="col-md-5">
+                                <div class="text-center">
+                                    <!-- WhatsApp Button -->
+                                    <a href="https://wa.me/989120674032" target="_blank" class="btn btn-success btn-lg w-100 mb-2">
+                                        <i class="fab fa-whatsapp me-2"></i>
+                                        09120674032
+                                    </a>
+                                    
+                                    <!-- Email Button -->
+                                    <a href="mailto:siavash@iranexpedia.ir" class="btn btn-danger w-100 mb-2">
+                                        <i class="fas fa-envelope me-2"></i>
+                                        siavash@iranexpedia.ir
+                                    </a>
+                                    
+                                    <!-- Website Button -->
+                                    <a href="https://iranexpedia.ir" target="_blank" class="btn btn-info w-100 mb-3">
+                                        <i class="fas fa-globe me-2"></i>
+                                        iranexpedia.ir
+                                    </a>
+                                    
+                                    <!-- Help Guide Button -->
+                                    <a href="@Url.Action("Help", "Home")" class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-book-open me-2"></i>
+                                        راهنمای کامل سیستم
                                     </a>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="card-footer bg-primary text-white text-center py-2">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            این بخش فقط در حالت نمایشی نمایش داده می‌شود
+                        </small>
                     </div>
                 </div>
             </div>
