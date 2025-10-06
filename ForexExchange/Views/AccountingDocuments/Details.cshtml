@@ -1,7 +1,16 @@
 @model ForexExchange.Models.AccountingDocument
+@inject ForexExchange.Services.ISettingsService SettingsService
+@inject ForexExchange.Services.IFileUploadService FileUploadService
 
 @{
     ViewData["Title"] = $"جزئیات سند حسابداری #{Model.Id}";
+    
+    // Get dynamic branding data
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync(); 
+    var logoPath = await SettingsService.GetLogoPathAsync();
+    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
 }
 
 <style>
@@ -297,8 +306,8 @@
     
     <div class="document-header">
         <div class="company-info">
-            <img src="~/favicon/android-chrome-192x192.png" alt="لوگو" class="company-logo" />
-            <div class="company-name">سامانه معاملات تابان</div>
+            <img src="@logoUrl" alt="لوگو" class="company-logo" />
+            <div class="company-name">@websiteName</div>
         </div>
         <div class="document-title">سند حسابداری</div>
         <div class="document-number">شماره سند: @Model.Id</div>
@@ -469,6 +478,13 @@
                 <div class="signature-line"></div>
                 <div>امضا تأیید کننده</div>
             </div>
+        </div>
+        
+        <!-- Footer Information -->
+        <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #7f8c8d; border-top: 1px solid #dee2e6; padding-top: 20px;">
+            <p><strong>سند حسابداری در تاریخ @DateTime.Now.ToPersianDateTextify() صادر شده است.</strong></p>
+            <p>@websiteName - ارائه بهترین خدمات مالی و حسابداری</p>
+            <p style="margin-top: 10px;"><strong>آدرس وب‌سایت:</strong> @companyWebsite</p>
         </div>
     </div>
 </div>

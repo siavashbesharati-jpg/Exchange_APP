@@ -1,7 +1,16 @@
 @model ForexExchange.Models.FinancialReportViewModel
+@inject ForexExchange.Services.ISettingsService SettingsService
+@inject ForexExchange.Services.IFileUploadService FileUploadService
 @{
     ViewData["Title"] = Model.ReportTitle;
     Layout = null; // No layout for print-friendly page
+    
+    // Get dynamic branding data directly from service
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
+    var logoPath = await SettingsService.GetLogoPathAsync();
+    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
 }
 
 <!DOCTYPE html>
@@ -10,7 +19,11 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
+    <title>@ViewData["Title"] - @websiteName</title>
+    
+    <!-- Dynamic Favicon -->
+    <link rel="icon" type="image/png" href="@logoUrl">
+    <link rel="shortcut icon" href="@logoUrl">
     <style>
         * {
             margin: 0;
@@ -394,11 +407,11 @@
         <!-- Header -->
         <div class="receipt-header">
             <div class="company-logo">
-                <img src="~/favicon/favicon-32x32.png" alt="لوگو گروه تابان" />
+                <img src="@logoUrl" alt="لوگو @companyName" />
             </div>
             <div class="company-info">
-                <div class="company-name">گروه تابان</div>
-                <div class="company-website">https://taban-group.com</div>
+                <div class="company-name">@companyName</div>
+                <div class="company-website">@companyWebsite</div>
             </div>
             <div class="report-title">@Model.ReportTitle</div>
         </div>
@@ -504,11 +517,11 @@
                         <!-- Print Header for each page -->
                         <div class="print-header">
                             <div class="company-logo">
-                                <img src="~/favicon/favicon-32x32.png" alt="لوگو گروه تابان" />
+                                <img src="@logoUrl" alt="لوگو @companyName" />
                             </div>
                             <div class="company-info">
-                                <div class="company-name">گروه تابان</div>
-                                <div class="company-website">https://taban-group.com</div>
+                                <div class="company-name">@companyName</div>
+                                <div class="company-website">@companyWebsite</div>
                             </div>
                             <div class="report-title">@Model.ReportTitle - @Model.EntityName</div>
                         </div>
@@ -587,8 +600,8 @@
             </div>
             <div class="disclaimer">
                 این گزارش به صورت خودکار تولید شده و نیاز به امضا ندارد •
-                صحت اطلاعات با گروه تابان قابل بررسی است •
-                https://taban-group.com
+                صحت اطلاعات با @companyName قابل بررسی است •
+                @companyWebsite
             </div>
         </div>
     </div>

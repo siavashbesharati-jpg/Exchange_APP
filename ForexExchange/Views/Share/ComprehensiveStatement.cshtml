@@ -1,9 +1,18 @@
 @model ForexExchange.Models.CustomerComprehensiveStatementViewModel
+@inject ForexExchange.Services.ISettingsService SettingsService
+@inject ForexExchange.Services.IFileUploadService FileUploadService
 @using ForexExchange.Extensions
 
 @{
     ViewData["Title"] = $"صورت حساب کامل - {Model.Customer.FullName}";
     Layout = null;
+    
+    // Get dynamic branding data directly from service
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
+    var logoPath = await SettingsService.GetLogoPathAsync();
+    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
 }
 
 <!DOCTYPE html>
@@ -11,22 +20,26 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>صورت حساب کامل - @Model.Customer.FullName</title>
+    <title>صورت حساب کامل - @Model.Customer.FullName - @websiteName</title>
+    
+    <!-- Dynamic Favicon -->
+    <link rel="icon" type="image/png" href="@logoUrl">
+    <link rel="shortcut icon" href="@logoUrl">
     
     <!-- Open Graph / WhatsApp Meta Tags -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="صورت حساب کامل - @Model.Customer.FullName" />
-    <meta property="og:description" content="صورت حساب کامل مشتری از سامانه معاملات تابان - شامل تمام تراکنش ها و موجودی ها" />
-    <meta property="og:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}/favicon/android-chrome-512x512.png")" />
+    <meta property="og:description" content="صورت حساب کامل مشتری از @websiteName - شامل تمام تراکنش ها و موجودی ها" />
+    <meta property="og:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{logoUrl}")" />
     <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")" />
-    <meta property="og:site_name" content="سامانه معاملات تابان" />
+    <meta property="og:site_name" content="@websiteName" />
     <meta property="og:locale" content="fa_IR" />
     
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="صورت حساب کامل - @Model.Customer.FullName" />
-    <meta name="twitter:description" content="صورت حساب کامل مشتری از سامانه معاملات تابان" />
-    <meta name="twitter:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}/favicon/android-chrome-512x512.png")" />
+    <meta name="twitter:description" content="صورت حساب کامل مشتری از @websiteName" />
+    <meta name="twitter:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{logoUrl}")" />
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
@@ -410,8 +423,8 @@
 <div class="document-paper">
     <div class="document-header">
         <div class="company-info">
-            <img src="~/favicon/android-chrome-192x192.png" alt="لوگو" class="company-logo" />
-            <div class="company-name">سامانه معاملات تابان</div>
+            <img src="@logoUrl" alt="لوگو" class="company-logo" />
+            <div class="company-name">@websiteName</div>
         </div>
         <div class="document-title">صورت حساب کامل مشتری</div>
         <div class="customer-info">@Model.Customer.FullName - تاریخ صدور: @Model.StatementDate.ToPersianDateTextify()</div>
@@ -662,7 +675,8 @@
         <div style="margin-top: 60px; text-align: center; font-size: 12px; color: #7f8c8d; border-top: 1px solid #dee2e6; padding-top: 20px;">
             <p><strong>این صورت حساب کامل در تاریخ @DateTime.Now.ToPersianDateTextify() صادر شده است.</strong></p>
             <p>شامل تمامی اطلاعات، معامله‌ها، اسناد حسابداری و موجودی‌های مشتری</p>
-            <p>برای هرگونه سؤال یا ابهام با سامانه معاملات تابان تماس بگیرید.</p>
+            <p>برای هرگونه سؤال یا ابهام با @websiteName تماس بگیرید.</p>
+            <p style="margin-top: 10px;"><strong>آدرس وب‌سایت:</strong> @companyWebsite</p>
         </div>
     </div>
 </div>

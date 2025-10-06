@@ -1,8 +1,17 @@
 @model ForexExchange.Models.CustomerTransactionsStatementViewModel
 @using ForexExchange.Extensions
+@inject ForexExchange.Services.ISettingsService SettingsService
+@inject ForexExchange.Services.IFileUploadService FileUploadService
 
 @{
     ViewData["Title"] = $"صورت حساب معاملات - {Model.Customer.FullName}";
+    
+    // Get dynamic branding data
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync(); 
+    var logoPath = await SettingsService.GetLogoPathAsync();
+    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
 }
 
 <style>
@@ -379,8 +388,8 @@
 <div class="document-paper">
     <div class="document-header">
         <div class="company-info">
-            <img src="~/favicon/android-chrome-192x192.png" alt="لوگو" class="company-logo" />
-            <div class="company-name">سامانه معاملات تابان</div>
+            <img src="@logoUrl" alt="لوگو" class="company-logo" />
+            <div class="company-name">@websiteName</div>
         </div>
         <div class="document-title">گزارش جامع معاملات مشتری</div>
         <div class="customer-info">@Model.Customer.FullName - تاریخ صدور: @Model.StatementDate.ToPersianDateTextify()</div>
@@ -532,7 +541,8 @@
         <div style="margin-top: 60px; text-align: center; font-size: 12px; color: #7f8c8d; border-top: 1px solid #dee2e6; padding-top: 20px;">
             <p><strong>گزارش جامع معاملات در تاریخ @DateTime.Now.ToPersianDateTextify() تهیه شده است.</strong></p>
             <p>این گزارش شامل تمامی اطلاعات، آمار و تحلیل معاملات مشتری می‌باشد.</p>
-            <p>سامانه معاملات تابان - ارائه بهترین خدمات معاملاتی</p>
+            <p>@websiteName - ارائه بهترین خدمات معاملاتی</p>
+            <p style="margin-top: 10px;"><strong>آدرس وب‌سایت:</strong> @companyWebsite</p>
         </div>
     </div>
 </div>

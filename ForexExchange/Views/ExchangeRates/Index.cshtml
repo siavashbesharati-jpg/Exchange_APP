@@ -1,13 +1,22 @@
 @model IEnumerable<ForexExchange.Models.ExchangeRate>
+@inject ForexExchange.Services.ISettingsService SettingsService
+@inject ForexExchange.Services.IFileUploadService FileUploadService
 
 @{
-    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : "سامانه معاملات   تابان ";
+    // Get dynamic branding data
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync(); 
+    var logoPath = await SettingsService.GetLogoPathAsync();
+    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
+    
+    ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : websiteName;
     
     // Open Graph Tags for better WhatsApp sharing
-    ViewData["OGTitle"] = "سامانه معاملات تابان - نرخ‌های روز ارز";
-    ViewData["OGDescription"] = "مشاهده آخرین نرخ‌های ارز، دلار، یورو، پوند، درهم و سایر ارزها در سامانه معاملات تابان. نرخ‌های به‌روز و قابل اعتماد.";
-    ViewData["OGImage"] = Url.Content("~/favicon/android-chrome-512x512.png");
-    ViewData["OGImageAlt"] = "لوگو سامانه معاملات تابان";
+    ViewData["OGTitle"] = $"{websiteName} - نرخ‌های روز ارز";
+    ViewData["OGDescription"] = $"مشاهده آخرین نرخ‌های ارز، دلار، یورو، پوند، درهم و سایر ارزها در {websiteName}. نرخ‌های به‌روز و قابل اعتماد.";
+    ViewData["OGImage"] = Url.Content(logoUrl);
+    ViewData["OGImageAlt"] = $"لوگو {websiteName}";
     ViewData["OGType"] = "website";
 }
 
@@ -17,10 +26,10 @@
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
-                    <img src="~/favicon/android-chrome-512x512.png" alt="تابان" 
+                    <img src="@logoUrl" alt="@companyName" 
                          style="width: 60px; height: 60px;" class="me-3">
                     <div>
-                        <h1 class="h3 mb-1 text-primary fw-bold">سامانه معاملات تابان</h1>
+                        <h1 class="h3 mb-1 text-primary fw-bold">@websiteName</h1>
                         <p class="text-muted mb-0 small">نرخ‌های ارز به‌روز و تبدیل آنلاین</p>
                     </div>
                 </div>
