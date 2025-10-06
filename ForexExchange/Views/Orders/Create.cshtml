@@ -234,24 +234,19 @@
     </div>
 </div>
 
-<!-- Beautiful Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-content">
-        <div class="loading-spinner">
-            <div class="spinner-ring"></div>
-            <div class="spinner-ring"></div>
-            <div class="spinner-ring"></div>
-        </div>
-        <div class="loading-text">در حال پردازش...</div>
-        <div class="loading-subtext">لطفاً منتظر بمانید</div>
-    </div>
-</div>
+@Html.Partial("_LoadingOverlay")
 
 @{
     await Html.RenderPartialAsync("_ValidationScriptsPartial");
 }
 @section Scripts {
-    <style>
+    <link rel="stylesheet" href="~/css/loading-overlay.css" />
+    <script src="~/js/loading-overlay.js"></script>
+
+    <script src="~/js/currency-formatter.js"></script>
+    <script src="~/js/order-preview.js"></script> <!-- فایل جداگانه -->
+
+    <script>
         /* Beautiful Loading Overlay */
         .loading-overlay {
             position: fixed;
@@ -360,25 +355,6 @@
     <script src="~/js/order-preview.js"></script> <!-- فایل جداگانه -->
 
     <script>
-        // Loading Overlay Utility Functions
-        function showLoadingOverlay(text = 'در حال پردازش...', subtext = 'لطفاً منتظر بمانید') {
-            const overlay = document.getElementById('loadingOverlay');
-            const loadingText = overlay.querySelector('.loading-text');
-            const loadingSubtext = overlay.querySelector('.loading-subtext');
-            
-            loadingText.textContent = text;
-            loadingSubtext.textContent = subtext;
-            
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-        
-        function hideLoadingOverlay() {
-            const overlay = document.getElementById('loadingOverlay');
-            overlay.classList.remove('show');
-            document.body.style.overflow = '';
-        }
-        
         // --- داده‌ها از سرور ---
         let currencyPools = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.PoolData ?? new Dictionary<string, decimal>()));
         const currenciesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.CurrenciesData));
