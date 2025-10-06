@@ -101,4 +101,5 @@
 }
 
 @keyframes fadeInText {
-    to
+    to { opacity: 1; }
+}
