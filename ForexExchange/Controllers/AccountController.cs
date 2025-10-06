@@ -166,6 +166,7 @@ namespace ForexExchange.Controllers
             ViewData["ReturnUrl"] = returnUrl;
             var setting = await _settingsService.GetSystemSettingsAsync();
             ViewData["WebsiteName"] = setting.WebsiteName;
+            ViewBag.IsInDemoMode = setting.IsDemoMode;
             if (setting.IsDemoMode)
             {
                 var model = new LoginViewModel()
@@ -184,7 +185,8 @@ namespace ForexExchange.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
         {
-
+            var setting = await _settingsService.GetSystemSettingsAsync();
+            ViewBag.IsInDemoMode = setting.IsDemoMode;
             ViewData["ReturnUrl"] = returnUrl;
 
             if (ModelState.IsValid)
