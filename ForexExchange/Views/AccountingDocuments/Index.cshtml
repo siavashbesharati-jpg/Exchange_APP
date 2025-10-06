@@ -380,13 +380,150 @@
     }
 </div>
 
+<!-- Beautiful Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-content">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+        </div>
+        <div class="loading-text">در حال پردازش...</div>
+        <div class="loading-subtext">لطفاً منتظر بمانید</div>
+    </div>
+</div>
+
 @* Hidden form for anti-forgery token *@
 <form id="hiddenTokenForm" style="display: none;">
     @Html.AntiForgeryToken()
 </form>
 
 @section Scripts {
+    <style>
+        /* Beautiful Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 99999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        .loading-spinner {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+        
+        .spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid transparent;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+        }
+        
+        .spinner-ring:nth-child(2) {
+            width: 60px;
+            height: 60px;
+            top: 10px;
+            left: 10px;
+            border-top-color: #17a2b8;
+            animation-duration: 1.2s;
+            animation-direction: reverse;
+        }
+        
+        .spinner-ring:nth-child(3) {
+            width: 40px;
+            height: 40px;
+            top: 20px;
+            left: 20px;
+            border-top-color: #28a745;
+            animation-duration: 0.9s;
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            opacity: 0;
+            animation: fadeInText 0.8s ease-out 0.3s forwards;
+        }
+        
+        .loading-subtext {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            opacity: 0;
+            animation: fadeInText 0.8s ease-out 0.6s forwards;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @@keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @@keyframes fadeInText {
+            to { opacity: 1; }
+        }
+    </style>
+    
     <script>
+        // Loading Overlay Utility Functions
+        function showLoadingOverlay(text = 'در حال پردازش...', subtext = 'لطفاً منتظر بمانید') {
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = overlay.querySelector('.loading-text');
+            const loadingSubtext = overlay.querySelector('.loading-subtext');
+            
+            loadingText.textContent = text;
+            loadingSubtext.textContent = subtext;
+            
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        
         // Protect reference numbers from global formatting scripts
         document.addEventListener('DOMContentLoaded', function() {
             protectReferenceNumbers();
@@ -436,6 +573,9 @@
 
         function confirmDocument(documentId) {
             if (confirm('آیا از تأیید این سند حسابداری اطمینان دارید؟ این عملیات ترازها را بروزرسانی خواهد کرد.')) {
+                // Show beautiful loading overlay
+                showLoadingOverlay('در حال تأیید سند...', 'بروزرسانی ترازها و ارسال اعلان‌ها');
+                
                 // Find the confirm button and show loading state
                 const confirmBtn = document.querySelector(`button[onclick="confirmDocument(${documentId})"]`);
                 const originalText = confirmBtn.innerHTML;
@@ -446,6 +586,7 @@
                 // Get anti-forgery token
                 const hiddenToken = document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]');
                 if (!hiddenToken) {
+                    hideLoadingOverlay();
                     alert('خطا: توکن امنیتی یافت نشد. لطفاً صفحه را رفرش کنید.');
                     confirmBtn.disabled = false;
                     confirmBtn.innerHTML = originalText;
@@ -472,6 +613,9 @@
                     }
                 })
                 .then(data => {
+                    // Hide loading overlay
+                    hideLoadingOverlay();
+                    
                     if (data.success) {
                         // Show success message
                         showSuccessMessage(data.message);
@@ -495,6 +639,10 @@
                 })
                 .catch(error => {
                     console.error('AJAX Error:', error);
+                    
+                    // Hide loading overlay
+                    hideLoadingOverlay();
+                    
                     showErrorMessage('خطا در ارسال درخواست:', [error.message]);
                     
                     // Restore button state
