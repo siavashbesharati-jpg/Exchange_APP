@@ -1,11 +1,9 @@
 ﻿@inject ForexExchange.Services.ISettingsService SettingsService
-@inject ForexExchange.Services.IFileUploadService FileUploadService
 @{
     // Get dynamic branding data directly from service
     var websiteName = await SettingsService.GetWebsiteNameAsync();
     var companyName = await SettingsService.GetCompanyNameAsync();
-    var logoPath = await SettingsService.GetLogoPathAsync();
-    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
+    var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
 }
 
 <!DOCTYPE html>
@@ -21,7 +19,7 @@
     <meta property="og:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? websiteName)" />
     <meta property="og:description"
         content="@(ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
-    <meta property="og:image" content="@(ViewData["OGImage"] ?? Url.Content(logoUrl))" />
+        <meta property="og:image" content="@logoDataUrl" />
     <meta property="og:image:alt" content="@(ViewData["OGImageAlt"] ?? $"لوگو {websiteName}")" />
     <meta property="og:url"
         content="@(ViewData["OGUrl"] ?? (Context.Request.Scheme + "://" + Context.Request.Host + Context.Request.Path))" />
@@ -35,13 +33,13 @@
     <meta name="twitter:description"
         content="@(ViewData["TwitterDescription"] ?? ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
     <meta name="twitter:image"
-        content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? Url.Content(logoUrl))" />
+        content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? logoDataUrl)" />
 
     <!-- WhatsApp Specific -->
     <meta property="whatsapp:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? websiteName)" />
     <meta property="whatsapp:description"
         content="@(ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
-    <meta property="whatsapp:image" content="@(ViewData["OGImage"] ?? Url.Content(logoUrl))" />
+    <meta property="whatsapp:image" content="@(ViewData["OGImage"] ?? logoDataUrl)" />
 
     <!-- Bootstrap 5 RTL -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -66,11 +64,11 @@
     <link rel="stylesheet" href="~/ForexExchange.styles.css" asp-append-version="true" />
 
     <!-- Favicon -->
-    <link rel="apple-touch-icon" sizes="180x180" href="@logoUrl">
-    <link rel="icon" type="image/png" sizes="32x32" href="@logoUrl">
-    <link rel="icon" type="image/png" sizes="16x16" href="@logoUrl">
-    <link rel="manifest" href="~/favicon/site.webmanifest">
-    <link rel="shortcut icon" href="@logoUrl">
+    <link rel="apple-touch-icon" sizes="180x180" href="@logoDataUrl">
+    <link rel="icon" type="image/png" sizes="32x32" href="@logoDataUrl">
+    <link rel="icon" type="image/png" sizes="16x16" href="@logoDataUrl">
+    <link rel="manifest" href="@Url.Action("WebManifest", "Home")">
+    <link rel="shortcut icon" href="@logoDataUrl">
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
 

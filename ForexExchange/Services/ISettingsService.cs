@@ -21,7 +21,11 @@ namespace ForexExchange.Services
         Task<string> GetCompanyNameAsync();
         Task<string> GetCompanyWebsiteAsync();
         Task<string?> GetLogoPathAsync();
+        Task<string?> GetLogoBase64Async();
+        Task<string?> GetLogoMimeTypeAsync();
+        Task<string> GetLogoDataUrlAsync();
         Task SetBrandingAsync(string websiteName, string companyName, string companyWebsite, string? logoPath = null, string updatedBy = "Admin");
+        Task SetLogoBase64Async(string logoBase64, string mimeType, string updatedBy = "Admin");
     }
 
     public class SettingsService : ISettingsService
@@ -120,7 +124,9 @@ namespace ForexExchange.Services
                 WebsiteName = await GetSettingAsync(SettingKeys.WebsiteName, "سامانه معاملات اکسورا"),
                 CompanyName = await GetSettingAsync(SettingKeys.CompanyName, "گروه اکسورا"),
                 CompanyWebsite = await GetSettingAsync(SettingKeys.CompanyWebsite, "https://Exsora.iranexpedia.ir"),
-                LogoPath = await GetSettingAsync<string?>(SettingKeys.WebsiteLogoPath, null)
+                LogoPath = await GetSettingAsync<string?>(SettingKeys.WebsiteLogoPath, null),
+                LogoBase64 = await GetSettingAsync<string?>(SettingKeys.WebsiteLogoBase64, null),
+                LogoMimeType = await GetSettingAsync<string?>(SettingKeys.WebsiteLogoMimeType, null)
             };
         }
 
@@ -249,6 +255,30 @@ namespace ForexExchange.Services
             return await GetSettingAsync<string?>(SettingKeys.WebsiteLogoPath, null);
         }
 
+        public async Task<string?> GetLogoBase64Async()
+        {
+            return await GetSettingAsync<string?>(SettingKeys.WebsiteLogoBase64, null);
+        }
+
+        public async Task<string?> GetLogoMimeTypeAsync()
+        {
+            return await GetSettingAsync<string?>(SettingKeys.WebsiteLogoMimeType, null);
+        }
+
+        public async Task<string> GetLogoDataUrlAsync()
+        {
+            var logoBase64 = await GetLogoBase64Async();
+            var mimeType = await GetLogoMimeTypeAsync();
+            
+            if (!string.IsNullOrEmpty(logoBase64) && !string.IsNullOrEmpty(mimeType))
+            {
+                return $"data:{mimeType};base64,{logoBase64}";
+            }
+            
+            // Fallback to default logo
+            return "/favicon/android-chrome-512x512.png";
+        }
+
         public async Task SetBrandingAsync(string websiteName, string companyName, string companyWebsite, string? logoPath = null, string updatedBy = "Admin")
         {
             try
@@ -265,6 +295,25 @@ namespace ForexExchange.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error updating website branding by {updatedBy}");
+                throw;
+            }
+        }
+
+        public async Task SetLogoBase64Async(string logoBase64, string mimeType, string updatedBy = "Admin")
+        {
+            try
+            {
+                await SetSettingAsync(SettingKeys.WebsiteLogoBase64, logoBase64, "لوگو وب‌سایت (Base64)", updatedBy);
+                await SetSettingAsync(SettingKeys.WebsiteLogoMimeType, mimeType, "نوع فایل لوگو", updatedBy);
+                
+                // Clear the old file path since we're using base64 now
+                await SetSettingAsync(SettingKeys.WebsiteLogoPath, "", "مسیر لوگو وب‌سایت", updatedBy);
+
+                _logger.LogInformation($"Logo base64 updated by {updatedBy}, MimeType={mimeType}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error updating logo base64 by {updatedBy}");
                 throw;
             }
         }

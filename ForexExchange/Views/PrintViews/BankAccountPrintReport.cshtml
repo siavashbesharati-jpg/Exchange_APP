@@ -1,6 +1,5 @@
 @model ForexExchange.Models.FinancialReportViewModel
 @inject ForexExchange.Services.ISettingsService SettingsService
-@inject ForexExchange.Services.IFileUploadService FileUploadService
 @{
     ViewData["Title"] = Model.ReportTitle;
     Layout = null; // No layout for print-friendly page
@@ -9,8 +8,7 @@
     var websiteName = await SettingsService.GetWebsiteNameAsync();
     var companyName = await SettingsService.GetCompanyNameAsync();
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
-    var logoPath = await SettingsService.GetLogoPathAsync();
-    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
+    var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
 }
 
 <!DOCTYPE html>
@@ -22,8 +20,8 @@
     <title>@ViewData["Title"] - @websiteName</title>
     
     <!-- Dynamic Favicon -->
-    <link rel="icon" type="image/png" href="@logoUrl">
-    <link rel="shortcut icon" href="@logoUrl">
+    <link rel="icon" type="image/png" href="@logoDataUrl">
+    <link rel="shortcut icon" href="@logoDataUrl">
     <style>
         * {
             margin: 0;
@@ -407,7 +405,7 @@
         <!-- Header -->
         <div class="receipt-header">
             <div class="company-logo">
-                <img src="@logoUrl" alt="لوگو @companyName" />
+                <img src="@logoDataUrl" alt="لوگو @companyName" />
             </div>
             <div class="company-info">
                 <div class="company-name">@companyName</div>
@@ -517,7 +515,7 @@
                         <!-- Print Header for each page -->
                         <div class="print-header">
                             <div class="company-logo">
-                                <img src="@logoUrl" alt="لوگو @companyName" />
+                                <img src="@logoDataUrl" alt="لوگو @companyName" />
                             </div>
                             <div class="company-info">
                                 <div class="company-name">@companyName</div>

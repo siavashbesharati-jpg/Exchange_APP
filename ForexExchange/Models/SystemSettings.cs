@@ -47,6 +47,8 @@ namespace ForexExchange.Models
         // Website Branding Settings
         public const string WebsiteName = "WEBSITE_NAME";
         public const string WebsiteLogoPath = "WEBSITE_LOGO_PATH";
+        public const string WebsiteLogoBase64 = "WEBSITE_LOGO_BASE64";
+        public const string WebsiteLogoMimeType = "WEBSITE_LOGO_MIME_TYPE";
         public const string CompanyName = "COMPANY_NAME";
         public const string CompanyWebsite = "COMPANY_WEBSITE";
     }
@@ -108,5 +110,12 @@ namespace ForexExchange.Models
         [Display(Name = "مسیر لوگو")]
         [StringLength(500, ErrorMessage = "مسیر لوگو نمی‌تواند بیش از 500 کاراکتر باشد")]
         public string? LogoPath { get; set; }
+
+        [Display(Name = "لوگو (Base64)")]
+        public string? LogoBase64 { get; set; }
+
+        [Display(Name = "نوع فایل لوگو")]
+        [StringLength(50, ErrorMessage = "نوع فایل نمی‌تواند بیش از 50 کاراکتر باشد")]
+        public string? LogoMimeType { get; set; }
     }
 }

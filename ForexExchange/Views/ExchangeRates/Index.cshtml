@@ -1,21 +1,19 @@
 @model IEnumerable<ForexExchange.Models.ExchangeRate>
 @inject ForexExchange.Services.ISettingsService SettingsService
-@inject ForexExchange.Services.IFileUploadService FileUploadService
 
 @{
     // Get dynamic branding data
     var websiteName = await SettingsService.GetWebsiteNameAsync();
     var companyName = await SettingsService.GetCompanyNameAsync();
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync(); 
-    var logoPath = await SettingsService.GetLogoPathAsync();
-    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
+    var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
     
     ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : websiteName;
     
     // Open Graph Tags for better WhatsApp sharing
     ViewData["OGTitle"] = $"{websiteName} - نرخ‌های روز ارز";
     ViewData["OGDescription"] = $"مشاهده آخرین نرخ‌های ارز، دلار، یورو، پوند، درهم و سایر ارزها در {websiteName}. نرخ‌های به‌روز و قابل اعتماد.";
-    ViewData["OGImage"] = Url.Content(logoUrl);
+    ViewData["OGImage"] = logoDataUrl;
     ViewData["OGImageAlt"] = $"لوگو {websiteName}";
     ViewData["OGType"] = "website";
 }
@@ -26,7 +24,7 @@
         <div class="col-12">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
-                    <img src="@logoUrl" alt="@companyName" 
+                    <img src="@logoDataUrl" alt="@companyName" 
                          style="width: 60px; height: 60px;" class="me-3">
                     <div>
                         <h1 class="h3 mb-1 text-primary fw-bold">@websiteName</h1>

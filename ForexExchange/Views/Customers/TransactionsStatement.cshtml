@@ -1,7 +1,6 @@
 @model ForexExchange.Models.CustomerTransactionsStatementViewModel
 @using ForexExchange.Extensions
 @inject ForexExchange.Services.ISettingsService SettingsService
-@inject ForexExchange.Services.IFileUploadService FileUploadService
 
 @{
     ViewData["Title"] = $"صورت حساب معاملات - {Model.Customer.FullName}";
@@ -10,8 +9,7 @@
     var websiteName = await SettingsService.GetWebsiteNameAsync();
     var companyName = await SettingsService.GetCompanyNameAsync();
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync(); 
-    var logoPath = await SettingsService.GetLogoPathAsync();
-    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
+    var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
 }
 
 <style>
@@ -388,7 +386,7 @@
 <div class="document-paper">
     <div class="document-header">
         <div class="company-info">
-            <img src="@logoUrl" alt="لوگو" class="company-logo" />
+            <img src="@logoDataUrl" alt="لوگو" class="company-logo" />
             <div class="company-name">@websiteName</div>
         </div>
         <div class="document-title">گزارش جامع معاملات مشتری</div>

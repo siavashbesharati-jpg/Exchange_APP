@@ -1,6 +1,5 @@
 @model ForexExchange.Models.AccountingDocument
 @inject ForexExchange.Services.ISettingsService SettingsService
-@inject ForexExchange.Services.IFileUploadService FileUploadService
 
 @{
     ViewData["Title"] = $"جزئیات سند حسابداری #{Model.Id}";
@@ -9,8 +8,7 @@
     var websiteName = await SettingsService.GetWebsiteNameAsync();
     var companyName = await SettingsService.GetCompanyNameAsync();
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync(); 
-    var logoPath = await SettingsService.GetLogoPathAsync();
-    var logoUrl = FileUploadService.GetLogoUrl(logoPath);
+    var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
 }
 
 <style>
@@ -306,7 +304,7 @@
     
     <div class="document-header">
         <div class="company-info">
-            <img src="@logoUrl" alt="لوگو" class="company-logo" />
+            <img src="@logoDataUrl" alt="لوگو" class="company-logo" />
             <div class="company-name">@websiteName</div>
         </div>
         <div class="document-title">سند حسابداری</div>

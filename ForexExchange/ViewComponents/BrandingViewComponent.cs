@@ -6,12 +6,10 @@ namespace ForexExchange.ViewComponents
     public class BrandingViewComponent : ViewComponent
     {
         private readonly ISettingsService _settingsService;
-        private readonly IFileUploadService _fileUploadService;
 
-        public BrandingViewComponent(ISettingsService settingsService, IFileUploadService fileUploadService)
+        public BrandingViewComponent(ISettingsService settingsService)
         {
             _settingsService = settingsService;
-            _fileUploadService = fileUploadService;
         }
 
         public async Task<IViewComponentResult> InvokeAsync()
@@ -21,15 +19,14 @@ namespace ForexExchange.ViewComponents
                 var websiteName = await _settingsService.GetWebsiteNameAsync();
                 var companyName = await _settingsService.GetCompanyNameAsync();
                 var companyWebsite = await _settingsService.GetCompanyWebsiteAsync();
-                var logoPath = await _settingsService.GetLogoPathAsync();
-                var logoUrl = _fileUploadService.GetLogoUrl(logoPath);
+                var logoDataUrl = await _settingsService.GetLogoDataUrlAsync();
 
                 var model = new BrandingInfo
                 {
                     WebsiteName = websiteName,
                     CompanyName = companyName,
                     CompanyWebsite = companyWebsite,
-                    LogoUrl = logoUrl
+                    LogoUrl = logoDataUrl
                 };
 
                 return View(model);

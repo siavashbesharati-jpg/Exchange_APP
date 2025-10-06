@@ -257,13 +257,15 @@ namespace ForexExchange.Controllers
             try
             {
                 var settings = await _settingsService.GetSystemSettingsAsync();
+                var logoDataUrl = await _settingsService.GetLogoDataUrlAsync();
+                
                 var model = new BrandingSettingsViewModel
                 {
                     WebsiteName = settings.WebsiteName,
                     CompanyName = settings.CompanyName,
                     CompanyWebsite = settings.CompanyWebsite,
-                    CurrentLogoPath = settings.LogoPath,
-                    LogoUrl = _fileUploadService.GetLogoUrl(settings.LogoPath)
+                    CurrentLogoPath = settings.LogoPath, // Keep for backward compatibility
+                    LogoUrl = logoDataUrl // Use base64 data URL
                 };
 
                 return View(model);
@@ -286,45 +288,49 @@ namespace ForexExchange.Controllers
                 // Reload current logo if validation fails
                 var currentSettings = await _settingsService.GetSystemSettingsAsync();
                 model.CurrentLogoPath = currentSettings.LogoPath;
-                model.LogoUrl = _fileUploadService.GetLogoUrl(currentSettings.LogoPath);
+                model.LogoUrl = await _settingsService.GetLogoDataUrlAsync();
                 return View(model);
             }
 
             try
             {
                 var currentUser = User.Identity?.Name ?? "Admin";
-                string? logoPathToSave = null;
 
                 // Handle logo upload if provided
                 if (model.LogoFile != null && model.LogoFile.Length > 0)
                 {
-                    var uploadResult = await _fileUploadService.UploadLogoAsync(model.LogoFile, currentUser);
-                    if (!uploadResult.Success)
+                    // Validate file
+                    if (!_fileUploadService.IsValidImageFile(model.LogoFile))
                     {
-                        ModelState.AddModelError("LogoFile", uploadResult.Error ?? "خطا در آپلود لوگو");
+                        ModelState.AddModelError("LogoFile", "فایل انتخاب شده معتبر نیست. لطفاً تصویری با فرمت JPG، PNG، GIF، BMP یا WebP انتخاب کنید.");
                         return View(model);
                     }
 
-                    logoPathToSave = uploadResult.FilePath;
-
-                    // Delete old logo if exists
-                    if (!string.IsNullOrEmpty(model.CurrentLogoPath))
+                    const int maxFileSizeBytes = 5 * 1024 * 1024; // 5MB
+                    if (model.LogoFile.Length > maxFileSizeBytes)
                     {
-                        await _fileUploadService.DeleteFileAsync(model.CurrentLogoPath);
+                        ModelState.AddModelError("LogoFile", "حجم فایل نمی‌تواند بیش از 5 مگابایت باشد.");
+                        return View(model);
+                    }
+
+                    // Convert to base64
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await model.LogoFile.CopyToAsync(memoryStream);
+                        var logoBase64 = Convert.ToBase64String(memoryStream.ToArray());
+                        var mimeType = model.LogoFile.ContentType;
+
+                        // Save logo as base64 in database
+                        await _settingsService.SetLogoBase64Async(logoBase64, mimeType, currentUser);
                     }
                 }
-                else
-                {
-                    // Keep the current logo path if no new logo is uploaded
-                    logoPathToSave = model.CurrentLogoPath;
-                }
 
-                // Update branding settings
+                // Update branding settings (without logo path since we use base64 now)
                 await _settingsService.SetBrandingAsync(
                     model.WebsiteName, 
                     model.CompanyName, 
                     model.CompanyWebsite, 
-                    logoPathToSave, 
+                    null, // No logo path needed for base64
                     currentUser);
 
                 TempData["SuccessMessage"] = "تنظیمات برندینگ با موفقیت بروزرسانی شد.";
