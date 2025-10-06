@@ -39,9 +39,9 @@ namespace ForexExchange.ViewComponents
                 // Return default values if something goes wrong
                 var defaultModel = new BrandingInfo
                 {
-                    WebsiteName = "سامانه معاملات تابان",
-                    CompanyName = "گروه تابان",
-                    CompanyWebsite = "https://taban-group.com",
+                    WebsiteName = "سامانه معاملات اکسورا",
+                    CompanyName = "گروه اکسورا",
+                    CompanyWebsite = "https://Exsora.iranexpedia.ir",
                     LogoUrl = "/favicon/android-chrome-512x512.png"
                 };
 
@@ -52,9 +52,9 @@ namespace ForexExchange.ViewComponents
 
     public class BrandingInfo
     {
-        public string WebsiteName { get; set; } = "سامانه معاملات تابان";
-        public string CompanyName { get; set; } = "گروه تابان";
-        public string CompanyWebsite { get; set; } = "https://taban-group.com";
+        public string WebsiteName { get; set; } = "سامانه معاملات اکسورا";
+        public string CompanyName { get; set; } = "گروه اکسورا";
+        public string CompanyWebsite { get; set; } = "https://Exsora.iranexpedia.ir";
         public string LogoUrl { get; set; } = "/favicon/android-chrome-512x512.png";
     }
 }

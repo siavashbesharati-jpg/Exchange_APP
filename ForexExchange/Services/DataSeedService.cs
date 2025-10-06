@@ -576,9 +576,9 @@ namespace ForexExchange.Services
                 var defaultSettingsData = new Dictionary<string, (string Value, string Description, string DataType)>
                 {
                     // Website Branding Settings
-                    { SettingKeys.WebsiteName, ("سامانه معاملات تابان", "نام وب‌سایت", "string") },
-                    { SettingKeys.CompanyName, ("گروه تابان", "نام شرکت", "string") },
-                    { SettingKeys.CompanyWebsite, ("https://taban-group.com", "وب‌سایت شرکت", "string") },
+                    { SettingKeys.WebsiteName, ("سامانه معاملات اکسورا", "نام وب‌سایت", "string") },
+                    { SettingKeys.CompanyName, ("گروه اکسورا", "نام شرکت", "string") },
+                    { SettingKeys.CompanyWebsite, ("https://Exsora.iranexpedia.ir", "وب‌سایت شرکت", "string") },
                     
                     // Financial Settings
                     { SettingKeys.CommissionRate, ("0.5", "نرخ کمیسیون پیش‌فرض (درصد)", "decimal") },

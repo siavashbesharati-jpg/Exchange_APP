@@ -117,9 +117,9 @@ namespace ForexExchange.Services
                 BackupEnabled = await GetSettingAsync(SettingKeys.BackupEnabled, true),
                 
                 // Website Branding Settings
-                WebsiteName = await GetSettingAsync(SettingKeys.WebsiteName, "سامانه معاملات تابان"),
-                CompanyName = await GetSettingAsync(SettingKeys.CompanyName, "گروه تابان"),
-                CompanyWebsite = await GetSettingAsync(SettingKeys.CompanyWebsite, "https://taban-group.com"),
+                WebsiteName = await GetSettingAsync(SettingKeys.WebsiteName, "سامانه معاملات اکسورا"),
+                CompanyName = await GetSettingAsync(SettingKeys.CompanyName, "گروه اکسورا"),
+                CompanyWebsite = await GetSettingAsync(SettingKeys.CompanyWebsite, "https://Exsora.iranexpedia.ir"),
                 LogoPath = await GetSettingAsync<string?>(SettingKeys.WebsiteLogoPath, null)
             };
         }
@@ -231,17 +231,17 @@ namespace ForexExchange.Services
         // Website Branding Methods Implementation
         public async Task<string> GetWebsiteNameAsync()
         {
-            return await GetSettingAsync(SettingKeys.WebsiteName, "سامانه معاملات تابان");
+            return await GetSettingAsync(SettingKeys.WebsiteName, "سامانه معاملات اکسورا");
         }
 
         public async Task<string> GetCompanyNameAsync()
         {
-            return await GetSettingAsync(SettingKeys.CompanyName, "گروه تابان");
+            return await GetSettingAsync(SettingKeys.CompanyName, "گروه اکسورا");
         }
 
         public async Task<string> GetCompanyWebsiteAsync()
         {
-            return await GetSettingAsync(SettingKeys.CompanyWebsite, "https://taban-group.com");
+            return await GetSettingAsync(SettingKeys.CompanyWebsite, "https://Exsora.iranexpedia.ir");
         }
 
         public async Task<string?> GetLogoPathAsync()

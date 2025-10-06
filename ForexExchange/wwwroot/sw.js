@@ -39,7 +39,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('push', event => {
     
     let data = {
-        title: 'سامانه معاملات تابان',
+        title: 'سامانه معاملات اکسورا',
         body: 'اعلان جدید دریافت شد',
         icon: '/favicon/apple-touch-icon.png',
         badge: '/favicon/favicon-32x32.png',

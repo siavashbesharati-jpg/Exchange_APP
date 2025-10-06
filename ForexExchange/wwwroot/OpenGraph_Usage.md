@@ -47,7 +47,7 @@ For best results on WhatsApp and social media:
 
 ### Product/Service Page
 ```csharp
-ViewData["OGTitle"] = "خدمات تبدیل ارز - سامانه تابان";
+ViewData["OGTitle"] = "خدمات تبدیل ارز - سامانه اکسورا";
 ViewData["OGDescription"] = "تبدیل آنلاین ارز با بهترین نرخ‌ها. دلار، یورو، پوند و سایر ارزها";
 ViewData["OGType"] = "product";
 ```
@@ -61,8 +61,8 @@ ViewData["OGType"] = "article";
 
 ### Contact Page
 ```csharp
-ViewData["OGTitle"] = "تماس با سامانه تابان";
-ViewData["OGDescription"] = "راه‌های ارتباط با تیم پشتیبانی سامانه معاملات تابان";
+ViewData["OGTitle"] = "تماس با سامانه اکسورا";
+ViewData["OGDescription"] = "راه‌های ارتباط با تیم پشتیبانی سامانه معاملات اکسورا";
 ViewData["OGType"] = "website";
 ```
 

@@ -94,16 +94,16 @@ namespace ForexExchange.Models
         // Website Branding Settings
         [Display(Name = "نام وب‌سایت")]
         [StringLength(100, ErrorMessage = "نام وب‌سایت نمی‌تواند بیش از 100 کاراکتر باشد")]
-        public string WebsiteName { get; set; } = "سامانه معاملات تابان";
+        public string WebsiteName { get; set; } = "سامانه معاملات اکسورا";
 
         [Display(Name = "نام شرکت")]
         [StringLength(100, ErrorMessage = "نام شرکت نمی‌تواند بیش از 100 کاراکتر باشد")]
-        public string CompanyName { get; set; } = "گروه تابان";
+        public string CompanyName { get; set; } = "گروه اکسورا";
 
         [Display(Name = "وب‌سایت شرکت")]
         [StringLength(200, ErrorMessage = "آدرس وب‌سایت نمی‌تواند بیش از 200 کاراکتر باشد")]
         [Url(ErrorMessage = "لطفاً آدرس وب‌سایت معتبر وارد کنید")]
-        public string CompanyWebsite { get; set; } = "https://taban-group.com";
+        public string CompanyWebsite { get; set; } = "https://Exsora.iranexpedia.ir";
 
         [Display(Name = "مسیر لوگو")]
         [StringLength(500, ErrorMessage = "مسیر لوگو نمی‌تواند بیش از 500 کاراکتر باشد")]
