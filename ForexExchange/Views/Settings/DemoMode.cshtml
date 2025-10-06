@@ -1,0 +1,212 @@
+@using ForexExchange.Controllers
+@model DemoModeSettingsViewModel
+@{
+    ViewData["Title"] = "تنظیمات حالت نمایشی";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-toggle-on me-2"></i>
+                        تنظیمات حالت نمایشی (دمو)
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Demo Mode Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <h5 class="alert-heading">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    درباره حالت نمایشی
+                                </h5>
+                                <p class="mb-0">
+                                    حالت نمایشی (دمو) برای نمایش قابلیت‌های سیستم بدون انجام معاملات واقعی طراحی شده است. 
+                                    در این حالت، تمام داده‌ها نمونه‌ای بوده و هیچ تغییری در اطلاعات مالی واقعی ایجاد نمی‌شود.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Status -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card @(Model.IsDemoMode ? "border-warning" : "border-success")">
+                                <div class="card-body text-center">
+                                    <div class="@(Model.IsDemoMode ? "text-warning" : "text-success")">
+                                        <i class="@(Model.IsDemoMode ? "fas fa-exclamation-triangle" : "fas fa-check-circle") fa-3x mb-3"></i>
+                                        <h5>وضعیت فعلی: @(Model.IsDemoMode ? "حالت نمایشی (دمو)" : "حالت عملیاتی (واقعی)")</h5>
+                                        <p class="text-muted">
+                                            @if (Model.IsDemoMode)
+                                            {
+                                                <text>سیستم در حالت نمایشی قرار دارد و معاملات واقعی انجام نمی‌شود.</text>
+                                            }
+                                            else
+                                            {
+                                                <text>سیستم در حالت عملیاتی قرار دارد و معاملات واقعی انجام می‌شود.</text>
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Form -->
+                    <form asp-action="DemoMode" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="row">
+                            <div class="col-md-6 offset-md-3">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">تغییر وضعیت سیستم</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        
+                                        <!-- Demo Mode Toggle -->
+                                        <div class="form-group mb-4">
+                                            <div class="form-check form-switch d-flex align-items-center">
+                                                <input class="form-check-input me-3" 
+                                                       type="checkbox" 
+                                                       asp-for="IsDemoMode" 
+                                                       id="demoModeSwitch"
+                                                       style="transform: scale(1.5);">
+                                                <label class="form-check-label fw-bold" for="demoModeSwitch">
+                                                    @Html.DisplayNameFor(m => m.IsDemoMode)
+                                                </label>
+                                            </div>
+                                            <small class="form-text text-muted mt-2">
+                                                فعال‌سازی این گزینه سیستم را در حالت نمایشی قرار می‌دهد
+                                            </small>
+                                            @Html.ValidationMessageFor(m => m.IsDemoMode, "", new { @class = "text-danger" })
+                                        </div>
+
+                                        <!-- Warning Messages -->
+                                        <div id="demoWarning" class="alert alert-warning" style="@(Model.IsDemoMode ? "" : "display: none;")">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>هشدار:</strong> در حالت نمایشی، تمام معاملات شبیه‌سازی شده و هیچ تغییری در داده‌های واقعی ایجاد نمی‌شود.
+                                        </div>
+
+                                        <div id="productionWarning" class="alert alert-danger" style="@(!Model.IsDemoMode ? "" : "display: none;")">
+                                            <i class="fas fa-shield-alt me-2"></i>
+                                            <strong>توجه:</strong> در حالت عملیاتی، تمام معاملات واقعی بوده و تأثیر مالی دارند.
+                                        </div>
+
+                                        <!-- Action Buttons -->
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-primary btn-lg">
+                                                <i class="fas fa-save me-2"></i>
+                                                ذخیره تنظیمات
+                                            </button>
+                                            <a href="@Url.Action("Index", "Settings")" class="btn btn-secondary">
+                                                <i class="fas fa-arrow-right me-2"></i>
+                                                بازگشت به تنظیمات
+                                            </a>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Features Comparison -->
+                    <div class="row mt-5">
+                        <div class="col-12">
+                            <h5 class="mb-3">
+                                <i class="fas fa-balance-scale me-2"></i>
+                                مقایسه حالت‌ها
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>ویژگی</th>
+                                            <th class="text-center">حالت نمایشی (دمو)</th>
+                                            <th class="text-center">حالت عملیاتی (واقعی)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>ثبت معاملات</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-warning">شبیه‌سازی</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success">واقعی</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>تغییر موجودی مشتریان</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-warning">نمایشی</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success">واقعی</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>اسناد مالی</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-warning">نمونه</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success">واقعی</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>گزارشات</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info">داده نمونه</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success">داده واقعی</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>ایمنی داده‌ها</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success">کاملاً ایمن</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-warning">نیاز به احتیاط</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle demo mode toggle
+            $('#demoModeSwitch').change(function() {
+                var isDemo = $(this).is(':checked');
+                
+                if (isDemo) {
+                    $('#demoWarning').slideDown();
+                    $('#productionWarning').slideUp();
+                } else {
+                    $('#demoWarning').slideUp();
+                    $('#productionWarning').slideDown();
+                }
+            });
+
+            // Show initial state
+            $('#demoModeSwitch').trigger('change');
+        });
+    </script>
+}

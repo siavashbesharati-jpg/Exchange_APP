@@ -345,6 +345,71 @@ namespace ForexExchange.Controllers
                 return View(model);
             }
         }
+
+        // GET: Settings/DemoMode
+        public async Task<IActionResult> DemoMode()
+        {
+            try
+            {
+                var model = new DemoModeSettingsViewModel
+                {
+                    IsDemoMode = await _settingsService.GetSettingAsync(SettingKeys.IsDemoMode, false)
+                };
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading demo mode settings");
+                TempData["ErrorMessage"] = "خطا در بارگیری تنظیمات حالت نمایشی.";
+                return View(new DemoModeSettingsViewModel());
+            }
+        }
+
+        // POST: Settings/DemoMode
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DemoMode(DemoModeSettingsViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                var currentUser = User.Identity?.Name ?? "Admin";
+                await _settingsService.SetSettingAsync(SettingKeys.IsDemoMode, model.IsDemoMode, "فعال‌سازی حالت نمایشی سیستم", currentUser);
+                
+                var modeText = model.IsDemoMode ? "فعال" : "غیرفعال";
+                TempData["SuccessMessage"] = $"حالت نمایشی با موفقیت {modeText} شد.";
+                _logger.LogInformation($"Demo mode {(model.IsDemoMode ? "enabled" : "disabled")} by {currentUser}");
+                
+                return RedirectToAction(nameof(DemoMode));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating demo mode settings");
+                TempData["ErrorMessage"] = "خطا در بروزرسانی تنظیمات حالت نمایشی.";
+                return View(model);
+            }
+        }
+
+        // API: Get current demo mode status
+        [HttpGet]
+        public async Task<IActionResult> GetDemoMode()
+        {
+            try
+            {
+                var isDemoMode = await _settingsService.GetSettingAsync(SettingKeys.IsDemoMode, false);
+                return Json(new { success = true, isDemoMode = isDemoMode });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting demo mode status");
+                return Json(new { success = false, message = "خطا در دریافت وضعیت حالت نمایشی" });
+            }
+        }
     }
 
     // Additional ViewModels for specific settings pages
@@ -372,5 +437,11 @@ namespace ForexExchange.Controllers
         [Display(Name = "محدودیت تراکنش روزانه (تومان)")]
         [Range(10000, 100000000000, ErrorMessage = "محدودیت روزانه باید بین 10,000 تا 100,000,000,000 تومان باشد")]
         public decimal DailyTransactionLimit { get; set; }
+    }
+
+    public class DemoModeSettingsViewModel
+    {
+        [Display(Name = "حالت نمایشی (دمو)")]
+        public bool IsDemoMode { get; set; }
     }
 }

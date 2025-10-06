@@ -51,6 +51,9 @@ namespace ForexExchange.Models
         public const string WebsiteLogoMimeType = "WEBSITE_LOGO_MIME_TYPE";
         public const string CompanyName = "COMPANY_NAME";
         public const string CompanyWebsite = "COMPANY_WEBSITE";
+        
+        // Application Mode Settings
+        public const string IsDemoMode = "IS_DEMO_MODE";
     }
 
     // Settings view model for management interface
@@ -92,6 +95,9 @@ namespace ForexExchange.Models
 
         [Display(Name = "فعال‌سازی پشتیبان‌گیری خودکار")]
         public bool BackupEnabled { get; set; }
+
+        [Display(Name = "حالت نمایشی (دمو)")]
+        public bool IsDemoMode { get; set; }
 
         // Website Branding Settings
         [Display(Name = "نام وب‌سایت")]
