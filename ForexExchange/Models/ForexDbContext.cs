@@ -303,57 +303,10 @@ namespace ForexExchange.Models
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // Seed initial exchange rates
-            var seedDate = new DateTime(2025, 8, 18, 12, 0, 0, DateTimeKind.Utc);
-            
-            // Seed initial currency pools - now using Currency IDs instead of CurrencyType enum
-            modelBuilder.Entity<CurrencyPool>().HasData(
-                new CurrencyPool { Id = 1, CurrencyId = 1, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Iranian Toman pool - initial setup" },
-                new CurrencyPool { Id = 2, CurrencyId = 2, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "US Dollar pool - initial setup" },
-                new CurrencyPool { Id = 3, CurrencyId = 3, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Euro pool - initial setup" },
-                new CurrencyPool { Id = 4, CurrencyId = 4, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "UAE Dirham pool - initial setup" },
-                new CurrencyPool { Id = 5, CurrencyId = 5, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Omani Rial pool - initial setup" },
-                new CurrencyPool { Id = 6, CurrencyId = 6, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Turkish Lira pool - initial setup" },
-                new CurrencyPool { Id = 7, CurrencyId = 7, Balance = 0, TotalBought = 0, TotalSold = 0, LastUpdated = seedDate, RiskLevel = PoolRiskLevel.Low, IsActive = true, Notes = "Chinese Yuan pool - initial setup" }
-            );
-
-            // Seed initial exchange rates - now with Currency IDs and cross-currency pairs
-            modelBuilder.Entity<ExchangeRate>().HasData(
-                // IRR to other currencies (base currency rates)
-                new ExchangeRate { Id = 1, FromCurrencyId = 1, ToCurrencyId = 2, Rate = 68500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 2, FromCurrencyId = 1, ToCurrencyId = 3, Rate = 72500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 3, FromCurrencyId = 1, ToCurrencyId = 4, Rate = 18750, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 4, FromCurrencyId = 1, ToCurrencyId = 5, Rate = 178000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 5, FromCurrencyId = 1, ToCurrencyId = 6, Rate = 2000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 15, FromCurrencyId = 1, ToCurrencyId = 7, Rate = 9600, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                // Reverse rates (other currencies to IRR)
-                new ExchangeRate { Id = 6, FromCurrencyId = 2, ToCurrencyId = 1, Rate = 1.0m/68500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 7, FromCurrencyId = 3, ToCurrencyId = 1, Rate = 1.0m/72500, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 8, FromCurrencyId = 4, ToCurrencyId = 1, Rate = 1.0m/18750, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 9, FromCurrencyId = 5, ToCurrencyId = 1, Rate = 1.0m/178000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 10, FromCurrencyId = 6, ToCurrencyId = 1, Rate = 1.0m/2000, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 16, FromCurrencyId = 7, ToCurrencyId = 1, Rate = 1.0m/9600, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                // Sample cross-currency rates (USD to other currencies)
-                new ExchangeRate { Id = 11, FromCurrencyId = 2, ToCurrencyId = 3, Rate = 0.93m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 12, FromCurrencyId = 2, ToCurrencyId = 4, Rate = 3.68m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 13, FromCurrencyId = 2, ToCurrencyId = 5, Rate = 0.385m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 14, FromCurrencyId = 2, ToCurrencyId = 6, Rate = 34.85m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new ExchangeRate { Id = 17, FromCurrencyId = 2, ToCurrencyId = 7, Rate = 7.14m, IsActive = true, UpdatedAt = seedDate, UpdatedBy = "System" }
-            );
-
-            // Seed initial system settings
-            modelBuilder.Entity<SystemSettings>().HasData(
-                new SystemSettings { Id = 1, SettingKey = SettingKeys.CommissionRate, SettingValue = "0.5", Description = "نرخ کمیسیون به درصد", DataType = "decimal", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 2, SettingKey = SettingKeys.ExchangeFeeRate, SettingValue = "0.2", Description = "کارمزد تبدیل ارز به درصد", DataType = "decimal", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 3, SettingKey = SettingKeys.MinTransactionAmount, SettingValue = "10000", Description = "حداقل مبلغ تراکنش به تومان", DataType = "decimal", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 4, SettingKey = SettingKeys.MaxTransactionAmount, SettingValue = "1000000000", Description = "حداکثر مبلغ تراکنش به تومان", DataType = "decimal", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 5, SettingKey = SettingKeys.DailyTransactionLimit, SettingValue = "5000000000", Description = "محدودیت تراکنش روزانه به تومان", DataType = "decimal", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 6, SettingKey = SettingKeys.SystemMaintenance, SettingValue = "false", Description = "حالت تعمیرات سیستم", DataType = "bool", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 7, SettingKey = SettingKeys.DefaultCurrency, SettingValue = "USD", Description = "ارز پیش‌فرض سیستم", DataType = "string", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 8, SettingKey = SettingKeys.RateUpdateInterval, SettingValue = "60", Description = "بازه بروزرسانی نرخ ارز به دقیقه", DataType = "int", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 9, SettingKey = SettingKeys.NotificationEnabled, SettingValue = "true", Description = "فعال‌سازی سیستم اعلان‌ها", DataType = "bool", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" },
-                new SystemSettings { Id = 10, SettingKey = SettingKeys.BackupEnabled, SettingValue = "true", Description = "فعال‌سازی پشتیبان‌گیری خودکار", DataType = "bool", CreatedAt = seedDate, UpdatedAt = seedDate, UpdatedBy = "System" }
-            );
+            // NOTE: CurrencyPool and ExchangeRate seeding is now handled by DataSeedService
+            // This provides more flexibility, better error handling, and unified seeding logic
+          
+      
             
             // ShareableLink configurations
             modelBuilder.Entity<ShareableLink>(entity =>
@@ -516,16 +469,8 @@ namespace ForexExchange.Models
             modelBuilder.Entity<Order>().HasQueryFilter(o => !o.IsDeleted);
             modelBuilder.Entity<AccountingDocument>().HasQueryFilter(d => !d.IsDeleted);
 
-            // Seed currencies
-            modelBuilder.Entity<Currency>().HasData(
-                new Currency { Id = 1, Code = "IRR", Name = "Iranian Toman", PersianName = "تومان", Symbol = "﷼", IsActive = true, DisplayOrder = 1, CreatedAt = seedDate },
-                new Currency { Id = 2, Code = "USD", Name = "US Dollar", PersianName = "دلار آمریکا", Symbol = "$", IsActive = true, DisplayOrder = 4, CreatedAt = seedDate },
-                new Currency { Id = 3, Code = "EUR", Name = "Euro", PersianName = "یورو", Symbol = "€", IsActive = true, DisplayOrder = 5, CreatedAt = seedDate },
-                new Currency { Id = 4, Code = "AED", Name = "UAE Dirham", PersianName = "درهم امارات", Symbol = "د.إ", IsActive = true, DisplayOrder = 3, CreatedAt = seedDate },
-                new Currency { Id = 5, Code = "OMR", Name = "Omani Rial", PersianName = "ریال عمان", Symbol = "ر.ع.", IsActive = true, DisplayOrder = 2, CreatedAt = seedDate },
-                new Currency { Id = 6, Code = "TRY", Name = "Turkish Lira", PersianName = "لیر ترکیه", Symbol = "₺", IsActive = true, DisplayOrder = 6, CreatedAt = seedDate },
-                new Currency { Id = 7, Code = "CNY", Name = "Chinese Yuan", PersianName = "یوان چین", Symbol = "¥", IsActive = true, DisplayOrder = 7, CreatedAt = seedDate }
-            );
+            // NOTE: Currency seeding is now handled by DataSeedService
+            // This provides more flexibility and consistency with other seeding operations
         }
     }
 }
