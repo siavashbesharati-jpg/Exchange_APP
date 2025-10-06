@@ -8,6 +8,9 @@
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync(); 
     var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
     
+    // Check if demo mode is active
+    var isDemoMode = await SettingsService.GetSettingAsync("IS_DEMO_MODE", false);
+    
     ViewData["Title"] = User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")) ? "مدیریت نرخ‌های ارز" : websiteName;
     
     // Open Graph Tags for better WhatsApp sharing
@@ -27,11 +30,25 @@
                     <img src="@logoDataUrl" alt="@companyName" 
                          style="width: 60px; height: 60px;" class="me-3">
                     <div>
-                        <h1 class="h3 mb-1 text-primary fw-bold">@websiteName</h1>
+                        <h1 class="h3 mb-1 text-primary fw-bold">
+                            @websiteName
+                            @if (isDemoMode)
+                            {
+                                <span class="badge bg-warning text-dark ms-2">
+                                    <i class="fas fa-flask me-1"></i>حالت نمایشی
+                                </span>
+                            }
+                        </h1>
                         <p class="text-muted mb-0 small">نرخ‌های ارز به‌روز و تبدیل آنلاین</p>
                     </div>
                 </div>
                 <div class="btn-group">
+                    @if (isDemoMode)
+                    {
+                        <a href="@Url.Action("Help", "Home")" class="btn btn-info btn-sm me-2">
+                            <i class="fas fa-question-circle me-1"></i>راهنما
+                        </a>
+                    }
                     @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
                     {
                         <a asp-action="Manage" class="btn btn-success btn-sm">مدیریت ارزها</a>
@@ -139,6 +156,52 @@
             </div>
         </div>
     </div>
+
+    <!-- Demo Mode Developer Contact Box -->
+    @if (isDemoMode)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-code me-2"></i>
+                            تماس با تیم توسعه 
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-success rounded-circle d-inline-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fab fa-whatsapp text-white fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">سوال یا نیاز به پشتیبانی دارید؟</h6>
+                                        <p class="text-muted mb-0 small">
+                                            در حالت نمایشی، برای دریافت راهنمایی یا گزارش مشکل با تیم توسعه تماس بگیرید
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <a href="https://wa.me/989120674032" target="_blank" class="btn btn-success">
+                                    <i class="fab fa-whatsapp me-2"></i>
+                                    09120674032
+                                </a>
+                                <div class="mt-2">
+                                    <a href="@Url.Action("Help", "Home")" class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-book me-1"></i>
+                                        راهنمای کامل
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
    
 </div>
