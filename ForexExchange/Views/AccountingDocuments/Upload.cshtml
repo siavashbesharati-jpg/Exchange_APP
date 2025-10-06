@@ -1687,10 +1687,16 @@
                 if (data.isHtml) {
                     // Handle HTML response (fallback)
                     if (data.content.includes('class="alert alert-success"') || data.content.includes('TempData["SuccessMessage"]')) {
-                        showSuccessMessage('سند حسابداری با موفقیت ثبت شد.');
-                        setTimeout(() => {
+                        // Extract document ID from success response if available
+                        const idMatch = data.content.match(/data-document-id="(\d+)"/);
+                        const documentId = idMatch ? idMatch[1] : null;
+                        
+                        // Immediate redirect to detail page or index
+                        if (documentId) {
+                            window.location.href = '@Url.Action("Details", "AccountingDocuments")/' + documentId;
+                        } else {
                             window.location.href = '@Url.Action("Index", "AccountingDocuments")';
-                        }, 2000);
+                        }
                     } else {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(data.content, 'text/html');
@@ -1712,13 +1718,10 @@
                 } else {
                     // Handle JSON response
                     if (data.success) {
-                        showSuccessMessage(data.message || 'سند حسابداری با موفقیت ثبت شد.');
-                        
-                        // Reset form
-                        form.reset();
-                        
-                        // Immediate redirect without delay
-                        if (data.redirectUrl) {
+                        // Immediate redirect to detail page
+                        if (data.documentId) {
+                            window.location.href = '@Url.Action("Details", "AccountingDocuments")/' + data.documentId;
+                        } else if (data.redirectUrl) {
                             window.location.href = data.redirectUrl;
                         } else {
                             window.location.href = '@Url.Action("Index", "AccountingDocuments")';
