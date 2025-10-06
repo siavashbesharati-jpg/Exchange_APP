@@ -100,6 +100,21 @@ class AutoCurrencyDisplayFormatter {
         // Skip elements that should not be formatted
         if (this.shouldSkipElement(element)) return;
 
+        // First, check if this looks like a phone number - SKIP formatting
+        const phonePatterns = [
+            /^\s*0\d{10}\s*$/, // Iranian phone pattern: 09123456789
+            /^\s*\+98\d{10}\s*$/, // International Iran: +989123456789
+            /^\s*\d{3}-?\d{3}-?\d{4}\s*$/, // US format: 123-456-7890
+            /^\s*\(\d{3}\)\s*\d{3}-?\d{4}\s*$/ // US format: (123) 456-7890
+        ];
+        
+        for (const phonePattern of phonePatterns) {
+            if (phonePattern.test(textContent)) {
+                console.log('Skipping phone number:', textContent);
+                return; // Skip formatting for phone numbers
+            }
+        }
+
         // Pattern to match numbers that might be currency values
         // Matches: 1234567, 1234567.89, 1,234,567.89, but not phone numbers, dates, etc.
         const currencyPattern = /^\s*-?\s*(\d{1,3}(?:,\d{3})*|\d+)(?:\.\d{1,8})?\s*$/;
@@ -172,6 +187,7 @@ class AutoCurrencyDisplayFormatter {
          * - data-protected: Legacy protection attribute  
          * - data-skip-format: Modern protection attribute
          * - no-format-number: CSS class for styling + protection
+         * - no-format: Modern CSS class for protection
          * - protected-reference: CSS class specifically for reference numbers
          * - skip-auto-format: Modern CSS class for protection
          * 
@@ -182,6 +198,7 @@ class AutoCurrencyDisplayFormatter {
             element.hasAttribute('data-protected') || 
             element.hasAttribute('data-skip-format') ||
             element.classList.contains('no-format-number') ||
+            element.classList.contains('no-format') ||
             element.classList.contains('protected-reference') ||
             element.classList.contains('skip-auto-format')) {
             return true;
@@ -194,6 +211,16 @@ class AutoCurrencyDisplayFormatter {
         let parent = element.parentElement;
         while (parent) {
             if (parent.tagName === 'A' && parent.href && parent.href.startsWith('tel:')) return true;
+            parent = parent.parentElement;
+        }
+        
+        // Skip WhatsApp links and their content
+        if (element.tagName === 'A' && element.href && element.href.includes('wa.me')) return true;
+        
+        // Skip elements inside WhatsApp links
+        parent = element.parentElement;
+        while (parent) {
+            if (parent.tagName === 'A' && parent.href && parent.href.includes('wa.me')) return true;
             parent = parent.parentElement;
         }
         
