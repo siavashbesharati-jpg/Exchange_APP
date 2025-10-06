@@ -267,10 +267,9 @@
 <div class="control-buttons d-print-none">
     @if (!Model.IsVerified)
     {
-        <form asp-action="Confirm" asp-route-id="@Model.Id" method="post" class="d-inline" 
-              onsubmit="return confirm('آیا از تأیید این سند اطمینان دارید؟ این عملیات ترازها را بروزرسانی خواهد کرد.')">
+        <form id="confirmForm" asp-action="Confirm" asp-route-id="@Model.Id" method="post" class="d-inline">
             @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-success">
+            <button type="button" id="confirmDocumentBtn" class="btn btn-success" onclick="confirmDocument()">
                 <i class="fas fa-check"></i> تأیید سند
             </button>
         </form>
@@ -286,6 +285,8 @@
         <i class="fas fa-print"></i> چاپ
     </button>
 </div>
+
+@Html.Partial("_LoadingOverlay")
 
 <div class="document-paper">
     <!-- Status Stamp -->
@@ -488,6 +489,8 @@
 </div>
 
 @section Scripts {
+    <link rel="stylesheet" href="~/css/loading-overlay.css" />
+    <script src="~/js/loading-overlay.js"></script>
     <script>
         // Protect reference numbers from global formatting scripts - Enhanced Version
         document.addEventListener('DOMContentLoaded', function() {
@@ -518,6 +521,189 @@
             // Override global formatting functions if they exist
             overrideGlobalFormatting();
         });
+        
+        // Document Confirmation Function - AJAX Implementation
+        function confirmDocument() {
+            // Show confirmation dialog first
+            if (!confirm('آیا از تأیید این سند اطمینان دارید؟ این عملیات ترازها را بروزرسانی خواهد کرد.')) {
+                return;
+            }
+            
+            console.log('=== Document Confirmation AJAX Started ===');
+            
+            const confirmBtn = document.getElementById('confirmDocumentBtn');
+            const originalText = confirmBtn.innerHTML;
+            
+            // Show beautiful loading overlay with document confirmation message
+            showLoadingWithMessage('document');
+            
+            // Show loading state on button
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال تأیید...';
+            
+            // Prepare form data
+            const form = document.getElementById('confirmForm');
+            const formData = new FormData();
+            
+            // Add anti-forgery token
+            const antiForgeryToken = form.querySelector('input[name="__RequestVerificationToken"]');
+            if (antiForgeryToken) {
+                formData.append('__RequestVerificationToken', antiForgeryToken.value);
+                console.log('Anti-forgery token added:', antiForgeryToken.value.substring(0, 20) + '...');
+            } else {
+                console.error('Anti-forgery token NOT found!');
+            }
+            
+            // The Confirm action only needs the ID (from route) and anti-forgery token
+            console.log('Form action:', form.action);
+            console.log('Document ID: @Model.Id');
+            
+            const startTime = Date.now();
+            
+            // Send AJAX request
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                const responseTime = Date.now() - startTime;
+                console.log('=== Confirmation Response Received ===');
+                console.log(`Response time: ${responseTime}ms`);
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
+                console.log('Response ok:', response.ok);
+                
+                // Log response headers for debugging
+                console.log('Response headers:');
+                for (let [key, value] of response.headers.entries()) {
+                    console.log(`  ${key}: ${value}`);
+                }
+                
+                if (response.ok) {
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    console.log('Content-Type:', contentType);
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    } else {
+                        return response.text().then(text => ({ isHtml: true, content: text }));
+                    }
+                } else {
+                    // Handle error response
+                    return response.text().then(text => {
+                        console.error('Error response body:', text);
+                        throw new Error(`HTTP error! status: ${response.status}. Response: ${text.substring(0, 300)}...`);
+                    });
+                }
+            })
+            .then(data => {
+                console.log('Confirmation response data:', data);
+                
+                // Hide loading overlay
+                hideLoadingOverlay();
+                
+                if (data.isHtml) {
+                    // Handle HTML response (fallback)
+                    if (data.content.includes('class="alert alert-success"') || data.content.includes('TempData["SuccessMessage"]')) {
+                        showSuccessMessage('سند با موفقیت تأیید شد. صفحه بروزرسانی می‌شود...');
+                        // Reload the page to show updated confirmation status
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showErrorMessage('خطا در تأیید سند', ['پاسخ نامعتبر از سرور دریافت شد.']);
+                    }
+                } else {
+                    // Handle JSON response
+                    if (data.success) {
+                        showSuccessMessage(data.message || 'سند با موفقیت تأیید شد. صفحه بروزرسانی می‌شود...');
+                        // Reload the page to show updated confirmation status
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        // Show error messages
+                        if (data.errors && data.errors.length > 0) {
+                            showErrorMessage(data.message || 'خطاهای اعتبارسنجی:', data.errors);
+                        } else {
+                            showErrorMessage('خطا در تأیید سند:', [data.message || 'خطای نامشخص رخ داده است.']);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('AJAX Error:', error);
+                
+                // Hide loading overlay
+                hideLoadingOverlay();
+                
+                showErrorMessage('خطا در ارتباط با سرور:', [error.message]);
+            })
+            .finally(() => {
+                // Restore button state
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+            });
+        }
+        
+        // Helper function to show success messages
+        function showSuccessMessage(message) {
+            // Remove any existing alerts
+            removeExistingAlerts();
+            
+            const successAlert = document.createElement('div');
+            successAlert.className = 'alert alert-success alert-dismissible fade show';
+            successAlert.innerHTML = `
+                <i class="fas fa-check-circle"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert before the document paper
+            const documentPaper = document.querySelector('.document-paper');
+            documentPaper.parentNode.insertBefore(successAlert, documentPaper);
+            window.scrollTo(0, 0);
+        }
+        
+        // Helper function to show error messages
+        function showErrorMessage(title, messages) {
+            // Remove any existing alerts
+            removeExistingAlerts();
+            
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+            
+            let messageList = '';
+            if (Array.isArray(messages)) {
+                messageList = '<ul class="mb-0 mt-2">' + messages.map(msg => `<li>${msg}</li>`).join('') + '</ul>';
+            } else {
+                messageList = `<div class="mt-2">${messages}</div>`;
+            }
+            
+            errorAlert.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> <strong>${title}</strong>
+                ${messageList}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert before the document paper
+            const documentPaper = document.querySelector('.document-paper');
+            documentPaper.parentNode.insertBefore(errorAlert, documentPaper);
+            window.scrollTo(0, 0);
+        }
+        
+        // Helper function to remove existing alerts
+        function removeExistingAlerts() {
+            const existingAlerts = document.querySelectorAll('.alert:not(.alert-info)');
+            existingAlerts.forEach(alert => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            });
+        }
         
         function protectReferenceNumbers() {
             // Find all elements with no-format-number class
