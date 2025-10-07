@@ -10,7 +10,7 @@ using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Programmer")]
     public class DatabaseController : Controller
     {
         private readonly ForexDbContext _context;

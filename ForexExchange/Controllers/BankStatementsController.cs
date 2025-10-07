@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin,Manager,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public class BankStatementsController : Controller
     {
         private readonly ForexDbContext _context;

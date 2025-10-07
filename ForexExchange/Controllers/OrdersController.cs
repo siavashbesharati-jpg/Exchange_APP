@@ -10,7 +10,7 @@ using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin,Manager,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public class OrdersController : Controller
     {
         private readonly ForexDbContext _context;
@@ -50,7 +50,7 @@ namespace ForexExchange.Controllers
 
         // POST: Orders/PreviewOrderEffects
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager,Staff")]
+        [Authorize(Roles = "Admin,Operator,Programmer")]
         public async Task<IActionResult> PreviewOrderEffects([FromBody] OrderFormDataDto dto)
         {
             // Use shared order data service for consistent validation and preparation
@@ -595,7 +595,7 @@ namespace ForexExchange.Controllers
         // POST: Orders/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")] // Only admins can delete orders
+        [Authorize(Roles = "Admin,Programmer")] // Only admins can delete orders
         public async Task<IActionResult> Delete(int id)
         {
             try

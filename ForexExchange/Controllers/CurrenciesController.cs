@@ -5,7 +5,7 @@ using ForexExchange.Models;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin,Manager,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public class CurrenciesController : Controller
     {
         private readonly ForexDbContext _context;

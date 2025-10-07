@@ -294,7 +294,7 @@ namespace ForexExchange.Controllers
         }
 
         // GET: ExchangeRates/Manage
-        [Authorize(Roles = "Admin,Manager,Staff")]
+        [Authorize(Roles = "Admin,Operator,Programmer")]
         public async Task<IActionResult> Manage(long? refresh)
         {
             // Force fresh query to avoid EF tracking cache issues
@@ -320,7 +320,7 @@ namespace ForexExchange.Controllers
         // POST: ExchangeRates/UpdateAll
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Manager,Staff")]
+        [Authorize(Roles = "Admin,Operator,Programmer")]
     public async Task<IActionResult> UpdateAll(Dictionary<int, decimal> rates)
         {
             if (rates == null)
@@ -385,7 +385,7 @@ namespace ForexExchange.Controllers
         // POST: ExchangeRates/UpdateFromWeb
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Manager,Staff")]
+        [Authorize(Roles = "Admin,Operator,Programmer")]
         public IActionResult UpdateFromWeb()
         {
             // DISABLED: Web scraping functionality

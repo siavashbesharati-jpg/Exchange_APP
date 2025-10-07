@@ -64,7 +64,7 @@ public class HomeController : Controller
         return View();
     }
 
-    [Authorize(Roles = "Admin,Manager,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public async Task<IActionResult> Dashboard()
     {
         // Get currency pools for the widget
@@ -82,7 +82,7 @@ public class HomeController : Controller
         return View();
     }
 
-    [Authorize(Roles = "Admin,Manager,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public IActionResult Management()
     {
         return View();

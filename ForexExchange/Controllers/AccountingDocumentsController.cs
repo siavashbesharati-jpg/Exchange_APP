@@ -770,7 +770,7 @@ namespace ForexExchange.Controllers
         // POST: AccountingDocuments/ConfirmAll
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Programmer")]
         public async Task<IActionResult> ConfirmAll()
         {
             try
@@ -1186,7 +1186,7 @@ namespace ForexExchange.Controllers
         // POST: AccountingDocuments/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin")] // Only admins can delete documents
+        [Authorize(Roles = "Admin,Programmer")] // Only admins can delete documents
         public async Task<IActionResult> Delete(int id)
         {
             try

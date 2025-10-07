@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin,Manager,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public class CustomersController : Controller
     {
         private readonly ForexDbContext _context;

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin,Manager")]
+    [Authorize(Roles = "Prgorammer")]
     public class SettingsController : Controller
     {
         private readonly ISettingsService _settingsService;

@@ -6,7 +6,7 @@ using ForexExchange.Services;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin,Manager,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public class SettlementsController : Controller
     {
         private readonly ForexDbContext _context;

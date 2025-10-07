@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Services
 {
@@ -115,14 +116,17 @@ namespace ForexExchange.Services
 
         private async Task CreateRolesAsync()
         {
-            var roles = new[] { "Admin", "Customer", "Staff" };
+            // Get all UserRole enum values
+            var userRoles = Enum.GetValues<UserRole>();
 
-            foreach (var role in roles)
+            foreach (var userRole in userRoles)
             {
-                if (!await _roleManager.RoleExistsAsync(role))
+                var roleName = userRole.ToString();
+                
+                if (!await _roleManager.RoleExistsAsync(roleName))
                 {
-                    await _roleManager.CreateAsync(new IdentityRole(role));
-                    _logger.LogInformation($"Role '{role}' created successfully");
+                    await _roleManager.CreateAsync(new IdentityRole(roleName));
+                    _logger.LogInformation($"Role '{roleName}' ({userRole.GetDisplayName()}) created successfully");
                 }
             }
         }
@@ -177,8 +181,10 @@ namespace ForexExchange.Services
 
                     if (result.Succeeded)
                     {
-                        await _userManager.AddToRoleAsync(adminUser, "Admin");
-                        _logger.LogInformation($"Admin user created successfully with username: {adminData.Phone} and email: {adminData.Email}");
+                        // Use the enum value as role name
+                        var roleName = adminData.Role.ToString();
+                        await _userManager.AddToRoleAsync(adminUser, roleName);
+                        _logger.LogInformation($"Admin user created successfully with username: {adminData.Phone}, email: {adminData.Email}, and role: {roleName}");
                     }
                     else
                     {
