@@ -117,33 +117,5 @@
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        // Validate sell rate is higher than buy rate
-        // No need to validate buy/sell rate difference in single-rate system
 
-        // DISABLED: Function to update rates from web
-        /*
-        function updateFromWeb() {
-            if (confirm('آیا می‌خواهید نرخ‌ها را از وب بروزرسانی کنید؟\nاین عمل ممکن است چند دقیقه طول بکشد.')) {
-                // Show loading indicator
-                var button = event.target;
-                var originalText = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال بروزرسانی...';
-                button.disabled = true;
 
-                // Add timestamp to force cache refresh
-                var form = document.getElementById('webUpdateForm');
-                var timestampInput = document.createElement('input');
-                timestampInput.type = 'hidden';
-                timestampInput.name = 'timestamp';
-                timestampInput.value = new Date().getTime();
-                form.appendChild(timestampInput);
-
-                // Submit the hidden form
-                form.submit();
-            }
-        }
-        */
-    </script>
-}

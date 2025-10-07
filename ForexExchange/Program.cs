@@ -114,22 +114,22 @@ builder.Services.AddScoped<INotificationHub>(serviceProvider =>
     var logger = serviceProvider.GetRequiredService<ILogger<ForexExchange.Services.Notifications.NotificationHub>>();
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
     var environment = serviceProvider.GetRequiredService<IWebHostEnvironment>();
-    
+
     var hub = new ForexExchange.Services.Notifications.NotificationHub(context, logger, configuration, environment);
-    
+
     // Register providers
     var signalRProvider = serviceProvider.GetRequiredService<SignalRNotificationProvider>();
     var pushProvider = serviceProvider.GetRequiredService<PushNotificationProvider>();
     var smsProvider = serviceProvider.GetRequiredService<SmsNotificationProvider>();
     var emailProvider = serviceProvider.GetRequiredService<EmailNotificationProvider>();
     var telegramProvider = serviceProvider.GetRequiredService<TelegramNotificationProvider>();
-    
+
     hub.RegisterProvider(signalRProvider);
     hub.RegisterProvider(pushProvider);
     hub.RegisterProvider(smsProvider);
     hub.RegisterProvider(emailProvider);
     hub.RegisterProvider(telegramProvider);
-    
+
     return hub;
 });
 
@@ -187,22 +187,23 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    // SECURITY WARNING: This shows detailed exception information in production
-    // Remove this configuration before deploying to a public production environment
-    app.UseDeveloperExceptionPage();
-
-    // Alternative: Use custom error handling with detailed logging
-    // app.UseExceptionHandler("/Home/Error");
+    // Production error handling
+    app.UseExceptionHandler("/Error");
+    app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 else
 {
+    // Development error handling
     app.UseDeveloperExceptionPage();
+    // Also add status code pages for development testing
+    app.UseStatusCodePagesWithReExecute("/Error/{0}");
 }
 
 app.UseHttpsRedirection();
