@@ -16,9 +16,14 @@ namespace ForexExchange.Services
         /// </summary>
         Task<OrderPreviewEffectsDto> PreviewOrderEffectsAsync(Order order);
 
+        /// <summary>
+        /// Simulates the effects of an account document on customer and bank balances (no DB changes)
+        /// </summary>
+        Task<AccountingDocumentPreviewEffectsDto> PreviewAccountingDocumentEffectsAsync(AccountingDocument accountingDocument);
 
-       
-     
+
+
+
         /// <summary>
         /// Processes order creation - creates dual-currency impact (payment + receipt transactions)
         /// Preserves exact logic from existing CustomerFinancialHistoryService
@@ -31,7 +36,7 @@ namespace ForexExchange.Services
         /// </summary>
         Task ProcessAccountingDocumentAsync(AccountingDocument document, string performedBy = "System");
 
-     
+
         /// <summary>
         /// Safely deletes an order by reversing its financial impacts
         /// </summary>
@@ -43,14 +48,14 @@ namespace ForexExchange.Services
         Task DeleteAccountingDocumentAsync(AccountingDocument document, string performedBy = "Admin");
 
 
-       
-   
-       
 
-       
-       
-        
-       
+
+
+
+
+
+
+
         /// <summary>
         /// Creates a manual customer balance history record with specified transaction date.
         /// This is useful for manual adjustments, corrections, or importing historical data.
@@ -115,13 +120,13 @@ namespace ForexExchange.Services
         /// </summary>
         Task RebuildAllFinancialBalancesAsync(string performedBy = "System");
 
-        
 
 
 
-     
-      
-       
+
+
+
+
     }
 }
 
