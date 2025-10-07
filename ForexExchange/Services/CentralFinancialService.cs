@@ -112,16 +112,42 @@ namespace ForexExchange.Services
             var customerBalanceFrom = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.FromCurrency.Code);
             if (customerBalanceFrom == null)
             {
-                _logger.LogError($"Customer balance not found for customer {order.CustomerId} and currency {order.FromCurrency.Code}");
-                throw new Exception($"Customer balance not found for customer {order.CustomerId} and currency {order.FromCurrency.Code}");
+                _logger.LogWarning($"Customer balance not found for customer {order.CustomerId} and currency {order.FromCurrency.Code} - creating with zero balance");
+                
+                // Auto-create missing customer balance record with zero balance
+                customerBalanceFrom = new CustomerBalance
+                {
+                    CustomerId = order.CustomerId,
+                    CurrencyCode = order.FromCurrency.Code,
+                    Balance = 0,
+                    LastUpdated = DateTime.UtcNow
+                };
+                
+                _context.CustomerBalances.Add(customerBalanceFrom);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation($"Created new customer balance record: CustomerId={order.CustomerId}, Currency={order.FromCurrency.Code}, Balance=0");
             }
             _logger.LogInformation($"CustomerBalanceFrom: {customerBalanceFrom.Balance}");
 
             var customerBalanceTo = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.ToCurrency.Code);
             if (customerBalanceTo == null)
             {
-                _logger.LogError($"Customer balance not found for customer {order.CustomerId} and currency {order.ToCurrency.Code}");
-                throw new Exception($"Customer balance not found for customer {order.CustomerId} and currency {order.ToCurrency.Code}");
+                _logger.LogWarning($"Customer balance not found for customer {order.CustomerId} and currency {order.ToCurrency.Code} - creating with zero balance");
+                
+                // Auto-create missing customer balance record with zero balance
+                customerBalanceTo = new CustomerBalance
+                {
+                    CustomerId = order.CustomerId,
+                    CurrencyCode = order.ToCurrency.Code,
+                    Balance = 0,
+                    LastUpdated = DateTime.UtcNow
+                };
+                
+                _context.CustomerBalances.Add(customerBalanceTo);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation($"Created new customer balance record: CustomerId={order.CustomerId}, Currency={order.ToCurrency.Code}, Balance=0");
             }
             _logger.LogInformation($"CustomerBalanceTo: {customerBalanceTo.Balance}");
 
