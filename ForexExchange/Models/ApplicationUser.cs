@@ -26,9 +26,10 @@ namespace ForexExchange.Models
 
     public enum UserRole
     {
-        Customer = 0,
+        Programer = 0,
         Admin = 1,
         Operator = 2,
-        Manager = 3
+        Customer = 3,
+        
     }
 }

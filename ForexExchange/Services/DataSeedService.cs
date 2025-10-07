@@ -132,7 +132,8 @@ namespace ForexExchange.Services
             // Define multiple admin users with their phone numbers as passwords
             var adminUsers = new[]
             {
-                new { Phone = "00989120674032", Email = "siavash@taban-gorpup.com", FullName = "سیاوش", Password = "09120674032" },
+                new { Phone = "009195410188", Email = "siavash@iranexpedia.ir", FullName = "برنامه نویس", Password = "roberto2025@#$ASD",Role = UserRole.Programer },
+                new { Phone = "00989120674032", Email = "siavash@taban-gorpup.com", FullName = "سیاوش", Password = "roberto2025@#$ASD",Role = UserRole.Programer },
             };
 
             foreach (var adminData in adminUsers)
@@ -165,7 +166,7 @@ namespace ForexExchange.Services
                         UserName = adminData.Phone, // Use phone as username for login
                         Email = adminData.Email,
                         FullName = adminData.FullName,
-                        Role = UserRole.Admin,
+                        Role = adminData.Role,
                         IsActive = true,
                         CreatedAt = DateTime.Now,
                         EmailConfirmed = true,
