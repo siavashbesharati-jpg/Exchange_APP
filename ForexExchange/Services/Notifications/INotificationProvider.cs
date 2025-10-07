@@ -143,6 +143,13 @@ namespace ForexExchange.Services.Notifications
         // Customer events
         CustomerRegistered,
         
+        // Task events
+        TaskAssignment,
+        TaskDueReminder,
+        TaskOverdue,
+        TaskProgress,
+        TaskCompleted,
+        
         // System events
         SystemError,
         SystemMaintenance,

@@ -116,6 +116,8 @@ builder.Services.AddScoped<IVapidService, VapidService>();
 builder.Services.AddScoped<ExcelExportService>();
 // File upload service for logo management
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+// Task management service - simplified
+builder.Services.AddScoped<ITaskManagementService, TaskManagementService>();
 
 // Central notification system
 builder.Services.AddScoped<INotificationHub>(serviceProvider =>
@@ -150,6 +152,7 @@ builder.Services.AddScoped<SmsNotificationProvider>();
 builder.Services.AddScoped<EmailNotificationProvider>();
 builder.Services.AddScoped<TelegramNotificationProvider>();
 
+// Background services - simplified (TaskSchedulerService removed)
 
 var app = builder.Build();
 

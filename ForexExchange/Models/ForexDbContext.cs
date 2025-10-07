@@ -36,6 +36,9 @@ namespace ForexExchange.Models
         public DbSet<CustomerBalanceHistory> CustomerBalanceHistory { get; set; }
         public DbSet<CurrencyPoolHistory> CurrencyPoolHistory { get; set; }
         public DbSet<BankAccountBalanceHistory> BankAccountBalanceHistory { get; set; }
+
+        // Task Management - Simplified
+        public DbSet<TaskItem> TaskItems { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -471,6 +474,24 @@ namespace ForexExchange.Models
 
             // NOTE: Currency seeding is now handled by DataSeedService
             // This provides more flexibility and consistency with other seeding operations
+
+            // Task Management Configurations - Simplified with User Assignment
+            modelBuilder.Entity<TaskItem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(2000);
+                entity.Property(e => e.CreatedAt).IsRequired();
+                entity.Property(e => e.DueDate);
+                entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.AssignedToUserId);
+                
+                // Configure relationship with ApplicationUser
+                entity.HasOne(e => e.AssignedToUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.AssignedToUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
         }
     }
 }

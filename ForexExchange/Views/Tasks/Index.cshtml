@@ -1,0 +1,276 @@
+@model List<TaskItem>
+@using ForexExchange.Models
+@using TaskStatus = ForexExchange.Models.TaskStatus
+@using Microsoft.EntityFrameworkCore
+
+@{
+    ViewData["Title"] = "مدیریت وظایف";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tasks text-primary"></i> مدیریت وظایف</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> وظیفه جدید
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+        </div>
+    }
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-filter"></i> فیلترها</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="Index">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="assignedUserId" class="form-label">کاربر مسئول:</label>
+                        <select name="assignedUserId" id="assignedUserId" class="form-select">
+                            <option value="">همه</option>
+                            @foreach (var user in ViewBag.Users)
+                            {
+                                <option value="@user.Value" selected="@(user.Selected ? "selected" : null)">@user.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="dueDateFrom" class="form-label">از تاریخ:</label>
+                        <input type="date" name="dueDateFrom" id="dueDateFrom" class="form-control" value="@ViewBag.CurrentDueDateFrom" />
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label for="dueDateTo" class="form-label">تا تاریخ:</label>
+                        <input type="date" name="dueDateTo" id="dueDateTo" class="form-control" value="@ViewBag.CurrentDueDateTo" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="status" class="form-label">وضعیت:</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">همه</option>
+                            @foreach (var status in ViewBag.Statuses)
+                            {
+                                <option value="@status.Value" selected="@(status.Selected ? "selected" : null)">
+                                    @switch (status.Value)
+                                    {
+                                        case "Pending": @("در انتظار")
+                                        break;
+                                        case "InProgress": @("در حال انجام")
+                                        break;
+                                        case "Completed": @("تکمیل شده")
+                                        break;
+                                        default: @status.Text
+                                        break;
+                                    }
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-search"></i> فیلتر
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> پاک کردن
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        @if (Model.Any())
+        {
+            @foreach (var task in Model)
+            {
+                var isOverdue = task.DueDate.HasValue && task.DueDate < DateTime.UtcNow && task.Status != TaskStatus.Completed;
+                
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 @(isOverdue ? "border-danger" : "")">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 text-truncate" title="@task.Title">@task.Title</h6>
+                            @switch (task.Status)
+                            {
+                                case TaskStatus.Pending:
+                                    <span class="badge bg-secondary">در انتظار</span>
+                                    break;
+                                case TaskStatus.InProgress:
+                                    <span class="badge bg-warning">در حال انجام</span>
+                                    break;
+                                case TaskStatus.Completed:
+                                    <span class="badge bg-success">تکمیل شده</span>
+                                    break;
+                                case TaskStatus.Cancelled:
+                                    <span class="badge bg-danger">لغو شده</span>
+                                    break;
+                            }
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <p class="card-text text-muted small flex-grow-1">
+                                @if (!string.IsNullOrEmpty(task.Description))
+                                {
+                                    @(task.Description.Length > 100 ? task.Description.Substring(0, 100) + "..." : task.Description)
+                                }
+                                else
+                                {
+                                    <em>بدون توضیحات</em>
+                                }
+                            </p>
+                            
+                            <div class="mt-auto">
+                                @if (task.DueDate.HasValue)
+                                {
+                                    <div class="mb-2">
+                                        <small class="@(isOverdue ? "text-danger fw-bold" : "text-muted")">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            سررسید: @task.DueDate.Value.ToString("yyyy/MM/dd HH:mm")
+                                        </small>
+                                        @if (isOverdue)
+                                        {
+                                            <br><span class="badge bg-danger">عقب‌افتاده</span>
+                                        }
+                                    </div>
+                                }
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i>
+                                        ایجاد: @task.CreatedAt.ToString("yyyy/MM/dd HH:mm")
+                                    </small>
+                                </div>
+
+                                @if (task.AssignedToUser != null)
+                                {
+                                    <div class="mb-2">
+                                        <small class="text-primary">
+                                            <i class="fas fa-user"></i>
+                                            مسئول: @task.AssignedToUser.FullName
+                                        </small>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-user-slash"></i>
+                                            بدون مسئول
+                                        </small>
+                                    </div>
+                                }
+
+                                <div class="d-flex gap-1">
+                                    <a asp-action="Details" asp-route-id="@task.Id" class="btn btn-outline-primary btn-sm flex-fill">
+                                        <i class="fas fa-eye"></i> مشاهده
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@task.Id" class="btn btn-outline-warning btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    
+                                    @* Only show status change buttons if user is assigned to this task *@
+                                    @if (task.AssignedToUserId == ViewContext.HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                                    {
+                                        @if (task.Status == TaskStatus.Pending)
+                                        {
+                                            <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@task.Id" />
+                                                <input type="hidden" name="status" value="@((int)TaskStatus.InProgress)" />
+                                                <button type="submit" class="btn btn-outline-info btn-sm" title="شروع کار">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        
+                                        @if (task.Status == TaskStatus.InProgress)
+                                        {
+                                            <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@task.Id" />
+                                                <input type="hidden" name="status" value="@((int)TaskStatus.Completed)" />
+                                                <button type="submit" class="btn btn-outline-success btn-sm" title="تکمیل">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                        
+                                        @if (task.Status != TaskStatus.Completed && task.Status != TaskStatus.Cancelled)
+                                        {
+                                            <form asp-action="UpdateStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@task.Id" />
+                                                <input type="hidden" name="status" value="@((int)TaskStatus.Cancelled)" />
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="لغو">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">فقط کاربر مسئول می‌تواند وضعیت را تغییر دهد</small>
+                                    }
+                                    
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteTask(@task.Id)" title="حذف">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">هیچ وظیفه‌ای یافت نشد</h4>
+                    <p class="text-muted">برای شروع، وظیفه جدیدی ایجاد کنید.</p>
+                    <a asp-action="Create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> وظیفه جدید
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+function deleteTask(taskId) {
+    if (confirm('آیا از حذف این وظیفه اطمینان دارید؟')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '@Url.Action("Delete")';
+        
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'id';
+        idInput.value = taskId;
+        
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = '__RequestVerificationToken';
+        tokenInput.value = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        
+        form.appendChild(idInput);
+        form.appendChild(tokenInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>

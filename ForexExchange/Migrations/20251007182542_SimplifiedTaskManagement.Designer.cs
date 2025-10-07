@@ -3,6 +3,7 @@ using System;
 using ForexExchange.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ForexExchange.Migrations
 {
     [DbContext(typeof(ForexDbContext))]
-    partial class ForexDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251007182542_SimplifiedTaskManagement")]
+    partial class SimplifiedTaskManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
@@ -1192,9 +1195,6 @@ namespace ForexExchange.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("AssignedToUserId")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -1215,8 +1215,6 @@ namespace ForexExchange.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AssignedToUserId");
 
                     b.ToTable("TaskItems");
                 });
@@ -1612,16 +1610,6 @@ namespace ForexExchange.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
-                });
-
-            modelBuilder.Entity("ForexExchange.Models.TaskItem", b =>
-                {
-                    b.HasOne("ForexExchange.Models.ApplicationUser", "AssignedToUser")
-                        .WithMany()
-                        .HasForeignKey("AssignedToUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("AssignedToUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
