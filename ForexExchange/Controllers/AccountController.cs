@@ -172,7 +172,7 @@ namespace ForexExchange.Controllers
                 var model = new LoginViewModel()
                 {
                     PhoneNumber = "09120674032",
-                    Password = "admin"
+                    Password = "admindemo1"
                 };
                 return View(model);
 
