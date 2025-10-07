@@ -127,7 +127,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("Type");
 
-                    b.ToTable("AccountingDocuments");
+                    b.ToTable("AccountingDocuments", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.AdminActivity", b =>
@@ -197,7 +197,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("AdminUserId", "Timestamp");
 
-                    b.ToTable("AdminActivities");
+                    b.ToTable("AdminActivities", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.ApplicationUser", b =>
@@ -364,7 +364,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("CustomerId", "IsActive");
 
-                    b.ToTable("BankAccounts");
+                    b.ToTable("BankAccounts", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.BankAccountBalance", b =>
@@ -396,7 +396,7 @@ namespace ForexExchange.Migrations
                     b.HasIndex("BankAccountId", "CurrencyCode")
                         .IsUnique();
 
-                    b.ToTable("BankAccountBalances");
+                    b.ToTable("BankAccountBalances", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.BankAccountBalanceHistory", b =>
@@ -463,7 +463,7 @@ namespace ForexExchange.Migrations
                     b.HasIndex("BankAccountId", "TransactionDate", "Id")
                         .HasDatabaseName("IX_BankAccountBalanceHistory_Account_Latest");
 
-                    b.ToTable("BankAccountBalanceHistory");
+                    b.ToTable("BankAccountBalanceHistory", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.Currency", b =>
@@ -511,7 +511,93 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("IsActive", "DisplayOrder");
 
-                    b.ToTable("Currencies");
+                    b.ToTable("Currencies", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Code = "IRR",
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayOrder = 1,
+                            IsActive = true,
+                            Name = "Iranian Toman",
+                            PersianName = "تومان",
+                            RatePriority = 0,
+                            Symbol = "﷼"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Code = "USD",
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayOrder = 4,
+                            IsActive = true,
+                            Name = "US Dollar",
+                            PersianName = "دلار آمریکا",
+                            RatePriority = 0,
+                            Symbol = "$"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Code = "EUR",
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayOrder = 5,
+                            IsActive = true,
+                            Name = "Euro",
+                            PersianName = "یورو",
+                            RatePriority = 0,
+                            Symbol = "€"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Code = "AED",
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayOrder = 3,
+                            IsActive = true,
+                            Name = "UAE Dirham",
+                            PersianName = "درهم امارات",
+                            RatePriority = 0,
+                            Symbol = "د.إ"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Code = "OMR",
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayOrder = 2,
+                            IsActive = true,
+                            Name = "Omani Rial",
+                            PersianName = "ریال عمان",
+                            RatePriority = 0,
+                            Symbol = "ر.ع."
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Code = "TRY",
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayOrder = 6,
+                            IsActive = true,
+                            Name = "Turkish Lira",
+                            PersianName = "لیر ترکیه",
+                            RatePriority = 0,
+                            Symbol = "₺"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Code = "CNY",
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DisplayOrder = 7,
+                            IsActive = true,
+                            Name = "Chinese Yuan",
+                            PersianName = "یوان چین",
+                            RatePriority = 0,
+                            Symbol = "¥"
+                        });
                 });
 
             modelBuilder.Entity("ForexExchange.Models.CurrencyPool", b =>
@@ -567,7 +653,114 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("CurrencyId", "IsActive");
 
-                    b.ToTable("CurrencyPools");
+                    b.ToTable("CurrencyPools", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            Balance = 0m,
+                            CurrencyCode = "",
+                            CurrencyId = 1,
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Iranian Toman pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 2,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            Balance = 0m,
+                            CurrencyCode = "",
+                            CurrencyId = 2,
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "US Dollar pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 3,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            Balance = 0m,
+                            CurrencyCode = "",
+                            CurrencyId = 3,
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Euro pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 4,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            Balance = 0m,
+                            CurrencyCode = "",
+                            CurrencyId = 4,
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "UAE Dirham pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 5,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            Balance = 0m,
+                            CurrencyCode = "",
+                            CurrencyId = 5,
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Omani Rial pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 6,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            Balance = 0m,
+                            CurrencyCode = "",
+                            CurrencyId = 6,
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Turkish Lira pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        },
+                        new
+                        {
+                            Id = 7,
+                            ActiveBuyOrderCount = 0,
+                            ActiveSellOrderCount = 0,
+                            Balance = 0m,
+                            CurrencyCode = "",
+                            CurrencyId = 7,
+                            IsActive = true,
+                            LastUpdated = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            Notes = "Chinese Yuan pool - initial setup",
+                            RiskLevel = 1,
+                            TotalBought = 0m,
+                            TotalSold = 0m
+                        });
                 });
 
             modelBuilder.Entity("ForexExchange.Models.CurrencyPoolHistory", b =>
@@ -640,7 +833,7 @@ namespace ForexExchange.Migrations
                     b.HasIndex("CurrencyCode", "TransactionDate", "Id")
                         .HasDatabaseName("IX_CurrencyPoolHistory_Currency_Latest");
 
-                    b.ToTable("CurrencyPoolHistory");
+                    b.ToTable("CurrencyPoolHistory", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.Customer", b =>
@@ -691,7 +884,7 @@ namespace ForexExchange.Migrations
                     b.HasIndex("PhoneNumber")
                         .IsUnique();
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.CustomerBalance", b =>
@@ -723,7 +916,7 @@ namespace ForexExchange.Migrations
                     b.HasIndex("CustomerId", "CurrencyCode")
                         .IsUnique();
 
-                    b.ToTable("CustomerBalances");
+                    b.ToTable("CustomerBalances", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.CustomerBalanceHistory", b =>
@@ -799,7 +992,7 @@ namespace ForexExchange.Migrations
                     b.HasIndex("CustomerId", "CurrencyCode", "TransactionDate", "Id")
                         .HasDatabaseName("IX_CustomerBalanceHistory_Customer_Currency_Latest");
 
-                    b.ToTable("CustomerBalanceHistory");
+                    b.ToTable("CustomerBalanceHistory", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.ExchangeRate", b =>
@@ -847,7 +1040,213 @@ namespace ForexExchange.Migrations
                     b.HasIndex("FromCurrencyId", "ToCurrencyId", "IsActive")
                         .IsUnique();
 
-                    b.ToTable("ExchangeRates");
+                    b.ToTable("ExchangeRates", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            FromCurrencyId = 1,
+                            IsActive = true,
+                            Rate = 68500m,
+                            ToCurrencyId = 2,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            FromCurrencyId = 1,
+                            IsActive = true,
+                            Rate = 72500m,
+                            ToCurrencyId = 3,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            FromCurrencyId = 1,
+                            IsActive = true,
+                            Rate = 18750m,
+                            ToCurrencyId = 4,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            FromCurrencyId = 1,
+                            IsActive = true,
+                            Rate = 178000m,
+                            ToCurrencyId = 5,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            FromCurrencyId = 1,
+                            IsActive = true,
+                            Rate = 2000m,
+                            ToCurrencyId = 6,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            FromCurrencyId = 1,
+                            IsActive = true,
+                            Rate = 9600m,
+                            ToCurrencyId = 7,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            FromCurrencyId = 2,
+                            IsActive = true,
+                            Rate = 0.000014598540145985401459854m,
+                            ToCurrencyId = 1,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            FromCurrencyId = 3,
+                            IsActive = true,
+                            Rate = 0.0000137931034482758620689655m,
+                            ToCurrencyId = 1,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            FromCurrencyId = 4,
+                            IsActive = true,
+                            Rate = 0.0000533333333333333333333333m,
+                            ToCurrencyId = 1,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            FromCurrencyId = 5,
+                            IsActive = true,
+                            Rate = 0.0000056179775280898876404494m,
+                            ToCurrencyId = 1,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            FromCurrencyId = 6,
+                            IsActive = true,
+                            Rate = 0.0005m,
+                            ToCurrencyId = 1,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            FromCurrencyId = 7,
+                            IsActive = true,
+                            Rate = 0.0001041666666666666666666667m,
+                            ToCurrencyId = 1,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            FromCurrencyId = 2,
+                            IsActive = true,
+                            Rate = 0.93m,
+                            ToCurrencyId = 3,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            FromCurrencyId = 2,
+                            IsActive = true,
+                            Rate = 3.68m,
+                            ToCurrencyId = 4,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            FromCurrencyId = 2,
+                            IsActive = true,
+                            Rate = 0.385m,
+                            ToCurrencyId = 5,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            FromCurrencyId = 2,
+                            IsActive = true,
+                            Rate = 34.85m,
+                            ToCurrencyId = 6,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            FromCurrencyId = 2,
+                            IsActive = true,
+                            Rate = 7.14m,
+                            ToCurrencyId = 7,
+                            TotalBuyVolume = 0m,
+                            TotalSellVolume = 0m,
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        });
                 });
 
             modelBuilder.Entity("ForexExchange.Models.Notification", b =>
@@ -893,7 +1292,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("CustomerId", "IsRead");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.Order", b =>
@@ -958,7 +1357,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("FromCurrencyId", "ToCurrencyId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.PushNotificationLog", b =>
@@ -1014,7 +1413,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("WasSuccessful");
 
-                    b.ToTable("PushNotificationLogs");
+                    b.ToTable("PushNotificationLogs", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.PushSubscription", b =>
@@ -1084,7 +1483,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("IsActive", "UserId");
 
-                    b.ToTable("PushSubscriptions");
+                    b.ToTable("PushSubscriptions", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.ShareableLink", b =>
@@ -1136,7 +1535,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("IsActive", "ExpiresAt");
 
-                    b.ToTable("ShareableLinks");
+                    b.ToTable("ShareableLinks", (string)null);
                 });
 
             modelBuilder.Entity("ForexExchange.Models.SystemSettings", b =>
@@ -1183,42 +1582,129 @@ namespace ForexExchange.Migrations
                     b.HasIndex("SettingKey")
                         .IsUnique();
 
-                    b.ToTable("SystemSettings");
-                });
+                    b.ToTable("SystemSettings", (string)null);
 
-            modelBuilder.Entity("ForexExchange.Models.TaskItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("AssignedToUserId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AssignedToUserId");
-
-                    b.ToTable("TaskItems");
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "نرخ کمیسیون به درصد",
+                            IsActive = true,
+                            SettingKey = "COMMISSION_RATE",
+                            SettingValue = "0.5",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "کارمزد تبدیل ارز به درصد",
+                            IsActive = true,
+                            SettingKey = "EXCHANGE_FEE_RATE",
+                            SettingValue = "0.2",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "حداقل مبلغ تراکنش به تومان",
+                            IsActive = true,
+                            SettingKey = "MIN_TRANSACTION_AMOUNT",
+                            SettingValue = "10000",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "حداکثر مبلغ تراکنش به تومان",
+                            IsActive = true,
+                            SettingKey = "MAX_TRANSACTION_AMOUNT",
+                            SettingValue = "1000000000",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "decimal",
+                            Description = "محدودیت تراکنش روزانه به تومان",
+                            IsActive = true,
+                            SettingKey = "DAILY_TRANSACTION_LIMIT",
+                            SettingValue = "5000000000",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "bool",
+                            Description = "حالت تعمیرات سیستم",
+                            IsActive = true,
+                            SettingKey = "SYSTEM_MAINTENANCE",
+                            SettingValue = "false",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "string",
+                            Description = "ارز پیش‌فرض سیستم",
+                            IsActive = true,
+                            SettingKey = "DEFAULT_CURRENCY",
+                            SettingValue = "USD",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "int",
+                            Description = "بازه بروزرسانی نرخ ارز به دقیقه",
+                            IsActive = true,
+                            SettingKey = "RATE_UPDATE_INTERVAL",
+                            SettingValue = "60",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "bool",
+                            Description = "فعال‌سازی سیستم اعلان‌ها",
+                            IsActive = true,
+                            SettingKey = "NOTIFICATION_ENABLED",
+                            SettingValue = "true",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            CreatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            DataType = "bool",
+                            Description = "فعال‌سازی پشتیبان‌گیری خودکار",
+                            IsActive = true,
+                            SettingKey = "BACKUP_ENABLED",
+                            SettingValue = "true",
+                            UpdatedAt = new DateTime(2025, 8, 18, 12, 0, 0, 0, DateTimeKind.Utc),
+                            UpdatedBy = "System"
+                        });
                 });
 
             modelBuilder.Entity("ForexExchange.Models.VapidConfiguration", b =>
@@ -1276,7 +1762,7 @@ namespace ForexExchange.Migrations
 
                     b.HasIndex("IsActive");
 
-                    b.ToTable("VapidConfigurations");
+                    b.ToTable("VapidConfigurations", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -1612,16 +2098,6 @@ namespace ForexExchange.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
-                });
-
-            modelBuilder.Entity("ForexExchange.Models.TaskItem", b =>
-                {
-                    b.HasOne("ForexExchange.Models.ApplicationUser", "AssignedToUser")
-                        .WithMany()
-                        .HasForeignKey("AssignedToUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("AssignedToUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
