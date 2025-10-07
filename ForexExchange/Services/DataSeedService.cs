@@ -136,7 +136,7 @@ namespace ForexExchange.Services
                 new { Phone = "00989120674032", Email = "exsora@iranexpedia.ir", FullName = "سیاوش", Password = "admindemo1",Role = UserRole.Admin },
             };
 
-            foreach (var adminData in adminUsers)admin
+            foreach (var adminData in adminUsers)
             {
                 // Check if admin exists by email first (for existing installations)
                 var adminUser = await _userManager.FindByEmailAsync(adminData.Email);
