@@ -47,6 +47,16 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ForexDbContext>()
 .AddDefaultTokenProviders();
 
+// Configure cookie authentication
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Error/AccessDenied";
+    options.LogoutPath = "/Account/Logout";
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.SlidingExpiration = true;
+});
+
 // Add RoleManager
 builder.Services.AddScoped<RoleManager<IdentityRole>>();
 

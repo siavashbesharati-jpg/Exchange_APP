@@ -309,6 +309,13 @@ namespace ForexExchange.Controllers
             return View(model);
         }
 
+        // GET: /Account/AccessDenied
+        public IActionResult AccessDenied(string? returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return RedirectToAction("AccessDenied", "Error");
+        }
+
         private IActionResult RedirectToLocal(string? returnUrl)
         {
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))

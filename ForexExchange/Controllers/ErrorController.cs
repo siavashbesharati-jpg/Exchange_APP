@@ -58,7 +58,7 @@ namespace ForexExchange.Controllers
 
         // Specific action for 404 errors
         [Route("NotFound")]
-        public IActionResult NotFound()
+        public new IActionResult NotFound()
         {
             Response.StatusCode = 404;
             return View();
