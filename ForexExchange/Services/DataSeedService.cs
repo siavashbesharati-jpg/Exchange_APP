@@ -132,7 +132,7 @@ namespace ForexExchange.Services
             // Define multiple admin users with their phone numbers as passwords
             var adminUsers = new[]
             {
-                new { Phone = "009195410188", Email = "siavash@iranexpedia.ir", FullName = "برنامه نویس", Password = "roberto2025@#$ASD",Role = UserRole.Programer },
+                new { Phone = "009195410188", Email = "siavash@iranexpedia.ir", FullName = " توسعه دهنده ", Password = "roberto2025@#$ASD",Role = UserRole.Programer },
                 new { Phone = "00989120674032", Email = "siavash@taban-gorpup.com", FullName = "سیاوش", Password = "roberto2025@#$ASD",Role = UserRole.Programer },
             };
 
