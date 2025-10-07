@@ -5,8 +5,7 @@
 <div class="container-fluid">
     <!-- Header Section -->
     
-    @if (User.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
-    {
+   
         <!-- First Section -->
         <div class="row mb-4">
             <div class="col-12">
@@ -203,7 +202,7 @@
             </div>
         </div>
 
-        @if (User.IsInRole("Admin"))
+        @if (User.IsInRole("Programmer"))
         {
             <!-- Admin Only Section -->
             <div class="row mb-4">
@@ -276,19 +275,7 @@
             </div>
         }
     }
-    else
-    {
-        <!-- Access Denied -->
-        <div class="row">
-            <div class="col-12">
-                <div class="alert alert-warning text-center">
-                    <h4>دسترسی محدود</h4>
-                    <p>برای دسترسی به این بخش، باید با حساب مدیریتی وارد شوید.</p>
-                    <a href="@Url.Action("Login", "Account")" class="btn btn-primary">ورود به سیستم</a>
-                </div>
-            </div>
-        </div>
-    }
+   
 </div>
 
 <style>

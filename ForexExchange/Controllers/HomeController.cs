@@ -8,6 +8,7 @@ using System.Text.Json;
 
 namespace ForexExchange.Controllers;
 
+[Authorize(Roles = "Admin,Operator,Programmer")]
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
@@ -20,11 +21,10 @@ public class HomeController : Controller
 
 
 
-    public HomeController(ILogger<HomeController> logger, ForexDbContext context, /* ITransactionSettlementService settlementService, */ ICurrencyPoolService poolService, CustomerDebtCreditService debtCreditService, ISettingsService settingsService)
+    public HomeController(ILogger<HomeController> logger, ForexDbContext context, ICurrencyPoolService poolService, CustomerDebtCreditService debtCreditService, ISettingsService settingsService)
     {
         _logger = logger;
         _context = context;
-        // _settlementService = settlementService;
         _poolService = poolService;
         _debtCreditService = debtCreditService;
         _settingsService = settingsService;
@@ -54,7 +54,7 @@ public class HomeController : Controller
         var today = DateTime.Now.Date;
         // TODO: Replace with AccountingDocument-based stats
         var completedTransactionsToday = 0; // await _context.Transactions
-            // .CountAsync(t => t.Status == TransactionStatus.Completed && t.CreatedAt.Date == today);
+                                            // .CountAsync(t => t.Status == TransactionStatus.Completed && t.CreatedAt.Date == today);
 
         ViewBag.ExchangeRates = exchangeRates;
         ViewBag.AvailableOrders = availableOrders;
@@ -64,25 +64,20 @@ public class HomeController : Controller
         return View();
     }
 
-    [Authorize(Roles = "Admin,Operator,Programmer")]
     public async Task<IActionResult> Dashboard()
     {
         // Get currency pools for the widget
         var pools = await _poolService.GetAllPoolsAsync();
         ViewBag.CurrencyPools = pools;
 
-        // Get customer debt/credit summary for admin/staff
-        if (User.Identity?.IsAuthenticated == true &&
-            (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
-        {
-            var customerDebtCredits = await _debtCreditService.GetCustomerDebtCreditSummaryAsync();
-            ViewBag.CustomerDebtCredits = customerDebtCredits;
-        }
+
+        var customerDebtCredits = await _debtCreditService.GetCustomerDebtCreditSummaryAsync();
+        ViewBag.CustomerDebtCredits = customerDebtCredits;
+
 
         return View();
     }
 
-    [Authorize(Roles = "Admin,Operator,Programmer")]
     public IActionResult Management()
     {
         return View();
@@ -103,90 +98,26 @@ public class HomeController : Controller
     public async Task<IActionResult> AllCustomerDebtCredits()
     {
         // Get all customer debt/credit summaries for the dedicated page
-        if (User.Identity?.IsAuthenticated == true &&
-            (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff")))
-        {
-            var customerDebtCredits = await _debtCreditService.GetCustomerDebtCreditSummaryAsync();
-            return View(customerDebtCredits);
-        }
-        
+
+        var customerDebtCredits = await _debtCreditService.GetCustomerDebtCreditSummaryAsync();
+        return View(customerDebtCredits);
+
         return RedirectToAction("Dashboard");
     }
 
-    // Debug action to check currency display order
-    public async Task<IActionResult> DebugCurrencyOrder()
-    {
-        var pools = await _poolService.GetAllPoolsAsync();
-        var currencies = pools.Select(p => new { 
-            Code = p.Currency?.Code,
-            Name = p.Currency?.PersianName,
-            DisplayOrder = p.Currency?.DisplayOrder
-        }).ToList();
-        
-        return Json(currencies);
-    }
+ 
 
-    // Temporary action to update currency display order
-    public async Task<IActionResult> UpdateCurrencyDisplayOrder()
-    {
-        try
-        {
-            // Get all currencies
-            var currencies = await _context.Currencies
-                .OrderBy(c => c.DisplayOrder)
-                .ToListAsync();
-            
-            // Update display orders
-            foreach (var currency in currencies)
-            {
-                switch (currency.Code)
-                {
-                    case "IRR":
-                        currency.DisplayOrder = 1;
-                        break;
-                    case "OMR":
-                        currency.DisplayOrder = 2;
-                        break;
-                    case "AED":
-                        currency.DisplayOrder = 3;
-                        break;
-                    case "USD":
-                        currency.DisplayOrder = 4;
-                        break;
-                    case "EUR":
-                        currency.DisplayOrder = 5;
-                        break;
-                    case "TRY":
-                        currency.DisplayOrder = 6;
-                        break;
-                }
-            }
-            
-            await _context.SaveChangesAsync();
-            
-            return Json(new { success = true, message = "Currency DisplayOrder values updated successfully!" });
-        }
-        catch (Exception ex)
-        {
-            return Json(new { success = false, message = $"Error: {ex.Message}" });
-        }
-    }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
+    [AllowAnonymous]
     public IActionResult Help()
     {
         return View();
     }
 
-    public IActionResult FormatTest()
-    {
-        return View();
-    }
+   
 
+
+    [AllowAnonymous]
     [Route("site.webmanifest")]
     [ResponseCache(Duration = 3600)] // Cache for 1 hour
     public async Task<IActionResult> WebManifest()
@@ -197,7 +128,7 @@ public class HomeController : Controller
             var companyName = await _settingsService.GetCompanyNameAsync();
             var companyWebsite = await _settingsService.GetCompanyWebsiteAsync();
             var logoDataUrl = await _settingsService.GetLogoDataUrlAsync();
-            
+
             // Create short name from website name (first word or up to 12 characters)
             var shortName = websiteName.Split(' ').FirstOrDefault() ?? companyName;
             if (shortName.Length > 12)
@@ -208,7 +139,7 @@ public class HomeController : Controller
             // Determine icon sources - use base64 logo if available, fallback to favicon
             string icon192 = "/favicon/android-chrome-192x192.png";
             string icon512 = "/favicon/android-chrome-512x512.png";
-            
+
             // Use base64 logo if available
             if (!logoDataUrl.StartsWith("/favicon/"))
             {
@@ -220,7 +151,7 @@ public class HomeController : Controller
             // Build start URL with company website if available
             var startUrl = "/";
             var scope = "/";
-            
+
             // Add website URL to description if available
             var description = $"{websiteName} - خرید و فروش ارز با بهترین نرخ‌ها";
             if (!string.IsNullOrEmpty(companyWebsite))
@@ -245,7 +176,7 @@ public class HomeController : Controller
                     new
                     {
                         src = icon512,
-                        sizes = "512x512", 
+                        sizes = "512x512",
                         type = "image/png",
                         purpose = "any maskable"
                     }
@@ -271,7 +202,7 @@ public class HomeController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating web manifest");
-            
+
             // Return a fallback manifest
             var fallbackManifest = new
             {

@@ -8,7 +8,7 @@ using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "Admin,Operator,Programmer")]
     public class ReportsController : Controller
     {
         private readonly ForexDbContext _context;
@@ -100,7 +100,7 @@ namespace ForexExchange.Controllers
             return View();
         }
 
-       
+
 
         // GET: Reports/BankAccountReports
         public IActionResult BankAccountReports()
@@ -876,13 +876,13 @@ namespace ForexExchange.Controllers
 
                 decimal totalIRR = 0m;
                 decimal totalOMR = 0m;
-                
+
                 // IRR transactions and details
                 var irrTransactions = new List<object>();
                 decimal irrTransactionCount = 0;
                 decimal irrDailyProfit = 0;
                 decimal irrWeightedAverageRate = 0;
-                
+
                 // Non-IRR transactions and details (combined for OMR display)
                 var omrTransactions = new List<object>();
                 decimal omrTransactionCount = 0;
@@ -1024,7 +1024,7 @@ namespace ForexExchange.Controllers
                         };
 
                         // Debug logging for transaction amounts
-                        _logger.LogInformation("Transaction Debug - Currency: {Currency}, OriginalAmount: {OriginalAmount}, TransactionAmount: {TransactionAmount}, Description: {Description}, Time: {Time}", 
+                        _logger.LogInformation("Transaction Debug - Currency: {Currency}, OriginalAmount: {OriginalAmount}, TransactionAmount: {TransactionAmount}, Description: {Description}, Time: {Time}",
                             currency.Code, h.TransactionAmount, transactionObj.amount, h.Description, h.TransactionDate);
 
                         transactions.Add(transactionObj);
@@ -1043,7 +1043,7 @@ namespace ForexExchange.Controllers
                             irrWeightedAverageRate = weightedAverageRate; // IRR should have its own rate
                         }
                     }
-                    else 
+                    else
                     {
                         // Add to OMR totals and transactions
                         if (latestBalance != 0)
@@ -1051,16 +1051,16 @@ namespace ForexExchange.Controllers
                             var convertedToOMR = await ConvertCurrencyToOMR(latestBalance, currency.Code, date);
                             totalOMR += convertedToOMR;
                         }
-                        
+
                         // Add non-IRR transactions to OMR group
                         omrTransactions.AddRange(transactions);
                         omrTransactionCount += transactionsRaw.Count;
                         omrDailyProfit += totalDailyProfit;
-                        
+
                         // For OMR weighted average, we'll calculate it based on all non-IRR transactions
                         if (weightedAverageRate > 0 && omrTransactionCount > 0)
                         {
-                            omrWeightedAverageRate = (omrWeightedAverageRate * (omrTransactionCount - transactionsRaw.Count) + 
+                            omrWeightedAverageRate = (omrWeightedAverageRate * (omrTransactionCount - transactionsRaw.Count) +
                                                      weightedAverageRate * transactionsRaw.Count) / omrTransactionCount;
                         }
                     }
@@ -1068,7 +1068,7 @@ namespace ForexExchange.Controllers
 
                 // Prepare currency details for only IRR and OMR
                 var currencyDetails = new List<object>();
-                
+
                 // Add IRR details if there are transactions or balance
                 if (irrTransactions.Any() || totalIRR != 0)
                 {
@@ -1091,13 +1091,14 @@ namespace ForexExchange.Controllers
                         transactionCount = (int)irrTransactionCount,
                         totalDailyProfit = irrDailyProfit,
                         weightedAverageRate = irrWeightedAverageRate,
-                        transactions = irrTransactions.OrderBy(t => {
+                        transactions = irrTransactions.OrderBy(t =>
+                        {
                             var timeProp = t.GetType().GetProperty("time");
                             return timeProp?.GetValue(t)?.ToString() ?? "";
                         }).ToList()
                     });
                 }
-                
+
                 // Add OMR details if there are transactions or balance
                 if (omrTransactions.Any() || totalOMR != 0)
                 {
@@ -1120,7 +1121,8 @@ namespace ForexExchange.Controllers
                         transactionCount = (int)omrTransactionCount,
                         totalDailyProfit = omrDailyProfit,
                         weightedAverageRate = omrWeightedAverageRate,
-                        transactions = omrTransactions.OrderBy(t => {
+                        transactions = omrTransactions.OrderBy(t =>
+                        {
                             var timeProp = t.GetType().GetProperty("time");
                             return timeProp?.GetValue(t)?.ToString() ?? "";
                         }).ToList()
@@ -1128,7 +1130,7 @@ namespace ForexExchange.Controllers
                 }
 
                 // Debug logging for final result
-                _logger.LogInformation("Final Result Debug - TotalIRR: {TotalIRR}, TotalOMR: {TotalOMR}, CurrencyDetailsCount: {Count}", 
+                _logger.LogInformation("Final Result Debug - TotalIRR: {TotalIRR}, TotalOMR: {TotalOMR}, CurrencyDetailsCount: {Count}",
                     totalIRR, totalOMR, currencyDetails.Count);
 
                 foreach (var currencyDetail in currencyDetails)
@@ -1143,7 +1145,7 @@ namespace ForexExchange.Controllers
                             var currencyCodeProp = transaction.GetType().GetProperty("currencyCode");
                             var amount = amountProp?.GetValue(transaction);
                             var transCurrency = currencyCodeProp?.GetValue(transaction);
-                            _logger.LogInformation("Final Transaction Debug - GroupCurrency: {GroupCurrency}, TransactionCurrency: {TransactionCurrency}, Amount: {Amount}", 
+                            _logger.LogInformation("Final Transaction Debug - GroupCurrency: {GroupCurrency}, TransactionCurrency: {TransactionCurrency}, Amount: {Amount}",
                                 currencyCode, transCurrency, amount);
                         }
                     }
@@ -2537,10 +2539,10 @@ namespace ForexExchange.Controllers
 
                 // Calculate Customer Balances with details
                 var customerBalances = await CalculateCustomerBalancesForDate(date);
-                
+
                 // Calculate Bank Account Balances with details
                 var bankAccountBalances = await CalculateBankAccountBalancesForDate(date);
-                
+
                 // Calculate Pool Balances with details
                 var poolBalances = await CalculatePoolBalancesForDate(date);
 
@@ -2551,21 +2553,21 @@ namespace ForexExchange.Controllers
                 var result = new
                 {
                     reportDate = date.ToString("yyyy-MM-dd"),
-                    customers = new 
-                    { 
-                        irrTotal = customerBalances.irrTotal, 
+                    customers = new
+                    {
+                        irrTotal = customerBalances.irrTotal,
                         omrTotal = customerBalances.omrTotal,
                         details = customerBalances.details
                     },
-                    bankAccounts = new 
-                    { 
-                        irrTotal = bankAccountBalances.irrTotal, 
+                    bankAccounts = new
+                    {
+                        irrTotal = bankAccountBalances.irrTotal,
                         omrTotal = bankAccountBalances.omrTotal,
                         details = bankAccountBalances.details
                     },
-                    pools = new 
-                    { 
-                        irrTotal = poolBalances.irrTotal, 
+                    pools = new
+                    {
+                        irrTotal = poolBalances.irrTotal,
                         omrTotal = poolBalances.omrTotal,
                         details = poolBalances.details
                     },
@@ -2602,11 +2604,11 @@ namespace ForexExchange.Controllers
                 {
                     // Get customer balance snapshot for the specified date (uses CustomerBalanceHistory internally)
                     var snapshot = await _customerHistoryService.GetBalanceSnapshotAsync(customer.Id, date);
-                    
+
                     decimal customerIrrTotal = 0;
                     decimal customerOmrTotal = 0;
                     var currencyBalances = new List<object>();
-                    
+
                     foreach (var balance in snapshot.Balances)
                     {
                         if (balance.Value != 0) // Only include non-zero balances
@@ -2623,7 +2625,7 @@ namespace ForexExchange.Controllers
                                 omrTotal += omrEquivalent;
                                 customerOmrTotal += omrEquivalent;
                             }
-                            
+
                             currencyBalances.Add(new
                             {
                                 currency = balance.Key,
@@ -2632,7 +2634,7 @@ namespace ForexExchange.Controllers
                             });
                         }
                     }
-                    
+
                     if (currencyBalances.Any()) // Only add customers with non-zero balances
                     {
                         details.Add(new
@@ -2678,11 +2680,11 @@ namespace ForexExchange.Controllers
                 if (totalRecords == 0)
                 {
                     _logger.LogWarning("No BankAccountBalanceHistory records found! This means no bank account transactions have been processed through the history system.");
-                    
+
                     // Let's also check if we have bank accounts at all
                     var bankAccountsCount = await _context.BankAccounts.CountAsync();
                     _logger.LogInformation("Total BankAccounts in system: {Count}", bankAccountsCount);
-                    
+
                     return new { irrTotal = 0m, omrTotal = 0m, details = new List<object>() };
                 }
 
@@ -2708,19 +2710,19 @@ namespace ForexExchange.Controllers
 
                 foreach (var balanceHistory in latestBalances)
                 {
-                    _logger.LogInformation("Bank Account {BankAccountId} ({AccountNumber}) - Balance: {Balance} on {Date}", 
+                    _logger.LogInformation("Bank Account {BankAccountId} ({AccountNumber}) - Balance: {Balance} on {Date}",
                         balanceHistory.BankAccountId, balanceHistory.BankAccount?.AccountNumber, balanceHistory.BalanceAfter, balanceHistory.TransactionDate);
 
                     // Ensure currency code is not null or empty
-                    var currencyCode = !string.IsNullOrEmpty(balanceHistory.BankAccount?.CurrencyCode) 
-                        ? balanceHistory.BankAccount.CurrencyCode 
+                    var currencyCode = !string.IsNullOrEmpty(balanceHistory.BankAccount?.CurrencyCode)
+                        ? balanceHistory.BankAccount.CurrencyCode
                         : "IRR"; // Default to IRR if not specified
-                    
+
                     // Get currency info for Persian name
                     var currencyInfo = await _context.Currencies
                         .Where(c => c.Code == currencyCode)
                         .FirstOrDefaultAsync();
-                    
+
                     if (currencyCode == "IRR")
                     {
                         irrTotal += balanceHistory.BalanceAfter;
@@ -2731,7 +2733,7 @@ namespace ForexExchange.Controllers
                         var omrEquivalent = await ConvertCurrencyToOMR(balanceHistory.BalanceAfter, currencyCode, date);
                         omrTotal += omrEquivalent;
                     }
-                    
+
                     details.Add(new
                     {
                         bankAccountId = balanceHistory.BankAccountId,
@@ -2780,7 +2782,7 @@ namespace ForexExchange.Controllers
 
                 foreach (var balanceHistory in latestBalances)
                 {
-                    _logger.LogInformation("Currency Pool {Currency} - Balance: {Balance} on {Date}", 
+                    _logger.LogInformation("Currency Pool {Currency} - Balance: {Balance} on {Date}",
                         balanceHistory.CurrencyCode, balanceHistory.BalanceAfter, balanceHistory.TransactionDate);
 
                     if (balanceHistory.BalanceAfter != 0)
@@ -2788,7 +2790,7 @@ namespace ForexExchange.Controllers
                         var currencyInfo = await _context.Currencies
                             .Where(c => c.Code == balanceHistory.CurrencyCode)
                             .FirstOrDefaultAsync();
-                            
+
                         if (balanceHistory.CurrencyCode == "IRR")
                         {
                             irrTotal += balanceHistory.BalanceAfter;
@@ -2799,7 +2801,7 @@ namespace ForexExchange.Controllers
                             var omrEquivalent = await ConvertCurrencyToOMR(balanceHistory.BalanceAfter, balanceHistory.CurrencyCode, date);
                             omrTotal += omrEquivalent;
                         }
-                        
+
                         details.Add(new
                         {
                             currencyCode = balanceHistory.CurrencyCode,

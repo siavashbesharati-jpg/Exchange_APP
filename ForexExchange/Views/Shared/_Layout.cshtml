@@ -10,7 +10,7 @@
 <html lang="fa" dir="rtl">
 
 <head>
-    
+
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - @websiteName</title>
@@ -19,7 +19,7 @@
     <meta property="og:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? websiteName)" />
     <meta property="og:description"
         content="@(ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
-        <meta property="og:image" content="@logoDataUrl" />
+    <meta property="og:image" content="@logoDataUrl" />
     <meta property="og:image:alt" content="@(ViewData["OGImageAlt"] ?? $"لوگو {websiteName}")" />
     <meta property="og:url"
         content="@(ViewData["OGUrl"] ?? (Context.Request.Scheme + "://" + Context.Request.Host + Context.Request.Path))" />
@@ -32,8 +32,7 @@
     <meta name="twitter:title" content="@(ViewData["TwitterTitle"] ?? ViewData["Title"] ?? websiteName)" />
     <meta name="twitter:description"
         content="@(ViewData["TwitterDescription"] ?? ViewData["OGDescription"] ?? $"{websiteName} - بهترین نرخ‌های روز، معاملات امن و سریع")" />
-    <meta name="twitter:image"
-        content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? logoDataUrl)" />
+    <meta name="twitter:image" content="@(ViewData["TwitterImage"] ?? ViewData["OGImage"] ?? logoDataUrl)" />
 
     <!-- WhatsApp Specific -->
     <meta property="whatsapp:title" content="@(ViewData["OGTitle"] ?? ViewData["Title"] ?? websiteName)" />
@@ -181,8 +180,13 @@
         }
 
         @@keyframes fastSpin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Currency Pool Mobile Styles */
@@ -265,41 +269,44 @@
 
     @if (User.Identity?.IsAuthenticated == true)
     {
-        @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+        @if (!User.IsInRole("Customer"))
         {
             <!-- Admin Footer with Currency Pool Section -->
             <div class="fixed-bottom bg-light border-top shadow-lg" style="border-top: 3px solid #00000014 !important;">
                 <div class="container-fluid">
                     <!-- Currency Pool Section -->
-                    <div class="currency-pool-section p-2 position-relative" id="currency-pool-section-admin" style="display: none;">
+                    <div class="currency-pool-section p-2 position-relative" id="currency-pool-section-admin"
+                        style="display: none;">
                         <!-- Toggle button positioned absolutely - OUTSIDE collapsible content -->
-                        <button class="btn btn-sm btn-outline-secondary currency-pool-toggle position-absolute" onclick="toggleCurrencyPool()" 
-                                title="بستن/باز کردن استخر ارز" style="top: -8px; right: 8px; z-index: 10; padding: 4px 8px;">
+                        <button class="btn btn-sm btn-outline-secondary currency-pool-toggle position-absolute"
+                            onclick="toggleCurrencyPool()" title="بستن/باز کردن استخر ارز"
+                            style="top: -8px; right: 8px; z-index: 10; padding: 4px 8px;">
                             <i class="fas fa-chevron-down" id="currency-pool-toggle-icon"></i>
                         </button>
-                        
+
                         <!-- Currency Pool Content (collapsible) -->
                         <div class="currency-pool-content" id="currency-pool-content">
-                            
+
                             <!-- Desktop version: Original row layout -->
                             <div class="d-none d-md-block">
                                 <div class="row" id="currency-pool-row-admin">
                                     <!-- Currency pool data will be loaded here via AJAX -->
                                 </div>
                             </div>
-                            
+
                             <!-- Mobile version toggle button -->
                             <div class="d-md-none text-center mb-2">
-                                <button class="btn btn-sm btn-outline-secondary" onclick="toggleMobilePoolDisplay()" style="padding: 2px 8px; font-size: 0.75rem;">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="toggleMobilePoolDisplay()"
+                                    style="padding: 2px 8px; font-size: 0.75rem;">
                                     <i class="fas fa-exchange-alt me-1"></i>تغییر نمایش
                                 </button>
                             </div>
-                            
+
                             <!-- Mobile version: Option 1 - 3 columns per row -->
                             <div class="d-md-none d-none" id="currency-pool-mobile-rows">
                                 <!-- Mobile rows will be populated here -->
                             </div>
-                            
+
                             <!-- Mobile version: Option 2 - Horizontal scrollable (default) -->
                             <div class="d-md-none currency-pool-mobile-scroll" id="currency-pool-mobile-scroll">
                                 <div class="d-flex">
@@ -356,7 +363,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Mobile Management Button (visible only on mobile) -->
                         <div class="d-sm-none mt-2">
                             <a href="@Url.Action("Management", "Home")"
@@ -370,9 +377,9 @@
                 </div>
             </div>
         }
-        
-        <!-- Desktop Floating Management Button (visible only on desktop for Admin/Manager/Staff) -->
-        @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("Staff"))
+
+        <!-- Desktop Floating Management Button (visible only on desktop for Admin/Operator) -->
+        @if (!User.IsInRole("Customer"))
         {
             <div class="d-none d-sm-block position-fixed" style="bottom: 16px; right: 20px; z-index: 1050;">
                 <a href="@Url.Action("Management", "Home")"
@@ -671,7 +678,7 @@
                 'DENT': '📱', // Dent
                 'WIN': '🎰' // WINkLink
             };
-            
+
             return currencyFlags[currencyCode] || '💱'; // Default to generic currency exchange emoji
         }
 
@@ -747,7 +754,7 @@
             for (let i = 0; i < pools.length; i += 3) {
                 const rowPools = pools.slice(i, i + 3);
                 mobileRowsHtml += '<div class="row mb-2">';
-                rowPools.forEach(function(pool) {
+                rowPools.forEach(function (pool) {
                     const flagEmoji = getCurrencyFlag(pool.currencyCode);
                     mobileRowsHtml += `
                         <div class="col-4 text-center border-end currency-pool-item">
@@ -781,11 +788,11 @@
                     <small>هیچ استخر ارزی تعریف نشده است</small>
                 </div>
             `;
-            
+
             $('#currency-pool-row-admin').html(emptyMessage);
             $('#currency-pool-mobile-rows').html('<div class="text-center text-muted py-2"><small>هیچ استخر ارزی تعریف نشده است</small></div>');
             $('#currency-pool-mobile-scroll .d-flex').html('<div class="text-center text-muted py-2 w-100"><small>هیچ استخر ارزی تعریف نشده است</small></div>');
-            
+
             // Always show the currency pool section
             $('#currency-pool-section-admin').show();
         }
@@ -802,7 +809,7 @@
         function toggleMobilePoolDisplay() {
             const scrollContainer = $('#currency-pool-mobile-scroll');
             const rowsContainer = $('#currency-pool-mobile-rows');
-            
+
             if (scrollContainer.hasClass('d-none')) {
                 // Switch to scroll mode
                 scrollContainer.removeClass('d-none');
@@ -829,31 +836,31 @@
                 poolContent.removeClass('collapsed');
                 toggleBtn.removeClass('collapsed');
                 toggleIcon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-                
+
                 // Update state
                 isPoolMinimized = false;
-                
+
                 // Store preference
                 localStorage.setItem('currencyPoolMinimized', 'false');
-                
+
                 // Remove animation class after animation completes
                 setTimeout(() => {
                     poolSection.removeClass('maximizing');
                 }, 400);
-                
+
             } else {
                 // Minimize (hide) the pool
                 poolSection.removeClass('maximizing').addClass('minimizing');
                 poolContent.addClass('collapsed');
                 toggleBtn.addClass('collapsed');
                 toggleIcon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-                
+
                 // Update state
                 isPoolMinimized = true;
-                
+
                 // Store preference
                 localStorage.setItem('currencyPoolMinimized', 'true');
-                
+
                 // Remove animation class after animation completes
                 setTimeout(() => {
                     poolSection.removeClass('minimizing');
@@ -864,12 +871,12 @@
         // Initialize pool state from localStorage
         function initializeCurrencyPoolState() {
             const isMinimized = localStorage.getItem('currencyPoolMinimized') === 'true';
-            
+
             if (isMinimized) {
                 const poolContent = $('#currency-pool-content');
                 const toggleBtn = $('.currency-pool-toggle');
                 const toggleIcon = $('#currency-pool-toggle-icon');
-                
+
                 // Set initial minimized state without animation
                 poolContent.addClass('collapsed');
                 toggleBtn.addClass('collapsed');
@@ -891,7 +898,7 @@
                 if (window.webPushManager && window.webPushManager.isSupported) {
                     // Check if user has been prompted before
                     const hasBeenPrompted = localStorage.getItem('pushNotificationPrompted');
-                    
+
                     if (!hasBeenPrompted && Notification.permission === 'default') {
                         // Show push notification setup after 5 seconds
                         setTimeout(() => {

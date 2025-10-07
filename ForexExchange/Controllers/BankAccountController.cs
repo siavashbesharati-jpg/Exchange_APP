@@ -12,7 +12,7 @@ namespace ForexExchange.Controllers
     /// Bank Account Management Controller
     /// کنترلر مدیریت حساب‌های بانکی
     /// </summary>
-    //[Authorize(Roles = "Admin,Manager,Staff")] // Temporarily commented for debugging
+    //[Authorize(Roles = "Admin,Operator,Programmer")] // Temporarily commented for debugging
     public class BankAccountController : Controller
     {
         private readonly ForexDbContext _context;
