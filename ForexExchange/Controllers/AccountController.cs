@@ -142,9 +142,10 @@ namespace ForexExchange.Controllers
                     user.CustomerId = customer.Id;
                     await _userManager.UpdateAsync(user);
 
-                    // Add FullName claim for navbar display
+                    // Add FullName and Role claims for navbar display and authorization
                     var claims = new List<System.Security.Claims.Claim> {
-                        new System.Security.Claims.Claim("FullName", user.FullName ?? user.UserName)
+                        new System.Security.Claims.Claim("FullName", user.FullName ?? user.UserName),
+                        new System.Security.Claims.Claim("Role", user.Role.ToString())
                     };
                     await _userManager.AddClaimsAsync(user, claims);
                     await _signInManager.SignInAsync(user, isPersistent: false);
@@ -200,11 +201,13 @@ namespace ForexExchange.Controllers
                 if (user != null)
                 {
                     Console.WriteLine($"+++++ User {user.PhoneNumber} found with normalized input: {normalizedPhoneNumber}");
-                    // Ensure FullName claim is present for navbar display
+                    // Ensure FullName and Role claims are present for navbar display and authorization
                     var userClaims = await _userManager.GetClaimsAsync(user);
                     var existingFullNameClaim = userClaims.FirstOrDefault(c => c.Type == "FullName");
+                    var existingRoleClaim = userClaims.FirstOrDefault(c => c.Type == "Role");
 
                     var fullNameValue = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : (user.UserName ?? "کاربر");
+                    var roleValue = user.Role.ToString();
 
                     if (existingFullNameClaim != null)
                     {
@@ -212,7 +215,15 @@ namespace ForexExchange.Controllers
                         await _userManager.RemoveClaimAsync(user, existingFullNameClaim);
                     }
 
+                    if (existingRoleClaim != null)
+                    {
+                        // Remove old role claim and add updated one
+                        await _userManager.RemoveClaimAsync(user, existingRoleClaim);
+                    }
+
+                    // Add updated claims
                     await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FullName", fullNameValue));
+                    await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("Role", roleValue));
 
                     var result = await _signInManager.PasswordSignInAsync(
                         user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true);

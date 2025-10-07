@@ -160,7 +160,13 @@ namespace ForexExchange.Services
 
         public async Task<List<ApplicationUser>> GetAvailableUsersAsync()
         {
-            return await _userManager.Users.ToListAsync();
+            // Get users with Admin, Programmer, or Operator roles
+            var allowedRoles = new[] { UserRole.Admin, UserRole.Programmer, UserRole.Operator };
+            
+            return await _userManager.Users
+                .Where(u => allowedRoles.Contains(u.Role))
+                .OrderBy(u => u.FullName)
+                .ToListAsync();
         }
     }
 }

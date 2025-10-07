@@ -26,8 +26,8 @@ namespace ForexExchange.Controllers
         {
             var tasks = await _taskService.GetFilteredTasksAsync(assignedUserId, dueDateFrom, dueDateTo, status);
             
-            // Populate filter dropdown data
-            var users = await _userManager.Users.ToListAsync();
+            // Populate filter dropdown data - only show Admin, Programmer, and Operator users
+            var users = await _taskService.GetAvailableUsersAsync();
             ViewBag.Users = new SelectList(users, "Id", "FullName", assignedUserId);
             ViewBag.Statuses = new SelectList(Enum.GetValues<TaskStatus>(), status);
             
