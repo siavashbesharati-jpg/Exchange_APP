@@ -27,7 +27,7 @@ namespace ForexExchange.Models
     public enum UserRole
     {
         [Display(Name = "توسعه دهنده")]
-        Programer = 0,
+        Programmer = 0,
         [Display(Name = "مدیر")]
         Admin = 1,
         [Display(Name = "کارمند")]

@@ -14,7 +14,7 @@ namespace ForexExchange.Controllers
     /// Admin Management Controller
     /// کنترلر مدیریت ادمین
     /// </summary>
-    [Authorize]
+    [Authorize(Roles = "Admin,Programmer")]
     public class AdminManagementController : Controller
     {
         private readonly AdminActivityService _adminActivityService;
@@ -38,7 +38,6 @@ namespace ForexExchange.Controllers
         /// Admin Activity Log Index
         /// صفحه اصلی لاگ فعالیت‌های ادمین
         /// </summary>
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index(
             string? adminUserId = null,
             AdminActivityType? activityType = null,
@@ -101,7 +100,6 @@ namespace ForexExchange.Controllers
         /// دریافت جزئیات فعالیت
         /// </summary>
         [HttpGet]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetActivityDetails(int id)
         {
             var activity = await _context.AdminActivities
@@ -138,7 +136,6 @@ namespace ForexExchange.Controllers
         /// Admin Dashboard
         /// داشبورد ادمین
         /// </summary>
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Dashboard()
         {
             // Get system statistics
@@ -172,7 +169,6 @@ namespace ForexExchange.Controllers
         /// Manage Admin Users
         /// مدیریت کاربران ادمین
         /// </summary>
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ManageAdmins()
         {
             var adminRole = await _roleManager.FindByNameAsync("Admin");
@@ -201,7 +197,6 @@ namespace ForexExchange.Controllers
         /// ایجاد کاربر ادمین جدید
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateAdmin(string userName, string email, string password, UserRole role, string fullName)
         {
@@ -213,7 +208,7 @@ namespace ForexExchange.Controllers
 
             // Normalize phone number
             string normalizedPhoneNumber = PhoneNumberService.NormalizePhoneNumber(userName);
-            
+
             // Validate normalized phone number
             if (!PhoneNumberService.IsValidNormalizedPhoneNumber(normalizedPhoneNumber))
             {
@@ -281,7 +276,6 @@ namespace ForexExchange.Controllers
         /// تغییر نقش کاربر ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeAdminRole(string userId, UserRole newRole)
         {
@@ -364,7 +358,6 @@ namespace ForexExchange.Controllers
         /// حذف کاربر ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAdmin(string userId)
         {
@@ -462,7 +455,6 @@ namespace ForexExchange.Controllers
         /// دریافت فعالیت‌های ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportActivities(
             string? adminUserId = null,
@@ -501,7 +493,6 @@ namespace ForexExchange.Controllers
         /// ویرایش کاربر ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditAdmin(string userId, string email, string fullName)
         {
@@ -515,7 +506,7 @@ namespace ForexExchange.Controllers
 
                 // Allow editing self - no restriction for basic info updates
                 var currentUser = await _userManager.GetUserAsync(User);
-                
+
                 var oldEmail = user.Email;
                 var oldFullName = user.FullName;
 
@@ -557,7 +548,6 @@ namespace ForexExchange.Controllers
         /// تغییر رمز عبور ادمین
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ChangeAdminPassword(string userId, string newPassword, string confirmPassword)
         {
             try

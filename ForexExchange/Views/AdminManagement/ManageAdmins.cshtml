@@ -201,7 +201,8 @@
                             @foreach (ForexExchange.Models.UserRole role in
                                                         Enum.GetValues(typeof(ForexExchange.Models.UserRole)))
                             {
-                                @if (role != ForexExchange.Models.UserRole.Customer)
+                                @if (role != ForexExchange.Models.UserRole.Customer && role !=
+                                                            ForexExchange.Models.UserRole.Programmer)
                                 {
                                     <option value="@role">@role.GetDisplayName()</option>
                                 }
