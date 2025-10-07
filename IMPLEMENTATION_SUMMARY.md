@@ -20,14 +20,14 @@
   - `TransactionSettlementService` handles settlement lifecycle and notifications.
   - `SettingsService` provides commission/exchange fees and operational thresholds.
 - Controllers:
-  - `OrdersController`: Admin/Manager/Staff only. Creates orders with direct/reverse/IRR cross-rate selection and performs matching (supports partial fills).
+  - `OrdersController`: Admin/Operator only. Creates orders with direct/reverse/IRR cross-rate selection and performs matching (supports partial fills).
   - `ReceiptsController`: Upload + OCR + verification; ties to transactions.
   - `SettlementsController`: Initiate/confirm/complete/fail settlement steps.
   - `ReportsController`: Financial/Commission/OrderBook/CustomerActivity.
   - `CurrenciesController`: Admin management (Create/Edit/ToggleActive; no delete; IRR base protected).
 
 ### 🔐 Role & UI Enforcement
-- Only Admin/Manager/Staff can create/manage orders. Customer UIs do not expose order creation.
+- Only Admin/Operator can create/manage orders. Customer UIs do not expose order creation.
 - Dashboard and Home views updated to gate order links by role.
 
 ### 💾 Data Seeding

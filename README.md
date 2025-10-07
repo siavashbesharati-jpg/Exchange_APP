@@ -5,7 +5,7 @@ Multi-Currency Cross-Trading Exchange System — سیستم معاملات  چن
 ## فهرست مطالب (Table of Contents)
 - معرفی و مدل کسب‌وکار
 - ویژگی‌ها و فناوری‌ها
-- نقش‌ها و دسترسی‌ها (Orders فقط برای Admin/Manager/Staff)
+- نقش‌ها و دسترسی‌ها (Orders فقط برای Admin/Operator)
 - معماری و موجودیت‌های اصلی
 - گردش‌کار: از معامله تا تسویه (Business Flow)
 - استخرهای ارزی و مدیریت ریسک
@@ -37,10 +37,10 @@ Multi-Currency Cross-Trading Exchange System — سیستم معاملات  چن
 - اعلان‌ها، احراز هویت و کنترل دسترسی مبتنی بر نقش
 
 ## نقش‌ها و دسترسی‌ها
-- Admin, Manager, Staff: ایجاد/مدیریت معامله‌ها، رسیدها، تسویه‌ها، گزارش‌ها؛ مدیریت ارزها و نرخ‌ها.
+- Admin, Operator: ایجاد/مدیریت معامله‌ها، رسیدها، تسویه‌ها، گزارش‌ها؛ مدیریت ارزها و نرخ‌ها.
 - Customer: مشاهده پروفایل و تراکنش‌های خود؛ ایجاد یا مدیریت معامله مجاز نیست.
 
-نکته: ورودی‌های UI برای ثبت معامله فقط برای Admin/Manager/Staff نمایش داده می‌شوند.
+نکته: ورودی‌های UI برای ثبت معامله فقط برای Admin/Operator نمایش داده می‌شوند.
 
 ## معماری و موجودیت‌های اصلی
 - Currency (DB): Code, PersianName, Symbol, IsActive, IsBaseCurrency(=IRR), DisplayOrder
@@ -52,7 +52,7 @@ Multi-Currency Cross-Trading Exchange System — سیستم معاملات  چن
 
 ## گردش‌کار: از معامله تا تسویه (خلاصه)
 1) آماده‌سازی سیستم: Seed و مدیریت ارزها؛ IRR تنها ارز پایه. تنظیمات کمیسیون/کارمزد و حدود عملیاتی.
-2) ایجاد معامله (Admin/Manager/Staff): انتخاب مشتری و جفت‌ارز، تعیین نرخ (مستقیم/معکوس/از طریق IRR). ذخیره با Status=Open.
+2) ایجاد معامله (Admin/Operator): انتخاب مشتری و جفت‌ارز، تعیین نرخ (مستقیم/معکوس/از طریق IRR). ذخیره با Status=Open.
 3) مچینگ: انتخاب بهترین تطبیق‌ها با پشتیبانی Partial Fill؛ ساخت Transaction و به‌روزرسانی FilledAmount/Status؛ بروزرسانی استخرها.
 4) تسویه: آپلود رسید (OCR اختیاری) → تأیید رسید → تأیید پرداخت‌ها → تکمیل یا Fail با Rollback.
 5) کارمزد: از SettingsService خوانده می‌شود (درصد → نسبت اعشاری) و در Settlement لحاظ می‌گردد.
@@ -102,7 +102,7 @@ dotnet run
 تنظیم OCR (اختیاری): appsettings.Development.json → OpenRouter.ApiKey را مقداردهی کنید.
 
 ## امنیت و مجوزها
-- ASP.NET Core Identity، نقش‌ها: Admin, Manager, Staff, Customer
+- ASP.NET Core Identity، نقش‌ها: Admin,, operator, Customer
 - RBAC، Anti-forgery، ولیدیشن ورودی سمت کلاینت/سرور
 - مخفی‌سازی مقادیر حساس در تنظیمات
 

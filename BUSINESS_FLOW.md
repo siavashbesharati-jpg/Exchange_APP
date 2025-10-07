@@ -4,7 +4,7 @@ This document describes the end-to-end flow in the system, aligned with the curr
 
 ## Roles and Access
 
-- Admin, Manager, Staff:
+- Admin, Operator:
   - Can create/manage Orders, Receipts, Settlements, and view Reports.
   - Manage Currencies and Exchange Rates.
 - Customer:
@@ -24,7 +24,7 @@ This document describes the end-to-end flow in the system, aligned with the curr
    - Maintain active Exchange Rates for pairs. Direct/reverse/cross via IRR supported.
    - Configure Settings: CommissionRate, ExchangeFeeRate, min/max/daily limits.
 
-2) Create order (Admin/Manager/Staff)
+2) Create order (Admin/Operator)
    - Select Customer, FromCurrency, ToCurrency, Amount.
    - Rate resolution (OrdersController.Create):
      - Direct rate (From→To) if active.
@@ -36,14 +36,14 @@ This document describes the end-to-end flow in the system, aligned with the curr
      - Else: approximated via USD leg fallback or default.
    - Order saved with Status=Open.
 
-3) Match orders (Admin/Manager/Staff)
+3) Match orders (Admin/Operator)
    - OrdersController.Details shows compatible open/partial orders.
    - OrdersController.Match matches best compatible rates and creates Transaction(s):
      - Uses complementary orders with counter OrderType and compatible rate.
      - Supports partial fills; updates FilledAmount/Status on both orders.
      - Calls CurrencyPoolService.ProcessTransactionAsync to update pool balances.
 
-4) Settlement lifecycle (Admin/Manager/Staff)
+4) Settlement lifecycle (Admin/Operator)
    - SettlementsController.Index/Details provide queue and per-transaction view.
    - Initiate: moves Transaction to PaymentUploaded, asks buyer to upload receipt.
    - Receipt Upload (ReceiptsController.Upload):
@@ -65,7 +65,7 @@ This document describes the end-to-end flow in the system, aligned with the curr
      - NetAmount = Gross - Commission - ExchangeFee.
      - BuyerTotalPayment and SellerNetReceived reported.
 
-6) Reporting (Admin/Staff)
+6) Reporting (Admin/Operator)
    - ReportsController: Financial, Commission, CustomerActivity, OrderBook.
    - CSV export for transactions.
 
@@ -102,7 +102,7 @@ This document describes the end-to-end flow in the system, aligned with the curr
 
 ## Operational Notes
 
-- Only Admin/Manager/Staff can create or manage orders. Customer UIs do not expose order creation.
+- Only Admin/Operator can create or manage orders. Customer UIs do not expose order creation.
 - IRR is the base currency; cross-rates fall back via IRR when direct/reverse not available.
 - Currency Management: Admin CRUD (no delete), toggle Active; IRR cannot be deactivated as base.
 - Currency Pools track balances and risk; updated on every transaction creation.

@@ -103,7 +103,7 @@ Password: Admin123!
 
 ### Role-Based Access Control
 ```cs
-[Authorize(Roles = "Admin,Manager,Staff")] // Orders, Currencies management
+[Authorize(Roles = "Admin,Operator,Programmer")] // Orders, Currencies management
 [Authorize] // General access
 // Customer role: read-only access to own data
 ```
