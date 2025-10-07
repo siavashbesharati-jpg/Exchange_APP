@@ -132,11 +132,11 @@ namespace ForexExchange.Services
             // Define multiple admin users with their phone numbers as passwords
             var adminUsers = new[]
             {
-                new { Phone = "009195410188", Email = "siavash@iranexpedia.ir", FullName = " توسعه دهنده ", Password = "roberto2025@#$ASD",Role = UserRole.Programmer },
-                new { Phone = "00989120674032", Email = "siavash@taban-gorpup.com", FullName = "سیاوش", Password = "roberto2025@#$ASD",Role = UserRole.Admin },
+                new { Phone = "00989195410188", Email = "siavash@iranexpedia.ir", FullName = " توسعه دهنده ", Password = "roberto2025@#$ASD",Role = UserRole.Programmer },
+                new { Phone = "00989120674032", Email = "exsora@iranexpedia.ir", FullName = "سیاوش", Password = "admindemo1",Role = UserRole.Admin },
             };
 
-            foreach (var adminData in adminUsers)
+            foreach (var adminData in adminUsers)admin
             {
                 // Check if admin exists by email first (for existing installations)
                 var adminUser = await _userManager.FindByEmailAsync(adminData.Email);

@@ -171,7 +171,17 @@ namespace ForexExchange.Controllers
         /// </summary>
         public async Task<IActionResult> ManageAdmins()
         {
+            // Get current user to check their role
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Get all administrative roles (Admin, Programmer, Operator)
             var adminRole = await _roleManager.FindByNameAsync("Admin");
+            var programmerRole = await _roleManager.FindByNameAsync("Programmer");
+            var operatorRole = await _roleManager.FindByNameAsync("Operator");
 
             if (adminRole == null)
             {
@@ -179,8 +189,13 @@ namespace ForexExchange.Controllers
                 return RedirectToAction("Dashboard");
             }
 
+            // Get user IDs for administrative roles
+            var roleIds = new List<string> { adminRole.Id };
+            if (programmerRole != null) roleIds.Add(programmerRole.Id);
+            if (operatorRole != null) roleIds.Add(operatorRole.Id);
+
             var adminUserIds = _context.UserRoles
-                .Where(ur => ur.RoleId == adminRole.Id)
+                .Where(ur => roleIds.Contains(ur.RoleId))
                 .Select(ur => ur.UserId)
                 .Distinct();
 
@@ -188,6 +203,15 @@ namespace ForexExchange.Controllers
                 .Where(u => adminUserIds.Contains(u.Id))
                 .OrderBy(u => u.UserName)
                 .ToListAsync();
+
+            // If current user is not a Programmer, filter out Programmer users
+            if (currentUser.Role != UserRole.Programmer)
+            {
+                adminUsers = adminUsers.Where(u => u.Role != UserRole.Programmer).ToList();
+            }
+
+            // Pass current user role to view for additional filtering logic
+            ViewBag.CurrentUserRole = currentUser.Role;
 
             return View(adminUsers);
         }

@@ -100,10 +100,20 @@
                                                         @foreach (ForexExchange.Models.UserRole role in
                                                                                                     Enum.GetValues(typeof(ForexExchange.Models.UserRole)))
                                                         {
+                                                            @* Only show non-Customer roles *@
                                                             @if (role != ForexExchange.Models.UserRole.Customer)
                                                             {
-                                                                <option value="@role" selected="@(user.Role == role)">
-                                                                    @role.GetDisplayName()</option>
+                                                                @* Hide Programmer role if current user is not a Programmer *@
+                                                                @if (role == ForexExchange.Models.UserRole.Programmer && ViewBag.CurrentUserRole != ForexExchange.Models.UserRole.Programmer)
+                                                                {
+                                                                    @* Skip Programmer option for non-Programmer users *@
+                                                                }
+                                                                else
+                                                                {
+                                                                    <option value="@role" selected="@(user.Role == role)">
+                                                                        @role.GetDisplayName()
+                                                                    </option>
+                                                                }
                                                             }
                                                         }
                                                     </select>
@@ -201,10 +211,17 @@
                             @foreach (ForexExchange.Models.UserRole role in
                                                         Enum.GetValues(typeof(ForexExchange.Models.UserRole)))
                             {
-                                @if (role != ForexExchange.Models.UserRole.Customer && role !=
-                                                            ForexExchange.Models.UserRole.Programmer)
+                                @if (role != ForexExchange.Models.UserRole.Customer)
                                 {
-                                    <option value="@role">@role.GetDisplayName()</option>
+                                    @* Hide Programmer role if current user is not a Programmer *@
+                                    @if (role == ForexExchange.Models.UserRole.Programmer && ViewBag.CurrentUserRole != ForexExchange.Models.UserRole.Programmer)
+                                    {
+                                        @* Skip Programmer option for non-Programmer users *@
+                                    }
+                                    else
+                                    {
+                                        <option value="@role">@role.GetDisplayName()</option>
+                                    }
                                 }
                             }
                         </select>

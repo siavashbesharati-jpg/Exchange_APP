@@ -167,12 +167,12 @@ namespace ForexExchange.Controllers
             var setting = await _settingsService.GetSystemSettingsAsync();
             ViewData["WebsiteName"] = setting.WebsiteName;
             ViewBag.IsInDemoMode = setting.IsDemoMode;
-            if (setting.IsDemoMode)
+            if (setting.IsDemoMode) // if we are in demo mode, then we can display the admin user name and passowrd 
             {
                 var model = new LoginViewModel()
                 {
                     PhoneNumber = "09120674032",
-                    Password = "09120674032"
+                    Password = "admin"
                 };
                 return View(model);
 
