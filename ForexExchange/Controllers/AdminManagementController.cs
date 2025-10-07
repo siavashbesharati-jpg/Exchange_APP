@@ -52,12 +52,23 @@ namespace ForexExchange.Controllers
                 return RedirectToAction("Login", "Account");
 
             // Get activities (all admins can see all activities)
-            var activities = await _adminActivityService.GetAllActivitiesAsync(
-                adminUserId, activityType, fromDate, toDate, pageSize * page);
+            // First, get total count for pagination
+            var totalActivities = await _adminActivityService.GetAllActivitiesAsync(
+                adminUserId, activityType, fromDate, toDate);
+            var totalCount = totalActivities.Count;
 
-            // Get pagination data
-            var totalActivities = activities.Count;
+            // Then get the paginated activities
+            var activities = await _adminActivityService.GetAllActivitiesAsync(
+                adminUserId, activityType, fromDate, toDate, pageSize * 50); // Get enough data
             var paginatedActivities = activities.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            // Get user full names for activities
+            var userIds = paginatedActivities.Select(a => a.AdminUserId).Distinct().ToList();
+            var users = await _context.Users.Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.FullName ?? u.UserName ?? "نامشخص");
+
+            // Create a dictionary to map AdminUserId to FullName for activities
+            ViewBag.UserFullNames = users;
 
             // Get all admin users for filter dropdown
             var adminUsers = new List<ApplicationUser>();
@@ -82,10 +93,10 @@ namespace ForexExchange.Controllers
             ViewBag.IsSuperAdmin = true; // All admins have full access now
             ViewBag.AdminUsers = adminUsers;
             ViewBag.Activities = paginatedActivities;
-            ViewBag.TotalActivities = totalActivities;
+            ViewBag.TotalActivities = totalCount;
             ViewBag.Page = page;
             ViewBag.PageSize = pageSize;
-            ViewBag.TotalPages = (int)Math.Ceiling((double)totalActivities / pageSize);
+            ViewBag.TotalPages = (int)Math.Ceiling((double)totalCount / pageSize);
             ViewBag.ActivityStats = stats;
             ViewBag.FilterAdminUserId = adminUserId;
             ViewBag.FilterActivityType = activityType;

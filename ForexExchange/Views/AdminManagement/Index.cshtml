@@ -1,5 +1,6 @@
 @using ForexExchange.Extensions
 @using ForexExchange.Models
+@using System.Linq
 
 <div class="row">
     <div class="col-12">
@@ -22,6 +23,7 @@
             </div>
 
             <div class="card-body">
+                @Html.AntiForgeryToken()
                 <!-- Filters -->
                 <form method="get" class="mb-4">
                     <div class="row g-3">
@@ -32,7 +34,7 @@
                                 @foreach (var user in ViewBag.AdminUsers ?? new List<ApplicationUser>())
                                 {
                                     <option value="@user.Id" selected="@(ViewBag.FilterAdminUserId == user.Id)">
-                                        @user.UserName
+                                        @user.FullName (@user.UserName)
                                     </option>
                                 }
                             </select>
@@ -93,7 +95,7 @@
                         <div class="card bg-info text-white">
                             <div class="card-body text-center">
                                 <h6>معاملات </h6>
-                                <h3>@(ViewBag.ActivityStats?.GetValueOrDefault("OrderCreated", 0) ?? 0)</h3>
+                                <h3>@(ViewBag.ActivityStats != null && ((Dictionary<string, int>)ViewBag.ActivityStats).ContainsKey("OrderCreated") ? ((Dictionary<string, int>)ViewBag.ActivityStats)["OrderCreated"] : 0)</h3>
                             </div>
                         </div>
                     </div>
@@ -101,7 +103,7 @@
                         <div class="card bg-warning text-white">
                             <div class="card-body text-center">
                                 <h6>نرخ ارز</h6>
-                                <h3>@(ViewBag.ActivityStats?.GetValueOrDefault("ExchangeRateUpdated", 0) ?? 0)</h3>
+                                <h3>@(ViewBag.ActivityStats != null && ((Dictionary<string, int>)ViewBag.ActivityStats).ContainsKey("ExchangeRateUpdated") ? ((Dictionary<string, int>)ViewBag.ActivityStats)["ExchangeRateUpdated"] : 0)</h3>
                             </div>
                         </div>
                     </div>
@@ -109,7 +111,7 @@
                         <div class="card bg-danger text-white">
                             <div class="card-body text-center">
                                 <h6>ورود ناموفق</h6>
-                                <h3>@(ViewBag.ActivityStats?.GetValueOrDefault("FailedLogin", 0) ?? 0)</h3>
+                                <h3>@(ViewBag.ActivityStats != null && ((Dictionary<string, int>)ViewBag.ActivityStats).ContainsKey("FailedLogin") ? ((Dictionary<string, int>)ViewBag.ActivityStats)["FailedLogin"] : 0)</h3>
                             </div>
                         </div>
                     </div>
@@ -129,13 +131,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @if (ViewBag.Activities != null && ViewBag.Activities.Any())
+                            @if (ViewBag.Activities != null && ((List<AdminActivity>)ViewBag.Activities).Any())
                             {
-                                foreach (var activity in ViewBag.Activities)
+                                foreach (var activity in (List<AdminActivity>)ViewBag.Activities)
                                 {
                                     <tr>
                                         <td>@activity.Timestamp.ToString("yyyy/MM/dd HH:mm")</td>
-                                        <td>@activity.AdminUsername</td>
+                                        <td>@(ViewBag.UserFullNames != null && ((Dictionary<string, string>)ViewBag.UserFullNames).ContainsKey(activity.AdminUserId) ? ((Dictionary<string, string>)ViewBag.UserFullNames)[activity.AdminUserId] : activity.AdminUsername)</td>
                                         <td>
                                             <span class="badge bg-@GetActivityBadgeClass(activity.ActivityType)">
                                                 @activity.ActivityType.GetDisplayName()
