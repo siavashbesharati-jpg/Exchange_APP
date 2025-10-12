@@ -1,4 +1,5 @@
-@model List<ForexExchange.Models.AllCustomerBalancePrintViewModel>
+@using System.Linq
+@model ForexExchange.Models.AllCustomersBalanceReportData
 @inject ForexExchange.Services.ISettingsService SettingsService
 @{
     ViewData["Title"] = "گزارش تراز همه مشتریان";
@@ -7,6 +8,8 @@
     var companyName = await SettingsService.GetCompanyNameAsync();
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
     var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
+    var summary = Model?.Summary;
+    var customers = Model?.Customers ?? new List<ForexExchange.Models.AllCustomerBalancePrintViewModel>();
 }
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -32,6 +35,15 @@
         .balance-positive { color: #27ae60; }
         .balance-negative { color: #e74c3c; }
         .footer { background: #2c3e50; color: white; padding: 10px 20px; text-align: center; font-size: 11px; }
+        .summary-grid { display: flex; gap: 10px; justify-content: space-between; margin: 20px 0; flex-wrap: wrap; }
+        .summary-card { flex: 1 1 200px; background: #f0f4ff; border: 1px solid #ccd6f6; border-radius: 8px; padding: 15px; text-align: center; }
+        .summary-card h4 { margin: 0; font-size: 18px; color: #001f4d; }
+        .summary-card span { display: block; margin-top: 6px; font-size: 12px; color: #555; }
+        .currency-summary { margin: 20px 0; }
+        .currency-summary table { width: 100%; border-collapse: collapse; }
+        .currency-summary th, .currency-summary td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .currency-summary th { background: #eef2ff; }
+        .currency-summary td { font-size: 12px; }
     @@media print { body { background: white; } .receipt-container { box-shadow: none; border: 1px solid #000; } .footer { background: #2c3e50 !important; } .no-print { display: none !important; } }
     </style>
 </head>
@@ -45,6 +57,62 @@
             </div>
             <div class="report-title">گزارش تراز همه مشتریان</div>
         </div>
+        @if (summary != null)
+        {
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h4>@summary.TotalCustomersWithBalances</h4>
+                    <span>کل مشتریان با تراز</span>
+                </div>
+                <div class="summary-card">
+                    <h4>@summary.TotalCustomersWithCredit</h4>
+                    <span>مشتریان بستانکار</span>
+                </div>
+                <div class="summary-card">
+                    <h4>@summary.TotalCustomersWithDebt</h4>
+                    <span>مشتریان بدهکار</span>
+                </div>
+                <div class="summary-card">
+                    <h4>@(summary.CurrencyFilter ?? "همه ارزها")</h4>
+                    <span>فیلتر ارز</span>
+                </div>
+            </div>
+
+            if (summary.CurrencyTotals.Any())
+            {
+                <div class="currency-summary">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ارز</th>
+                                <th>تعداد مشتری</th>
+                                <th>جمع بستانکار</th>
+                                <th>جمع بدهکار</th>
+                                <th>تراز</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var entry in summary.CurrencyTotals.OrderBy(e => e.Key))
+                            {
+                                var currencyCode = entry.Key;
+                                var totals = entry.Value;
+                                var creditFormatted = FormatAmount(totals.TotalCredit, currencyCode);
+                                var debtFormatted = FormatAmount(totals.TotalDebt, currencyCode);
+                                var netFormatted = FormatAmount(totals.NetBalance, currencyCode);
+                                var netClass = totals.NetBalance >= 0 ? "balance-positive" : "balance-negative";
+                                <tr>
+                                    <td>@currencyCode</td>
+                                    <td>@totals.CustomerCount</td>
+                                    <td class="balance-positive">@creditFormatted</td>
+                                    <td class="balance-negative">@(totals.TotalDebt > 0 ? "-" + debtFormatted : debtFormatted)</td>
+                                    <td class="@netClass">@netFormatted</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
         <table class="table">
             <thead>
                 <tr>
@@ -56,10 +124,10 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Model != null && Model.Any())
+                @if (customers.Any())
                 {
                     int row = 1;
-                    foreach (var customer in Model)
+                    foreach (var customer in customers)
                     {
                         foreach (var bal in customer.Balances)
                         {
@@ -68,7 +136,7 @@
                                 <td>@customer.FullName</td>
                                 <td>@customer.CustomerId</td>
                                 <td>@bal.CurrencyCode</td>
-                                <td class="@(bal.Balance >= 0 ? "balance-positive" : "balance-negative")">@String.Format(bal.CurrencyCode == "IRR" ? "{0:N0}" : "{0:N2}", bal.Balance)</td>
+                                <td class="@(bal.Balance >= 0 ? "balance-positive" : "balance-negative")">@FormatAmount(bal.Balance, bal.CurrencyCode)</td>
                             </tr>
                             row++;
                         }
@@ -92,3 +160,12 @@
     </div>
 </body>
 </html>
+
+@functions {
+    public string FormatAmount(decimal value, string currencyCode)
+    {
+        return currencyCode == "IRR"
+            ? string.Format("{0:N0}", value)
+            : string.Format("{0:N2}", value);
+    }
+}

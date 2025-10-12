@@ -631,7 +631,7 @@ namespace ForexExchange.Services
             return package.GetAsByteArray();
         }
 
-        public byte[] GenerateAllCustomersBalancesExcel(IEnumerable<AllCustomerBalancePrintViewModel> customers)
+        public byte[] GenerateAllCustomersBalancesExcel(AllCustomersBalanceReportData reportData)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
@@ -639,26 +639,86 @@ namespace ForexExchange.Services
             var worksheet = package.Workbook.Worksheets.Add("تراز همه مشتریان");
             worksheet.View.RightToLeft = true;
 
-            worksheet.Cells[1, 1].Value = "#";
-            worksheet.Cells[1, 2].Value = "نام مشتری";
-            worksheet.Cells[1, 3].Value = "کد مشتری";
-            worksheet.Cells[1, 4].Value = "ارز";
-            worksheet.Cells[1, 5].Value = "تراز";
-            StyleHeaderRow(worksheet.Cells[1, 1, 1, 5]);
+            var data = reportData?.Customers ?? new List<AllCustomerBalancePrintViewModel>();
+            var summary = reportData?.Summary ?? new AllCustomersBalanceSummary();
+            var rowIndex = 1;
 
-            var data = customers?.ToList() ?? new List<AllCustomerBalancePrintViewModel>();
+            worksheet.Cells[rowIndex, 1].Value = "خلاصه گزارش";
+            worksheet.Cells[rowIndex, 1, rowIndex, 4].Merge = true;
+            StyleHeaderCell(worksheet.Cells[rowIndex, 1, rowIndex, 4], 16, true);
+            rowIndex += 2;
+
+            worksheet.Cells[rowIndex, 1].Value = "کل مشتریان با تراز";
+            worksheet.Cells[rowIndex, 2].Value = summary.TotalCustomersWithBalances;
+            StyleInfoCell(worksheet.Cells[rowIndex, 1]);
+            StyleInfoCell(worksheet.Cells[rowIndex, 2]);
+            rowIndex++;
+
+            worksheet.Cells[rowIndex, 1].Value = "مشتریان بستانکار";
+            worksheet.Cells[rowIndex, 2].Value = summary.TotalCustomersWithCredit;
+            StyleInfoCell(worksheet.Cells[rowIndex, 1]);
+            StyleInfoCell(worksheet.Cells[rowIndex, 2]);
+            rowIndex++;
+
+            worksheet.Cells[rowIndex, 1].Value = "مشتریان بدهکار";
+            worksheet.Cells[rowIndex, 2].Value = summary.TotalCustomersWithDebt;
+            StyleInfoCell(worksheet.Cells[rowIndex, 1]);
+            StyleInfoCell(worksheet.Cells[rowIndex, 2]);
+            rowIndex += 2;
+
+            if (summary.CurrencyTotals.Any())
+            {
+                worksheet.Cells[rowIndex, 1].Value = "خلاصه به تفکیک ارز";
+                worksheet.Cells[rowIndex, 1, rowIndex, 5].Merge = true;
+                StyleHeaderCell(worksheet.Cells[rowIndex, 1, rowIndex, 5], 14, true);
+                rowIndex++;
+
+                worksheet.Cells[rowIndex, 1].Value = "ارز";
+                worksheet.Cells[rowIndex, 2].Value = "تعداد مشتری";
+                worksheet.Cells[rowIndex, 3].Value = "جمع بستانکار";
+                worksheet.Cells[rowIndex, 4].Value = "جمع بدهکار";
+                worksheet.Cells[rowIndex, 5].Value = "تراز";
+                StyleHeaderRow(worksheet.Cells[rowIndex, 1, rowIndex, 5]);
+                rowIndex++;
+
+                foreach (var entry in summary.CurrencyTotals.OrderBy(e => e.Key))
+                {
+                    worksheet.Cells[rowIndex, 1].Value = entry.Key;
+                    worksheet.Cells[rowIndex, 2].Value = entry.Value.CustomerCount;
+                    worksheet.Cells[rowIndex, 3].Value = entry.Value.TotalCredit;
+                    worksheet.Cells[rowIndex, 4].Value = entry.Value.TotalDebt > 0 ? -entry.Value.TotalDebt : 0;
+                    worksheet.Cells[rowIndex, 5].Value = entry.Value.NetBalance;
+
+                    var creditFormat = entry.Key == "IRR" ? "#,##0" : "#,##0.00";
+                    worksheet.Cells[rowIndex, 3].Style.Numberformat.Format = creditFormat;
+                    worksheet.Cells[rowIndex, 4].Style.Numberformat.Format = creditFormat;
+                    worksheet.Cells[rowIndex, 5].Style.Numberformat.Format = creditFormat;
+
+                    StyleDataRow(worksheet.Cells[rowIndex, 1, rowIndex, 5]);
+                    rowIndex++;
+                }
+
+                rowIndex++;
+            }
+
+            worksheet.Cells[rowIndex, 1].Value = "#";
+            worksheet.Cells[rowIndex, 2].Value = "نام مشتری";
+            worksheet.Cells[rowIndex, 3].Value = "کد مشتری";
+            worksheet.Cells[rowIndex, 4].Value = "ارز";
+            worksheet.Cells[rowIndex, 5].Value = "تراز";
+            StyleHeaderRow(worksheet.Cells[rowIndex, 1, rowIndex, 5]);
+            rowIndex++;
 
             if (!data.Any())
             {
-                worksheet.Cells[2, 1].Value = "هیچ داده‌ای موجود نیست";
-                worksheet.Cells[2, 1, 2, 5].Merge = true;
-                worksheet.Cells[2, 1, 2, 5].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-                worksheet.Cells[2, 1, 2, 5].Style.Font.Italic = true;
+                worksheet.Cells[rowIndex, 1].Value = "هیچ داده‌ای موجود نیست";
+                worksheet.Cells[rowIndex, 1, rowIndex, 5].Merge = true;
+                worksheet.Cells[rowIndex, 1, rowIndex, 5].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                worksheet.Cells[rowIndex, 1, rowIndex, 5].Style.Font.Italic = true;
                 worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
                 return package.GetAsByteArray();
             }
 
-            var rowIndex = 2;
             var index = 1;
 
             foreach (var customer in data)

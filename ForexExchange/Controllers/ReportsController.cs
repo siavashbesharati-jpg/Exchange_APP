@@ -2837,7 +2837,7 @@ namespace ForexExchange.Controllers
             }
         }
 
-        private async Task<List<AllCustomerBalancePrintViewModel>> BuildAllCustomersBalanceReportAsync(string? currencyFilter, string? customerFilter)
+        private async Task<AllCustomersBalanceReportData> BuildAllCustomersBalanceReportAsync(string? currencyFilter, string? customerFilter)
         {
             var query = _context.Customers
                 .Include(c => c.Balances)
@@ -2853,6 +2853,12 @@ namespace ForexExchange.Controllers
                 .ToListAsync();
 
             var results = new List<AllCustomerBalancePrintViewModel>();
+            var summary = new AllCustomersBalanceSummary
+            {
+                CurrencyFilter = string.IsNullOrEmpty(currencyFilter) ? null : currencyFilter
+            };
+            var currencyTotals = new Dictionary<string, AllCustomersBalanceCurrencyTotal>();
+            var currencyCustomerSets = new Dictionary<string, HashSet<int>>();
 
             foreach (var customer in customers)
             {
@@ -2875,17 +2881,61 @@ namespace ForexExchange.Controllers
                         FullName = customer.FullName,
                         Balances = balances
                     });
+
+                    foreach (var balance in balances)
+                    {
+                        if (!currencyTotals.TryGetValue(balance.CurrencyCode, out var totals))
+                        {
+                            totals = new AllCustomersBalanceCurrencyTotal();
+                            currencyTotals[balance.CurrencyCode] = totals;
+                            currencyCustomerSets[balance.CurrencyCode] = new HashSet<int>();
+                        }
+
+                        if (balance.Balance >= 0)
+                        {
+                            totals.TotalCredit += balance.Balance;
+                        }
+                        else
+                        {
+                            totals.TotalDebt += Math.Abs(balance.Balance);
+                        }
+
+                        currencyCustomerSets[balance.CurrencyCode].Add(customer.Id);
+                    }
                 }
             }
 
-            return results;
+            summary.TotalCustomersWithBalances = results.Count;
+            summary.TotalCustomersWithCredit = results.Count(c => c.Balances.Any(b => b.Balance > 0));
+            summary.TotalCustomersWithDebt = results.Count(c => c.Balances.Any(b => b.Balance < 0));
+
+            foreach (var kvp in currencyTotals)
+            {
+                var currencyCode = kvp.Key;
+                var totals = kvp.Value;
+
+                if (currencyCustomerSets.TryGetValue(currencyCode, out var customersWithCurrency))
+                {
+                    totals.CustomerCount = customersWithCurrency.Count;
+                }
+
+                totals.NetBalance = totals.TotalCredit - totals.TotalDebt;
+            }
+
+            summary.CurrencyTotals = currencyTotals;
+
+            return new AllCustomersBalanceReportData
+            {
+                Customers = results,
+                Summary = summary
+            };
         }
 
         private async Task<IActionResult> ExportAllCustomersBalances(string? currencyFilter, string? customerFilter)
         {
             var reportData = await BuildAllCustomersBalanceReportAsync(currencyFilter, customerFilter);
 
-            if (!reportData.Any())
+            if (!reportData.Customers.Any())
             {
                 return BadRequest("داده‌ای برای خروجی وجود ندارد");
             }
