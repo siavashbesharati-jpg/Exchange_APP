@@ -103,9 +103,9 @@
                                 <tr>
                                     <td>@currencyCode</td>
                                     <td>@totals.CustomerCount</td>
-                                    <td class="balance-positive">@creditFormatted</td>
-                                    <td class="balance-negative">@(totals.TotalDebt > 0 ? "-" + debtFormatted : debtFormatted)</td>
-                                    <td class="@netClass">@netFormatted</td>
+                                       <td class="balance-positive" dir="ltr">@creditFormatted</td>
+                                       <td class="balance-negative" dir="ltr">@(totals.TotalDebt > 0 ? "-" + debtFormatted : debtFormatted)</td>
+                                       <td class="@netClass" dir="ltr">@netFormatted</td>
                                 </tr>
                             }
                         </tbody>
@@ -136,7 +136,7 @@
                                 <td>@customer.FullName</td>
                                 <td>@customer.CustomerId</td>
                                 <td>@bal.CurrencyCode</td>
-                                <td class="@(bal.Balance >= 0 ? "balance-positive" : "balance-negative")">@FormatAmount(bal.Balance, bal.CurrencyCode)</td>
+                                    <td class="@(bal.Balance >= 0 ? "balance-positive" : "balance-negative")" dir="ltr">@FormatAmount(bal.Balance, bal.CurrencyCode)</td>
                             </tr>
                             row++;
                         }
