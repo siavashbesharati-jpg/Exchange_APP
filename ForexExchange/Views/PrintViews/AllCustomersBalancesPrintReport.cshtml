@@ -1,0 +1,94 @@
+@model List<ForexExchange.Models.AllCustomerBalancePrintViewModel>
+@inject ForexExchange.Services.ISettingsService SettingsService
+@{
+    ViewData["Title"] = "گزارش تراز همه مشتریان";
+    Layout = null; // Print-friendly
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
+    var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
+}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - @websiteName</title>
+    <link rel="icon" type="image/png" href="@logoDataUrl">
+    <link rel="shortcut icon" href="@logoDataUrl">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl; background: #f8f9fa; color: #333; font-size: 12px; }
+        .receipt-container { max-width: 1000px; margin: 20px auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); border: 2px solid #ddd; }
+        .receipt-header { background: #001f4d; color: white; padding: 15px 20px; display: flex; align-items: center; gap: 15px; }
+        .company-logo img { width: 32px; height: 32px; border-radius: 50%; }
+        .company-info { flex: 1; }
+        .company-name { font-size: 20px; font-weight: bold; }
+        .company-website { font-size: 12px; opacity: 0.9; }
+        .report-title { font-size: 18px; font-weight: bold; margin-right: auto; }
+        .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .table th { background: #f8f9fa; }
+        .customer-row { background: #f0f4ff; font-weight: bold; }
+        .balance-positive { color: #27ae60; }
+        .balance-negative { color: #e74c3c; }
+        .footer { background: #2c3e50; color: white; padding: 10px 20px; text-align: center; font-size: 11px; }
+    @@media print { body { background: white; } .receipt-container { box-shadow: none; border: 1px solid #000; } .footer { background: #2c3e50 !important; } .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="receipt-header">
+            <div class="company-logo"><img src="@logoDataUrl" alt="لوگو @companyName" /></div>
+            <div class="company-info">
+                <div class="company-name">@companyName</div>
+                <div class="company-website">@companyWebsite</div>
+            </div>
+            <div class="report-title">گزارش تراز همه مشتریان</div>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>نام مشتری</th>
+                    <th>کد مشتری</th>
+                    <th>ارز</th>
+                    <th>تراز</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int row = 1;
+                    foreach (var customer in Model)
+                    {
+                        foreach (var bal in customer.Balances)
+                        {
+                            <tr>
+                                <td>@row</td>
+                                <td>@customer.FullName</td>
+                                <td>@customer.CustomerId</td>
+                                <td>@bal.CurrencyCode</td>
+                                <td class="@(bal.Balance >= 0 ? "balance-positive" : "balance-negative")">@String.Format(bal.CurrencyCode == "IRR" ? "{0:N0}" : "{0:N2}", bal.Balance)</td>
+                            </tr>
+                            row++;
+                        }
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="5">داده‌ای برای نمایش وجود ندارد</td></tr>
+                }
+            </tbody>
+        </table>
+        <div class="footer">
+            <strong>تاریخ چاپ:</strong> @DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") |
+            <strong>کاربر:</strong> @(User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "نامشخص")<br />
+            این گزارش به صورت خودکار تولید شده و نیاز به امضا ندارد • صحت اطلاعات با @companyName قابل بررسی است • @companyWebsite
+        </div>
+    </div>
+    <div style="text-align: center; margin: 20px; padding: 20px;" class="no-print">
+        <button onclick="window.print()" style="background: #27ae60; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">🖨️ چاپ گزارش</button>
+        <button onclick="window.close()" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">✖️ بستن</button>
+    </div>
+</body>
+</html>

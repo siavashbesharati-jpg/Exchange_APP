@@ -33,31 +33,37 @@
             <div class="card shadow-sm border-3">
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <label class="form-label">انتخاب مشتری</label>
                             <select class="form-select" id="customerFilter">
                                 <option value="">همه مشتریان</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <label class="form-label">فیلتر ارز</label>
                             <select class="form-select" id="currencyFilter">
                                 <option value="">همه ارزها</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-md-6 col-lg-2">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-primary w-100" onclick="loadCustomersBalances()">
                                 <i class="fas fa-search me-1"></i>جستجو
                             </button>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-success w-100" onclick="exportData()">
-                                <i class="fas fa-file-excel me-1"></i> دریافت اکسل 
+                            <button class="btn btn-success w-100" onclick="exportExcelReport()">
+                              <i class="fas fa-file-excel me-1"></i> دریافت اکسل 
                             </button>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-secondary w-100" onclick="openPrintView()">
+                                <i class="fas fa-print me-1"></i> چاپ گزارش
+                            </button>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
                             <label class="form-label">&nbsp;</label>
                             <button class="btn btn-info w-100" onclick="refreshData()">
                                 <i class="fas fa-sync-alt me-1"></i>تازه‌سازی
@@ -196,6 +202,28 @@
 <script>
 let currentData = null;
 
+function getSelectedFilters() {
+    return {
+        currency: document.getElementById('currencyFilter').value,
+        customer: document.getElementById('customerFilter').value
+    };
+}
+
+function buildFilterParams() {
+    const { currency, customer } = getSelectedFilters();
+    const params = new URLSearchParams();
+
+    if (currency) {
+        params.append('currencyFilter', currency);
+    }
+
+    if (customer) {
+        params.append('customerFilter', customer);
+    }
+
+    return params;
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     // Load currencies for filter
@@ -324,19 +352,11 @@ async function loadCustomersBalances() {
         // Show loading
         showLoading();
         
-        const selectedCurrencyFilter = document.getElementById('currencyFilter').value;
-        const selectedCustomerFilter = document.getElementById('customerFilter').value;
+        const { currency: selectedCurrencyFilter, customer: selectedCustomerFilter } = getSelectedFilters();
         
         // Build URL with parameters
         let url = '/Reports/GetAllCustomersBalances';
-        const params = new URLSearchParams();
-        
-        if (selectedCurrencyFilter) {
-            params.append('currencyFilter', selectedCurrencyFilter);
-        }
-        if (selectedCustomerFilter) {
-            params.append('customerFilter', selectedCustomerFilter);
-        }
+        const params = buildFilterParams();
         
         if (params.toString()) {
             url += '?' + params.toString();
@@ -352,8 +372,7 @@ async function loadCustomersBalances() {
         
         currentData = data;
         
-        const selectedCurrency = document.getElementById('currencyFilter').value;
-        const selectedCustomer = document.getElementById('customerFilter').value;
+    const { currency: selectedCurrency, customer: selectedCustomer } = getSelectedFilters();
         const viewMode = getCurrentViewMode();
         
         if (selectedCurrency) {
@@ -621,14 +640,21 @@ function refreshData() {
     loadCustomersBalances();
 }
 
-// Export data (placeholder)
-function exportData() {
-    if (!currentData || !currentData.customers.length) {
+function exportExcelReport() {
+    if (!currentData || !currentData.customers || !currentData.customers.length) {
         showError('هیچ داده‌ای برای خروجی وجود ندارد');
         return;
     }
-    
-    showSuccess('قابلیت  دریافت اکسل  در نسخه آینده اضافه خواهد شد');
+
+    const params = buildFilterParams();
+    const url = '/Reports/ExportAllCustomersBalancesToExcel' + (params.toString() ? `?${params.toString()}` : '');
+    window.location.href = url;
+}
+
+function openPrintView() {
+    const params = buildFilterParams();
+    const url = '/Reports/AllCustomersBalancesPrint' + (params.toString() ? `?${params.toString()}` : '');
+    window.open(url, '_blank');
 }
 
 // Render customer-based tables (each customer has a table with currencies as rows)

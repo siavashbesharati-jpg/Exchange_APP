@@ -1,6 +1,7 @@
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Drawing;
+using System.Linq;
 using ForexExchange.Models;
 using ForexExchange.Extensions;
 
@@ -627,6 +628,58 @@ namespace ForexExchange.Services
             // Auto-fit columns
             worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
 
+            return package.GetAsByteArray();
+        }
+
+        public byte[] GenerateAllCustomersBalancesExcel(IEnumerable<AllCustomerBalancePrintViewModel> customers)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using var package = new ExcelPackage();
+            var worksheet = package.Workbook.Worksheets.Add("تراز همه مشتریان");
+            worksheet.View.RightToLeft = true;
+
+            worksheet.Cells[1, 1].Value = "#";
+            worksheet.Cells[1, 2].Value = "نام مشتری";
+            worksheet.Cells[1, 3].Value = "کد مشتری";
+            worksheet.Cells[1, 4].Value = "ارز";
+            worksheet.Cells[1, 5].Value = "تراز";
+            StyleHeaderRow(worksheet.Cells[1, 1, 1, 5]);
+
+            var data = customers?.ToList() ?? new List<AllCustomerBalancePrintViewModel>();
+
+            if (!data.Any())
+            {
+                worksheet.Cells[2, 1].Value = "هیچ داده‌ای موجود نیست";
+                worksheet.Cells[2, 1, 2, 5].Merge = true;
+                worksheet.Cells[2, 1, 2, 5].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                worksheet.Cells[2, 1, 2, 5].Style.Font.Italic = true;
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                return package.GetAsByteArray();
+            }
+
+            var rowIndex = 2;
+            var index = 1;
+
+            foreach (var customer in data)
+            {
+                foreach (var balance in customer.Balances)
+                {
+                    worksheet.Cells[rowIndex, 1].Value = index;
+                    worksheet.Cells[rowIndex, 2].Value = customer.FullName;
+                    worksheet.Cells[rowIndex, 3].Value = customer.CustomerId;
+                    worksheet.Cells[rowIndex, 4].Value = balance.CurrencyCode;
+                    worksheet.Cells[rowIndex, 5].Value = balance.Balance;
+                    worksheet.Cells[rowIndex, 5].Style.Numberformat.Format = balance.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+
+                    StyleDataRow(worksheet.Cells[rowIndex, 1, rowIndex, 5]);
+
+                    rowIndex++;
+                    index++;
+                }
+            }
+
+            worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
             return package.GetAsByteArray();
         }
 

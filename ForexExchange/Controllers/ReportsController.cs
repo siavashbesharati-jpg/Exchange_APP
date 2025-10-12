@@ -120,6 +120,19 @@ namespace ForexExchange.Controllers
             return View();
         }
 
+        // GET: Reports/AllCustomersBalancesPrint
+        [HttpGet]
+        public async Task<IActionResult> AllCustomersBalancesPrint(string? currencyFilter = null, string? customerFilter = null)
+        {
+            var reportData = await BuildAllCustomersBalanceReportAsync(currencyFilter, customerFilter);
+            return View("~/Views/PrintViews/AllCustomersBalancesPrintReport.cshtml", reportData);
+        }
+
+        // GET: Reports/ExportAllCustomersBalancesToExcel
+        [HttpGet]
+        public Task<IActionResult> ExportAllCustomersBalancesToExcel(string? currencyFilter = null, string? customerFilter = null)
+            => ExportAllCustomersBalances(currencyFilter, customerFilter);
+
         // GET: Reports/PoolSummaryReport
         public IActionResult PoolSummaryReport()
         {
@@ -2824,6 +2837,64 @@ namespace ForexExchange.Controllers
             }
         }
 
+        private async Task<List<AllCustomerBalancePrintViewModel>> BuildAllCustomersBalanceReportAsync(string? currencyFilter, string? customerFilter)
+        {
+            var query = _context.Customers
+                .Include(c => c.Balances)
+                .Where(c => c.IsActive && !c.IsSystem);
+
+            if (!string.IsNullOrEmpty(customerFilter) && int.TryParse(customerFilter, out var customerId))
+            {
+                query = query.Where(c => c.Id == customerId);
+            }
+
+            var customers = await query
+                .OrderBy(c => c.FullName)
+                .ToListAsync();
+
+            var results = new List<AllCustomerBalancePrintViewModel>();
+
+            foreach (var customer in customers)
+            {
+                var balances = customer.Balances
+                    .Where(b => b.Balance != 0)
+                    .Where(b => string.IsNullOrEmpty(currencyFilter) || b.CurrencyCode == currencyFilter)
+                    .OrderBy(b => b.CurrencyCode)
+                    .Select(b => new AllCustomerBalancePrintViewModel.BalanceItem
+                    {
+                        CurrencyCode = b.CurrencyCode,
+                        Balance = b.Balance
+                    })
+                    .ToList();
+
+                if (balances.Any())
+                {
+                    results.Add(new AllCustomerBalancePrintViewModel
+                    {
+                        CustomerId = customer.Id,
+                        FullName = customer.FullName,
+                        Balances = balances
+                    });
+                }
+            }
+
+            return results;
+        }
+
+        private async Task<IActionResult> ExportAllCustomersBalances(string? currencyFilter, string? customerFilter)
+        {
+            var reportData = await BuildAllCustomersBalanceReportAsync(currencyFilter, customerFilter);
+
+            if (!reportData.Any())
+            {
+                return BadRequest("داده‌ای برای خروجی وجود ندارد");
+            }
+
+            var excelData = _excelExportService.GenerateAllCustomersBalancesExcel(reportData);
+            var fileName = $"تراز_همه_مشتریان_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
         #region Excel Export Methods
 
         // GET: Reports/ExportToExcel - Main export routing method
@@ -2837,6 +2908,7 @@ namespace ForexExchange.Controllers
             {
                 return type.ToLower() switch
                 {
+                    "allcustomersbalances" => await ExportAllCustomersBalances(currencyCode, customer),
                     "customer" => await ExportCustomerTimeline(customerId, fromDate, toDate, currencyCode),
                     "documents" => await ExportDocuments(fromDate, toDate, currencyCode, customer, referenceId, fromAmount, toAmount, bankAccount),
                     "orders" => await ExportOrdersData(fromDate, toDate, fromCurrency, toCurrency),
