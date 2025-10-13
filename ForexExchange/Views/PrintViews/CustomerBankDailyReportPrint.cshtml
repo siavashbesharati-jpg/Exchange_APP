@@ -8,6 +8,8 @@
     var companyName = await SettingsService.GetCompanyNameAsync();
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
     var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
+    var defaultSummary = Model.DefaultSummary;
+    var defaultCurrencyCode = defaultSummary?.CurrencyCode ?? "IRR";
 }
 @using ForexExchange.Extensions
 
@@ -99,40 +101,7 @@
         }
         .info-label { font-weight: bold; color: #2c3e50; font-size: 11px; margin-bottom: 3px; }
         .info-value { font-size: 13px; color: #333; }
-            @{ var defaultSummary = Model.DefaultSummary; }
-            @if (defaultSummary != null)
-            {
-                <div class="summary-card">
-                    <h4>جمع موجودی بانک‌ها (@defaultSummary.CurrencyCode)</h4>
-                    <div class="amount">@defaultSummary.BankTotal.FormatCurrency(defaultSummary.CurrencyCode)</div>
-                </div>
-                <div class="summary-card">
-                    <h4>جمع موجودی مشتریان (@defaultSummary.CurrencyCode)</h4>
-                    <div class="amount">@defaultSummary.CustomerTotal.FormatCurrency(defaultSummary.CurrencyCode)</div>
-                </div>
-                <div class="summary-card">
-                    <h4>تراز بانک + مشتری (@defaultSummary.CurrencyCode)</h4>
-                    <div class="amount" style="color: @(defaultSummary.Difference >= 0 ? "#27ae60" : "#e74c3c")">@defaultSummary.Difference.FormatCurrency(defaultSummary.CurrencyCode)</div>
-                </div>
-                @if (defaultSummary.HasMissingRates)
-                {
-                    <div class="summary-card" style="background:#fff3cd;border-color:#ffeeba;color:#856404;">
-                        <h4>هشدار نرخ تبدیل</h4>
-                        <div class="amount" style="color:#856404;">برخی از ارزها بدون نرخ معتبر بوده‌اند.</div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="summary-card" style="background:#fff3cd;border-color:#ffeeba;color:#856404;">
-                    <h4>اطلاعات ناکامل</h4>
-                    <div class="amount" style="color:#856404;">نرخ‌های تبدیل معتبر برای نمایش خلاصه یافت نشد.</div>
-                </div>
-            }
-            font-size: 16px;
-            font-weight: bold;
-            color: #001f4d;
-        }
+        .info-value--currency { direction: ltr; font-weight: bold; color: #001f4d; }
         .currency-overview {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -243,18 +212,25 @@
                     <div class="info-value">@Model.Currencies.Count ارز</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">جمع موجودی بانک‌ها:</div>
-                    <div class="info-value">@Model.TotalBankBalance.FormatCurrency("IRR")</div>
+                    <div class="info-label">جمع موجودی بانک‌ها (@defaultCurrencyCode):</div>
+                    <div class="info-value info-value--currency">
+                        @(defaultSummary != null
+                            ? defaultSummary.BankTotal.FormatCurrency(defaultCurrencyCode)
+                            : Model.TotalBankBalance.FormatCurrency(defaultCurrencyCode))
+                    </div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">جمع موجودی مشتریان:</div>
-                    <div class="info-value">@Model.TotalCustomerBalance.FormatCurrency("IRR")</div>
+                    <div class="info-label">جمع موجودی مشتریان (@defaultCurrencyCode):</div>
+                    <div class="info-value info-value--currency">
+                        @(defaultSummary != null
+                            ? defaultSummary.CustomerTotal.FormatCurrency(defaultCurrencyCode)
+                            : Model.TotalCustomerBalance.FormatCurrency(defaultCurrencyCode))
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="summary-cards">
-            @{ var defaultSummary = Model.DefaultSummary; }
             @if (defaultSummary != null)
             {
                 <div class="summary-card">
