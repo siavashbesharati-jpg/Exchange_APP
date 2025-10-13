@@ -16,6 +16,7 @@ namespace ForexExchange.Controllers
         private readonly AdminActivityService _adminActivityService;
         private readonly AdminNotificationService _adminNotificationService;
         private readonly UserManager<ApplicationUser> _userManager;
+    private const string IrrCurrencyCode = "IRR";
 
         public ExchangeRatesController(
             ForexDbContext context,
@@ -121,43 +122,168 @@ namespace ForexExchange.Controllers
                 .OrderBy(c => c.DisplayOrder)
                 .ToListAsync();
 
+            await UpdateBaseAndReverseRates(baseCurrency, currencies, rates);
+            await UpdateCrossRates(baseCurrency, currencies, rates);
+            TempData["SuccessMessage"] = "نرخ‌های ارز با موفقیت بروزرسانی شدند.";
+            return RedirectToAction(nameof(Manage));
+        }
+
+        /// <summary>
+        /// Updates direct and reverse rates for OMR and all active currencies.
+        /// For each currency, sets both X→OMR and OMR→X to the same rate (no inversion).
+        /// </summary>
+        private async Task UpdateBaseAndReverseRates(Currency baseCurrency, List<Currency> currencies, Dictionary<int, decimal> rates)
+        {
             foreach (var currency in currencies)
             {
                 var currencyKey = currency.Id;
+                if (!rates.ContainsKey(currencyKey))
+                    continue;
 
-                if (rates.ContainsKey(currencyKey))
+                var newRate = rates[currencyKey];
+                var adjustedRate = RequiresIrrIntegerRate(currency, baseCurrency)
+                    ? RemoveDecimalPart(newRate)
+                    : newRate;
+                // X → OMR
+                var direct = await _context.ExchangeRates
+                    .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive);
+                if (direct != null)
                 {
-                    var newRate = rates[currencyKey];
+                    direct.Rate = adjustedRate;
+                    direct.UpdatedAt = DateTime.Now;
+                    direct.UpdatedBy = User.Identity?.Name ?? "System";
+                    _context.Update(direct);
+                }
+                else
+                {
+                    var newDirect = new ExchangeRate
+                    {
+                        Rate = adjustedRate,
+                        FromCurrencyId = currency.Id,
+                        ToCurrencyId = baseCurrency.Id,
+                        IsActive = true,
+                        UpdatedAt = DateTime.Now,
+                        UpdatedBy = User.Identity?.Name ?? "System"
+                    };
+                    _context.Add(newDirect);
+                }
 
-                    // Look for existing rate with FROM=currency, TO=baseCurrency (X → OMR)
-                    var existingRate = await _context.ExchangeRates
-                        .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive);
-                    if (existingRate != null)
+                // OMR → X (reverse, same rate)
+                var reverse = await _context.ExchangeRates
+                    .FirstOrDefaultAsync(r => r.FromCurrencyId == baseCurrency.Id && r.ToCurrencyId == currency.Id && r.IsActive);
+                if (reverse != null)
+                {
+                    reverse.Rate = adjustedRate;
+                    reverse.UpdatedAt = DateTime.Now;
+                    reverse.UpdatedBy = User.Identity?.Name ?? "System";
+                    _context.Update(reverse);
+                }
+                else
+                {
+                    var newReverse = new ExchangeRate
                     {
-                        existingRate.Rate = newRate;
-                        existingRate.UpdatedAt = DateTime.Now;
-                        existingRate.UpdatedBy = User.Identity?.Name ?? "System";
-                        _context.Update(existingRate);
-                    }
-                    else
-                    {
-                        var newExchangeRate = new ExchangeRate
-                        {
-                            Rate = newRate,
-                            FromCurrencyId = currency.Id,
-                            ToCurrencyId = baseCurrency.Id,
-                            IsActive = true,
-                            UpdatedAt = DateTime.Now,
-                            UpdatedBy = User.Identity?.Name ?? "System"
-                        };
-                        _context.Add(newExchangeRate);
-                    }
+                        Rate = adjustedRate,
+                        FromCurrencyId = baseCurrency.Id,
+                        ToCurrencyId = currency.Id,
+                        IsActive = true,
+                        UpdatedAt = DateTime.Now,
+                        UpdatedBy = User.Identity?.Name ?? "System"
+                    };
+                    _context.Add(newReverse);
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Creates cross rates between non-OMR currencies using OMR as the base reference.
+        /// Cross rate equals bigger base rate divided by smaller base rate, applied in both directions.
+        /// </summary>
+        private async Task UpdateCrossRates(Currency baseCurrency, List<Currency> currencies, Dictionary<int, decimal> rates)
+        {
+            if (baseCurrency == null)
+                return;
+
+            if (currencies.Count < 2)
+                return;
+
+            var currencyIds = currencies.Select(c => c.Id).ToList();
+
+            var existingCrossRates = await _context.ExchangeRates
+                .Where(r => r.IsActive && currencyIds.Contains(r.FromCurrencyId) && currencyIds.Contains(r.ToCurrencyId))
+                .ToDictionaryAsync(r => (r.FromCurrencyId, r.ToCurrencyId));
+
+            for (var i = 0; i < currencies.Count; i++)
+            {
+                var fromCurrency = currencies[i];
+                if (!rates.TryGetValue(fromCurrency.Id, out var fromBaseRate) || fromBaseRate <= 0)
+                    continue;
+
+                for (var j = i + 1; j < currencies.Count; j++)
+                {
+                    var toCurrency = currencies[j];
+                    if (!rates.TryGetValue(toCurrency.Id, out var toBaseRate) || toBaseRate <= 0)
+                        continue;
+
+                    var bigger = fromBaseRate >= toBaseRate ? fromBaseRate : toBaseRate;
+                    var smaller = fromBaseRate >= toBaseRate ? toBaseRate : fromBaseRate;
+                    if (smaller <= 0)
+                        continue;
+
+                    var crossRate = bigger / smaller;
+                    var involvesIrr = InvolvesIrr(fromCurrency, toCurrency);
+                    if (involvesIrr)
+                        crossRate = RemoveDecimalPart(crossRate);
+
+                    UpsertCrossRate(existingCrossRates, fromCurrency.Id, toCurrency.Id, crossRate, involvesIrr);
+                    UpsertCrossRate(existingCrossRates, toCurrency.Id, fromCurrency.Id, crossRate, involvesIrr);
                 }
             }
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "نرخ‌های ارز با موفقیت بروزرسانی شدند.";
-            return RedirectToAction(nameof(Manage));
+        }
+
+        private void UpsertCrossRate(Dictionary<(int FromCurrencyId, int ToCurrencyId), ExchangeRate> existingCrossRates,
+            int fromCurrencyId,
+            int toCurrencyId,
+            decimal rate,
+            bool involvesIrr)
+        {
+            var finalRate = involvesIrr ? RemoveDecimalPart(rate) : rate;
+            if (existingCrossRates.TryGetValue((fromCurrencyId, toCurrencyId), out var existing))
+            {
+                existing.Rate = finalRate;
+                existing.UpdatedAt = DateTime.Now;
+                existing.UpdatedBy = User.Identity?.Name ?? "System";
+                _context.Update(existing);
+            }
+            else
+            {
+                var newRate = new ExchangeRate
+                {
+                    Rate = finalRate,
+                    FromCurrencyId = fromCurrencyId,
+                    ToCurrencyId = toCurrencyId,
+                    IsActive = true,
+                    UpdatedAt = DateTime.Now,
+                    UpdatedBy = User.Identity?.Name ?? "System"
+                };
+                _context.Add(newRate);
+                existingCrossRates[(fromCurrencyId, toCurrencyId)] = newRate;
+            }
+        }
+
+        private static decimal RemoveDecimalPart(decimal value) => decimal.Truncate(value);
+
+        private static bool RequiresIrrIntegerRate(Currency fromCurrency, Currency toCurrency)
+        {
+            return InvolvesIrr(fromCurrency, toCurrency);
+        }
+
+        private static bool InvolvesIrr(Currency fromCurrency, Currency toCurrency)
+        {
+            return string.Equals(fromCurrency.Code, IrrCurrencyCode, StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(toCurrency.Code, IrrCurrencyCode, StringComparison.OrdinalIgnoreCase);
         }
 
         // POST: ExchangeRates/UpdateFromWeb
