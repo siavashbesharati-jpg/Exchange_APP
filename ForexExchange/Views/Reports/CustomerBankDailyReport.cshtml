@@ -58,6 +58,7 @@
     <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
 
     <div id="reportContent" class="d-none">
+        <div id="reportSummary" class="mb-4 d-none"></div>
         <div class="row" id="currencyCards"></div>
     </div>
 </div>
@@ -101,7 +102,7 @@ function loadCustomerBankReport() {
                 return;
             }
 
-            renderReport(data.currencies || []);
+            renderReport(data.currencies || [], data.summary || null);
             toggleLoading(false);
         })
         .catch(() => {
@@ -132,11 +133,13 @@ function downloadCustomerBankReportExcel() {
     window.location.href = url;
 }
 
-function renderReport(currencies) {
+function renderReport(currencies, summary) {
     const reportContent = document.getElementById('reportContent');
     const cardsContainer = document.getElementById('currencyCards');
 
     cardsContainer.innerHTML = '';
+
+    renderSummary(summary);
 
     if (!currencies.length) {
         cardsContainer.innerHTML = `
@@ -267,6 +270,111 @@ function renderReport(currencies) {
     });
 
     reportContent.classList.remove('d-none');
+}
+
+function renderSummary(summary) {
+    const summaryContainer = document.getElementById('reportSummary');
+
+    if (!summary || !Array.isArray(summary.options) || !summary.options.length) {
+        summaryContainer.classList.add('d-none');
+        summaryContainer.innerHTML = '';
+        window.customerBankReportSummary = null;
+        return;
+    }
+
+    const options = summary.options;
+    const totals = Array.isArray(summary.totals) ? summary.totals : [];
+    const totalsLookup = totals.reduce((acc, item) => {
+        if (item && item.currencyCode) {
+            acc[item.currencyCode] = item;
+        }
+        return acc;
+    }, {});
+
+    const defaultCurrency = options[0]?.currencyCode || '';
+
+    summaryContainer.classList.remove('d-none');
+    summaryContainer.innerHTML = `
+        <div class="card shadow-sm border-2">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+                    <div class="d-flex flex-column">
+                        <label for="summaryCurrencySelect" class="form-label mb-1">ارز هدف خلاصه</label>
+                        <select id="summaryCurrencySelect" class="form-select form-select-sm" style="min-width: 200px;">
+                            ${options.map(option => `
+                                <option value="${option.currencyCode}" ${option.currencyCode === defaultCurrency ? 'selected' : ''}>
+                                    ${option.currencyName} (${option.currencyCode})
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="row g-3" id="summaryTotals"></div>
+                        <div class="text-warning small mt-2 d-none" id="summaryMissingRates">
+                            برخی از ارزها به دلیل نبود نرخ معتبر در جمع لحاظ نشده‌اند.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    window.customerBankReportSummary = {
+        totals: totalsLookup
+    };
+
+    const selectElement = document.getElementById('summaryCurrencySelect');
+    selectElement.addEventListener('change', () => updateSummaryTotals(selectElement.value));
+    updateSummaryTotals(selectElement.value || defaultCurrency);
+}
+
+function updateSummaryTotals(currencyCode) {
+    const summaryState = window.customerBankReportSummary;
+    const totalsContainer = document.getElementById('summaryTotals');
+    const warningElement = document.getElementById('summaryMissingRates');
+
+    if (!summaryState || !totalsContainer) {
+        return;
+    }
+
+    const totals = summaryState.totals?.[currencyCode];
+
+    if (!totals) {
+        totalsContainer.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info mb-0">نرخ تبدیل معتبر برای ارز انتخاب شده یافت نشد.</div>
+            </div>`;
+
+        if (warningElement) {
+            warningElement.classList.add('d-none');
+        }
+        return;
+    }
+
+    totalsContainer.innerHTML = `
+        <div class="col-12 col-md-4">
+            <div class="border rounded p-3 bg-light h-100">
+                <div class="text-muted mb-2">جمع موجودی بانک‌ها</div>
+                <div class="fs-4 fw-bold text-primary" dir="ltr">${formatValue(totals.bankTotal, currencyCode)}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="border rounded p-3 bg-light h-100">
+                <div class="text-muted mb-2">جمع موجودی مشتریان</div>
+                <div class="fs-4 fw-bold text-primary" dir="ltr">${formatValue(totals.customerTotal, currencyCode)}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="border rounded p-3 bg-light h-100">
+                <div class="text-muted mb-2">تراز بانک + مشتری</div>
+                <div class="fs-4 fw-bold ${totals.difference >= 0 ? 'text-success' : 'text-danger'}" dir="ltr">
+                    ${formatValue(totals.difference, currencyCode)}
+                </div>
+            </div>
+        </div>`;
+
+    if (warningElement) {
+        warningElement.classList.toggle('d-none', !totals.hasMissingRates);
+    }
 }
 
 function toggleLoading(show) {

@@ -405,26 +405,52 @@ namespace ForexExchange.Services
             StyleInfoCell(summarySheet.Cells[row, 2]);
             row++;
 
-            summarySheet.Cells[row, 1].Value = "جمع موجودی بانک‌ها:";
-            summarySheet.Cells[row, 2].Value = (double)report.TotalBankBalance;
-            StyleInfoCell(summarySheet.Cells[row, 1]);
-            StyleInfoCell(summarySheet.Cells[row, 2]);
-            summarySheet.Cells[row, 2].Style.Numberformat.Format = "#,##0.##";
-            row++;
+            var defaultSummary = report.DefaultSummary;
 
-            summarySheet.Cells[row, 1].Value = "جمع موجودی مشتریان:";
-            summarySheet.Cells[row, 2].Value = (double)report.TotalCustomerBalance;
-            StyleInfoCell(summarySheet.Cells[row, 1]);
-            StyleInfoCell(summarySheet.Cells[row, 2]);
-            summarySheet.Cells[row, 2].Style.Numberformat.Format = "#,##0.##";
-            row++;
+            if (defaultSummary != null)
+            {
+                var numberFormat = defaultSummary.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
 
-            summarySheet.Cells[row, 1].Value = "اختلاف بانک + مشتری:";
-            summarySheet.Cells[row, 2].Value = (double)report.TotalDifference;
-            StyleInfoCell(summarySheet.Cells[row, 1]);
-            StyleInfoCell(summarySheet.Cells[row, 2]);
-            summarySheet.Cells[row, 2].Style.Numberformat.Format = "#,##0.##";
-            row += 2;
+                summarySheet.Cells[row, 1].Value = $"جمع موجودی بانک‌ها ({defaultSummary.CurrencyCode}):";
+                summarySheet.Cells[row, 2].Value = (double)defaultSummary.BankTotal;
+                StyleInfoCell(summarySheet.Cells[row, 1]);
+                StyleInfoCell(summarySheet.Cells[row, 2]);
+                summarySheet.Cells[row, 2].Style.Numberformat.Format = numberFormat;
+                row++;
+
+                summarySheet.Cells[row, 1].Value = $"جمع موجودی مشتریان ({defaultSummary.CurrencyCode}):";
+                summarySheet.Cells[row, 2].Value = (double)defaultSummary.CustomerTotal;
+                StyleInfoCell(summarySheet.Cells[row, 1]);
+                StyleInfoCell(summarySheet.Cells[row, 2]);
+                summarySheet.Cells[row, 2].Style.Numberformat.Format = numberFormat;
+                row++;
+
+                summarySheet.Cells[row, 1].Value = $"تراز بانک + مشتری ({defaultSummary.CurrencyCode}):";
+                summarySheet.Cells[row, 2].Value = (double)defaultSummary.Difference;
+                StyleInfoCell(summarySheet.Cells[row, 1]);
+                StyleInfoCell(summarySheet.Cells[row, 2]);
+                summarySheet.Cells[row, 2].Style.Numberformat.Format = numberFormat;
+                row++;
+
+                if (defaultSummary.HasMissingRates)
+                {
+                    summarySheet.Cells[row, 1].Value = "هشدار نرخ تبدیل:";
+                    summarySheet.Cells[row, 2].Value = "برخی ارزها بدون نرخ معتبر بوده‌اند";
+                    StyleInfoCell(summarySheet.Cells[row, 1]);
+                    StyleInfoCell(summarySheet.Cells[row, 2]);
+                    row++;
+                }
+            }
+            else
+            {
+                summarySheet.Cells[row, 1].Value = "نرخ‌های تبدیل معتبر برای خلاصه یافت نشد";
+                summarySheet.Cells[row, 1, row, 4].Merge = true;
+                summarySheet.Cells[row, 1, row, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                summarySheet.Cells[row, 1, row, 4].Style.Font.Italic = true;
+                row++;
+            }
+
+            row++;
 
             summarySheet.Cells[row, 1].Value = "ارز";
             summarySheet.Cells[row, 2].Value = "مجموع بانک‌ها";

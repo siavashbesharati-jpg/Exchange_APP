@@ -19,6 +19,7 @@ namespace ForexExchange.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ICentralFinancialService _centralFinancialService;
         private readonly ExcelExportService _excelExportService;
+    private readonly ICurrencyConversionService _currencyConversionService;
 
 
 
@@ -30,6 +31,7 @@ namespace ForexExchange.Controllers
             BankAccountFinancialHistoryService bankAccountHistoryService,
             UserManager<ApplicationUser> userManager,
              ICentralFinancialService centralFinancialService,
+             ICurrencyConversionService currencyConversionService,
              ExcelExportService excelExportService)
         {
             _context = context;
@@ -39,6 +41,7 @@ namespace ForexExchange.Controllers
             _bankAccountHistoryService = bankAccountHistoryService;
             _userManager = userManager;
             _centralFinancialService = centralFinancialService;
+            _currencyConversionService = currencyConversionService;
             _excelExportService = excelExportService;
         }
 
@@ -2660,7 +2663,29 @@ namespace ForexExchange.Controllers
                 {
                     success = true,
                     date = report.ReportDate.ToString("yyyy-MM-dd"),
-                    currencies = payload
+                    currencies = payload,
+                    summary = new
+                    {
+                        options = report.ConvertedSummaries
+                            .OrderBy(s => s.RatePriority)
+                            .ThenBy(s => s.CurrencyCode, StringComparer.OrdinalIgnoreCase)
+                            .Select(s => new
+                            {
+                                currencyCode = s.CurrencyCode,
+                                currencyName = s.CurrencyName,
+                                ratePriority = s.RatePriority,
+                                hasMissingRates = s.HasMissingRates
+                            }),
+                        totals = report.ConvertedSummaries
+                            .Select(s => new
+                            {
+                                currencyCode = s.CurrencyCode,
+                                bankTotal = s.BankTotal,
+                                customerTotal = s.CustomerTotal,
+                                difference = s.Difference,
+                                hasMissingRates = s.HasMissingRates
+                            })
+                    }
                 });
             }
             catch (Exception ex)
@@ -2683,8 +2708,18 @@ namespace ForexExchange.Controllers
             var currencies = await _context.Currencies
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.DisplayOrder)
-                .Select(c => new { c.Code, c.Name, c.PersianName })
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Code,
+                    c.Name,
+                    c.PersianName,
+                    c.DisplayOrder,
+                    c.RatePriority
+                })
                 .ToListAsync();
+
+            var currencyLookup = currencies.ToDictionary(c => c.Code, StringComparer.OrdinalIgnoreCase);
 
             var latestBankBalances = await _context.BankAccountBalanceHistory
                 .Where(h => !h.IsDeleted && h.TransactionDate <= endOfDay)
@@ -2767,6 +2802,55 @@ namespace ForexExchange.Controllers
                     CustomerTotal = customerDetails.Sum(c => c.Balance),
                     BankDetails = bankDetails,
                     CustomerDetails = customerDetails
+                });
+            }
+
+            foreach (var targetCurrency in currencies
+                .OrderBy(c => c.RatePriority)
+                .ThenBy(c => c.DisplayOrder))
+            {
+                decimal bankTotal = 0;
+                decimal customerTotal = 0;
+                var hasMissingRates = false;
+
+                foreach (var entry in model.Currencies)
+                {
+                    if (!currencyLookup.TryGetValue(entry.CurrencyCode, out var sourceCurrency))
+                    {
+                        hasMissingRates = true;
+                        continue;
+                    }
+
+                    if (sourceCurrency.Id == targetCurrency.Id)
+                    {
+                        bankTotal += entry.BankTotal;
+                        customerTotal += entry.CustomerTotal;
+                        continue;
+                    }
+
+                    var bankConversion = _currencyConversionService.ConvertAmount(entry.BankTotal, sourceCurrency.Id, targetCurrency.Id);
+                    bankTotal += bankConversion;
+                    if (entry.BankTotal != 0 && bankConversion == 0)
+                    {
+                        hasMissingRates = true;
+                    }
+
+                    var customerConversion = _currencyConversionService.ConvertAmount(entry.CustomerTotal, sourceCurrency.Id, targetCurrency.Id);
+                    customerTotal += customerConversion;
+                    if (entry.CustomerTotal != 0 && customerConversion == 0)
+                    {
+                        hasMissingRates = true;
+                    }
+                }
+
+                model.ConvertedSummaries.Add(new CustomerBankDailySummaryConversionViewModel
+                {
+                    CurrencyCode = targetCurrency.Code,
+                    CurrencyName = targetCurrency.PersianName ?? targetCurrency.Name ?? targetCurrency.Code,
+                    RatePriority = targetCurrency.RatePriority,
+                    BankTotal = bankTotal,
+                    CustomerTotal = customerTotal,
+                    HasMissingRates = hasMissingRates
                 });
             }
 

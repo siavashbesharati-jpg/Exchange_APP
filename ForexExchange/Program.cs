@@ -150,6 +150,7 @@ builder.Services.AddScoped<PushNotificationProvider>();
 builder.Services.AddScoped<SmsNotificationProvider>();
 builder.Services.AddScoped<EmailNotificationProvider>();
 builder.Services.AddScoped<TelegramNotificationProvider>();
+builder.Services.AddScoped<ICurrencyConversionService, CurrencyConversionService>();
 
 // Background services - simplified (TaskSchedulerService removed)
 
