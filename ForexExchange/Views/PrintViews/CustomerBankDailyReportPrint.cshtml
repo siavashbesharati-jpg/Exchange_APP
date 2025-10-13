@@ -102,28 +102,68 @@
         }
         .info-label { font-weight: bold; color: #2c3e50; font-size: 11px; margin-bottom: 3px; }
         .info-value { font-size: 13px; color: #333; }
+        .summary-section {
+            background: linear-gradient(135deg, #eaf2ff 0%, #f7fbff 100%);
+            border: 1px solid #c6dcff;
+            border-radius: 16px;
+            margin: 20px;
+            padding: 24px;
+            box-shadow: 0 18px 35px rgba(13, 47, 102, 0.12);
+        }
+        .summary-section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #0d2f66;
+            margin-bottom: 18px;
+        }
+        .summary-section-title i {
+            color: #0b5ed7;
+            font-size: 18px;
+        }
+        .summary-section-pill {
+            background: rgba(11, 94, 215, 0.12);
+            color: #0d2f66;
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
         .summary-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
-            padding: 20px;
         }
         .summary-card {
-            background: #f0f4ff;
-            border: 2px solid #ccd6f6;
-            border-radius: 10px;
-            padding: 15px;
+            background: #ffffff;
+            border: 1px solid rgba(13, 47, 102, 0.1);
+            border-radius: 12px;
+            padding: 18px;
             text-align: center;
+            box-shadow: 0 12px 28px rgba(13, 47, 102, 0.12);
         }
         .summary-card h4 {
-            margin-bottom: 8px;
-            color: #001f4d;
+            margin-bottom: 10px;
+            color: #0d2f66;
+            font-size: 14px;
         }
         .summary-card .amount {
-            font-size: 16px;
-            font-weight: bold;
-            color: #0d6efd;
+            font-size: 17px;
+            font-weight: 700;
+            color: #0b3a82;
             direction: ltr;
+        }
+        .summary-warning-card {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.35);
+            color: #856404;
+            box-shadow: 0 12px 28px rgba(133, 100, 4, 0.16);
+        }
+        .summary-warning-card .amount {
+            color: #856404 !important;
         }
         .currency-section {
             padding: 20px;
@@ -257,37 +297,43 @@
             </div>
         </div>
 
-        <div class="summary-cards">
-            @if (summary != null)
-            {
-                <div class="summary-card">
-                    <h4>جمع موجودی بانک‌ها (@summaryCurrencyCode)</h4>
-                    <div class="amount">@summary.BankTotal.FormatCurrency(summaryCurrencyCode)</div>
-                </div>
-                <div class="summary-card">
-                    <h4>جمع موجودی مشتریان (@summaryCurrencyCode)</h4>
-                    <div class="amount">@summary.CustomerTotal.FormatCurrency(summaryCurrencyCode)</div>
-                </div>
-                <div class="summary-card">
-                    <h4>تراز بانک + مشتری (@summaryCurrencyCode)</h4>
-                    <div class="amount" style="color: @(summary.Difference >= 0 ? "#27ae60" : "#e74c3c")">@summary.Difference.FormatCurrency(summaryCurrencyCode)</div>
-                </div>
-
-                @if (summary.HasMissingRates)
+        <div class="summary-section">
+            <div class="summary-section-title">
+                <span><i class="fas fa-chart-pie"></i> خلاصه وضعیت کل</span>
+                <span class="summary-section-pill">@summaryCurrencyName (@summaryCurrencyCode)</span>
+            </div>
+            <div class="summary-cards">
+                @if (summary != null)
                 {
-                    <div class="summary-card" style="background:#fff3cd;border-color:#ffeeba;color:#856404;">
-                        <h4>هشدار نرخ تبدیل</h4>
-                        <div class="amount" style="color:#856404;">برخی ارزها بدون نرخ معتبر بوده‌اند.</div>
+                    <div class="summary-card">
+                        <h4>جمع موجودی بانک‌ها (@summaryCurrencyCode)</h4>
+                        <div class="amount">@summary.BankTotal.FormatCurrency(summaryCurrencyCode)</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>جمع موجودی مشتریان (@summaryCurrencyCode)</h4>
+                        <div class="amount">@summary.CustomerTotal.FormatCurrency(summaryCurrencyCode)</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>تراز بانک + مشتری (@summaryCurrencyCode)</h4>
+                        <div class="amount" style="color: @(summary.Difference >= 0 ? "#27ae60" : "#e74c3c")">@summary.Difference.FormatCurrency(summaryCurrencyCode)</div>
+                    </div>
+
+                    @if (summary.HasMissingRates)
+                    {
+                        <div class="summary-card summary-warning-card">
+                            <h4>هشدار نرخ تبدیل</h4>
+                            <div class="amount">برخی ارزها بدون نرخ معتبر بوده‌اند.</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="summary-card summary-warning-card">
+                        <h4>اطلاعات خلاصه در دسترس نیست</h4>
+                        <div class="amount">نرخ‌های معتبر برای نمایش خلاصه یافت نشد.</div>
                     </div>
                 }
-            }
-            else
-            {
-                <div class="summary-card" style="background:#fff3cd;border-color:#ffeeba;color:#856404;">
-                    <h4>اطلاعات خلاصه در دسترس نیست</h4>
-                    <div class="amount" style="color:#856404;">نرخ‌های معتبر برای نمایش خلاصه یافت نشد.</div>
-                </div>
-            }
+            </div>
         </div>
 
         @if (!Model.HasData)
