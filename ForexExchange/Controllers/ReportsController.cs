@@ -2551,16 +2551,16 @@ namespace ForexExchange.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> CustomerBankDailyReportPrint(DateTime date)
+        public async Task<IActionResult> CustomerBankDailyReportPrint(DateTime date, string? currencyCode = null)
         {
-            var report = await BuildCustomerBankDailyReportAsync(date);
+            var report = await BuildCustomerBankDailyReportAsync(date, currencyCode);
             return View("~/Views/PrintViews/CustomerBankDailyReportPrint.cshtml", report);
         }
 
         [HttpGet]
-        public async Task<IActionResult> ExportCustomerBankDailyReportToExcel(DateTime date)
+        public async Task<IActionResult> ExportCustomerBankDailyReportToExcel(DateTime date, string? currencyCode = null)
         {
-            var report = await BuildCustomerBankDailyReportAsync(date);
+            var report = await BuildCustomerBankDailyReportAsync(date, currencyCode);
             var fileName = $"CustomerBankDailyReport_{report.ReportDate:yyyyMMdd}.xlsx";
             var fileContent = _excelExportService.GenerateCustomerBankDailyReportExcel(report);
 
@@ -2623,7 +2623,7 @@ namespace ForexExchange.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetCustomerBankDailyReport(DateTime date)
+        public async Task<IActionResult> GetCustomerBankDailyReport(DateTime date, string? currencyCode = null)
         {
             try
             {
@@ -2632,7 +2632,7 @@ namespace ForexExchange.Controllers
                     return Json(new { success = false, message = "تاریخ انتخاب شده نمی‌تواند در آینده باشد" });
                 }
 
-                var report = await BuildCustomerBankDailyReportAsync(date);
+                var report = await BuildCustomerBankDailyReportAsync(date, currencyCode);
 
                 var payload = report.Currencies.Select(currency => new
                 {
@@ -2666,6 +2666,7 @@ namespace ForexExchange.Controllers
                     currencies = payload,
                     summary = new
                     {
+                        selectedCurrencyCode = report.SelectedSummary?.CurrencyCode,
                         options = report.ConvertedSummaries
                             .OrderBy(s => s.RatePriority)
                             .ThenBy(s => s.CurrencyCode, StringComparer.OrdinalIgnoreCase)
@@ -2695,7 +2696,7 @@ namespace ForexExchange.Controllers
             }
         }
 
-        private async Task<CustomerBankDailyReportViewModel> BuildCustomerBankDailyReportAsync(DateTime date)
+        private async Task<CustomerBankDailyReportViewModel> BuildCustomerBankDailyReportAsync(DateTime date, string? preferredCurrencyCode = null)
         {
             var reportDate = date.Date == DateTime.MinValue.Date ? DateTime.Today : date.Date;
             if (reportDate > DateTime.Today)
@@ -2853,6 +2854,16 @@ namespace ForexExchange.Controllers
                     HasMissingRates = hasMissingRates
                 });
             }
+
+            CustomerBankDailySummaryConversionViewModel? selectedSummary = null;
+            if (!string.IsNullOrWhiteSpace(preferredCurrencyCode))
+            {
+                selectedSummary = model.ConvertedSummaries.FirstOrDefault(s =>
+                    string.Equals(s.CurrencyCode, preferredCurrencyCode, StringComparison.OrdinalIgnoreCase));
+            }
+
+            model.SelectedSummaryCurrencyCode = selectedSummary?.CurrencyCode
+                ?? model.DefaultSummary?.CurrencyCode;
 
             return model;
         }

@@ -8,6 +8,9 @@
     var companyName = await SettingsService.GetCompanyNameAsync();
     var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
     var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
+    var summary = Model.SelectedSummary ?? Model.DefaultSummary;
+    var summaryCurrencyCode = summary?.CurrencyCode ?? "IRR";
+    var summaryCurrencyName = summary?.CurrencyName ?? summaryCurrencyCode;
 }
 @using ForexExchange.Extensions
 
@@ -247,30 +250,44 @@
                     <div class="info-value">@Model.Currencies.Count ارز</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">جمع موجودی بانک‌ها:</div>
-                    <div class="info-value">@Model.TotalBankBalance.FormatCurrency("IRR")</div>
+                    <div class="info-label">ارز   مرجع :</div>
+                    <div class="info-value">@summaryCurrencyName</div>
                 </div>
-                <div class="info-item">
-                    <div class="info-label">جمع موجودی مشتریان:</div>
-                    <div class="info-value">@Model.TotalCustomerBalance.FormatCurrency("IRR")</div>
-                </div>
+               
             </div>
         </div>
 
         <div class="summary-cards">
-            <div class="summary-card">
-                <h4>جمع موجودی بانک‌ها</h4>
-                <div class="amount">@Model.TotalBankBalance.FormatCurrency()</div>
-            </div>
-            <div class="summary-card">
-                <h4>جمع موجودی مشتریان</h4>
-                <div class="amount">@Model.TotalCustomerBalance.FormatCurrency()
+            @if (summary != null)
+            {
+                <div class="summary-card">
+                    <h4>جمع موجودی بانک‌ها (@summaryCurrencyCode)</h4>
+                    <div class="amount">@summary.BankTotal.FormatCurrency(summaryCurrencyCode)</div>
+                </div>
+                <div class="summary-card">
+                    <h4>جمع موجودی مشتریان (@summaryCurrencyCode)</h4>
+                    <div class="amount">@summary.CustomerTotal.FormatCurrency(summaryCurrencyCode)</div>
+                </div>
+                <div class="summary-card">
+                    <h4>تراز بانک + مشتری (@summaryCurrencyCode)</h4>
+                    <div class="amount" style="color: @(summary.Difference >= 0 ? "#27ae60" : "#e74c3c")">@summary.Difference.FormatCurrency(summaryCurrencyCode)</div>
+                </div>
+
+                @if (summary.HasMissingRates)
+                {
+                    <div class="summary-card" style="background:#fff3cd;border-color:#ffeeba;color:#856404;">
+                        <h4>هشدار نرخ تبدیل</h4>
+                        <div class="amount" style="color:#856404;">برخی ارزها بدون نرخ معتبر بوده‌اند.</div>
                     </div>
-            </div>
-            <div class="summary-card">
-                <h4>اختلاف بانک + مشتری</h4>
-                <div class="amount" style="color: @(Model.TotalDifference >= 0 ? "#27ae60" : "#e74c3c")">@Model.TotalDifference.FormatCurrency()</div>
-            </div>
+                }
+            }
+            else
+            {
+                <div class="summary-card" style="background:#fff3cd;border-color:#ffeeba;color:#856404;">
+                    <h4>اطلاعات خلاصه در دسترس نیست</h4>
+                    <div class="amount" style="color:#856404;">نرخ‌های معتبر برای نمایش خلاصه یافت نشد.</div>
+                </div>
+            }
         </div>
 
         @if (!Model.HasData)
@@ -294,15 +311,15 @@
                     <div class="currency-overview">
                         <div class="overview-card">
                             <div class="label">مجموع بانک‌ها</div>
-                            <div class="value">@currency.BankTotal.FormatCurrency()</div>
+                            <div class="value">@currency.BankTotal.FormatCurrency(currency.CurrencyCode)</div>
                         </div>
                         <div class="overview-card">
                             <div class="label">مجموع مشتریان</div>
-                            <div class="value">@currency.CustomerTotal.FormatCurrency()</div>
+                            <div class="value">@currency.CustomerTotal.FormatCurrency(currency.CurrencyCode)</div>
                         </div>
                         <div class="overview-card">
                             <div class="label">تراز</div>
-                            <div class="value @(currency.Difference >= 0 ? "positive" : "negative")">@currency.Difference.FormatCurrency()</div>
+                            <div class="value @(currency.Difference >= 0 ? "positive" : "negative")">@currency.Difference.FormatCurrency(currency.CurrencyCode)</div>
                         </div>
                     </div>
 
@@ -327,7 +344,7 @@
                                     {
                                         <tr>
                                             <td>@bank.BankName</td>
-                                            <td class="amount">@bank.Balance.FormatCurrency()</td>
+                                            <td class="amount">@bank.Balance.FormatCurrency(currency.CurrencyCode)</td>
                                             <td>@bank.LastTransactionAt.ToString("yyyy/MM/dd HH:mm")</td>
                                         </tr>
                                     }
@@ -357,7 +374,7 @@
                                     {
                                         <tr>
                                             <td>@customer.CustomerName</td>
-                                            <td class="amount">@customer.Balance.FormatCurrency()</td>
+                                            <td class="amount">@customer.Balance.FormatCurrency(currency.CurrencyCode)</td>
                                             <td>@customer.LastTransactionAt.ToString("yyyy/MM/dd HH:mm")</td>
                                         </tr>
                                     }

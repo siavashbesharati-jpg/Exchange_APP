@@ -9,6 +9,7 @@ namespace ForexExchange.Models
         public DateTime ReportDate { get; set; }
         public List<CustomerBankDailyCurrencyViewModel> Currencies { get; set; } = new();
         public List<CustomerBankDailySummaryConversionViewModel> ConvertedSummaries { get; set; } = new();
+        public string? SelectedSummaryCurrencyCode { get; set; }
 
         public decimal TotalBankBalance => Currencies.Sum(c => c.BankTotal);
         public decimal TotalCustomerBalance => Currencies.Sum(c => c.CustomerTotal);
@@ -18,7 +19,22 @@ namespace ForexExchange.Models
 
         public CustomerBankDailySummaryConversionViewModel? DefaultSummary => ConvertedSummaries
             .OrderBy(c => c.RatePriority)
+            .ThenBy(c => c.CurrencyCode, StringComparer.OrdinalIgnoreCase)
             .FirstOrDefault();
+
+        public CustomerBankDailySummaryConversionViewModel? SelectedSummary
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(SelectedSummaryCurrencyCode))
+                {
+                    return ConvertedSummaries.FirstOrDefault(c =>
+                        string.Equals(c.CurrencyCode, SelectedSummaryCurrencyCode, StringComparison.OrdinalIgnoreCase));
+                }
+
+                return DefaultSummary;
+            }
+        }
     }
 
     public class CustomerBankDailyCurrencyViewModel
