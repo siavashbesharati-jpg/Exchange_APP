@@ -99,18 +99,33 @@
             </div>
         </div>
 
-        <!-- Comprehensive Daily Report -->
-        <div class="col-md-6 col-lg-4">
-            <div class="card report-card comprehensive-daily-card h-100 shadow-sm border-0" onclick="navigateToReport('comprehensivedaily')">
+     
+
+        <!-- Customer & Bank Daily Report -->
+        <div class="col-md-6 col-lg-6">
+            <div class="card report-card customer-bank-card h-100 shadow-sm border-0" onclick="navigateToReport('customerbankdaily')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-balance-scale text-white"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">گزارش روزانه بانک و مشتری</h5>
+                    <p class="text-white-50 small">تفکیک مجموع بانک‌ها و مشتریان و اختلاف تراز به تفکیک ارز</p>
+                </div>
+            </div>
+        </div>
+
+            <div class="col-md-6 col-lg-6">
+                <div class="card report-card comprehensive-daily-card h-100 shadow-sm border-0" onclick="navigateToReport('poolsummary')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-calculator text-white"></i>
                     </div>
-                    <h5 class="card-title fw-bold">گزارش جامع روزانه</h5>
-                    <p class="text-white-50 small">مجموع کل IRR و OMR برای مشتریان، بانک‌ها و صندوق‌ها</p>
+                    <h5 class="card-title fw-bold">گزارش  روزانه داشبورد</h5>
+                    <p class="text-white-50 small">مجموع کل IRR و OMR    و </p>
                 </div>
             </div>
         </div>
+
 
        
 
@@ -169,6 +184,20 @@
     color: white;
 }
 
+.customer-bank-card {
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    color: white;
+    border: 3px solid #4c0fd9;
+}
+
+.customer-bank-card:hover {
+    border-color: #3a0cb3;
+}
+
+.customer-bank-card .card-title {
+    color: white;
+}
+
 @@media (max-width: 768px) {
     .report-card {
         margin-bottom: 1rem;
@@ -223,6 +252,9 @@ function navigateToReport(type) {
             break;
         case 'comprehensivedaily':
             url = '@Url.Action("ComprehensiveDailyReport", "Reports")';
+            break;
+        case 'customerbankdaily':
+            url = '@Url.Action("CustomerBankDailyReport", "Reports")';
             break;
         default:
             url = '@Url.Action("CustomerReports", "Reports")';
