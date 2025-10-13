@@ -21,7 +21,6 @@ namespace ForexExchange.Controllers
         private readonly ICustomerBalanceService _customerBalanceService;
         private readonly INotificationHub _notificationHub;
         private readonly ICentralFinancialService _centralFinancialService;
-        private readonly IRateCalculationService _rateCalculationService;
         private readonly IOrderDataService _orderDataService;
 
         public OrdersController(
@@ -33,7 +32,7 @@ namespace ForexExchange.Controllers
             ICustomerBalanceService customerBalanceService,
             INotificationHub notificationHub,
             ICentralFinancialService centralFinancialService,
-            IRateCalculationService rateCalculationService,
+
             IOrderDataService orderDataService)
         {
             _context = context;
@@ -44,7 +43,6 @@ namespace ForexExchange.Controllers
             _customerBalanceService = customerBalanceService;
             _notificationHub = notificationHub;
             _centralFinancialService = centralFinancialService;
-            _rateCalculationService = rateCalculationService;
             _orderDataService = orderDataService;
         }
 

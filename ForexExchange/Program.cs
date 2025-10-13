@@ -91,7 +91,6 @@ builder.Services.AddScoped<IDataSeedService, DataSeedService>();
 // DISABLED: Web scraping service - using null implementation
 builder.Services.AddScoped<IWebScrapingService>(provider => new NullWebScrapingService());
 builder.Services.AddScoped<ISettingsService, SettingsService>();
-builder.Services.AddScoped<IRateCalculationService, RateCalculationService>();
 builder.Services.AddScoped<CustomerDebtCreditService>();
 builder.Services.AddScoped<AdminActivityService>();
 builder.Services.AddScoped<AdminNotificationService>();

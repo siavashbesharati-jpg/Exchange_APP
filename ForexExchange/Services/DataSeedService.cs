@@ -17,7 +17,6 @@ namespace ForexExchange.Services
         private readonly ForexDbContext _context;
         private readonly ILogger<DataSeedService> _logger;
         private readonly IWebScrapingService _webScrapingService;
-        private readonly IRateCalculationService _rateCalc;
         private readonly ICentralFinancialService _centralFinancialService;
 
         public DataSeedService(
@@ -26,7 +25,6 @@ namespace ForexExchange.Services
             ForexDbContext context,
             ILogger<DataSeedService> logger,
             IWebScrapingService webScrapingService,
-            IRateCalculationService rateCalculationService,
             ICentralFinancialService centralFinancialService)
         {
             _userManager = userManager;
@@ -34,7 +32,6 @@ namespace ForexExchange.Services
             _context = context;
             _logger = logger;
             _webScrapingService = webScrapingService;
-            _rateCalc = rateCalculationService;
             _centralFinancialService = centralFinancialService;
         }
 
