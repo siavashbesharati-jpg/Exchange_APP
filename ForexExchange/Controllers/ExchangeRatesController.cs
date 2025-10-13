@@ -5,6 +5,7 @@ using ForexExchange.Models;
 using ForexExchange.Services;
 using Microsoft.AspNetCore.Identity;
 using System.Text.Json;
+using ForexExchange.Extensions;
 
 namespace ForexExchange.Controllers
 {
@@ -141,9 +142,7 @@ namespace ForexExchange.Controllers
                     continue;
 
                 var newRate = rates[currencyKey];
-                var adjustedRate = RequiresIrrIntegerRate(currency, baseCurrency)
-                    ? RemoveDecimalPart(newRate)
-                    : newRate;
+                var adjustedRate = ApplyCurrencyTruncation(newRate, currency, baseCurrency);
                 // X → OMR
                 var direct = await _context.ExchangeRates
                     .FirstOrDefaultAsync(r => r.FromCurrencyId == currency.Id && r.ToCurrencyId == baseCurrency.Id && r.IsActive);
@@ -231,12 +230,10 @@ namespace ForexExchange.Controllers
                         continue;
 
                     var crossRate = bigger / smaller;
-                    var involvesIrr = InvolvesIrr(fromCurrency, toCurrency);
-                    if (involvesIrr)
-                        crossRate = RemoveDecimalPart(crossRate);
+                    var normalizedRate = ApplyCurrencyTruncation(crossRate, fromCurrency, toCurrency);
 
-                    UpsertCrossRate(existingCrossRates, fromCurrency.Id, toCurrency.Id, crossRate, involvesIrr);
-                    UpsertCrossRate(existingCrossRates, toCurrency.Id, fromCurrency.Id, crossRate, involvesIrr);
+                    UpsertCrossRate(existingCrossRates, fromCurrency.Id, toCurrency.Id, normalizedRate);
+                    UpsertCrossRate(existingCrossRates, toCurrency.Id, fromCurrency.Id, normalizedRate);
                 }
             }
 
@@ -246,13 +243,11 @@ namespace ForexExchange.Controllers
         private void UpsertCrossRate(Dictionary<(int FromCurrencyId, int ToCurrencyId), ExchangeRate> existingCrossRates,
             int fromCurrencyId,
             int toCurrencyId,
-            decimal rate,
-            bool involvesIrr)
+            decimal rate)
         {
-            var finalRate = involvesIrr ? RemoveDecimalPart(rate) : rate;
             if (existingCrossRates.TryGetValue((fromCurrencyId, toCurrencyId), out var existing))
             {
-                existing.Rate = finalRate;
+                existing.Rate = rate;
                 existing.UpdatedAt = DateTime.Now;
                 existing.UpdatedBy = User.Identity?.Name ?? "System";
                 _context.Update(existing);
@@ -261,7 +256,7 @@ namespace ForexExchange.Controllers
             {
                 var newRate = new ExchangeRate
                 {
-                    Rate = finalRate,
+                    Rate = rate,
                     FromCurrencyId = fromCurrencyId,
                     ToCurrencyId = toCurrencyId,
                     IsActive = true,
@@ -273,17 +268,15 @@ namespace ForexExchange.Controllers
             }
         }
 
-        private static decimal RemoveDecimalPart(decimal value) => decimal.Truncate(value);
-
-        private static bool RequiresIrrIntegerRate(Currency fromCurrency, Currency toCurrency)
+        private static decimal ApplyCurrencyTruncation(decimal value, Currency currencyA, Currency currencyB)
         {
-            return InvolvesIrr(fromCurrency, toCurrency);
+            var code = IsIrr(currencyA) || IsIrr(currencyB) ? IrrCurrencyCode : null;
+            return value.TruncateToCurrencyDefaults(code);
         }
 
-        private static bool InvolvesIrr(Currency fromCurrency, Currency toCurrency)
+        private static bool IsIrr(Currency currency)
         {
-            return string.Equals(fromCurrency.Code, IrrCurrencyCode, StringComparison.OrdinalIgnoreCase)
-                   || string.Equals(toCurrency.Code, IrrCurrencyCode, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(currency.Code, IrrCurrencyCode, StringComparison.OrdinalIgnoreCase);
         }
 
         // POST: ExchangeRates/UpdateFromWeb
