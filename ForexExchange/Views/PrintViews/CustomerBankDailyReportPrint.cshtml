@@ -1,0 +1,403 @@
+@model ForexExchange.Models.CustomerBankDailyReportViewModel
+@inject ForexExchange.Services.ISettingsService SettingsService
+@{
+    ViewData["Title"] = "گزارش روزانه بانک و مشتری";
+    Layout = null;
+
+    var websiteName = await SettingsService.GetWebsiteNameAsync();
+    var companyName = await SettingsService.GetCompanyNameAsync();
+    var companyWebsite = await SettingsService.GetCompanyWebsiteAsync();
+    var logoDataUrl = await SettingsService.GetLogoDataUrlAsync();
+}
+@using ForexExchange.Extensions
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - @websiteName</title>
+    <link rel="icon" type="image/png" href="@logoDataUrl">
+    <link rel="shortcut icon" href="@logoDataUrl">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            direction: rtl;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.4;
+            font-size: 12px;
+        }
+        .receipt-container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border: 2px solid #ddd;
+        }
+        .receipt-header {
+            background: #001f4d;
+            color: white;
+            padding: 15px 20px;
+            text-align: right;
+            border-bottom: 2px solid #001a3a;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .company-logo {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+        .company-logo img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+        }
+        .company-info { flex: 1; }
+        .company-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 3px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .company-website { font-size: 12px; opacity: 0.9; }
+        .report-title {
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 12px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-right: auto;
+        }
+        .receipt-info {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px dashed #ddd;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .info-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .info-label { font-weight: bold; color: #2c3e50; font-size: 11px; margin-bottom: 3px; }
+        .info-value { font-size: 13px; color: #333; }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+        .summary-card {
+            background: #f0f4ff;
+            border: 2px solid #ccd6f6;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .summary-card h4 {
+            margin-bottom: 8px;
+            color: #001f4d;
+        }
+        .summary-card .amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0d6efd;
+            direction: ltr;
+        }
+        .currency-section {
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+        .currency-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .currency-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #001f4d;
+        }
+        .currency-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .overview-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .overview-card .label { font-size: 12px; color: #6c757d; margin-bottom: 6px; }
+        .overview-card .value { font-size: 14px; font-weight: bold; direction: ltr; }
+        .overview-card .positive { color: #27ae60; }
+        .overview-card .negative { color: #e74c3c; }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        .details-table th, .details-table td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            text-align: center;
+        }
+        .details-table th {
+            background: #001f4d;
+            color: white;
+        }
+        .details-table td.amount { direction: ltr; font-weight: bold; }
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-style: italic;
+        }
+        .receipt-footer {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .print-info { margin-bottom: 10px; }
+        .disclaimer {
+            font-size: 10px;
+            color: #bdc3c7;
+            font-style: italic;
+        }
+        .no-print {
+            text-align: center;
+            margin: 20px;
+            padding: 20px;
+        }
+        @@media print {
+            body { background: white; font-size: 10px; }
+            .receipt-container {
+                box-shadow: none;
+                border: 1px solid #000;
+                margin: 0;
+                max-width: none;
+            }
+            .receipt-header {
+                background: #001f4d !important;
+                -webkit-print-color-adjust: exact;
+            }
+            .summary-card, .overview-card {
+                background: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+            }
+            .details-table th {
+                background: #001f4d !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+            }
+            .receipt-footer {
+                background: #2c3e50 !important;
+                -webkit-print-color-adjust: exact;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="receipt-header">
+            <div class="company-logo">
+                <img src="@logoDataUrl" alt="لوگو @companyName" />
+            </div>
+            <div class="company-info">
+                <div class="company-name">@companyName</div>
+                <div class="company-website">@companyWebsite</div>
+            </div>
+            <div class="report-title">گزارش روزانه بانک و مشتری</div>
+        </div>
+
+        <div class="receipt-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">تاریخ گزارش:</div>
+                    <div class="info-value">@Model.ReportDate.ToString("yyyy/MM/dd")</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">تعداد ارزها:</div>
+                    <div class="info-value">@Model.Currencies.Count ارز</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">جمع موجودی بانک‌ها:</div>
+                    <div class="info-value">@Model.TotalBankBalance.FormatCurrency("IRR")</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">جمع موجودی مشتریان:</div>
+                    <div class="info-value">@Model.TotalCustomerBalance.FormatCurrency("IRR")</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h4>جمع موجودی بانک‌ها</h4>
+                <div class="amount">@Model.TotalBankBalance.FormatCurrency()</div>
+            </div>
+            <div class="summary-card">
+                <h4>جمع موجودی مشتریان</h4>
+                <div class="amount">@Model.TotalCustomerBalance.FormatCurrency()
+                    </div>
+            </div>
+            <div class="summary-card">
+                <h4>اختلاف بانک + مشتری</h4>
+                <div class="amount" style="color: @(Model.TotalDifference >= 0 ? "#27ae60" : "#e74c3c")">@Model.TotalDifference.FormatCurrency()</div>
+            </div>
+        </div>
+
+        @if (!Model.HasData)
+        {
+            <div class="no-data">
+                برای تاریخ انتخاب شده، داده‌ای یافت نشد.
+            </div>
+        }
+        else
+        {
+            foreach (var currency in Model.Currencies)
+            {
+                <div class="currency-section">
+                    <div class="currency-header">
+                        <div class="currency-title">
+                            <i class="fas fa-coins"></i>
+                            @currency.CurrencyName (@currency.CurrencyCode)
+                        </div>
+                    </div>
+
+                    <div class="currency-overview">
+                        <div class="overview-card">
+                            <div class="label">مجموع بانک‌ها</div>
+                            <div class="value">@currency.BankTotal.FormatCurrency()</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="label">مجموع مشتریان</div>
+                            <div class="value">@currency.CustomerTotal.FormatCurrency()</div>
+                        </div>
+                        <div class="overview-card">
+                            <div class="label">تراز</div>
+                            <div class="value @(currency.Difference >= 0 ? "positive" : "negative")">@currency.Difference.FormatCurrency()</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h5>جزئیات بانک‌ها</h5>
+                        @if (!currency.BankDetails.Any())
+                        {
+                            <div class="no-data">داده‌ای برای نمایش وجود ندارد.</div>
+                        }
+                        else
+                        {
+                            <table class="details-table">
+                                <thead>
+                                    <tr>
+                                        <th>بانک</th>
+                                        <th>موجودی</th>
+                                        <th>آخرین تراکنش</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var bank in currency.BankDetails)
+                                    {
+                                        <tr>
+                                            <td>@bank.BankName</td>
+                                            <td class="amount">@bank.Balance.FormatCurrency()</td>
+                                            <td>@bank.LastTransactionAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <h5>جزئیات مشتریان</h5>
+                        @if (!currency.CustomerDetails.Any())
+                        {
+                            <div class="no-data">داده‌ای برای نمایش وجود ندارد.</div>
+                        }
+                        else
+                        {
+                            <table class="details-table">
+                                <thead>
+                                    <tr>
+                                        <th>مشتری</th>
+                                        <th>موجودی</th>
+                                        <th>آخرین تراکنش</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var customer in currency.CustomerDetails)
+                                    {
+                                        <tr>
+                                            <td>@customer.CustomerName</td>
+                                            <td class="amount">@customer.Balance.FormatCurrency()</td>
+                                            <td>@customer.LastTransactionAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            }
+        }
+
+        <div class="receipt-footer">
+            <div class="print-info">
+                <strong>تاریخ چاپ:</strong> @DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") |
+                <strong>کاربر:</strong> @(User.FindFirst("FullName")?.Value ?? User.Identity?.Name ?? "نامشخص")
+            </div>
+            <div class="disclaimer">
+                این گزارش به صورت خودکار تولید شده و نیاز به امضا ندارد • صحت اطلاعات با @companyName قابل بررسی است • @companyWebsite
+            </div>
+        </div>
+    </div>
+
+    <div class="no-print">
+        <button onclick="window.print()" style="background: #27ae60; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">🖨️ چاپ گزارش</button>
+        <button onclick="window.close()" style="background: #e74c3c; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 14px; cursor: pointer; margin: 0 10px;">✖️ بستن</button>
+    </div>
+
+    <script>
+        window.addEventListener('load', function () {
+            // window.print();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+            if (e.key === 'Escape') {
+                window.close();
+            }
+        });
+    </script>
+</body>
+</html>

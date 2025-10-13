@@ -2547,6 +2547,23 @@ namespace ForexExchange.Controllers
             return View();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> CustomerBankDailyReportPrint(DateTime date)
+        {
+            var report = await BuildCustomerBankDailyReportAsync(date);
+            return View("~/Views/PrintViews/CustomerBankDailyReportPrint.cshtml", report);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCustomerBankDailyReportToExcel(DateTime date)
+        {
+            var report = await BuildCustomerBankDailyReportAsync(date);
+            var fileName = $"CustomerBankDailyReport_{report.ReportDate:yyyyMMdd}.xlsx";
+            var fileContent = _excelExportService.GenerateCustomerBankDailyReportExcel(report);
+
+            return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
         // GET: Reports/GetComprehensiveDailyReport
         [HttpGet]
         public async Task<IActionResult> GetComprehensiveDailyReport(DateTime date)
@@ -2612,105 +2629,38 @@ namespace ForexExchange.Controllers
                     return Json(new { success = false, message = "تاریخ انتخاب شده نمی‌تواند در آینده باشد" });
                 }
 
-                var endOfDay = new DateTime(date.Year, date.Month, date.Day, 23, 59, 59);
+                var report = await BuildCustomerBankDailyReportAsync(date);
 
-                var currencies = await _context.Currencies
-                    .Where(c => c.IsActive)
-                    .OrderBy(c => c.DisplayOrder)
-                    .Select(c => new { c.Code, c.Name, c.PersianName })
-                    .ToListAsync();
-
-                var latestBankBalances = await _context.BankAccountBalanceHistory
-                    .Where(h => !h.IsDeleted && h.TransactionDate <= endOfDay)
-                    .Include(h => h.BankAccount)
-                        .ThenInclude(ba => ba.Customer)
-                    .GroupBy(h => h.BankAccountId)
-                    .Select(g => g.OrderByDescending(h => h.TransactionDate)
-                                  .ThenByDescending(h => h.Id)
-                                  .First())
-                    .ToListAsync();
-
-                var bankGroups = latestBankBalances
-                    .Where(h => h.BankAccount != null && !string.IsNullOrEmpty(h.BankAccount.CurrencyCode))
-                    .GroupBy(h => h.BankAccount.CurrencyCode)
-                    .ToDictionary(g => g.Key, g => g.ToList());
-
-                var latestCustomerBalances = await _context.CustomerBalanceHistory
-                    .Where(h => !h.IsDeleted && h.TransactionDate <= endOfDay)
-                    .Include(h => h.Customer)
-                    .GroupBy(h => new { h.CustomerId, h.CurrencyCode })
-                    .Select(g => g.OrderByDescending(h => h.TransactionDate)
-                                  .ThenByDescending(h => h.Id)
-                                  .First())
-                    .ToListAsync();
-
-                var customerGroups = latestCustomerBalances
-                    .Where(h => !string.IsNullOrEmpty(h.CurrencyCode))
-                    .GroupBy(h => h.CurrencyCode)
-                    .ToDictionary(g => g.Key, g => g.ToList());
-
-                var reportItems = new List<object>();
-
-                foreach (var currency in currencies)
+                var payload = report.Currencies.Select(currency => new
                 {
-                    bankGroups.TryGetValue(currency.Code, out var bankEntriesRaw);
-                    customerGroups.TryGetValue(currency.Code, out var customerEntriesRaw);
-
-                    var bankEntries = bankEntriesRaw ?? new List<BankAccountBalanceHistory>();
-                    var customerEntries = customerEntriesRaw ?? new List<CustomerBalanceHistory>();
-
-                    var bankDetails = bankEntries
-                        .Where(b => b.BalanceAfter != 0)
-                        .Select(b => new
-                        {
-                            bankAccountId = b.BankAccountId,
-                            bankName = b.BankAccount?.BankName ?? "نامشخص",
-                            accountNumber = b.BankAccount?.AccountNumber ?? string.Empty,
-                            ownerName = b.BankAccount?.Customer?.FullName,
-                            balance = b.BalanceAfter,
-                            lastTransactionAt = b.TransactionDate
-                        })
-                        .OrderByDescending(b => b.balance)
-                        .ToList();
-
-                    var customerDetails = customerEntries
-                        .Where(c => c.BalanceAfter != 0)
-                        .Select(c => new
-                        {
-                            customerId = c.CustomerId,
-                            customerName = c.Customer?.FullName ?? "نامشخص",
-                            balance = c.BalanceAfter,
-                            lastTransactionAt = c.TransactionDate
-                        })
-                        .OrderByDescending(c => c.balance)
-                        .ToList();
-
-                    var bankTotal = bankDetails.Sum(b => b.balance);
-                    var customerTotal = customerDetails.Sum(c => c.balance);
-                    var difference = bankTotal + customerTotal;
-
-                    if (bankDetails.Count == 0 && customerDetails.Count == 0)
+                    currencyCode = currency.CurrencyCode,
+                    currencyName = currency.CurrencyName,
+                    bankTotal = currency.BankTotal,
+                    customerTotal = currency.CustomerTotal,
+                    difference = currency.Difference,
+                    bankDetails = currency.BankDetails.Select(b => new
                     {
-                        continue;
-                    }
-
-                    reportItems.Add(new
+                        bankAccountId = b.BankAccountId,
+                        bankName = b.BankName,
+                        accountNumber = b.AccountNumber,
+                        ownerName = b.OwnerName,
+                        balance = b.Balance,
+                        lastTransactionAt = b.LastTransactionAt
+                    }),
+                    customerDetails = currency.CustomerDetails.Select(c => new
                     {
-                        currencyCode = currency.Code,
-                        currencyName = currency.PersianName ?? currency.Name ?? currency.Code,
-                        bankTotal,
-                        customerTotal,
-                        difference,
-                        bankDetails,
-                        customerDetails
-                    });
-                }
+                        customerId = c.CustomerId,
+                        customerName = c.CustomerName,
+                        balance = c.Balance,
+                        lastTransactionAt = c.LastTransactionAt
+                    })
+                }).ToList();
 
                 return Json(new
                 {
                     success = true,
-                    date = date.ToString("yyyy-MM-dd"),
-                    currencies = reportItems
+                    date = report.ReportDate.ToString("yyyy-MM-dd"),
+                    currencies = payload
                 });
             }
             catch (Exception ex)
@@ -2718,6 +2668,109 @@ namespace ForexExchange.Controllers
                 _logger.LogError(ex, "Error generating customer/bank daily report for date {Date}", date);
                 return Json(new { success = false, message = "خطا در تولید گزارش روزانه مشتریان و بانک‌ها" });
             }
+        }
+
+        private async Task<CustomerBankDailyReportViewModel> BuildCustomerBankDailyReportAsync(DateTime date)
+        {
+            var reportDate = date.Date == DateTime.MinValue.Date ? DateTime.Today : date.Date;
+            if (reportDate > DateTime.Today)
+            {
+                reportDate = DateTime.Today;
+            }
+
+            var endOfDay = new DateTime(reportDate.Year, reportDate.Month, reportDate.Day, 23, 59, 59);
+
+            var currencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new { c.Code, c.Name, c.PersianName })
+                .ToListAsync();
+
+            var latestBankBalances = await _context.BankAccountBalanceHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate <= endOfDay)
+                .Include(h => h.BankAccount)
+                    .ThenInclude(ba => ba.Customer)
+                .GroupBy(h => h.BankAccountId)
+                .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                              .ThenByDescending(h => h.Id)
+                              .First())
+                .ToListAsync();
+
+            var bankGroups = latestBankBalances
+                .Where(h => h.BankAccount != null && !string.IsNullOrEmpty(h.BankAccount.CurrencyCode))
+                .GroupBy(h => h.BankAccount.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var latestCustomerBalances = await _context.CustomerBalanceHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate <= endOfDay)
+                .Include(h => h.Customer)
+                .GroupBy(h => new { h.CustomerId, h.CurrencyCode })
+                .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                              .ThenByDescending(h => h.Id)
+                              .First())
+                .ToListAsync();
+
+            var customerGroups = latestCustomerBalances
+                .Where(h => !string.IsNullOrEmpty(h.CurrencyCode))
+                .GroupBy(h => h.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var model = new CustomerBankDailyReportViewModel
+            {
+                ReportDate = reportDate
+            };
+
+            foreach (var currency in currencies)
+            {
+                bankGroups.TryGetValue(currency.Code, out var bankEntriesRaw);
+                customerGroups.TryGetValue(currency.Code, out var customerEntriesRaw);
+
+                var bankEntries = bankEntriesRaw ?? new List<BankAccountBalanceHistory>();
+                var customerEntries = customerEntriesRaw ?? new List<CustomerBalanceHistory>();
+
+                var bankDetails = bankEntries
+                    .Where(b => b.BalanceAfter != 0)
+                    .Select(b => new CustomerBankDailyBankDetailViewModel
+                    {
+                        BankAccountId = b.BankAccountId,
+                        BankName = b.BankAccount?.BankName ?? "نامشخص",
+                        AccountNumber = b.BankAccount?.AccountNumber ?? string.Empty,
+                        OwnerName = b.BankAccount?.Customer?.FullName ?? string.Empty,
+                        Balance = b.BalanceAfter,
+                        LastTransactionAt = b.TransactionDate
+                    })
+                    .OrderByDescending(b => b.Balance)
+                    .ToList();
+
+                var customerDetails = customerEntries
+                    .Where(c => c.BalanceAfter != 0)
+                    .Select(c => new CustomerBankDailyCustomerDetailViewModel
+                    {
+                        CustomerId = c.CustomerId,
+                        CustomerName = c.Customer?.FullName ?? "نامشخص",
+                        Balance = c.BalanceAfter,
+                        LastTransactionAt = c.TransactionDate
+                    })
+                    .OrderByDescending(c => c.Balance)
+                    .ToList();
+
+                if (!bankDetails.Any() && !customerDetails.Any())
+                {
+                    continue;
+                }
+
+                model.Currencies.Add(new CustomerBankDailyCurrencyViewModel
+                {
+                    CurrencyCode = currency.Code,
+                    CurrencyName = currency.PersianName ?? currency.Name ?? currency.Code,
+                    BankTotal = bankDetails.Sum(b => b.Balance),
+                    CustomerTotal = customerDetails.Sum(c => c.Balance),
+                    BankDetails = bankDetails,
+                    CustomerDetails = customerDetails
+                });
+            }
+
+            return model;
         }
 
         private async Task<dynamic> CalculateCustomerBalancesForDate(DateTime date)
