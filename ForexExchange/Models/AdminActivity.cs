@@ -231,16 +231,16 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Pool balance change
-        /// تغییر موجودی صندوق 
+        /// تغییر موجودی داشبورد 
         /// </summary>
-        [Display(Name = "Pool Balance Changed - موجودی صندوق  تغییر یافت")]
+        [Display(Name = "Pool Balance Changed - موجودی داشبورد  تغییر یافت")]
         PoolBalanceChanged = 15,
 
         /// <summary>
         /// Pool statistics reset
-        /// ریست آمار صندوق 
+        /// ریست آمار داشبورد 
         /// </summary>
-        [Display(Name = "Pool Stats Reset - ریست آمار صندوق ")]
+        [Display(Name = "Pool Stats Reset - ریست آمار داشبورد ")]
         PoolStatsReset = 16,
 
         /// <summary>

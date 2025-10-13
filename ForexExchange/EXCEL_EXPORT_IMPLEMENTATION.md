@@ -81,7 +81,7 @@ This allows free usage for non-commercial applications without requiring complex
 ### File Naming Convention
 - Customer: `گزارش_مالی_مشتری_{CustomerName}_{DateTime}.xlsx`
 - Documents: `گزارش_اسناد_حسابداری_{DateTime}.xlsx`
-- Pool: `گزارش_صندوق_{CurrencyCode}_{DateTime}.xlsx`
+- Pool: `گزارش_داشبورد_{CurrencyCode}_{DateTime}.xlsx`
 - Bank Account: `گزارش_حساب_بانکی_{BankName}_{DateTime}.xlsx`
 
 ### Security

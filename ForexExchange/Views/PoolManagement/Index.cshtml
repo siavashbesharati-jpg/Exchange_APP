@@ -1,6 +1,6 @@
 @model List<ForexExchange.Models.CurrencyPool>
 @{
-    ViewData["Title"] = "مدیریت صندوق های ارزی";
+    ViewData["Title"] = "مدیریت داشبورد های ارزی";
 }
 
 <div class="container-fluid">
@@ -11,9 +11,9 @@
                 <div>
                     <h2 class="h4 mb-1">
                         <i class="fas fa-swimming-pool text-primary me-2"></i>
-                        مدیریت صندوق های ارزی
+                        مدیریت داشبورد های ارزی
                     </h2>
-                    <p class="text-muted mb-0">مدیریت موجودی و آمار صندوق های ارزی</p>
+                    <p class="text-muted mb-0">مدیریت موجودی و آمار داشبورد های ارزی</p>
                 </div>
                 <div>
                     <button type="button" class="btn btn-outline-primary" onclick="refreshPools()">
@@ -157,7 +157,7 @@
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="fas fa-edit me-2"></i>
-                    ویرایش موجودی صندوق 
+                    ویرایش موجودی داشبورد 
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -215,7 +215,7 @@
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="fas fa-undo me-2"></i>
-                    ریست آمار صندوق 
+                    ریست آمار داشبورد 
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -277,7 +277,7 @@
                     }
                 })
                 .catch(error => {
-                    showAlert('error', 'خطا در دریافت اطلاعات صندوق ');
+                    showAlert('error', 'خطا در دریافت اطلاعات داشبورد ');
                 });
         }
 

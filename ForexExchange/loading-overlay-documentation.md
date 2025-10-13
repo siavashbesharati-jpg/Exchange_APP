@@ -97,7 +97,7 @@ The system includes predefined messages for common operations:
 - `DELETING_DOCUMENT`: "در حال حذف سند..." / "بازگردانی تأثیرات مالی"
 
 ### Order Operations:
-- `CREATING_ORDER`: "در حال ثبت معامله..." / "محاسبه ترازها و بروزرسانی صندوق ارزها"
+- `CREATING_ORDER`: "در حال ثبت معامله..." / "محاسبه ترازها و بروزرسانی داشبورد ارزها"
 - `PROCESSING_ORDER`: "در حال پردازش معامله..." / "محاسبه نرخ ارز و بررسی موجودی"
 
 ### Customer Operations:

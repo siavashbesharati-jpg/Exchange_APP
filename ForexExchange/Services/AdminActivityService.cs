@@ -326,7 +326,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Log pool balance change activity
-        /// لاگ کردن فعالیت تغییر موجودی صندوق 
+        /// لاگ کردن فعالیت تغییر موجودی داشبورد 
         /// </summary>
         public async Task LogPoolBalanceChangeAsync(
             int poolId,
@@ -353,7 +353,7 @@ namespace ForexExchange.Services
                 adminUserId,
                 adminUsername,
                 AdminActivityType.PoolBalanceChanged,
-                $"موجودی صندوق  {currencyCode} از {oldBalance:N0} به {newBalance:N0} تغییر یافت",
+                $"موجودی داشبورد  {currencyCode} از {oldBalance:N0} به {newBalance:N0} تغییر یافت",
                 JsonSerializer.Serialize(details),
                 "CurrencyPool",
                 poolId,
@@ -365,7 +365,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Log pool statistics reset activity
-        /// لاگ کردن فعالیت ریست آمار صندوق 
+        /// لاگ کردن فعالیت ریست آمار داشبورد 
         /// </summary>
         public async Task LogPoolStatsResetAsync(
             int poolId,
@@ -390,7 +390,7 @@ namespace ForexExchange.Services
                 adminUserId,
                 adminUsername,
                 AdminActivityType.PoolStatsReset,
-                $"آمار صندوق  {currencyCode} ریست شد (خرید: {oldTotalBought:N0}, فروش: {oldTotalSold:N0})",
+                $"آمار داشبورد  {currencyCode} ریست شد (خرید: {oldTotalBought:N0}, فروش: {oldTotalSold:N0})",
                 JsonSerializer.Serialize(details),
                 "CurrencyPool",
                 poolId,

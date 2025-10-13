@@ -4,15 +4,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ForexExchange.Models
 {
     /// <summary>
-    /// Currency Pool Model - مدل صندوق  ارزی
+    /// Currency Pool Model - مدل داشبورد  ارزی
     /// Tracks real-time balance of each currency in the exchange's pool
-    /// ردیابی موجودی لحظه‌ای هر ارز در صندوق  معاملات 
+    /// ردیابی موجودی لحظه‌ای هر ارز در داشبورد  معاملات 
     /// </summary>
     public class CurrencyPool
     {
         /// <summary>
         /// Unique identifier for the pool record
-        /// شناسه یکتای رکورد صندوق 
+        /// شناسه یکتای رکورد داشبورد 
         /// </summary>
         [Key]
         public int Id { get; set; }
@@ -40,7 +40,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Current balance in the pool for this currency
-        /// موجودی فعلی در صندوق  برای این ارز
+        /// موجودی فعلی در داشبورد  برای این ارز
         /// Positive: Exchange has surplus (can sell)
         /// Negative: Exchange has deficit (needs to buy)
         /// مثبت: معاملات  مازاد دارد (می‌تواند بفروشد)
@@ -83,7 +83,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Last time this pool was updated
-        /// آخرین زمان بروزرسانی این صندوق 
+        /// آخرین زمان بروزرسانی این داشبورد 
         /// </summary>
         [Required]
         [Display(Name = "Last Updated - آخرین بروزرسانی")]
@@ -98,7 +98,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Notes or comments about this pool
-        /// یادداشت‌ها یا نظرات در مورد این صندوق 
+        /// یادداشت‌ها یا نظرات در مورد این داشبورد 
         /// </summary>
         [StringLength(500)]
         [Display(Name = "Notes - یادداشت‌ها")]
@@ -106,7 +106,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Whether this currency pool is active
-        /// آیا این صندوق  ارزی فعال است
+        /// آیا این داشبورد  ارزی فعال است
         /// </summary>
         [Display(Name = "Is Active - فعال")]
         public bool IsActive { get; set; } = true;
@@ -169,7 +169,7 @@ namespace ForexExchange.Models
 
     /// <summary>
     /// Risk levels for currency pools
-    /// سطوح ریسک برای صندوق های ارزی
+    /// سطوح ریسک برای داشبورد های ارزی
     /// </summary>
     public enum PoolRiskLevel
     {

@@ -103,7 +103,7 @@ function showPreviewModal(order, effects) {
     if (getProp(eff, 'OldPoolBalanceFrom') !== undefined) {
         poolEffectsHtml = `
             <div class="mb-3">
-                <h6 class="text-warning"><i class="fas fa-piggy-bank"></i> تأثیرات صندوق ارز</h6>
+                <h6 class="text-warning"><i class="fas fa-piggy-bank"></i> تأثیرات داشبورد ارز</h6>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered">
                         <thead class="table-light">

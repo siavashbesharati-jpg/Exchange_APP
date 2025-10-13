@@ -31,7 +31,7 @@ namespace ForexExchange.Controllers
 
         /// <summary>
         /// Display currency pools management page
-        /// صفحه مدیریت صندوق های ارزی
+        /// صفحه مدیریت داشبورد های ارزی
         /// </summary>
         public async Task<IActionResult> Index()
         {
@@ -43,7 +43,7 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading currency pools management page");
-                TempData["ErrorMessage"] = "خطا در بارگذاری صفحه مدیریت صندوق ها";
+                TempData["ErrorMessage"] = "خطا در بارگذاری صفحه مدیریت داشبورد ها";
                 return RedirectToAction("Index", "Home");
             }
         }
@@ -51,7 +51,7 @@ namespace ForexExchange.Controllers
        
         /// <summary>
         /// Reset pool statistics
-        /// ریست کردن آمار صندوق 
+        /// ریست کردن آمار داشبورد 
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -62,7 +62,7 @@ namespace ForexExchange.Controllers
                 var pool = await _poolService.GetPoolAsync(poolId);
                 if (pool == null)
                 {
-                    return Json(new { success = false, message = "صندوق  ارزی یافت نشد" });
+                    return Json(new { success = false, message = "داشبورد  ارزی یافت نشد" });
                 }
 
                 var oldData = new
@@ -105,13 +105,13 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error resetting pool statistics for pool ID {poolId}");
-                return Json(new { success = false, message = "خطا در ریست کردن آمار صندوق " });
+                return Json(new { success = false, message = "خطا در ریست کردن آمار داشبورد " });
             }
         }
 
         /// <summary>
         /// Get pool details for modal
-        /// دریافت جزئیات صندوق  برای مودال
+        /// دریافت جزئیات داشبورد  برای مودال
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetPoolDetails(int poolId)
@@ -121,7 +121,7 @@ namespace ForexExchange.Controllers
                 var pool = await _poolService.GetPoolAsync(poolId);
                 if (pool == null)
                 {
-                    return Json(new { success = false, message = "صندوق  ارزی یافت نشد" });
+                    return Json(new { success = false, message = "داشبورد  ارزی یافت نشد" });
                 }
 
                 return Json(new { 
@@ -143,13 +143,13 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error getting pool details for pool ID {poolId}");
-                return Json(new { success = false, message = "خطا در دریافت جزئیات صندوق " });
+                return Json(new { success = false, message = "خطا در دریافت جزئیات داشبورد " });
             }
         }
 
         /// <summary>
         /// Get all currency pools for footer display
-        /// دریافت تمام صندوق های ارزی برای نمایش در فوتر
+        /// دریافت تمام داشبورد های ارزی برای نمایش در فوتر
         /// </summary>
         [HttpGet]
         [AllowAnonymous]
@@ -168,7 +168,7 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting currency pools for footer");
-                return Json(new { success = false, message = "خطا در دریافت داده‌های صندوق ارزی" });
+                return Json(new { success = false, message = "خطا در دریافت داده‌های داشبورد ارزی" });
             }
         }
     }

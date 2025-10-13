@@ -5,7 +5,7 @@ namespace ForexExchange.Services
 {
     /// <summary>
     /// Currency Pool Service Implementation for Cross-Currency Trading
-    /// پیاده‌سازی سرویس صندوق  ارزی برای تجارت متقابل ارزها
+    /// پیاده‌سازی سرویس داشبورد  ارزی برای تجارت متقابل ارزها
     /// </summary>
     public class CurrencyPoolService : ICurrencyPoolService
     {
@@ -25,7 +25,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update pool balance after a transaction
-        /// بروزرسانی موجودی صندوق  پس از تراکنش
+        /// بروزرسانی موجودی داشبورد  پس از تراکنش
         /// </summary>
         public async Task<CurrencyPool> UpdatePoolAsync(int currencyId, decimal amount, PoolTransactionType transactionType, decimal rate)
         {
@@ -84,7 +84,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details for a currency
-        /// دریافت جزئیات صندوق  برای یک ارز
+        /// دریافت جزئیات داشبورد  برای یک ارز
         /// </summary>
         public async Task<CurrencyPool?> GetPoolAsync(int currencyId)
         {
@@ -95,7 +95,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details by pool ID
-        /// دریافت جزئیات صندوق  بر اساس شناسه صندوق 
+        /// دریافت جزئیات داشبورد  بر اساس شناسه داشبورد 
         /// </summary>
         public async Task<CurrencyPool?> GetPoolByIdAsync(int poolId)
         {
@@ -106,7 +106,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get all active currency pools
-        /// دریافت تمام صندوق های ارزی فعال
+        /// دریافت تمام داشبورد های ارزی فعال
         /// </summary>
         public async Task<List<CurrencyPool>> GetAllPoolsAsync()
         {
@@ -119,7 +119,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Initialize a new currency pool
-        /// ایجاد صندوق  جدید برای یک ارز
+        /// ایجاد داشبورد  جدید برای یک ارز
         /// </summary>
         public async Task<CurrencyPool> CreatePoolAsync(int currencyId, decimal initialBalance = 0)
         {
@@ -184,7 +184,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pools with high risk levels
-        /// دریافت صندوق های با سطح ریسک بالا
+        /// دریافت داشبورد های با سطح ریسک بالا
         /// </summary>
         public async Task<List<CurrencyPool>> GetHighRiskPoolsAsync(PoolRiskLevel riskLevel = PoolRiskLevel.High)
         {
@@ -198,7 +198,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update risk levels for all pools
-        /// بروزرسانی سطح ریسک برای تمام صندوق ها
+        /// بروزرسانی سطح ریسک برای تمام داشبورد ها
         /// </summary>
         public async Task<int> UpdateRiskLevelsAsync(decimal lowThreshold = 1000, decimal highThreshold = 5000)
         {
@@ -228,7 +228,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool performance statistics
-        /// دریافت آمار عملکرد صندوق 
+        /// دریافت آمار عملکرد داشبورد 
         /// </summary>
         public async Task<PoolPerformance> GetPoolPerformanceAsync(int currencyId, decimal currentRate)
         {
@@ -259,7 +259,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Process transaction and update corresponding pools
-        /// پردازش تراکنش و بروزرسانی صندوق های مربوطه
+        /// پردازش تراکنش و بروزرسانی داشبورد های مربوطه
         /// </summary>
         /*
         // TODO: Re-implement with new architecture
@@ -294,7 +294,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for a currency pool
-        /// بروزرسانی تعداد معاملات  برای صندوق  ارزی
+        /// بروزرسانی تعداد معاملات  برای داشبورد  ارزی
         /// </summary>
         public async Task UpdateOrderCountsAsync(int currencyId)
         {
@@ -343,7 +343,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for all currency pools
-        /// بروزرسانی تعداد معاملات  برای همه صندوق های ارزی
+        /// بروزرسانی تعداد معاملات  برای همه داشبورد های ارزی
         /// </summary>
         public async Task UpdateAllOrderCountsAsync()
         {
@@ -359,7 +359,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update risk level for a single pool
-        /// بروزرسانی سطح ریسک برای یک صندوق 
+        /// بروزرسانی سطح ریسک برای یک داشبورد 
         /// </summary>
         private async Task UpdatePoolRiskLevel(CurrencyPool pool, decimal lowThreshold = 1000, decimal highThreshold = 5000)
         {
@@ -379,7 +379,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Direct pool update for admin operations
-        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
+        /// بروزرسانی مستقیم داشبورد  برای عملیات ادمین
         /// </summary>
         public async Task<CurrencyPool> UpdatePoolDirectAsync(CurrencyPool pool)
         {
@@ -404,7 +404,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Clean all pools - reset to zero for admin operations
-        /// پاکسازی تمام صندوق ها - بازنشانی به صفر برای عملیات ادمین
+        /// پاکسازی تمام داشبورد ها - بازنشانی به صفر برای عملیات ادمین
         /// </summary>
         public async Task<bool> CleanPoolAsync()
         {

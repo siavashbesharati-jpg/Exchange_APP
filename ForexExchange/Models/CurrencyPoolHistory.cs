@@ -5,7 +5,7 @@ namespace ForexExchange.Models
 {
     /// <summary>
     /// Currency Pool Transaction Type Enum
-    /// نوع تراکنش صندوق ارزی
+    /// نوع تراکنش داشبورد ارزی
     /// </summary>
     public enum CurrencyPoolTransactionType
     {
@@ -21,7 +21,7 @@ namespace ForexExchange.Models
 
     /// <summary>
     /// Currency Pool Balance History - Event Sourcing for Pool Balances
-    /// تاریخچه موجودی صندوق ارزی - منبع رویدادها برای موجودی صندوق
+    /// تاریخچه موجودی داشبورد ارزی - منبع رویدادها برای موجودی داشبورد
     /// 
     /// CRITICAL: This maintains EXACT same calculation logic as existing CurrencyPool system
     /// </summary>
@@ -60,7 +60,7 @@ namespace ForexExchange.Models
         public decimal BalanceAfter { get; set; }
 
         [StringLength(10)]
-        [Display(Name = "Pool Transaction Type - نوع تراکنش صندوق")]
+        [Display(Name = "Pool Transaction Type - نوع تراکنش داشبورد")]
         public string? PoolTransactionType { get; set; } // 'Buy', 'Sell' - matches existing logic
 
         [StringLength(500)]
@@ -115,7 +115,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Determines if this is a pool increase or decrease
-        /// تعیین اینکه آیا این افزایش یا کاهش صندوق است
+        /// تعیین اینکه آیا این افزایش یا کاهش داشبورد است
         /// </summary>
         public bool IsPoolIncrease()
         {
@@ -124,7 +124,7 @@ namespace ForexExchange.Models
 
         /// <summary>
         /// Gets the absolute amount for pool calculations
-        /// دریافت مقدار مطلق برای محاسبات صندوق
+        /// دریافت مقدار مطلق برای محاسبات داشبورد
         /// </summary>
         public decimal GetAbsoluteAmount()
         {

@@ -383,7 +383,7 @@ namespace ForexExchange.Services
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             
             using var package = new ExcelPackage();
-            var worksheet = package.Workbook.Worksheets.Add("گزارش صندوق");
+            var worksheet = package.Workbook.Worksheets.Add("گزارش داشبورد");
 
             // Set worksheet direction to RTL
             worksheet.View.RightToLeft = true;
@@ -392,7 +392,7 @@ namespace ForexExchange.Services
             int row = 1;
             
             // Title
-            worksheet.Cells[row, 1].Value = "گزارش صندوق";
+            worksheet.Cells[row, 1].Value = "گزارش داشبورد";
             worksheet.Cells[row, 1, row, 8].Merge = true;
             StyleHeaderCell(worksheet.Cells[row, 1, row, 8], 16, true);
             row += 2;

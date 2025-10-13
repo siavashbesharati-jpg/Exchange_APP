@@ -860,7 +860,7 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting pool daily report for date: {Date}", date);
-                return Json(new { success = false, error = "خطا در دریافت گزارش روزانه صندوق" });
+                return Json(new { success = false, error = "خطا در دریافت گزارش روزانه داشبورد" });
             }
         }
 
@@ -1179,7 +1179,7 @@ namespace ForexExchange.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting pool summary report for date: {Date}", date);
-                return Json(new { success = false, error = "خطا در دریافت گزارش خلاصه صندوق" });
+                return Json(new { success = false, error = "خطا در دریافت گزارش خلاصه داشبورد" });
             }
         }
 
@@ -2125,7 +2125,7 @@ namespace ForexExchange.Controllers
                 var summary = await _poolHistoryService.GetPoolSummaryAsync(currencyCode);
 
                 if (timeline == null || summary == null)
-                    return StatusCode(500, "خطا در دریافت داده‌های گزارش صندوق");
+                    return StatusCode(500, "خطا در دریافت داده‌های گزارش داشبورد");
 
                 // Convert timeline to generic format with safe parsing
                 var transactions = new List<FinancialTransactionItem>();
@@ -2182,7 +2182,7 @@ namespace ForexExchange.Controllers
                     ToDate = toDate ?? DateTime.MaxValue,
                     Transactions = transactions,
                     FinalBalances = finalBalances,
-                    ReportTitle = $"گزارش صندوق - {currencyCode}",
+                    ReportTitle = $"گزارش داشبورد - {currencyCode}",
                     ReportSubtitle = $"از {fromDate?.ToString("yyyy/MM/dd") ?? "ابتدا"} تا {toDate?.ToString("yyyy/MM/dd") ?? "انتها"}"
                 };
 
@@ -2192,7 +2192,7 @@ namespace ForexExchange.Controllers
             {
                 _logger.LogError(ex, "Error generating pool report for currency {CurrencyCode}", currencyCode);
                 // Return a proper error response instead of View("Error")
-                return StatusCode(500, "خطا در تولید گزارش صندوق");
+                return StatusCode(500, "خطا در تولید گزارش داشبورد");
             }
         }
 
@@ -2379,16 +2379,16 @@ namespace ForexExchange.Controllers
                 );
                 var summary = new[]
                 {
-                    "✅ رکورد دستی صندوق ارزی ایجاد شد",
+                    "✅ رکورد دستی داشبورد ارزی ایجاد شد",
                     $"💰 مبلغ: {amount:N2} {currencyCode}",
                     $"📅 تاریخ تراکنش: {transactionDate:yyyy-MM-dd}",
                     $"📝 دلیل: {reason}",
                     "",
-                    "⚠️ مهم: برای اطمینان از انسجام صندوق، دکمه 'بازمحاسبه' را اجرا کنید"
+                    "⚠️ مهم: برای اطمینان از انسجام داشبورد، دکمه 'بازمحاسبه' را اجرا کنید"
                 };
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new { success = true, message = "تراکنش دستی صندوق با موفقیت ثبت شد" });
+                    return Json(new { success = true, message = "تراکنش دستی داشبورد با موفقیت ثبت شد" });
                 }
                 TempData["Success"] = string.Join("<br/>", summary);
             }
@@ -2396,9 +2396,9 @@ namespace ForexExchange.Controllers
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new { success = false, error = $"خطا در ایجاد رکورد دستی صندوق: {ex.Message}" });
+                    return Json(new { success = false, error = $"خطا در ایجاد رکورد دستی داشبورد: {ex.Message}" });
                 }
-                TempData["Error"] = $"خطا در ایجاد رکورد دستی صندوق: {ex.Message}";
+                TempData["Error"] = $"خطا در ایجاد رکورد دستی داشبورد: {ex.Message}";
             }
             return RedirectToAction("Index");
         }
@@ -2415,14 +2415,14 @@ namespace ForexExchange.Controllers
 
                 var summary = new[]
                 {
-                    "✅ تعدیل دستی صندوق با موفقیت حذف شد",
+                    "✅ تعدیل دستی داشبورد با موفقیت حذف شد",
                     "",
-                    "🔄 صندوق بازمحاسبه شد"
+                    "🔄 داشبورد بازمحاسبه شد"
                 };
 
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new { success = true, message = "تعدیل دستی صندوق با موفقیت حذف شد و صندوق بازمحاسبه شد" });
+                    return Json(new { success = true, message = "تعدیل دستی داشبورد با موفقیت حذف شد و داشبورد بازمحاسبه شد" });
                 }
 
                 TempData["Success"] = string.Join("<br/>", summary);
@@ -2431,10 +2431,10 @@ namespace ForexExchange.Controllers
             {
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
                 {
-                    return Json(new { success = false, error = $"خطا در حذف تعدیل دستی صندوق: {ex.Message}" });
+                    return Json(new { success = false, error = $"خطا در حذف تعدیل دستی داشبورد: {ex.Message}" });
                 }
 
-                TempData["Error"] = $"خطا در حذف تعدیل دستی صندوق: {ex.Message}";
+                TempData["Error"] = $"خطا در حذف تعدیل دستی داشبورد: {ex.Message}";
             }
 
             return RedirectToAction("Index");
@@ -3258,13 +3258,13 @@ namespace ForexExchange.Controllers
                     formattedFromDate,
                     formattedToDate);
 
-                var fileName = $"گزارش_صندوق_{currencyCode}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                var fileName = $"گزارش_داشبورد_{currencyCode}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                 return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error exporting pool timeline for currency {CurrencyCode}", currencyCode);
-                return StatusCode(500, "خطا در تولید گزارش صندوق");
+                return StatusCode(500, "خطا در تولید گزارش داشبورد");
             }
         }
 

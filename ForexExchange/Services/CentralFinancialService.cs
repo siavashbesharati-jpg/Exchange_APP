@@ -1601,7 +1601,7 @@ namespace ForexExchange.Services
             try
             {
                 await _notificationHub.SendManualAdjustmentNotificationAsync(
-                    title: "تعدیل دستی صندوق ارزی ایجاد شد",
+                    title: "تعدیل دستی داشبورد ارزی ایجاد شد",
                     message: $"ارز: {currencyCode} | مبلغ: {adjustmentAmount:N2} || دلیل: {reason}",
                     eventType: NotificationEventType.ManualAdjustment,
                     userId: performingUserId,
@@ -1660,7 +1660,7 @@ namespace ForexExchange.Services
             try
             {
                 await _notificationHub.SendManualAdjustmentNotificationAsync(
-                    title: "تعدیل دستی صندوق ارزی حذف شد",
+                    title: "تعدیل دستی داشبورد ارزی حذف شد",
                     message: $"ارز: {currencyCode} | مبلغ: {amount:N2}",
                     eventType: NotificationEventType.ManualAdjustment,
                     userId: performingUserId,

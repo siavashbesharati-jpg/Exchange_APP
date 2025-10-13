@@ -4,13 +4,13 @@ namespace ForexExchange.Services
 {
     /// <summary>
     /// Interface for Currency Pool Service
-    /// رابط سرویس صندوق  ارزی
+    /// رابط سرویس داشبورد  ارزی
     /// </summary>
     public interface ICurrencyPoolService
     {
         /// <summary>
         /// Update pool balance after a transaction
-        /// بروزرسانی موجودی صندوق  پس از تراکنش
+        /// بروزرسانی موجودی داشبورد  پس از تراکنش
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <param name="amount">Transaction amount</param>
@@ -29,7 +29,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details for a currency
-        /// دریافت جزئیات صندوق  برای یک ارز
+        /// دریافت جزئیات داشبورد  برای یک ارز
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <returns>Pool details or null if not found</returns>
@@ -37,7 +37,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool details by pool ID
-        /// دریافت جزئیات صندوق  بر اساس شناسه صندوق 
+        /// دریافت جزئیات داشبورد  بر اساس شناسه داشبورد 
         /// </summary>
         /// <param name="poolId">Pool ID</param>
         /// <returns>Pool details or null if not found</returns>
@@ -45,14 +45,14 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get all active currency pools
-        /// دریافت تمام صندوق های ارزی فعال
+        /// دریافت تمام داشبورد های ارزی فعال
         /// </summary>
         /// <returns>List of all pools</returns>
         Task<List<CurrencyPool>> GetAllPoolsAsync();
 
         /// <summary>
         /// Initialize a new currency pool
-        /// ایجاد صندوق  جدید برای یک ارز
+        /// ایجاد داشبورد  جدید برای یک ارز
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <param name="initialBalance">Initial balance (optional)</param>
@@ -70,7 +70,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pools with high risk levels
-        /// دریافت صندوق های با سطح ریسک بالا
+        /// دریافت داشبورد های با سطح ریسک بالا
         /// </summary>
         /// <param name="riskLevel">Minimum risk level</param>
         /// <returns>High risk pools</returns>
@@ -78,7 +78,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update risk levels for all pools
-        /// بروزرسانی سطح ریسک برای تمام صندوق ها
+        /// بروزرسانی سطح ریسک برای تمام داشبورد ها
         /// </summary>
         /// <param name="lowThreshold">Low risk threshold</param>
         /// <param name="highThreshold">High risk threshold</param>
@@ -87,7 +87,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Get pool performance statistics
-        /// دریافت آمار عملکرد صندوق 
+        /// دریافت آمار عملکرد داشبورد 
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <param name="currentRate">Current market rate</param>
@@ -98,7 +98,7 @@ namespace ForexExchange.Services
         /*
         /// <summary>
         /// Process transaction and update corresponding pools
-        /// پردازش تراکنش و بروزرسانی صندوق های مربوطه
+        /// پردازش تراکنش و بروزرسانی داشبورد های مربوطه
         /// </summary>
         /// <param name="transaction">Transaction to process</param>
         /// <returns>Updated pools</returns>
@@ -107,7 +107,7 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for a currency pool
-        /// بروزرسانی تعداد معاملات  برای صندوق  ارزی
+        /// بروزرسانی تعداد معاملات  برای داشبورد  ارزی
         /// </summary>
         /// <param name="currencyId">Currency ID</param>
         /// <returns>Task</returns>
@@ -115,14 +115,14 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Update order counts for all currency pools
-        /// بروزرسانی تعداد معاملات  برای همه صندوق های ارزی
+        /// بروزرسانی تعداد معاملات  برای همه داشبورد های ارزی
         /// </summary>
         /// <returns>Task</returns>
         Task UpdateAllOrderCountsAsync();
 
         /// <summary>
         /// Direct pool update for admin operations
-        /// بروزرسانی مستقیم صندوق  برای عملیات ادمین
+        /// بروزرسانی مستقیم داشبورد  برای عملیات ادمین
         /// </summary>
         /// <param name="pool">Pool to update</param>
         /// <returns>Updated pool</returns>
@@ -130,14 +130,14 @@ namespace ForexExchange.Services
 
         /// <summary>
         /// Process accounting document and update currency pool balances
-        /// پردازش سند حسابداری و بروزرسانی موجودی صندوق ارزی
+        /// پردازش سند حسابداری و بروزرسانی موجودی داشبورد ارزی
         /// </summary>
         /// <param name="document">Accounting document</param>
         Task ProcessAccountingDocumentAsync(AccountingDocument document);
 
         /// <summary>
         /// Clean all pools (reset to zero)
-        /// پاکسازی تمام صندوق ها (تنظیم روی صفر)
+        /// پاکسازی تمام داشبورد ها (تنظیم روی صفر)
         /// </summary>
         /// <returns>Success status</returns>
         Task<bool> CleanPoolAsync();
@@ -145,26 +145,26 @@ namespace ForexExchange.Services
 
     /// <summary>
     /// Transaction type from exchange pool perspective
-    /// نوع تراکنش از منظر صندوق  معاملات 
+    /// نوع تراکنش از منظر داشبورد  معاملات 
     /// </summary>
     public enum PoolTransactionType
     {
         /// <summary>
         /// Exchange buys currency (positive to pool)
-        /// معاملات  ارز می‌خرد (مثبت برای صندوق )
+        /// معاملات  ارز می‌خرد (مثبت برای داشبورد )
         /// </summary>
         Buy,
 
         /// <summary>
         /// Exchange sells currency (negative to pool)
-        /// معاملات  ارز می‌فروشد (منفی برای صندوق )
+        /// معاملات  ارز می‌فروشد (منفی برای داشبورد )
         /// </summary>
         Sell
     }
 
     /// <summary>
     /// Pool performance statistics
-    /// آمار عملکرد صندوق 
+    /// آمار عملکرد داشبورد 
     /// </summary>
     public class PoolPerformance
     {

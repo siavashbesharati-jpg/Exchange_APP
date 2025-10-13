@@ -89,7 +89,7 @@ const LoadingMessages = {
     // Order operations
     CREATING_ORDER: {
         text: 'در حال ثبت معامله...',
-        subtext: 'محاسبه ترازها و بروزرسانی صندوق ارزها'
+        subtext: 'محاسبه ترازها و بروزرسانی داشبورد ارزها'
     },
     PROCESSING_ORDER: {
         text: 'در حال پردازش معامله...',
