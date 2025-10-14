@@ -188,13 +188,13 @@
                                         ابزارهای تعمیر و نگهداری برای رفع مشکلات خاص
                                     </div>
                                     
-                                   
 
-                                    <form asp-action="FreezeAllOrdersAndDocuments" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید همه سفارش‌ها و اسناد حسابداری را منجمد کنید؟\n\n🔒 سفارش‌ها و اسنادی که منجمد می‌شوند از محاسبات جاری حذف خواهند شد اما در تاریخچه باقی می‌مانند.')">
+
+                                    <form id="freezeDashboardForm">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-primary w-100">
+                                        <button type="submit" class="btn btn-outline-primary w-100" id="freezeDashboardBtn">
                                             <i class="fas fa-snowflake me-2"></i>
-                                             ریست داشبورد
+                                               ریست داشبورد
                                         </button>
                                     </form>
 
@@ -348,6 +348,51 @@
         }
 
         $(document).ready(function() {
+            $('#freezeDashboardForm').on('submit', function (e) {
+                e.preventDefault();
+
+                if (!confirm('آیا مطمئن هستید که می‌خواهید همه سفارش‌ها و اسناد حسابداری را منجمد کنید؟\n\n🔒 سفارش‌ها و اسنادی که منجمد می‌شوند از محاسبات جاری حذف خواهند شد اما در تاریخچه باقی می‌مانند.')) {
+                    return;
+                }
+
+                var $form = $(this);
+                var $button = $('#freezeDashboardBtn');
+                var originalButtonHtml = $button.html();
+
+                $button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال اجرا...').prop('disabled', true);
+
+                $.ajax({
+                    type: 'POST',
+                    url: '@Url.Action("FreezeAllOrdersAndDocuments", "Database")',
+                    data: $form.serialize(),
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'عملیات با موفقیت انجام شد',
+                                html: response.message
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'خطا در عملیات',
+                                text: response.error || 'خطای ناشناخته رخ داد.'
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'خطا در ارتباط با سرور',
+                            text: 'لطفاً مجدداً تلاش کنید.'
+                        });
+                    },
+                    complete: function () {
+                        $button.html(originalButtonHtml).prop('disabled', false);
+                    }
+                });
+            });
+
             // Confirmation for dangerous actions
             $('#cleanCustomersBtn, #cleanOrdersBtn, #cleanPoolsBtn, #restoreForm button[type=submit], #resetAccountingBtn, #recalculateBalancesBtn').click(function(e) {
                 var message = $(this).data('confirm');

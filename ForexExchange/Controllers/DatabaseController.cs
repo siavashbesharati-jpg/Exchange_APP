@@ -556,6 +556,7 @@ namespace ForexExchange.Controllers
 
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> FreezeAllOrdersAndDocuments()
         {
             try
@@ -567,7 +568,6 @@ namespace ForexExchange.Controllers
 
                 var freezeTimestamp = DateTime.UtcNow;
 
-            
                 var manualPoolSoftDeleted = await _context.CurrencyPoolHistory
                     .Where(h => h.TransactionType == CurrencyPoolTransactionType.ManualEdit && !h.IsDeleted)
                     .ExecuteUpdateAsync(setters => setters
@@ -577,13 +577,22 @@ namespace ForexExchange.Controllers
 
                 await _centralFinancialService.RebuildAllFinancialBalancesAsync(performedBy);
 
-                TempData["Success"] = $"داشبورد با موفقیت ریست شد";
-                return RedirectToAction("Index");
+                var successMessage = $"داشبورد با موفقیت ریست شد.<br/>";
+
+                return Json(new
+                {
+                    success = true,
+                    message = successMessage,
+                    ordersFrozen,
+                    documentsFrozen,
+                    manualPoolSoftDeleted
+                });
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"خطا در ریست داشبورد  : {ex.Message}";
-                return RedirectToAction("Index");
+                var errorMessage = $"خطا در ریست داشبورد  : {ex.Message}";
+
+                return Json(new { success = false, error = errorMessage });
             }
         }
 
