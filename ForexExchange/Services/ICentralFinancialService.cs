@@ -118,7 +118,13 @@ namespace ForexExchange.Services
         /// but are preserved for customer balance history audit trail, including manual adjustments.
         /// Creates coherent balance history chains starting from zero before first non-frozen record.
         /// </summary>
-        Task RebuildAllFinancialBalancesAsync(string performedBy = "System");
+    Task RebuildAllFinancialBalancesAsync(string performedBy = "System");
+
+    /// <summary>
+    /// Sets IsFrozen=true for all orders and accounting documents to exclude them from future balance calculations.
+    /// Returns the number of entities that were updated during the operation.
+    /// </summary>
+    Task<(int OrdersFrozen, int DocumentsFrozen)> FreezeAllOrdersAndDocumentsAsync(string performedBy = "System");
 
 
 

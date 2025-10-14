@@ -167,63 +167,7 @@
                             </div>
                         </div>
 
-                        <!-- Cleaning Operations -->
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-danger text-white">
-                                    <h5 class="mb-0">
-                                        <i class="fas fa-trash me-2"></i>
-                                        عملیات پاکسازی
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        <strong>هشدار:</strong> این عملیات غیرقابل بازگشت است!
-                                    </div>
-                                    
-                                        <form asp-action="CleanCustomers" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام مشتریان عادی و حساب‌های کاربری آنها را پاک کنید؟ (مشتری سیستم حفظ خواهد شد)')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-danger w-100 mb-2">
-                                                <i class="fas fa-users me-2"></i>
-                                                پاکسازی مشتریان
-                                            </button>
-                                        </form>
-                                    
-                                        <form asp-action="CleanOrders" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام معاملات  را پاک کنید؟')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-danger w-100 mb-2">
-                                                <i class="fas fa-shopping-cart me-2"></i>
-                                                پاکسازی معاملات 
-                                            </button>
-                                        </form>
-                                    
-                                        <form asp-action="CleanPools" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام داشبورد های ارز را پاک کنید؟')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-danger w-100 mb-2">
-                                                <i class="fas fa-coins me-2"></i>
-                                                پاکسازی داشبورد های ارز
-                                            </button>
-                                        </form>
-
-                                        <form asp-action="CleanCustomerBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام موجودی‌های مشتریان را به صفر تنظیم کنید؟')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-warning w-100 mb-2">
-                                                <i class="fas fa-wallet me-2"></i>
-                                                پاک‌سازی موجودی مشتریان
-                                            </button>
-                                        </form>
-
-                                        <form asp-action="CleanBankAccountBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تمام موجودی‌های حساب‌های بانکی را به صفر تنظیم کنید؟')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-outline-warning w-100">
-                                                <i class="fas fa-university me-2"></i>
-                                                پاک‌سازی موجودی حساب‌های بانکی
-                                            </button>
-                                        </form>
-                                </div>
-                            </div>
-                        </div>
+                      
                     </div>
 
                     <hr>
@@ -244,272 +188,21 @@
                                         ابزارهای تعمیر و نگهداری برای رفع مشکلات خاص
                                     </div>
                                     
-                                    <form asp-action="RecalculateIRRPool" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید موجودی داشبورد IRR را بازمحاسبه کنید؟')">
+                                   
+
+                                    <form asp-action="FreezeAllOrdersAndDocuments" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید همه سفارش‌ها و اسناد حسابداری را منجمد کنید؟\n\n🔒 سفارش‌ها و اسنادی که منجمد می‌شوند از محاسبات جاری حذف خواهند شد اما در تاریخچه باقی می‌مانند.')">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-info w-100 mb-2">
-                                            <i class="fas fa-calculator me-2"></i>
-                                            بازمحاسبه داشبورد IRR
+                                        <button type="submit" class="btn btn-outline-primary w-100">
+                                            <i class="fas fa-snowflake me-2"></i>
+                                             ریست داشبورد
                                         </button>
                                     </form>
-
-                                    <form asp-action="DiagnoseAccountingDocuments" method="post">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-secondary w-100 mb-2">
-                                            <i class="fas fa-search me-2"></i>
-                                            تشخیص اسناد حسابداری
-                                        </button>
-                                    </form>
-
-                                    <form asp-action="ResetAccountingDocumentVerification" method="post" onsubmit="return confirm('آیا مطمئن هستید؟ این عمل:\n\n✅ تمام سوابق مالی (مشتری + بانک + داشبورد ارز) را حذف می‌کند\n✅ موجودی‌ها را صفر می‌کند\n✅ اسناد را غیرتایید می‌کند\n✅ همه چیز را به ترتیب زمانی بازسازی می‌کند\n\n⚠️ رکوردهای دستی (Manual) حفظ می‌شوند\n⚠️ معاملات و اسناد حذف شده نادیده گرفته می‌شوند\n\nاین عمل کامل است و نیازی به تایید مجدد ندارید.')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-success w-100 mb-2">
-                                            <i class="fas fa-sync-alt me-2"></i>
-                                            بازسازی کامل سوابق مالی
-                                        </button>
-                                    </form>
-
-                                    <form asp-action="FixAllTransactionDates" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید تاریخ همه تراکنش‌ها را اصلاح کنید؟\n\n📅 این عمل تاریخ تراکنش‌ها را به تاریخ واقعی معامله تغییر می‌دهد:\n• معاملات : از Order.CreatedAt\n• اسناد: از Document.DocumentDate\n\nفقط رکوردهایی که TransactionDate = CreatedAt دارند اصلاح می‌شوند.')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-warning w-100 mb-2">
-                                            <i class="fas fa-calendar-check me-2"></i>
-                                            اصلاح تاریخ همه تراکنش‌ها
-                                        </button>
-                                    </form>
-
-                                    <form asp-action="RecalculateAllBalancesFromTransactionDates" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید همه موجودی‌ها را بر اساس تاریخ تراکنش بازمحاسبه کنید؟\n\n🔄 این عمل:\n• همه موجودی‌ها را صفر می‌کند\n• تاریخچه‌ها را بر اساس TransactionDate مرتب می‌کند\n• موجودی‌ها را به ترتیب زمانی واقعی بازمحاسبه می‌کند\n\nاین عمل بعد از اصلاح تاریخ تراکنش‌ها انجام شود.')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-primary w-100 mb-2">
-                                            <i class="fas fa-calculator me-2"></i>
-                                            بازمحاسبه بر اساس تاریخ تراکنش
-                                        </button>
-                                    </form>
-
-                                    <form asp-action="RecalculateCustomerBalancesWithRounding" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید موجودی‌های مشتریان را با گرد کردن اعشار بازمحاسبه کنید؟\n\n🔄 این عمل:\n• همه موجودی‌های مشتری را صفر می‌کند\n• تاریخچه‌ها را بر اساس TransactionDate مرتب می‌کند\n• ارزهای غیر ریالی را به 2 رقم اعشار گرد می‌کند (مثل 14.573 → 14.57)\n• ارز ریال (IRR) بدون تغییر باقی می‌ماند\n• موجودی‌های نهایی را بروزرسانی می‌کند\n\nاین عمل مخصوص اصلاح دقت اعشار است.')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-success w-100 mb-2">
-                                            <i class="fas fa-coins me-2"></i>
-                                            بازمحاسبه مشتریان با گرد کردن اعشار
-                                        </button>
-                                    </form>
-
-                                    <form asp-action="RebuildAllFinancialBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید همه موجودی‌ها را بر اساس استراتژی جدید IsFrozen بازسازی کنید؟\n\n🔄 این عمل:\n• همه موجودی‌ها را صفر می‌کند\n• موجودی‌های داشبورد را فقط از سفارشات غیرحذف‌شده و غیرمنجمد بازسازی می‌کند\n• موجودی‌های حساب بانکی را فقط از اسناد غیرحذف‌شده و غیرمنجمد بازسازی می‌کند\n• موجودی‌های مشتری را از همه اسناد غیرحذف‌شده (شامل منجمدها) بازسازی می‌کند\n\n⚠️ این عمل بر اساس منطق جدید IsFrozen انجام می‌شود!')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-danger w-100 mb-2">
-                                            <i class="fas fa-sync-alt me-2"></i>
-                                            بازسازی کامل موجودی‌ها (IsFrozen Strategy)
-                                        </button>
-                                    </form>
-
-                                    <button type="button" class="btn btn-outline-info w-100 mb-2" onclick="getTransactionNumberReport()">>
-                                        <i class="fas fa-chart-bar me-2"></i>
-                                        گزارش پوشش شماره تراکنش
-                                    </button>
-
-                                    <form asp-action="UpdateTransactionNumbers" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید شماره تراکنش‌ها را بروزرسانی کنید؟\n\n📋 این عمل:\n• CustomerBalanceHistory با نوع AccountingDocument را بروزرسانی می‌کند\n• BankAccountBalanceHistory با نوع Document را بروزرسانی می‌کند\n• شماره تراکنش را از AccountingDocument.ReferenceNumber می‌گیرد\n\nاین عمل امن است و فقط فیلدهای خالی را پر می‌کند.')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-success w-100 mb-2">
-                                            <i class="fas fa-hashtag me-2"></i>
-                                            بروزرسانی شماره تراکنش‌ها
-                                        </button>
-                                    </form>
-
-
-                                <form asp-action="FixAllCustomerBalances" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید برای همه مشتریان، موجودی ارزهای ناقص را ایجاد کنید؟\nاین عملیات فقط رکوردهای مفقود را اضافه می‌کند و خطری ندارد.')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-outline-primary w-100 mb-2">
-                                        <i class="fas fa-plus-circle me-1"></i>
-                                        ایجاد موجودی ارز برای همه مشتریان (تکمیل رکوردهای ناقص)
-                                    </button>
-                                </form>
-
-                                <form asp-action="FixIRROrdersEndingIn1000" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید معاملات IRR با رقم هزارگان برابر 1 را اصلاح کنید؟\n\n🔧 این عمل:\n• معاملاتی که رقم هزارگان (چهارمین رقم از راست) برابر 1 است پیدا می‌کند\n• مثال: 55,701,000 → 55,700,000\n• مثال: 100,001,000 → 100,000,000\n• رقم هزارگان را از 1 به 0 تغییر می‌دهد\n\nاین عمل غیرقابل بازگشت است!')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-outline-warning w-100 mb-2">
-                                        <i class="fas fa-calculator me-1"></i>
-                                        اصلاح رقم هزارگان معاملات IRR (1→0)
-                                    </button>
-                                </form>
-
-                                <form asp-action="FixIRROrdersWithReversedRates" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید معاملات IRR با نرخ معکوس را اصلاح کنید؟\n\n🔄 این عمل:\n• معاملاتی که FromCurrency=IRR و نرخ کمتر از 0.001 است پیدا می‌کند\n• مثال: 0.000037037037037037 → 27,000\n• مثال: 0.000024390243902439 → 41,000\n• نرخ جدید = 1 ÷ نرخ قدیمی\n\nاین عمل غیرقابل بازگشت است!')">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-outline-info w-100 mb-2">
-                                        <i class="fas fa-exchange-alt me-1"></i>
-                                        اصلاح نرخ‌های معکوس IRR (نرخ < 0.001)
-                                    </button>
-                                </form>
 
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100">
-                                <div class="card-header bg-warning text-dark">
-                                    <h5 class="mb-0">
-                                        <i class="fas fa-edit me-2"></i>
-                                        ایجاد رکورد دستی تاریخچه
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        ایجاد رکورد دستی برای اصلاحات و واردات داده‌های تاریخی
-                                    </div>
-                                    
-                                    <form asp-action="CreateManualCustomerBalanceHistory" method="post">
-                                        @Html.AntiForgeryToken()
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">شناسه مشتری:</label>
-                                                <input type="number" name="customerId" class="form-control" required min="1" placeholder="مثال: 1">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">کد ارز:</label>
-                                                <select name="currencyCode" class="form-control" required>
-                                                    <option value="">انتخاب ارز</option>
-                                                    <option value="IRR">IRR (تومان)</option>
-                                                    <option value="USD">USD (دلار)</option>
-                                                    <option value="EUR">EUR (یورو)</option>
-                                                    <option value="GBP">GBP (پوند)</option>
-                                                    <option value="AED">AED (درهم)</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">مبلغ:</label>
-                                                <input type="number" name="amount" class="form-control" required step="0.01" placeholder="مثال: 1000000">
-                                                <small class="text-muted">عدد مثبت = افزایش موجودی، عدد منفی = کاهش موجودی</small>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">تاریخ تراکنش:</label>
-                                                <input type="date" name="transactionDate" class="form-control" required>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label">دلیل تراکنش:</label>
-                                            <input type="text" name="reason" class="form-control" required placeholder="مثال: اصلاح موجودی ابتدایی، واردات داده تاریخی">
-                                        </div>
-                                        
-                                        <button type="submit" class="btn btn-warning w-100" onclick="return confirm('آیا مطمئن هستید که می‌خواهید این رکورد دستی را ایجاد کنید؟\n\n⚠️ بعد از ایجاد رکورد دستی، حتماً بازمحاسبه موجودی‌ها را انجام دهید.')">
-                                            <i class="fas fa-plus me-2"></i>
-                                            ایجاد رکورد دستی
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Database Actions -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h5 class="text-primary">عملیات پایگاه داده</h5>
-                        </div>
-
-                        <!-- Apply Rounding Card -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body d-flex flex-column">
-                                    <h6 class="card-title">
-                                        <i class="fas fa-coins me-2 text-warning"></i>
-                                        گرد کردن مقادیر پولی
-                                    </h6>
-                                    <p class="card-text small text-muted">
-                                        این عملیات تمام مقادیر پولی در پایگاه داده را بر اساس منطق جدید گرد می‌کند.
-                                        <strong class="text-danger">این عملیات غیرقابل بازگشت است.</strong>
-                                    </p>
-                                    <div class="mt-auto">
-                                        <button id="applyRoundingBtn" class="btn btn-warning w-100">
-                                            <i class="fas fa-play me-2"></i>
-                                            اجرای گرد کردن
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Backup Card -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header bg-success text-white">
-                                    <h5 class="mb-0">
-                                        <i class="fas fa-download me-2"></i>
-                                        پشتیبان‌گیری
-                                    </h5>
-                                </div>
-                                <div class="card-body d-flex flex-column">
-                                    <p class="card-text small text-muted flex-grow-1">
-                                        از پایگاه داده خود پشتیبان‌گیری کنید تا در صورت نیاز به بازیابی، داده‌های خود را از دست ندهید.
-                                    </p>
-                                    <div>
-                                        <button type="button" class="btn btn-success w-100" onclick="createBackup()">
-                                            <i class="fas fa-download me-2"></i>
-                                            ایجاد پشتیبان (قابل دانلود)
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Restore Card -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header bg-warning text-dark">
-                                    <h5 class="mb-0">
-                                        <i class="fas fa-upload me-2"></i>
-                                        بازیابی پایگاه داده
-                                    </h5>
-                                </div>
-                                <div class="card-body d-flex flex-column">
-                                    <p class="card-text small text-muted flex-grow-1">
-                                        پایگاه داده خود را از یک فایل پشتیبان بازیابی کنید. اطمینان حاصل کنید که فایل پشتیبان صحیح است.
-                                    </p>
-                                    <form asp-action="RestoreDatabase" method="post" enctype="multipart/form-data" class="mt-auto">
-                                        @Html.AntiForgeryToken()
-                                        <div class="mb-3">
-                                            <label for="backupFile" class="form-label">فایل پشتیبان:</label>
-                                            <input type="file" class="form-control" id="backupFile" name="backupFile" accept=".db,.sql" required>
-                                        </div>
-                                        <button type="submit" class="btn btn-warning w-100" onclick="return confirmRestore()">
-                                            <i class="fas fa-upload me-2"></i>
-                                            بازیابی پایگاه داده
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Update Notes Card -->
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-header bg-info text-white">
-                                    <h5 class="mb-0">
-                                        <i class="fas fa-edit me-2"></i>
-                                        بروزرسانی یادداشت‌ها
-                                    </h5>
-                                </div>
-                                <div class="card-body d-flex flex-column">
-                                    <p class="card-text small text-muted flex-grow-1">
-                                        یادداشت‌های معاملات و اسناد حسابداری را با اطلاعات کلیدی بروزرسانی کرده و توضیحات تاریخچه موجودی مشتریان را با یادداشت‌های مرجع پر کنید.
-                                    </p>
-                                    <div class="mt-auto">
-                                        <form asp-action="UpdateNotesAndDescriptions" method="post" onsubmit="return confirm('آیا مطمئن هستید که می‌خواهید یادداشت‌ها و توضیحات را بروزرسانی کنید؟\n\n📝 این عمل:\n• یادداشت‌های معاملات را با اطلاعات مشتری و ارز پر می‌کند\n• یادداشت‌های اسناد را با اطلاعات پرداخت‌کننده و دریافت‌کننده پر می‌کند\n• توضیحات تاریخچه موجودی را با یادداشت‌های مرجع بروزرسانی می‌کند\n\nاین عمل امن است و داده‌های موجود را جایگزین می‌کند.')">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-info w-100">
-                                                <i class="fas fa-edit me-2"></i>
-                                                بروزرسانی یادداشت‌ها
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                  
                 </div>
             </div>
         </div>

@@ -555,6 +555,39 @@ namespace ForexExchange.Controllers
         }
 
 
+        [HttpPost]
+        public async Task<IActionResult> FreezeAllOrdersAndDocuments()
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                var performedBy = user?.UserName ?? "Admin";
+
+                var (ordersFrozen, documentsFrozen) = await _centralFinancialService.FreezeAllOrdersAndDocumentsAsync(performedBy);
+
+                var freezeTimestamp = DateTime.UtcNow;
+
+            
+                var manualPoolSoftDeleted = await _context.CurrencyPoolHistory
+                    .Where(h => h.TransactionType == CurrencyPoolTransactionType.ManualEdit && !h.IsDeleted)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(h => h.IsDeleted, _ => true)
+                        .SetProperty(h => h.DeletedAt, _ => freezeTimestamp)
+                        .SetProperty(h => h.DeletedBy, _ => performedBy));
+
+                await _centralFinancialService.RebuildAllFinancialBalancesAsync(performedBy);
+
+                TempData["Success"] = $"داشبورد با موفقیت ریست شد";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در ریست داشبورد  : {ex.Message}";
+                return RedirectToAction("Index");
+            }
+        }
+
+
 
     }
 }

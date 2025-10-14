@@ -1258,6 +1258,39 @@ namespace ForexExchange.Services
 
         }
 
+        public async Task<(int OrdersFrozen, int DocumentsFrozen)> FreezeAllOrdersAndDocumentsAsync(string performedBy = "System")
+        {
+            _logger.LogInformation("FreezeAllOrdersAndDocumentsAsync initiated by {PerformedBy}", performedBy);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var timestamp = DateTime.UtcNow;
+
+                var ordersFrozen = await _context.Orders
+                    .Where(o => !o.IsFrozen)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.IsFrozen, _ => true)
+                        .SetProperty(o => o.UpdatedAt, _ => timestamp));
+
+                var documentsFrozen = await _context.AccountingDocuments
+                    .Where(d => !d.IsFrozen)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(d => d.IsFrozen, _ => true));
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Freeze operation completed. Orders frozen: {Orders}, Documents frozen: {Documents}", ordersFrozen, documentsFrozen);
+                return (ordersFrozen, documentsFrozen);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to freeze orders/documents initiated by {PerformedBy}", performedBy);
+                throw;
+            }
+        }
+
 
 
 
