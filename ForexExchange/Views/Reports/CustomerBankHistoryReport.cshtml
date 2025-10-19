@@ -1,0 +1,613 @@
+@{
+    ViewData["Title"] = "گزارش تاریخچه بانک و مشتری";
+}
+
+<style>
+    .customer-bank-summary-panel {
+        background: linear-gradient(135deg, #edf3ff 0%, #f9fbff 100%);
+        border: 1px solid #c6dcff;
+        border-radius: 18px;
+        box-shadow: 0 18px 36px rgba(13, 47, 102, 0.14);
+        padding: 24px;
+    }
+    .customer-bank-summary-panel .card-body {
+        background: transparent;
+        padding: 0;
+    }
+    .summary-panel-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+        color: #0d2f66;
+        font-weight: 600;
+    }
+    .summary-panel-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1rem;
+    }
+    .summary-panel-title i {
+        color: #0b5ed7;
+        font-size: 1.1rem;
+    }
+    .summary-panel-pill {
+        background: rgba(11, 94, 215, 0.12);
+        color: #0d2f66;
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .customer-bank-summary-card {
+        background: #ffffff;
+        border: 1px solid rgba(13, 47, 102, 0.1);
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 14px 32px rgba(13, 47, 102, 0.12);
+        height: 100%;
+    }
+    .customer-bank-summary-card .text-muted {
+        color: #355a92 !important;
+        font-weight: 600;
+    }
+    .customer-bank-summary-card .fs-4 {
+        color: #0b3a82;
+    }
+    .summary-warning-banner {
+        background: rgba(255, 193, 7, 0.18);
+        border: 1px solid rgba(255, 193, 7, 0.38);
+        border-radius: 12px;
+        padding: 10px 14px;
+        color: #856404;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+    }
+    .summary-warning-banner i {
+        color: #ffb400;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <h2><i class="fas fa-history text-primary me-2"></i>گزارش تاریخچه بانک و مشتری</h2>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <label for="reportDateFrom" class="form-label me-2 mb-0">از تاریخ:</label>
+                    <input type="date" class="form-control" id="reportDateFrom" style="width: auto;">
+                    
+                    <label for="reportDateTo" class="form-label me-2 mb-0 ms-3">تا تاریخ:</label>
+                    <input type="date" class="form-control" id="reportDateTo" style="width: auto;">
+                    
+                    <button type="button" class="btn btn-outline-success" onclick="openCustomerBankHistoryReportPrint()">
+                        <i class="fas fa-print me-1"></i>
+                        چاپ گزارش
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="downloadCustomerBankHistoryReportExcel()">
+                        <i class="fas fa-file-excel me-1"></i>
+                        خروجی اکسل
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="loadCustomerBankHistoryReport()">
+                        <i class="fas fa-search me-1"></i>
+                        جستجو
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-center flex-wrap gap-2">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('today')">
+                        <i class="fas fa-calendar-day me-1"></i>
+                        امروز
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('yesterday')">
+                        <i class="fas fa-calendar-minus me-1"></i>
+                        دیروز
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('thisWeek')">
+                        <i class="fas fa-calendar-week me-1"></i>
+                        این هفته
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('lastWeek')">
+                        <i class="fas fa-calendar-week me-1"></i>
+                        هفته گذشته
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('thisMonth')">
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        این ماه
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('lastMonth')">
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        ماه گذشته
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingIndicator" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">در حال بارگذاری...</span>
+        </div>
+        <p class="text-muted">در حال بارگذاری گزارش...</p>
+    </div>
+
+    <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
+
+    <div id="reportContent" class="d-none">
+        <div id="reportSummary" class="mb-4 d-none"></div>
+        <div class="row" id="currencyCards"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Set default: last 30 days
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById('reportDateFrom').value = thirtyDaysAgo.toISOString().split('T')[0];
+    document.getElementById('reportDateTo').value = today.toISOString().split('T')[0];
+    
+    loadCustomerBankHistoryReport();
+});
+
+function setDateRange(range) {
+    const today = new Date();
+    const dateFrom = document.getElementById('reportDateFrom');
+    const dateTo = document.getElementById('reportDateTo');
+    
+    let startDate = new Date(today);
+    let endDate = new Date(today);
+    
+    switch(range) {
+        case 'today':
+            startDate = new Date(today);
+            endDate = new Date(today);
+            break;
+            
+        case 'yesterday':
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 1);
+            endDate = new Date(startDate);
+            break;
+            
+        case 'thisWeek':
+            // Start from Saturday (Persian week starts on Saturday)
+            const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+            const daysFromSaturday = dayOfWeek === 6 ? 0 : dayOfWeek + 1;
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - daysFromSaturday);
+            endDate = new Date(today);
+            break;
+            
+        case 'lastWeek':
+            const lastWeekEnd = new Date(today);
+            const daysFromLastSaturday = today.getDay() === 6 ? 7 : today.getDay() + 1;
+            lastWeekEnd.setDate(today.getDate() - daysFromLastSaturday);
+            startDate = new Date(lastWeekEnd);
+            startDate.setDate(lastWeekEnd.getDate() - 6);
+            endDate = new Date(lastWeekEnd);
+            break;
+            
+        case 'thisMonth':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = new Date(today);
+            break;
+            
+        case 'lastMonth':
+            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+            break;
+    }
+    
+    dateFrom.value = startDate.toISOString().split('T')[0];
+    dateTo.value = endDate.toISOString().split('T')[0];
+    
+    loadCustomerBankHistoryReport();
+}
+
+function loadCustomerBankHistoryReport() {
+    const dateFrom = document.getElementById('reportDateFrom').value;
+    const dateTo = document.getElementById('reportDateTo').value;
+    
+    if (!dateFrom || !dateTo) {
+        showError('لطفاً تاریخ شروع و پایان را انتخاب کنید');
+        return;
+    }
+    
+    const fromDate = new Date(dateFrom);
+    const toDate = new Date(dateTo);
+    
+    if (fromDate > toDate) {
+        showError('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد');
+        return;
+    }
+
+    toggleLoading(true);
+    hideError();
+
+    const selectedCurrency = window.customerBankHistoryReportSummary?.selectedCurrency;
+    const query = new URLSearchParams({ dateFrom, dateTo });
+    if (selectedCurrency) {
+        query.append('currencyCode', selectedCurrency);
+    }
+
+    fetch(`/Reports/GetCustomerBankHistoryReport?${query.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                showError(data.message || 'خطا در دریافت گزارش تاریخچه');
+                toggleLoading(false);
+                return;
+            }
+
+            renderReport(data.currencies || [], data.summary || null);
+            toggleLoading(false);
+        })
+        .catch(() => {
+            showError('خطا در برقراری ارتباط با سرور');
+            toggleLoading(false);
+        });
+}
+
+function openCustomerBankHistoryReportPrint() {
+    const dateFrom = document.getElementById('reportDateFrom').value;
+    const dateTo = document.getElementById('reportDateTo').value;
+    
+    if (!dateFrom || !dateTo) {
+        showError('لطفاً تاریخ شروع و پایان را انتخاب کنید');
+        return;
+    }
+
+    const selectedCurrency = window.customerBankHistoryReportSummary?.selectedCurrency;
+    const query = new URLSearchParams({ dateFrom, dateTo });
+    if (selectedCurrency) {
+        query.append('currencyCode', selectedCurrency);
+    }
+
+    const url = `/Reports/CustomerBankHistoryReportPrint?${query.toString()}`;
+    window.open(url, '_blank', 'noopener');
+}
+
+function downloadCustomerBankHistoryReportExcel() {
+    const dateFrom = document.getElementById('reportDateFrom').value;
+    const dateTo = document.getElementById('reportDateTo').value;
+    
+    if (!dateFrom || !dateTo) {
+        showError('لطفاً تاریخ شروع و پایان را انتخاب کنید');
+        return;
+    }
+
+    const selectedCurrency = window.customerBankHistoryReportSummary?.selectedCurrency;
+    const query = new URLSearchParams({ dateFrom, dateTo });
+    if (selectedCurrency) {
+        query.append('currencyCode', selectedCurrency);
+    }
+
+    const url = `/Reports/ExportCustomerBankHistoryReportToExcel?${query.toString()}`;
+    window.location.href = url;
+}
+
+function renderReport(currencies, summary) {
+    const reportContent = document.getElementById('reportContent');
+    const cardsContainer = document.getElementById('currencyCards');
+
+    cardsContainer.innerHTML = '';
+
+    renderSummary(summary);
+
+    if (!currencies.length) {
+        cardsContainer.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    برای بازه زمانی انتخاب شده داده‌ای یافت نشد.
+                </div>
+            </div>`;
+        reportContent.classList.remove('d-none');
+        return;
+    }
+
+    currencies.forEach(currency => {
+        const currencyCode = currency.currencyCode || 'UNKNOWN';
+        const safeId = currencyCode.replace(/[^a-zA-Z0-9_-]/g, '');
+        const collapseId = `details-${safeId}`;
+        const differenceClass = currency.difference >= 0 ? 'text-success' : 'text-danger';
+        const differenceIcon = currency.difference >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+
+        const bankRows = (currency.bankDetails || []).map(item => `
+            <tr>
+                <td>${item.bankName}</td>
+                <td dir="ltr">${formatValue(item.balance, currencyCode)}</td>
+            </tr>
+        `).join('') || `
+            <tr>
+                <td colspan="2" class="text-center text-muted">داده‌ای برای نمایش وجود ندارد</td>
+            </tr>`;
+
+        const customerRows = (currency.customerDetails || []).map(item => `
+            <tr>
+                <td>${item.customerName}</td>
+                <td dir="ltr">${formatValue(item.balance, currencyCode)}</td>
+            </tr>
+        `).join('') || `
+            <tr>
+                <td colspan="2" class="text-center text-muted">داده‌ای برای نمایش وجود ندارد</td>
+            </tr>`;
+
+        cardsContainer.innerHTML += `
+            <div class="col-12 mb-4">
+                <div class="card shadow-sm border-2">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0">
+                                <i class="fas fa-coins me-2"></i>
+                                ${currency.currencyName} (${currencyCode})
+                            </h5>
+                            <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false">
+                                <i class="fas fa-list me-1"></i>جزئیات
+                            </button>
+                        </div>
+                        <div class="text-end ms-auto">
+                            <div class="${differenceClass} fw-bold" dir="ltr">
+                                <i class="fas ${differenceIcon} me-1"></i>
+                                ${formatValue(currency.difference, currencyCode)}
+                            </div>
+                            <small class="text-muted">اختلاف بانک + مشتری</small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded p-3 h-100 bg-light">
+                                    <h6 class="text-muted">مجموع بانک‌ها</h6>
+                                    <div class="fs-4 fw-bold text-primary" dir="ltr">
+                                        ${formatValue(currency.bankTotal, currencyCode)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded p-3 h-100 bg-light">
+                                    <h6 class="text-muted">مجموع مشتریان</h6>
+                                    <div class="fs-4 fw-bold text-primary" dir="ltr">
+                                        ${formatValue(currency.customerTotal, currencyCode)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded p-3 h-100 bg-light">
+                                    <h6 class="text-muted">تراز</h6>
+                                    <div class="fs-4 fw-bold ${differenceClass}" dir="ltr">
+                                        ${formatValue(currency.difference, currencyCode)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collapse mt-4" id="${collapseId}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">جزئیات بانک‌ها</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>بانک</th>
+                                                    <th>موجودی</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${bankRows}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">جزئیات مشتریان</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>مشتری</th>
+                                                    <th>موجودی</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${customerRows}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    });
+
+    reportContent.classList.remove('d-none');
+}
+
+function renderSummary(summary) {
+    const summaryContainer = document.getElementById('reportSummary');
+
+    if (!summary || !Array.isArray(summary.options) || !summary.options.length) {
+        summaryContainer.classList.add('d-none');
+        summaryContainer.innerHTML = '';
+        window.customerBankHistoryReportSummary = null;
+        return;
+    }
+
+    const options = summary.options;
+    const totals = Array.isArray(summary.totals) ? summary.totals : [];
+    const totalsLookup = totals.reduce((acc, item) => {
+        if (item && item.currencyCode) {
+            acc[item.currencyCode] = item;
+        }
+        return acc;
+    }, {});
+
+    const selectedCurrencyCode = summary.selectedCurrencyCode || options[0]?.currencyCode || '';
+    const selectedOption = options.find(option => option.currencyCode === selectedCurrencyCode);
+    const selectedCurrencyLabel = selectedOption ? `${selectedOption.currencyName} (${selectedOption.currencyCode})` : selectedCurrencyCode;
+
+    summaryContainer.classList.remove('d-none');
+    summaryContainer.innerHTML = `
+        <div class="card shadow-sm border-0 customer-bank-summary-panel">
+            <div class="card-body">
+                <div class="summary-panel-heading">
+                    <span class="summary-panel-title">
+                        <i class="fas fa-chart-line"></i>
+                        خلاصه وضعیت کل
+                    </span>
+                    <span class="summary-panel-pill" id="summarySelectedCurrencyLabel">${selectedCurrencyLabel}</span>
+                </div>
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+                    <div class="d-flex flex-column">
+                        <label for="summaryCurrencySelect" class="form-label mb-1">ارز مرجع</label>
+                        <select id="summaryCurrencySelect" class="form-select form-select-sm" style="min-width: 200px;">
+                            ${options.map(option => `
+                                <option value="${option.currencyCode}" ${option.currencyCode === selectedCurrencyCode ? 'selected' : ''}>
+                                    ${option.currencyName} (${option.currencyCode})
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="row g-3" id="summaryTotals"></div>
+                        <div class="summary-warning-banner d-none" id="summaryMissingRates">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>برخی از ارزها به دلیل نبود نرخ معتبر در جمع لحاظ نشده‌اند.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    window.customerBankHistoryReportSummary = {
+        totals: totalsLookup,
+        options,
+        selectedCurrency: selectedCurrencyCode
+    };
+
+    const selectElement = document.getElementById('summaryCurrencySelect');
+    selectElement.addEventListener('change', () => updateSummaryTotals(selectElement.value));
+    updateSummaryTotals(selectElement.value || selectedCurrencyCode);
+}
+
+function updateSummaryTotals(currencyCode) {
+    const summaryState = window.customerBankHistoryReportSummary;
+    const totalsContainer = document.getElementById('summaryTotals');
+    const warningElement = document.getElementById('summaryMissingRates');
+
+    if (!summaryState || !totalsContainer) {
+        return;
+    }
+
+    const totals = summaryState.totals?.[currencyCode];
+    const labelElement = document.getElementById('summarySelectedCurrencyLabel');
+    if (labelElement) {
+        const option = summaryState.options?.find(opt => opt.currencyCode === currencyCode);
+        labelElement.textContent = option ? `${option.currencyName} (${option.currencyCode})` : currencyCode;
+    }
+
+    if (!totals) {
+        totalsContainer.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info mb-0">نرخ تبدیل معتبر برای ارز انتخاب شده یافت نشد.</div>
+            </div>`;
+
+        if (warningElement) {
+            warningElement.classList.add('d-none');
+        }
+
+        summaryState.selectedCurrency = currencyCode;
+        return;
+    }
+
+    summaryState.selectedCurrency = currencyCode;
+
+    totalsContainer.innerHTML = `
+        <div class="col-12 col-md-4">
+            <div class="customer-bank-summary-card">
+                <div class="text-muted mb-2">جمع موجودی بانک‌ها</div>
+                <div class="fs-4 fw-bold" dir="ltr">${formatValue(totals.bankTotal, currencyCode)}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="customer-bank-summary-card">
+                <div class="text-muted mb-2">جمع موجودی مشتریان</div>
+                <div class="fs-4 fw-bold" dir="ltr">${formatValue(totals.customerTotal, currencyCode)}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="customer-bank-summary-card">
+                <div class="text-muted mb-2">تراز بانک + مشتری</div>
+                <div class="fs-4 fw-bold ${totals.difference >= 0 ? 'text-success' : 'text-danger'}" dir="ltr">
+                    ${formatValue(totals.difference, currencyCode)}
+                </div>
+            </div>
+        </div>`;
+
+    if (warningElement) {
+        warningElement.classList.toggle('d-none', !totals.hasMissingRates);
+    }
+}
+
+function toggleLoading(show) {
+    document.getElementById('loadingIndicator').classList.toggle('d-none', !show);
+    document.getElementById('reportContent').classList.toggle('d-none', show);
+}
+
+function showError(message) {
+    const alert = document.getElementById('errorAlert');
+    alert.textContent = message;
+    alert.classList.remove('d-none');
+}
+
+function hideError() {
+    document.getElementById('errorAlert').classList.add('d-none');
+}
+
+function formatValue(value, currencyCode) {
+    const numericValue = Number(value) || 0;
+
+    if (typeof window.formatCurrency === 'function') {
+        return window.formatCurrency(numericValue, currencyCode);
+    }
+
+    const isIRR = currencyCode && currencyCode.toUpperCase() === 'IRR';
+    if (isIRR) {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(Math.trunc(numericValue));
+    }
+
+    const truncated = Math.trunc(numericValue * 100) / 100;
+    let result = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(truncated);
+
+    if (result.includes('.')) {
+        result = result.replace(/\.0+$|\.([0-9]*[1-9])0+$/, '.$1');
+    }
+
+    return numericValue < 0 && !result.startsWith('-') ? `-${result}` : result;
+}
+</script>

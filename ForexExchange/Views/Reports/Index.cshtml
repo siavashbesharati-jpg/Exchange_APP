@@ -102,7 +102,7 @@
      
 
         <!-- Customer & Bank Daily Report -->
-        <div class="col-md-6 col-lg-6">
+        <div class="col-md-6 col-lg-4">
             <div class="card report-card customer-bank-card h-100 shadow-sm border-0" onclick="navigateToReport('customerbankdaily')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
@@ -114,7 +114,20 @@
             </div>
         </div>
 
-            <div class="col-md-6 col-lg-6">
+        <!-- Customer & Bank History Report -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card report-card customer-bank-history-card h-100 shadow-sm border-0" onclick="navigateToReport('customerbankhistory')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-history text-white"></i>
+                    </div>
+                    <h5 class="card-title fw-bold">گزارش تاریخچه بانک و مشتری</h5>
+                    <p class="text-white-50 small">گزارش بانک و مشتری با فیلتر بازه زمانی (از-تا)</p>
+                </div>
+            </div>
+        </div>
+
+            <div class="col-md-6 col-lg-4">
                 <div class="card report-card comprehensive-daily-card h-100 shadow-sm border-0" onclick="navigateToReport('poolsummary')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
@@ -198,6 +211,20 @@
     color: white;
 }
 
+.customer-bank-history-card {
+    background: linear-gradient(135deg, #6610f2 0%, #d63384 100%);
+    color: white;
+    border: 3px solid #d63384;
+}
+
+.customer-bank-history-card:hover {
+    border-color: #b02a69;
+}
+
+.customer-bank-history-card .card-title {
+    color: white;
+}
+
 @@media (max-width: 768px) {
     .report-card {
         margin-bottom: 1rem;
@@ -255,6 +282,9 @@ function navigateToReport(type) {
             break;
         case 'customerbankdaily':
             url = '@Url.Action("CustomerBankDailyReport", "Reports")';
+            break;
+        case 'customerbankhistory':
+            url = '@Url.Action("CustomerBankHistoryReport", "Reports")';
             break;
         default:
             url = '@Url.Action("CustomerReports", "Reports")';

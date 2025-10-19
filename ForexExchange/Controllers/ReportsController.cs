@@ -2550,6 +2550,114 @@ namespace ForexExchange.Controllers
             return View();
         }
 
+        // GET: Reports/CustomerBankHistoryReport
+        public IActionResult CustomerBankHistoryReport()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CustomerBankHistoryReportPrint(DateTime dateFrom, DateTime dateTo, string? currencyCode = null)
+        {
+            var report = await BuildCustomerBankHistoryReportAsync(dateFrom, dateTo, currencyCode);
+            return View("~/Views/PrintViews/CustomerBankHistoryReportPrint.cshtml", report);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportCustomerBankHistoryReportToExcel(DateTime dateFrom, DateTime dateTo, string? currencyCode = null)
+        {
+            var report = await BuildCustomerBankHistoryReportAsync(dateFrom, dateTo, currencyCode);
+            var fileName = $"CustomerBankHistoryReport_{report.DateFrom:yyyyMMdd}_to_{report.DateTo:yyyyMMdd}.xlsx";
+            var fileContent = _excelExportService.GenerateCustomerBankHistoryReportExcel(report);
+
+            return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCustomerBankHistoryReport(DateTime dateFrom, DateTime dateTo, string? currencyCode = null)
+        {
+            try
+            {
+                if (dateFrom > DateTime.Today)
+                {
+                    return Json(new { success = false, message = "تاریخ شروع نمی‌تواند در آینده باشد" });
+                }
+
+                if (dateTo > DateTime.Today)
+                {
+                    return Json(new { success = false, message = "تاریخ پایان نمی‌تواند در آینده باشد" });
+                }
+
+                if (dateFrom > dateTo)
+                {
+                    return Json(new { success = false, message = "تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد" });
+                }
+
+                var report = await BuildCustomerBankHistoryReportAsync(dateFrom, dateTo, currencyCode);
+
+                var payload = report.Currencies.Select(currency => new
+                {
+                    currencyCode = currency.CurrencyCode,
+                    currencyName = currency.CurrencyName,
+                    bankTotal = currency.BankTotal,
+                    customerTotal = currency.CustomerTotal,
+                    difference = currency.Difference,
+                    bankDetails = currency.BankDetails.Select(b => new
+                    {
+                        bankAccountId = b.BankAccountId,
+                        bankName = b.BankName,
+                        accountNumber = b.AccountNumber,
+                        ownerName = b.OwnerName,
+                        balance = b.Balance,
+                        lastTransactionAt = b.LastTransactionAt
+                    }),
+                    customerDetails = currency.CustomerDetails.Select(c => new
+                    {
+                        customerId = c.CustomerId,
+                        customerName = c.CustomerName,
+                        balance = c.Balance,
+                        lastTransactionAt = c.LastTransactionAt
+                    })
+                }).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    dateFrom = report.DateFrom.ToString("yyyy-MM-dd"),
+                    dateTo = report.DateTo.ToString("yyyy-MM-dd"),
+                    currencies = payload,
+                    summary = new
+                    {
+                        selectedCurrencyCode = report.SelectedSummary?.CurrencyCode,
+                        options = report.ConvertedSummaries
+                            .OrderBy(s => s.RatePriority)
+                            .ThenBy(s => s.CurrencyCode, StringComparer.OrdinalIgnoreCase)
+                            .Select(s => new
+                            {
+                                currencyCode = s.CurrencyCode,
+                                currencyName = s.CurrencyName,
+                                ratePriority = s.RatePriority,
+                                hasMissingRates = s.HasMissingRates
+                            }),
+                        totals = report.ConvertedSummaries
+                            .Select(s => new
+                            {
+                                currencyCode = s.CurrencyCode,
+                                bankTotal = s.BankTotal,
+                                customerTotal = s.CustomerTotal,
+                                difference = s.Difference,
+                                hasMissingRates = s.HasMissingRates
+                            })
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating customer/bank history report from {DateFrom} to {DateTo}", dateFrom, dateTo);
+                return Json(new { success = false, message = "خطا در تولید گزارش تاریخچه مشتریان و بانک‌ها" });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> CustomerBankDailyReportPrint(DateTime date, string? currencyCode = null)
         {
@@ -2856,6 +2964,197 @@ namespace ForexExchange.Controllers
             }
 
             CustomerBankDailySummaryConversionViewModel? selectedSummary = null;
+            if (!string.IsNullOrWhiteSpace(preferredCurrencyCode))
+            {
+                selectedSummary = model.ConvertedSummaries.FirstOrDefault(s =>
+                    string.Equals(s.CurrencyCode, preferredCurrencyCode, StringComparison.OrdinalIgnoreCase));
+            }
+
+            model.SelectedSummaryCurrencyCode = selectedSummary?.CurrencyCode
+                ?? model.DefaultSummary?.CurrencyCode;
+
+            return model;
+        }
+
+        private async Task<CustomerBankHistoryReportViewModel> BuildCustomerBankHistoryReportAsync(DateTime dateFrom, DateTime dateTo, string? preferredCurrencyCode = null)
+        {
+            // Normalize dates to date-only (no time component)
+            var startDate = dateFrom.Date;
+            var endDate = dateTo.Date;
+
+            if (startDate > DateTime.Today)
+            {
+                startDate = DateTime.Today;
+            }
+
+            if (endDate > DateTime.Today)
+            {
+                endDate = DateTime.Today;
+            }
+
+            if (startDate > endDate)
+            {
+                (startDate, endDate) = (endDate, startDate);
+            }
+
+            // Set time boundaries: start at 00:00:00, end at 23:59:59
+            var startDateTime = new DateTime(startDate.Year, startDate.Month, startDate.Day, 0, 0, 0);
+            var endDateTime = new DateTime(endDate.Year, endDate.Month, endDate.Day, 23, 59, 59);
+
+            var currencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Code,
+                    c.Name,
+                    c.PersianName,
+                    c.DisplayOrder,
+                    c.RatePriority
+                })
+                .ToListAsync();
+
+            var currencyLookup = currencies.ToDictionary(c => c.Code, StringComparer.OrdinalIgnoreCase);
+
+            // Get latest bank balances within date range (using >= and <=)
+            var latestBankBalances = await _context.BankAccountBalanceHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate >= startDateTime && h.TransactionDate <= endDateTime)
+                .Include(h => h.BankAccount)
+                    .ThenInclude(ba => ba.Customer)
+                .GroupBy(h => h.BankAccountId)
+                .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                              .ThenByDescending(h => h.Id)
+                              .First())
+                .ToListAsync();
+
+            var bankGroups = latestBankBalances
+                .Where(h => h.BankAccount != null && !string.IsNullOrEmpty(h.BankAccount.CurrencyCode))
+                .GroupBy(h => h.BankAccount.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Get latest customer balances within date range (using >= and <=)
+            var latestCustomerBalances = await _context.CustomerBalanceHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate >= startDateTime && h.TransactionDate <= endDateTime)
+                .Include(h => h.Customer)
+                .GroupBy(h => new { h.CustomerId, h.CurrencyCode })
+                .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                              .ThenByDescending(h => h.Id)
+                              .First())
+                .ToListAsync();
+
+            var customerGroups = latestCustomerBalances
+                .Where(h => !string.IsNullOrEmpty(h.CurrencyCode))
+                .GroupBy(h => h.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var model = new CustomerBankHistoryReportViewModel
+            {
+                DateFrom = startDate,
+                DateTo = endDate
+            };
+
+            foreach (var currency in currencies)
+            {
+                bankGroups.TryGetValue(currency.Code, out var bankEntriesRaw);
+                customerGroups.TryGetValue(currency.Code, out var customerEntriesRaw);
+
+                var bankEntries = bankEntriesRaw ?? new List<BankAccountBalanceHistory>();
+                var customerEntries = customerEntriesRaw ?? new List<CustomerBalanceHistory>();
+
+                var bankDetails = bankEntries
+                    .Where(b => b.BalanceAfter != 0)
+                    .Select(b => new CustomerBankHistoryBankDetailViewModel
+                    {
+                        BankAccountId = b.BankAccountId,
+                        BankName = b.BankAccount?.BankName ?? "نامشخص",
+                        AccountNumber = b.BankAccount?.AccountNumber ?? string.Empty,
+                        OwnerName = b.BankAccount?.Customer?.FullName ?? string.Empty,
+                        Balance = b.BalanceAfter,
+                        LastTransactionAt = b.TransactionDate
+                    })
+                    .OrderByDescending(b => b.Balance)
+                    .ToList();
+
+                var customerDetails = customerEntries
+                    .Where(c => c.BalanceAfter != 0)
+                    .Select(c => new CustomerBankHistoryCustomerDetailViewModel
+                    {
+                        CustomerId = c.CustomerId,
+                        CustomerName = c.Customer?.FullName ?? "نامشخص",
+                        Balance = c.BalanceAfter,
+                        LastTransactionAt = c.TransactionDate
+                    })
+                    .OrderByDescending(c => c.Balance)
+                    .ToList();
+
+                if (!bankDetails.Any() && !customerDetails.Any())
+                {
+                    continue;
+                }
+
+                model.Currencies.Add(new CustomerBankHistoryCurrencyViewModel
+                {
+                    CurrencyCode = currency.Code,
+                    CurrencyName = currency.PersianName ?? currency.Name ?? currency.Code,
+                    BankTotal = bankDetails.Sum(b => b.Balance),
+                    CustomerTotal = customerDetails.Sum(c => c.Balance),
+                    BankDetails = bankDetails,
+                    CustomerDetails = customerDetails
+                });
+            }
+
+            // Build converted summaries for different currencies
+            foreach (var targetCurrency in currencies
+                .OrderBy(c => c.RatePriority)
+                .ThenBy(c => c.DisplayOrder))
+            {
+                decimal bankTotal = 0;
+                decimal customerTotal = 0;
+                var hasMissingRates = false;
+
+                foreach (var entry in model.Currencies)
+                {
+                    if (!currencyLookup.TryGetValue(entry.CurrencyCode, out var sourceCurrency))
+                    {
+                        hasMissingRates = true;
+                        continue;
+                    }
+
+                    if (sourceCurrency.Id == targetCurrency.Id)
+                    {
+                        bankTotal += entry.BankTotal;
+                        customerTotal += entry.CustomerTotal;
+                        continue;
+                    }
+
+                    var bankConversion = _currencyConversionService.ConvertAmount(entry.BankTotal, sourceCurrency.Id, targetCurrency.Id);
+                    bankTotal += bankConversion;
+                    if (entry.BankTotal != 0 && bankConversion == 0)
+                    {
+                        hasMissingRates = true;
+                    }
+
+                    var customerConversion = _currencyConversionService.ConvertAmount(entry.CustomerTotal, sourceCurrency.Id, targetCurrency.Id);
+                    customerTotal += customerConversion;
+                    if (entry.CustomerTotal != 0 && customerConversion == 0)
+                    {
+                        hasMissingRates = true;
+                    }
+                }
+
+                model.ConvertedSummaries.Add(new CustomerBankHistorySummaryConversionViewModel
+                {
+                    CurrencyCode = targetCurrency.Code,
+                    CurrencyName = targetCurrency.PersianName ?? targetCurrency.Name ?? targetCurrency.Code,
+                    RatePriority = targetCurrency.RatePriority,
+                    BankTotal = bankTotal,
+                    CustomerTotal = customerTotal,
+                    HasMissingRates = hasMissingRates
+                });
+            }
+
+            CustomerBankHistorySummaryConversionViewModel? selectedSummary = null;
             if (!string.IsNullOrWhiteSpace(preferredCurrencyCode))
             {
                 selectedSummary = model.ConvertedSummaries.FirstOrDefault(s =>

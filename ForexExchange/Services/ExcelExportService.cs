@@ -599,6 +599,234 @@ namespace ForexExchange.Services
             return package.GetAsByteArray();
         }
 
+        public byte[] GenerateCustomerBankHistoryReportExcel(CustomerBankHistoryReportViewModel report)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
+            using var package = new ExcelPackage();
+
+            var summarySheet = package.Workbook.Worksheets.Add("خلاصه گزارش");
+            summarySheet.View.RightToLeft = true;
+
+            var row = 1;
+
+            summarySheet.Cells[row, 1].Value = "گزارش تاریخچه بانک و مشتری";
+            summarySheet.Cells[row, 1, row, 4].Merge = true;
+            StyleHeaderCell(summarySheet.Cells[row, 1, row, 4], 16, true);
+            row += 2;
+
+            summarySheet.Cells[row, 1].Value = "از تاریخ:";
+            summarySheet.Cells[row, 2].Value = report.DateFrom.ToString("yyyy/MM/dd");
+            StyleInfoCell(summarySheet.Cells[row, 1]);
+            StyleInfoCell(summarySheet.Cells[row, 2]);
+            row++;
+
+            summarySheet.Cells[row, 1].Value = "تا تاریخ:";
+            summarySheet.Cells[row, 2].Value = report.DateTo.ToString("yyyy/MM/dd");
+            StyleInfoCell(summarySheet.Cells[row, 1]);
+            StyleInfoCell(summarySheet.Cells[row, 2]);
+            row++;
+
+            summarySheet.Cells[row, 1].Value = "تعداد ارزها:";
+            summarySheet.Cells[row, 2].Value = report.Currencies.Count;
+            StyleInfoCell(summarySheet.Cells[row, 1]);
+            StyleInfoCell(summarySheet.Cells[row, 2]);
+            row++;
+
+            var summary = report.SelectedSummary ?? report.DefaultSummary;
+
+            if (summary != null)
+            {
+                var numberFormat = summary.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+
+                summarySheet.Cells[row, 1].Value = $"جمع موجودی بانک‌ها ({summary.CurrencyCode}):";
+                summarySheet.Cells[row, 2].Value = (double)summary.BankTotal;
+                StyleInfoCell(summarySheet.Cells[row, 1]);
+                StyleInfoCell(summarySheet.Cells[row, 2]);
+                summarySheet.Cells[row, 2].Style.Numberformat.Format = numberFormat;
+                row++;
+
+                summarySheet.Cells[row, 1].Value = $"جمع موجودی مشتریان ({summary.CurrencyCode}):";
+                summarySheet.Cells[row, 2].Value = (double)summary.CustomerTotal;
+                StyleInfoCell(summarySheet.Cells[row, 1]);
+                StyleInfoCell(summarySheet.Cells[row, 2]);
+                summarySheet.Cells[row, 2].Style.Numberformat.Format = numberFormat;
+                row++;
+
+                summarySheet.Cells[row, 1].Value = $"تراز بانک + مشتری ({summary.CurrencyCode}):";
+                summarySheet.Cells[row, 2].Value = (double)summary.Difference;
+                StyleInfoCell(summarySheet.Cells[row, 1]);
+                StyleInfoCell(summarySheet.Cells[row, 2]);
+                summarySheet.Cells[row, 2].Style.Numberformat.Format = numberFormat;
+                row++;
+
+                if (summary.HasMissingRates)
+                {
+                    summarySheet.Cells[row, 1].Value = "هشدار نرخ تبدیل:";
+                    summarySheet.Cells[row, 2].Value = "برخی ارزها بدون نرخ معتبر بوده‌اند";
+                    StyleInfoCell(summarySheet.Cells[row, 1]);
+                    StyleInfoCell(summarySheet.Cells[row, 2]);
+                    row++;
+                }
+            }
+            else
+            {
+                summarySheet.Cells[row, 1].Value = "نرخ‌های تبدیل معتبر برای خلاصه یافت نشد";
+                summarySheet.Cells[row, 1, row, 4].Merge = true;
+                summarySheet.Cells[row, 1, row, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                summarySheet.Cells[row, 1, row, 4].Style.Font.Italic = true;
+                row++;
+            }
+
+            row++;
+
+            summarySheet.Cells[row, 1].Value = "ارز";
+            summarySheet.Cells[row, 2].Value = "مجموع بانک‌ها";
+            summarySheet.Cells[row, 3].Value = "مجموع مشتریان";
+            summarySheet.Cells[row, 4].Value = "تراز";
+            StyleHeaderRow(summarySheet.Cells[row, 1, row, 4]);
+            row++;
+
+            if (!report.Currencies.Any())
+            {
+                summarySheet.Cells[row, 1].Value = "داده‌ای برای نمایش وجود ندارد";
+                summarySheet.Cells[row, 1, row, 4].Merge = true;
+                summarySheet.Cells[row, 1, row, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                summarySheet.Cells[row, 1, row, 4].Style.Font.Italic = true;
+            }
+            else
+            {
+                foreach (var currency in report.Currencies)
+                {
+                    summarySheet.Cells[row, 1].Value = $"{currency.CurrencyName} ({currency.CurrencyCode})";
+                    summarySheet.Cells[row, 2].Value = (double)currency.BankTotal;
+                    summarySheet.Cells[row, 3].Value = (double)currency.CustomerTotal;
+                    summarySheet.Cells[row, 4].Value = (double)currency.Difference;
+
+                    var numberFormat = currency.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+                    summarySheet.Cells[row, 2].Style.Numberformat.Format = numberFormat;
+                    summarySheet.Cells[row, 3].Style.Numberformat.Format = numberFormat;
+                    summarySheet.Cells[row, 4].Style.Numberformat.Format = numberFormat;
+
+                    StyleDataRow(summarySheet.Cells[row, 1, row, 4]);
+                    row++;
+                }
+            }
+
+            summarySheet.Cells[summarySheet.Dimension.Address].AutoFitColumns();
+
+            foreach (var currency in report.Currencies)
+            {
+                var sheetName = currency.CurrencyCode.Length <= 25 ? currency.CurrencyCode : currency.CurrencyCode.Substring(0, 25);
+                var worksheet = package.Workbook.Worksheets.Add(sheetName);
+                worksheet.View.RightToLeft = true;
+
+                var rowIndex = 1;
+
+                worksheet.Cells[rowIndex, 1].Value = $"گزارش تاریخچه بانک و مشتری - {currency.CurrencyName} ({currency.CurrencyCode})";
+                worksheet.Cells[rowIndex, 1, rowIndex, 6].Merge = true;
+                StyleHeaderCell(worksheet.Cells[rowIndex, 1, rowIndex, 6], 16, true);
+                rowIndex += 2;
+
+                worksheet.Cells[rowIndex, 1].Value = "مجموع بانک‌ها:";
+                worksheet.Cells[rowIndex, 2].Value = (double)currency.BankTotal;
+                StyleInfoCell(worksheet.Cells[rowIndex, 1]);
+                StyleInfoCell(worksheet.Cells[rowIndex, 2]);
+                worksheet.Cells[rowIndex, 2].Style.Numberformat.Format = currency.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+                rowIndex++;
+
+                worksheet.Cells[rowIndex, 1].Value = "مجموع مشتریان:";
+                worksheet.Cells[rowIndex, 2].Value = (double)currency.CustomerTotal;
+                StyleInfoCell(worksheet.Cells[rowIndex, 1]);
+                StyleInfoCell(worksheet.Cells[rowIndex, 2]);
+                worksheet.Cells[rowIndex, 2].Style.Numberformat.Format = currency.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+                rowIndex++;
+
+                worksheet.Cells[rowIndex, 1].Value = "تراز:";
+                worksheet.Cells[rowIndex, 2].Value = (double)currency.Difference;
+                StyleInfoCell(worksheet.Cells[rowIndex, 1]);
+                StyleInfoCell(worksheet.Cells[rowIndex, 2]);
+                worksheet.Cells[rowIndex, 2].Style.Numberformat.Format = currency.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+                rowIndex += 2;
+
+                worksheet.Cells[rowIndex, 1].Value = "جزئیات بانک‌ها";
+                worksheet.Cells[rowIndex, 1, rowIndex, 5].Merge = true;
+                StyleHeaderCell(worksheet.Cells[rowIndex, 1, rowIndex, 5], 14, true);
+                rowIndex++;
+
+                worksheet.Cells[rowIndex, 1].Value = "بانک";
+                worksheet.Cells[rowIndex, 2].Value = "موجودی";
+                worksheet.Cells[rowIndex, 3].Value = "آخرین تراکنش";
+                worksheet.Cells[rowIndex, 4].Value = "شماره حساب";
+                worksheet.Cells[rowIndex, 5].Value = "صاحب حساب";
+                StyleHeaderRow(worksheet.Cells[rowIndex, 1, rowIndex, 5]);
+                rowIndex++;
+
+                if (!currency.BankDetails.Any())
+                {
+                    worksheet.Cells[rowIndex, 1].Value = "داده‌ای برای نمایش وجود ندارد";
+                    worksheet.Cells[rowIndex, 1, rowIndex, 5].Merge = true;
+                    worksheet.Cells[rowIndex, 1, rowIndex, 5].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    worksheet.Cells[rowIndex, 1, rowIndex, 5].Style.Font.Italic = true;
+                    rowIndex++;
+                }
+                else
+                {
+                    foreach (var bank in currency.BankDetails)
+                    {
+                        worksheet.Cells[rowIndex, 1].Value = bank.BankName;
+                        worksheet.Cells[rowIndex, 2].Value = (double)bank.Balance;
+                        worksheet.Cells[rowIndex, 3].Value = bank.LastTransactionAt.ToString("yyyy/MM/dd HH:mm");
+                        worksheet.Cells[rowIndex, 4].Value = bank.AccountNumber;
+                        worksheet.Cells[rowIndex, 5].Value = bank.OwnerName;
+
+                        worksheet.Cells[rowIndex, 2].Style.Numberformat.Format = currency.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+                        StyleDataRow(worksheet.Cells[rowIndex, 1, rowIndex, 5]);
+                        rowIndex++;
+                    }
+                }
+
+                rowIndex++;
+                worksheet.Cells[rowIndex, 1].Value = "جزئیات مشتریان";
+                worksheet.Cells[rowIndex, 1, rowIndex, 4].Merge = true;
+                StyleHeaderCell(worksheet.Cells[rowIndex, 1, rowIndex, 4], 14, true);
+                rowIndex++;
+
+                worksheet.Cells[rowIndex, 1].Value = "مشتری";
+                worksheet.Cells[rowIndex, 2].Value = "موجودی";
+                worksheet.Cells[rowIndex, 3].Value = "آخرین تراکنش";
+                worksheet.Cells[rowIndex, 4].Value = "شناسه مشتری";
+                StyleHeaderRow(worksheet.Cells[rowIndex, 1, rowIndex, 4]);
+                rowIndex++;
+
+                if (!currency.CustomerDetails.Any())
+                {
+                    worksheet.Cells[rowIndex, 1].Value = "داده‌ای برای نمایش وجود ندارد";
+                    worksheet.Cells[rowIndex, 1, rowIndex, 4].Merge = true;
+                    worksheet.Cells[rowIndex, 1, rowIndex, 4].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+                    worksheet.Cells[rowIndex, 1, rowIndex, 4].Style.Font.Italic = true;
+                }
+                else
+                {
+                    foreach (var customer in currency.CustomerDetails)
+                    {
+                        worksheet.Cells[rowIndex, 1].Value = customer.CustomerName;
+                        worksheet.Cells[rowIndex, 2].Value = (double)customer.Balance;
+                        worksheet.Cells[rowIndex, 3].Value = customer.LastTransactionAt.ToString("yyyy/MM/dd HH:mm");
+                        worksheet.Cells[rowIndex, 4].Value = customer.CustomerId;
+
+                        worksheet.Cells[rowIndex, 2].Style.Numberformat.Format = currency.CurrencyCode == "IRR" ? "#,##0" : "#,##0.00";
+                        StyleDataRow(worksheet.Cells[rowIndex, 1, rowIndex, 4]);
+                        rowIndex++;
+                    }
+                }
+
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+            }
+
+            return package.GetAsByteArray();
+        }
+
         public byte[] GeneratePoolTimelineExcel(string currencyCode, List<object> transactions, DateTime? fromDate = null, DateTime? toDate = null)
         {
             // Set license context for EPPlus 6
