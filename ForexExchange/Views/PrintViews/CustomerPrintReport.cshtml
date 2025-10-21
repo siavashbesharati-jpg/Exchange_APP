@@ -573,14 +573,7 @@
                         <div class="balance-item">
                             <div class="balance-currency">@balance.Key</div>
                             <div class="balance-amount @(balance.Value >= 0 ? "positive" : "negative")">
-                                @if (balance.Key == "IRR")
-                                {
-                                    @String.Format("{0:N0}", balance.Value)
-                                }
-                                else
-                                {
-                                    @String.Format("{0:N2}", balance.Value)
-                                }
+                                @balance.Value.FormatCurrency(balance.Key)
                             </div>
                         </div>
                     }
@@ -671,25 +664,11 @@
                                         <td style="text-align: right;">@transaction.Note</td>
                                         <td class="amount-cell">
                                             <span class="@(transaction.Amount >= 0 ? "positive" : "negative")">
-                                                @if (transaction.CurrencyCode == "IRR")
-                                                {
-                                                    @String.Format("{0:N0}", transaction.Amount)
-                                                }
-                                                else
-                                                {
-                                                    @String.Format("{0:N2}", transaction.Amount)
-                                                }
+                                                @transaction.Amount.FormatCurrency(transaction.CurrencyCode)
                                             </span>
                                         </td>
                                         <td class="amount-cell">
-                                            @if (transaction.CurrencyCode == "IRR")
-                                            {
-                                                @String.Format("{0:N0}", transaction.RunningBalance)
-                                            }
-                                            else
-                                            {
-                                                @String.Format("{0:N2}", transaction.RunningBalance)
-                                            }
+                                            @transaction.RunningBalance.FormatCurrency(transaction.CurrencyCode)
                                         </td>
                                     </tr>
                                 }

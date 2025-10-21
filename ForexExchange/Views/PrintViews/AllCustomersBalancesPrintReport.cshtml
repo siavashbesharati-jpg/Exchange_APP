@@ -1,4 +1,5 @@
 @using System.Linq
+@using ForexExchange.Extensions
 @model ForexExchange.Models.AllCustomersBalanceReportData
 @inject ForexExchange.Services.ISettingsService SettingsService
 @{
@@ -96,9 +97,9 @@
                             {
                                 var currencyCode = entry.Key;
                                 var totals = entry.Value;
-                                var creditFormatted = FormatAmount(totals.TotalCredit, currencyCode);
-                                var debtFormatted = FormatAmount(totals.TotalDebt, currencyCode);
-                                var netFormatted = FormatAmount(totals.NetBalance, currencyCode);
+                                var creditFormatted = totals.TotalCredit.FormatCurrency(currencyCode);
+                                var debtFormatted = totals.TotalDebt.FormatCurrency(currencyCode);
+                                var netFormatted = totals.NetBalance.FormatCurrency(currencyCode);
                                 var netClass = totals.NetBalance >= 0 ? "balance-positive" : "balance-negative";
                                 <tr>
                                     <td>@currencyCode</td>
@@ -136,7 +137,7 @@
                                 <td>@customer.FullName</td>
                                 <td>@customer.CustomerId</td>
                                 <td>@bal.CurrencyCode</td>
-                                    <td class="@(bal.Balance >= 0 ? "balance-positive" : "balance-negative")" dir="ltr">@FormatAmount(bal.Balance, bal.CurrencyCode)</td>
+                                    <td class="@(bal.Balance >= 0 ? "balance-positive" : "balance-negative")" dir="ltr">@bal.Balance.FormatCurrency(bal.CurrencyCode)</td>
                             </tr>
                             row++;
                         }
@@ -161,11 +162,4 @@
 </body>
 </html>
 
-@functions {
-    public string FormatAmount(decimal value, string currencyCode)
-    {
-        return currencyCode == "IRR"
-            ? string.Format("{0:N0}", value)
-            : string.Format("{0:N2}", value);
-    }
-}
+
