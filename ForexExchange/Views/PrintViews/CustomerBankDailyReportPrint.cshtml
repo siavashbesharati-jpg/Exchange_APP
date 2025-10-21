@@ -314,7 +314,7 @@
                         <div class="amount">@summary.CustomerTotal.FormatCurrency(summaryCurrencyCode)</div>
                     </div>
                     <div class="summary-card">
-                        <h4>تراز بانک + مشتری (@summaryCurrencyCode)</h4>
+                        <h4>تراز نهایی (بانک - مشتری) (@summaryCurrencyCode)</h4>
                         <div class="amount" style="color: @(summary.Difference >= 0 ? "#27ae60" : "#e74c3c")">@summary.Difference.FormatCurrency(summaryCurrencyCode)</div>
                     </div>
 

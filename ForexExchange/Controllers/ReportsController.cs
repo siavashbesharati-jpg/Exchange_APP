@@ -2997,8 +2997,7 @@ namespace ForexExchange.Controllers
                 (startDate, endDate) = (endDate, startDate);
             }
 
-            // Set time boundaries: start at 00:00:00, end at 23:59:59
-            var startDateTime = new DateTime(startDate.Year, startDate.Month, startDate.Day, 0, 0, 0);
+            // Set time boundaries: end at 23:59:59 for the end date
             var endDateTime = new DateTime(endDate.Year, endDate.Month, endDate.Day, 23, 59, 59);
 
             var currencies = await _context.Currencies
@@ -3017,9 +3016,9 @@ namespace ForexExchange.Controllers
 
             var currencyLookup = currencies.ToDictionary(c => c.Code, StringComparer.OrdinalIgnoreCase);
 
-            // Get latest bank balances within date range (using >= and <=)
+            // Get latest bank balances up to end date (all transactions from beginning to end date)
             var latestBankBalances = await _context.BankAccountBalanceHistory
-                .Where(h => !h.IsDeleted && h.TransactionDate >= startDateTime && h.TransactionDate <= endDateTime)
+                .Where(h => !h.IsDeleted && h.TransactionDate <= endDateTime)
                 .Include(h => h.BankAccount)
                     .ThenInclude(ba => ba.Customer)
                 .GroupBy(h => h.BankAccountId)
@@ -3033,9 +3032,9 @@ namespace ForexExchange.Controllers
                 .GroupBy(h => h.BankAccount.CurrencyCode)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            // Get latest customer balances within date range (using >= and <=)
+            // Get latest customer balances up to end date (all transactions from beginning to end date)
             var latestCustomerBalances = await _context.CustomerBalanceHistory
-                .Where(h => !h.IsDeleted && h.TransactionDate >= startDateTime && h.TransactionDate <= endDateTime)
+                .Where(h => !h.IsDeleted && h.TransactionDate <= endDateTime)
                 .Include(h => h.Customer)
                 .GroupBy(h => new { h.CustomerId, h.CurrencyCode })
                 .Select(g => g.OrderByDescending(h => h.TransactionDate)

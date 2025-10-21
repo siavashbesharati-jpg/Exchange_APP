@@ -48,7 +48,7 @@ namespace ForexExchange.Models
         public string CurrencyName { get; set; } = string.Empty;
         public decimal BankTotal { get; set; }
         public decimal CustomerTotal { get; set; }
-        public decimal Difference => BankTotal + CustomerTotal;
+        public decimal Difference => BankTotal - CustomerTotal;
         public List<CustomerBankHistoryBankDetailViewModel> BankDetails { get; set; } = new();
         public List<CustomerBankHistoryCustomerDetailViewModel> CustomerDetails { get; set; } = new();
     }
@@ -78,7 +78,7 @@ namespace ForexExchange.Models
         public int RatePriority { get; set; }
         public decimal BankTotal { get; set; }
         public decimal CustomerTotal { get; set; }
-        public decimal Difference => BankTotal + CustomerTotal;
+        public decimal Difference => BankTotal - CustomerTotal;
         public bool HasMissingRates { get; set; }
     }
 }

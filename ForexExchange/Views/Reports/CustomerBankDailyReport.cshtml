@@ -289,7 +289,7 @@ function renderReport(currencies, summary) {
                                 <i class="fas ${differenceIcon} me-1"></i>
                                 ${formatValue(currency.difference, currencyCode)}
                             </div>
-                            <small class="text-muted">اختلاف بانک + مشتری</small>
+                            <small class="text-muted">تراز نهایی (بانک - مشتری)</small>
                         </div>
                     </div>
                     <div class="card-body">
@@ -478,7 +478,7 @@ function updateSummaryTotals(currencyCode) {
         </div>
         <div class="col-12 col-md-4">
             <div class="customer-bank-summary-card">
-                <div class="text-muted mb-2">تراز بانک + مشتری</div>
+                <div class="text-muted mb-2">تراز نهایی (بانک - مشتری)</div>
                 <div class="fs-4 fw-bold ${totals.difference >= 0 ? 'text-success' : 'text-danger'}" dir="ltr">
                     ${formatValue(totals.difference, currencyCode)}
                 </div>
