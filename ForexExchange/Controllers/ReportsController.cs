@@ -2553,6 +2553,13 @@ namespace ForexExchange.Controllers
         // GET: Reports/CustomerBankHistoryReport
         public IActionResult CustomerBankHistoryReport()
         {
+            // Set default date range: from last year to today
+            var today = DateTime.Today;
+            var lastYear = today.AddYears(-1);
+            
+            ViewBag.DefaultDateFrom = lastYear.ToString("yyyy-MM-dd");
+            ViewBag.DefaultDateTo = today.ToString("yyyy-MM-dd");
+            
             return View();
         }
 
