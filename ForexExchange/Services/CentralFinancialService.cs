@@ -445,7 +445,7 @@ namespace ForexExchange.Services
                         }
 
                         var currentBalance = bankBalance.Balance;
-                        var newBalance = currentBalance - document.Amount; // Bank pays out
+                        var newBalance = currentBalance + document.Amount; // Bank pays out
 
                         effects.BankAccountEffects.Add(new BankAccountBalanceEffect
                         {
@@ -454,7 +454,7 @@ namespace ForexExchange.Services
                             AccountNumber = payerBankAccount.AccountNumber,
                             CurrencyCode = document.CurrencyCode,
                             CurrentBalance = currentBalance,
-                            TransactionAmount = -document.Amount,
+                            TransactionAmount = document.Amount,
                             NewBalance = newBalance,
                             Role = "Payer"
                         });
@@ -502,7 +502,7 @@ namespace ForexExchange.Services
                         }
 
                         var currentBalance = bankBalance.Balance;
-                        var newBalance = currentBalance + document.Amount; // Bank receives
+                        var newBalance = currentBalance - document.Amount; // Bank receives
 
                         effects.BankAccountEffects.Add(new BankAccountBalanceEffect
                         {
@@ -511,7 +511,7 @@ namespace ForexExchange.Services
                             AccountNumber = receiverBankAccount.AccountNumber,
                             CurrencyCode = document.CurrencyCode,
                             CurrentBalance = currentBalance,
-                            TransactionAmount = document.Amount,
+                            TransactionAmount = - document.Amount,
                             NewBalance = newBalance,
                             Role = "Receiver"
                         });
@@ -925,16 +925,16 @@ namespace ForexExchange.Services
                     if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue && d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
                     {
                         // Both sides are system bank accounts: create two transactions
-                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, -(d.Amount), d.Notes ?? string.Empty));
-                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, d.Amount, d.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, d.Amount, d.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, -(d.Amount), d.Notes ?? string.Empty));
                     }
                     else
                     {
                         // Single side system bank account transactions
                         if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
-                            bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "payment document", d.Id, -(d.Amount), d.Notes ?? string.Empty));
+                            bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "payment document", d.Id, d.Amount, d.Notes ?? string.Empty));
                         if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
-                            bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "reciept document", d.Id, d.Amount, d.Notes ?? string.Empty));
+                            bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "reciept document", d.Id, -(d.Amount), d.Notes ?? string.Empty));
                     }
                 }
 
