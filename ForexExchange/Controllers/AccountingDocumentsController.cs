@@ -271,7 +271,7 @@ namespace ForexExchange.Controllers
         // GET: AccountingDocuments/Upload
         public IActionResult Upload()
         {
-            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false ).ToList();
+            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive  ).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View();
@@ -458,7 +458,7 @@ namespace ForexExchange.Controllers
                 return Json(new { success = false, message = "لطفاً خطاهای اعتبارسنجی را بررسی کنید.", errors = GetModelStateErrors() });
             }
 
-            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View(accountingDocument);

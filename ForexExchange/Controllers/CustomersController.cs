@@ -39,7 +39,7 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Index()
         {
             var customers = await _context.Customers
-                .Where(c => c.IsActive && c.IsSystem == false)
+                .Where(c => c.IsActive)
                 .OrderBy(c => c.FullName)
                 .ToListAsync();
 
