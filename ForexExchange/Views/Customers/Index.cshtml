@@ -16,11 +16,19 @@
     {
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">لیست مشتریان فعال</h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">لیست مشتریان فعال</h5>
+                    <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="customerSearchInput" class="form-control" placeholder="جستجو بر اساس نام یا تلفن...">
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover" id="customersTable">
                         <thead class="table-dark">
                             <tr>
                                 <th>نام و نام خانوادگی</th>
@@ -111,3 +119,28 @@
         </div>
     }
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('customerSearchInput');
+    const table = document.getElementById('customersTable');
+    
+    if (searchInput && table) {
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.trim().toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const name = row.cells[0]?.textContent?.toLowerCase() || '';
+                const phone = row.cells[2]?.textContent?.toLowerCase() || '';
+                
+                if (name.includes(searchTerm) || phone.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>

@@ -78,6 +78,19 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsSystem" class="form-check-input" type="checkbox" id="isSystemCheck" />
+                                <label asp-for="IsSystem" class="form-check-label" for="isSystemCheck">
+                                    <strong class="text-primary">سهامدار / مشتری سیستمی</strong>
+                                </label>
+                                <small class="form-text text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle"></i> 
+                                    سهامداران در گزارش‌های مشتریان نمایش داده نمی‌شوند و موجودی آنها به عنوان سرمایه شرکت محاسبه می‌شود.
+                                </small>
+                            </div>
+                        </div>
+
                         <hr />
                         <div class="mb-3">
                             <label class="form-label">موجودی‌های اولیه مشتری (اختیاری)</label>

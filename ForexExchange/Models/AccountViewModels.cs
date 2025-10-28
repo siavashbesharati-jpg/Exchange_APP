@@ -144,6 +144,9 @@ namespace ForexExchange.Models
 
         public bool Gender { get; set; } = true;
 
+        [Display(Name = "سهامدار / مشتری سیستمی")]
+        public bool IsSystem { get; set; } = false;
+
         public DateTime CreatedAt { get; set; }
 
         // Initial balances per currency (code -> amount). Allow negative and positive.

@@ -3082,8 +3082,9 @@ namespace ForexExchange.Controllers
                     .OrderByDescending(b => b.Balance)
                     .ToList();
 
-                var customerDetails = customerEntries
-                    .Where(c => c.BalanceAfter != 0)
+                // جداسازی سهامداران (IsSystem = true) از مشتریان عادی
+                var systemCustomerDetails = customerEntries
+                    .Where(c => c.BalanceAfter != 0 && c.Customer?.IsSystem == true)
                     .Select(c => new CustomerBankHistoryCustomerDetailViewModel
                     {
                         CustomerId = c.CustomerId,
@@ -3094,7 +3095,23 @@ namespace ForexExchange.Controllers
                     .OrderByDescending(c => c.Balance)
                     .ToList();
 
-                if (!bankDetails.Any() && !customerDetails.Any())
+                var customerDetails = customerEntries
+                    .Where(c => c.BalanceAfter != 0 && c.Customer?.IsSystem != true)
+                    .Select(c => new CustomerBankHistoryCustomerDetailViewModel
+                    {
+                        CustomerId = c.CustomerId,
+                        CustomerName = c.Customer?.FullName ?? "نامشخص",
+                        Balance = c.BalanceAfter,
+                        LastTransactionAt = c.TransactionDate
+                    })
+                    .OrderByDescending(c => c.Balance)
+                    .ToList();
+
+                // موجودی سهامداران به عنوان سرمایه شرکت به بانک‌ها اضافه می‌شود
+                var systemCustomerTotal = systemCustomerDetails.Sum(s => s.Balance);
+                var adjustedBankTotal = bankDetails.Sum(b => b.Balance) + systemCustomerTotal;
+
+                if (!bankDetails.Any() && !customerDetails.Any() && !systemCustomerDetails.Any())
                 {
                     continue;
                 }
@@ -3103,10 +3120,12 @@ namespace ForexExchange.Controllers
                 {
                     CurrencyCode = currency.Code,
                     CurrencyName = currency.PersianName ?? currency.Name ?? currency.Code,
-                    BankTotal = bankDetails.Sum(b => b.Balance),
-                    CustomerTotal = customerDetails.Sum(c => c.Balance),
+                    BankTotal = adjustedBankTotal,  // بانک‌ها + سهامداران
+                    CustomerTotal = customerDetails.Sum(c => c.Balance),  // فقط مشتریان عادی
+                    ShareholderTotal = systemCustomerTotal,  // موجودی سهامداران
                     BankDetails = bankDetails,
-                    CustomerDetails = customerDetails
+                    CustomerDetails = customerDetails,
+                    ShareholderDetails = systemCustomerDetails  // جزئیات سهامداران
                 });
             }
 
@@ -3117,6 +3136,7 @@ namespace ForexExchange.Controllers
             {
                 decimal bankTotal = 0;
                 decimal customerTotal = 0;
+                decimal shareholderTotal = 0;
                 var hasMissingRates = false;
 
                 foreach (var entry in model.Currencies)
@@ -3131,6 +3151,7 @@ namespace ForexExchange.Controllers
                     {
                         bankTotal += entry.BankTotal;
                         customerTotal += entry.CustomerTotal;
+                        shareholderTotal += entry.ShareholderTotal;
                         continue;
                     }
 
@@ -3147,6 +3168,13 @@ namespace ForexExchange.Controllers
                     {
                         hasMissingRates = true;
                     }
+
+                    var shareholderConversion = _currencyConversionService.ConvertAmount(entry.ShareholderTotal, sourceCurrency.Id, targetCurrency.Id);
+                    shareholderTotal += shareholderConversion;
+                    if (entry.ShareholderTotal != 0 && shareholderConversion == 0)
+                    {
+                        hasMissingRates = true;
+                    }
                 }
 
                 model.ConvertedSummaries.Add(new CustomerBankHistorySummaryConversionViewModel
@@ -3156,6 +3184,7 @@ namespace ForexExchange.Controllers
                     RatePriority = targetCurrency.RatePriority,
                     BankTotal = bankTotal,
                     CustomerTotal = customerTotal,
+                    ShareholderTotal = shareholderTotal,
                     HasMissingRates = hasMissingRates
                 });
             }

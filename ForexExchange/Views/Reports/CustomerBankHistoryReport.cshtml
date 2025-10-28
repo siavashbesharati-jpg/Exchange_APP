@@ -389,6 +389,18 @@ function renderReport(currencies, summary) {
                 <td colspan="2" class="text-center text-muted">داده‌ای برای نمایش وجود ندارد</td>
             </tr>`;
 
+        const shareholderRows = (currency.shareholderDetails || []).map(item => `
+            <tr>
+                <td>${item.customerName}</td>
+                <td dir="ltr">${formatValue(item.balance, currencyCode)}</td>
+            </tr>
+        `).join('') || `
+            <tr>
+                <td colspan="2" class="text-center text-muted">داده‌ای برای نمایش وجود ندارد</td>
+            </tr>`;
+
+        const hasShareholderDetails = (currency.shareholderDetails || []).length > 0;
+
         cardsContainer.innerHTML += `
             <div class="col-12 mb-4">
                 <div class="card shadow-sm border-2">
@@ -412,36 +424,45 @@ function renderReport(currencies, summary) {
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="${hasShareholderDetails ? 'col-md-3' : 'col-md-4'} mb-3">
                                 <div class="border rounded p-3 h-100 bg-light">
-                                    <h6 class="text-muted">مجموع بانک و صندوق های نقدی </h6>
+                                    <h6 class="text-muted"><i class="fas fa-university me-1"></i> بانک و صندوق نقدی</h6>
                                     <div class="fs-4 fw-bold text-primary" dir="ltr">
-                                        ${formatValue(currency.bankTotal, currencyCode)}
+                                        ${formatValue(currency.bankTotal - (currency.shareholderTotal || 0), currencyCode)}
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            ${hasShareholderDetails ? `
+                            <div class="col-md-3 mb-3">
+                                <div class="border rounded p-3 h-100" style="background: linear-gradient(135deg, #fff9e6 0%, #fffbf0 100%);">
+                                    <h6 class="text-muted"><i class="fas fa-user-tie me-1"></i> سهامداران</h6>
+                                    <div class="fs-4 fw-bold text-warning" dir="ltr">
+                                        ${formatValue(currency.shareholderTotal, currencyCode)}
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                            <div class="${hasShareholderDetails ? 'col-md-3' : 'col-md-4'} mb-3">
                                 <div class="border rounded p-3 h-100 bg-light">
-                                    <h6 class="text-muted">مجموع مشتریان</h6>
+                                    <h6 class="text-muted"><i class="fas fa-users me-1"></i> مشتریان</h6>
                                     <div class="fs-4 fw-bold text-primary" dir="ltr">
                                         ${formatValue(currency.customerTotal, currencyCode)}
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="${hasShareholderDetails ? 'col-md-3' : 'col-md-4'} mb-3">
                                 <div class="border rounded p-3 h-100 bg-light">
-                                    <h6 class="text-muted">تراز</h6>
+                                    <h6 class="text-muted"><i class="fas fa-balance-scale me-1"></i> تراز نهایی</h6>
                                     <div class="fs-4 fw-bold ${differenceClass}" dir="ltr">
                                         ${formatValue(currency.difference, currencyCode)}
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <div class="collapse mt-4" id="${collapseId}">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="text-muted mb-3">جزئیات بانک و صندوق های نقدی </h6>
+                                <div class="${hasShareholderDetails ? 'col-md-4' : 'col-md-6'}">
+                                    <h6 class="text-muted mb-3"><i class="fas fa-university me-2"></i>جزئیات بانک و صندوق های نقدی</h6>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-hover">
                                             <thead>
@@ -456,8 +477,26 @@ function renderReport(currencies, summary) {
                                         </table>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-muted mb-3">جزئیات مشتریان</h6>
+                                ${hasShareholderDetails ? `
+                                <div class="col-md-4">
+                                    <h6 class="text-warning mb-3"><i class="fas fa-user-tie me-2"></i>جزئیات سهامداران</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead class="table-warning">
+                                                <tr>
+                                                    <th>سهامدار</th>
+                                                    <th>موجودی</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${shareholderRows}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                <div class="${hasShareholderDetails ? 'col-md-4' : 'col-md-6'}">
+                                    <h6 class="text-muted mb-3"><i class="fas fa-users me-2"></i>جزئیات مشتریان</h6>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-hover">
                                             <thead>
@@ -581,36 +620,56 @@ function updateSummaryTotals(currencyCode) {
 
     summaryState.selectedCurrency = currencyCode;
 
-    totalsContainer.innerHTML = `
-        <div class="col-12 col-md-4">
+    const hasShareholderTotal = totals.shareholderTotal && totals.shareholderTotal !== 0;
+    const colWidth = hasShareholderTotal ? 'col-12 col-md-3' : 'col-12 col-md-4';
+    
+    let cardsHTML = `
+        <div class="${colWidth}">
             <div class="customer-bank-summary-card">
                 <div class="text-muted mb-2">
                     <i class="fas fa-university"></i>
-                    جمع موجودی بانک و صندوق های نقدی
+                    بانک و صندوق نقدی
                 </div>
-                <div class="fs-4 fw-bold" dir="ltr">${formatValue(totals.bankTotal, currencyCode)}</div>
+                <div class="fs-4 fw-bold" dir="ltr">${formatValue(totals.bankTotal - (totals.shareholderTotal || 0), currencyCode)}</div>
             </div>
-        </div>
-        <div class="col-12 col-md-4">
+        </div>`;
+    
+    if (hasShareholderTotal) {
+        cardsHTML += `
+        <div class="${colWidth}">
+            <div class="customer-bank-summary-card" style="background: linear-gradient(135deg, #fff9e6 0%, #fffbf0 100%); border-color: #ffc107;">
+                <div class="text-muted mb-2" style="color: #856404 !important;">
+                    <i class="fas fa-user-tie"></i>
+                    سهامداران
+                </div>
+                <div class="fs-4 fw-bold text-warning" dir="ltr">${formatValue(totals.shareholderTotal, currencyCode)}</div>
+            </div>
+        </div>`;
+    }
+    
+    cardsHTML += `
+        <div class="${colWidth}">
             <div class="customer-bank-summary-card">
                 <div class="text-muted mb-2">
                     <i class="fas fa-users"></i>
-                    جمع موجودی مشتریان
+                    مشتریان
                 </div>
                 <div class="fs-4 fw-bold" dir="ltr">${formatValue(totals.customerTotal, currencyCode)}</div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
+        <div class="${colWidth}">
             <div class="final-balance-card">
                 <div class="text-muted mb-2">
                     <i class="fas fa-balance-scale"></i>
-                    تراز نهایی (بانک و صندوق های نقدی - مشتری)
+                    تراز نهایی
                 </div>
                 <div class="fs-4 fw-bold ${totals.difference >= 0 ? 'text-success' : 'text-danger'}" dir="ltr">
                     ${formatValue(totals.difference, currencyCode)}
                 </div>
             </div>
         </div>`;
+    
+    totalsContainer.innerHTML = cardsHTML;
 
     if (warningElement) {
         warningElement.classList.toggle('d-none', !totals.hasMissingRates);

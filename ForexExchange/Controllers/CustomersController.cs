@@ -92,6 +92,7 @@ namespace ForexExchange.Controllers
                 Gender = customer.Gender,
                 Address = customer.Address,
                 IsActive = customer.IsActive,
+                IsSystem = customer.IsSystem,
                 CreatedAt = customer.CreatedAt
             };
             return View(model);
@@ -114,6 +115,7 @@ namespace ForexExchange.Controllers
                 customer.Gender = model.Gender;
                 customer.Address = model.Address ?? string.Empty;
                 customer.IsActive = model.IsActive;
+                customer.IsSystem = model.IsSystem;
                 await _context.SaveChangesAsync();
                 return RedirectToAction("Index");
             }

@@ -366,19 +366,29 @@
                 <span><i class="fas fa-chart-pie"></i> خلاصه وضعیت کل</span>
                 <span class="summary-section-pill">@summaryCurrencyName (@summaryCurrencyCode)</span>
             </div>
-            <div class="summary-cards">
+            <div class="summary-cards" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                 @if (summary != null)
                 {
                     <div class="summary-card">
-                        <h4><i class="fas fa-university"></i> جمع موجودی بانک‌ها (@summaryCurrencyCode)</h4>
-                        <div class="amount">@summary.BankTotal.FormatCurrency(summaryCurrencyCode)</div>
+                        <h4><i class="fas fa-university"></i> بانک و صندوق نقدی (@summaryCurrencyCode)</h4>
+                        <div class="amount">@((summary.BankTotal - summary.ShareholderTotal).FormatCurrency(summaryCurrencyCode))</div>
                     </div>
+                    
+                    @if (summary.ShareholderTotal != 0)
+                    {
+                        <div class="summary-card" style="background: #fff3cd !important; border-color: #ffc107 !important; -webkit-print-color-adjust: exact;">
+                            <h4 style="color: #856404 !important;"><i class="fas fa-user-tie"></i> سهامداران (@summaryCurrencyCode)</h4>
+                            <div class="amount" style="color: #856404 !important;">@summary.ShareholderTotal.FormatCurrency(summaryCurrencyCode)</div>
+                        </div>
+                    }
+                    
                     <div class="summary-card">
-                        <h4><i class="fas fa-users"></i> جمع موجودی مشتریان (@summaryCurrencyCode)</h4>
+                        <h4><i class="fas fa-users"></i> مشتریان (@summaryCurrencyCode)</h4>
                         <div class="amount">@summary.CustomerTotal.FormatCurrency(summaryCurrencyCode)</div>
                     </div>
+                    
                     <div class="summary-card final-balance-card">
-                        <h4><i class="fas fa-balance-scale"></i> تراز نهایی (بانک - مشتری) (@summaryCurrencyCode)</h4>
+                        <h4><i class="fas fa-balance-scale"></i> تراز نهایی (@summaryCurrencyCode)</h4>
                         <div class="amount" style="color: @(summary.Difference >= 0 ? "#27ae60" : "#e74c3c")">@summary.Difference.FormatCurrency(summaryCurrencyCode)</div>
                     </div>
 
@@ -448,6 +458,32 @@
                         }
                     </div>
 
+                    @if (currency.ShareholderDetails.Any())
+                    {
+                        <div style="margin-top: 15px;">
+                            <h5 style="color: #856404;"><i class="fas fa-user-tie"></i> جزئیات سهامداران</h5>
+                            <table class="details-table">
+                                <thead style="background: #fff3cd !important; color: #856404 !important;">
+                                    <tr>
+                                        <th>سهامدار</th>
+                                        <th>موجودی</th>
+                                        <th>آخرین تراکنش</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var shareholder in currency.ShareholderDetails)
+                                    {
+                                        <tr>
+                                            <td>@shareholder.CustomerName</td>
+                                            <td class="amount">@shareholder.Balance.FormatCurrency(currency.CurrencyCode)</td>
+                                            <td dir="ltr">@shareholder.LastTransactionAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
                     <div style="margin-top: 15px;">
                         <h5>جزئیات مشتریان</h5>
                         @if (!currency.CustomerDetails.Any())
@@ -478,13 +514,20 @@
                         }
                     </div>
 
-                    <div class="currency-overview" style="margin-top: 20px;">
+                    <div class="currency-overview" style="margin-top: 20px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
                         <div class="overview-card">
-                            <div class="label"><i class="fas fa-university"></i> مجموع بانک‌ها</div>
-                            <div class="value">@currency.BankTotal.FormatCurrency(currency.CurrencyCode)</div>
+                            <div class="label"><i class="fas fa-university"></i> بانک‌ها</div>
+                            <div class="value">@((currency.BankTotal - currency.ShareholderTotal).FormatCurrency(currency.CurrencyCode))</div>
                         </div>
+                        @if (currency.ShareholderTotal != 0)
+                        {
+                            <div class="overview-card" style="background: #fff3cd; border-color: #ffc107;">
+                                <div class="label" style="color: #856404;"><i class="fas fa-user-tie"></i> سهامداران</div>
+                                <div class="value" style="color: #856404;">@currency.ShareholderTotal.FormatCurrency(currency.CurrencyCode)</div>
+                            </div>
+                        }
                         <div class="overview-card">
-                            <div class="label"><i class="fas fa-users"></i> مجموع مشتریان</div>
+                            <div class="label"><i class="fas fa-users"></i> مشتریان</div>
                             <div class="value">@currency.CustomerTotal.FormatCurrency(currency.CurrencyCode)</div>
                         </div>
                         <div class="overview-card final-balance-card">
