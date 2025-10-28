@@ -2608,6 +2608,7 @@ namespace ForexExchange.Controllers
                     currencyName = currency.CurrencyName,
                     bankTotal = currency.BankTotal,
                     customerTotal = currency.CustomerTotal,
+                    shareholderTotal = currency.ShareholderTotal,
                     difference = currency.Difference,
                     bankDetails = currency.BankDetails.Select(b => new
                     {
@@ -2624,6 +2625,13 @@ namespace ForexExchange.Controllers
                         customerName = c.CustomerName,
                         balance = c.Balance,
                         lastTransactionAt = c.LastTransactionAt
+                    }),
+                    shareholderDetails = currency.ShareholderDetails.Select(s => new
+                    {
+                        customerId = s.CustomerId,
+                        customerName = s.CustomerName,
+                        balance = s.Balance,
+                        lastTransactionAt = s.LastTransactionAt
                     })
                 }).ToList();
 
@@ -2652,6 +2660,7 @@ namespace ForexExchange.Controllers
                                 currencyCode = s.CurrencyCode,
                                 bankTotal = s.BankTotal,
                                 customerTotal = s.CustomerTotal,
+                                shareholderTotal = s.ShareholderTotal,
                                 difference = s.Difference,
                                 hasMissingRates = s.HasMissingRates
                             })
