@@ -54,6 +54,8 @@ namespace ForexExchange.Services
         /// </summary>
         private readonly INotificationHub _notificationHub;
 
+        private readonly ICurrencyPoolService _currencyPoolService;
+
         /// <summary>
         /// **CONSTRUCTOR** - Initializes the central financial service with required dependencies.
         /// </summary>
@@ -61,11 +63,12 @@ namespace ForexExchange.Services
         /// <param name="logger">Logger for operation tracking and debugging</param>
         /// <param name="notificationHub">Notification hub for real-time admin notifications</param>
 
-        public CentralFinancialService(ForexDbContext context, ILogger<CentralFinancialService> logger, INotificationHub notificationHub)
+        public CentralFinancialService(ForexDbContext context, ILogger<CentralFinancialService> logger, INotificationHub notificationHub, ICurrencyPoolService currencyPoolService)
         {
             _context = context;
             _logger = logger;
             _notificationHub = notificationHub;
+            _currencyPoolService = currencyPoolService;
         }
 
 
