@@ -154,6 +154,7 @@ namespace ForexExchange.Services
             var poolBalanceFrom = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyId == order.FromCurrency.Id);
             if (poolBalanceFrom == null)
             {
+                await _currencyPoolService.CreatePoolAsync(order.FromCurrency.Id);
                 _logger.LogError($"Currency pool not found for currency {order.FromCurrency.Code}");
                 throw new Exception($"Currency pool not found for currency {order.FromCurrency.Code}");
             }
@@ -162,6 +163,7 @@ namespace ForexExchange.Services
             var poolBalanceTo = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyId == order.ToCurrency.Id);
             if (poolBalanceTo == null)
             {
+                await _currencyPoolService.CreatePoolAsync(order.ToCurrency.Id);
                 _logger.LogError($"Currency pool not found for currency {order.ToCurrency.Code}");
                 throw new Exception($"Currency pool not found for currency {order.ToCurrency.Code}");
             }

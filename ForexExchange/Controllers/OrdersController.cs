@@ -537,7 +537,7 @@ namespace ForexExchange.Controllers
 
             // Load minimal customer data for dropdown (just ID and FullName)
             var customers = _context.Customers
-                .Where(c => c.IsActive && c.IsSystem == false)
+                .Where(c => c.IsActive)
                 .OrderBy(c => c.FullName);
 
             ViewBag.Customers = customers.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
