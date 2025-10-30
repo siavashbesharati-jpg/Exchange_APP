@@ -62,7 +62,7 @@ namespace ForexExchange.Models
         public decimal Amount { get; set; }
 
         [Required]
-        [StringLength(3)]
+        [StringLength(4)]
         [Display(Name = "Currency - ارز")]
         public string CurrencyCode { get; set; } = string.Empty;
 

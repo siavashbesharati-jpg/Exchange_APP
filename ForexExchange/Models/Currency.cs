@@ -7,12 +7,12 @@ namespace ForexExchange.Models
         public int Id { get; set; }
         
         [Required]
-        [StringLength(3)]
-        public string Code { get; set; } = string.Empty; // USD, EUR, AED, etc.
+        [StringLength(4)]
+        public string Code { get; set; } = string.Empty; // USD,USDT, EUR, AED, etc.
         
         [Required]
         [StringLength(50)]
-        public string Name { get; set; } = string.Empty; // US Dollar, Euro, etc.
+        public string Name { get; set; } = string.Empty; // it uses for flag icon.
         
         [Required]
         [StringLength(50)]

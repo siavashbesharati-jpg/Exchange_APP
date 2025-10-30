@@ -45,20 +45,7 @@
                             <div class="card-header bg-light d-flex justify-content-center align-items-center">
                                 <div class="d-flex align-items-center">
                                     <span class="currency-flag me-2" style="font-size: 1.5em;">
-                                        @{
-                                            var flagEmoji = pool.Currency?.Code switch
-                                            {
-                                                "IRR" => "🇮🇷",
-                                                "USD" => "🇺🇸",
-                                                "EUR" => "🇪🇺",
-                                                "AED" => "🇦🇪",
-                                                "OMR" => "🇴🇲",
-                                                "TRY" => "🇹🇷",
-                                                "CNY" => "🇨🇳",
-                                                _ => "💱"
-                                            };
-                                        }
-                                        @flagEmoji
+                                        @pool.Currency?.Name
                                     </span>
                                     <div class="text-center">
                                         <h6 class="mb-0 fw-bold">@pool.Currency?.PersianName</h6>

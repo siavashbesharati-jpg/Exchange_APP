@@ -87,7 +87,7 @@ namespace ForexExchange.Models
         /// ارز حساب
         /// </summary>
         [Required]
-        [StringLength(3)]
+        [StringLength(4)]
         [Display(Name = "Currency - ارز")]
         public string CurrencyCode { get; set; } = "IRR";
 
