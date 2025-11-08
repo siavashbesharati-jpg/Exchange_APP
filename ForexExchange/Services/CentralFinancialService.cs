@@ -1044,8 +1044,10 @@ namespace ForexExchange.Services
                 logMessages.Add("STEP 3: Creating coherent bank account balance history...");
 
                 // Load active documents efficiently
+                // IMPORTANT: Only process verified documents (same as customer balance history)
+                // Unverified documents should not affect bank account balances
                 var activeDocuments = await _context.AccountingDocuments
-                    .Where(d => !d.IsDeleted && !d.IsFrozen)
+                    .Where(d => !d.IsDeleted && !d.IsFrozen && d.IsVerified)
                     .Select(d => new
                     {
                         d.Id,
@@ -1061,27 +1063,30 @@ namespace ForexExchange.Services
                     .OrderBy(d => d.DocumentDate)
                     .ToListAsync();
 
-                logMessages.Add($"Processing {activeDocuments.Count} active (non-deleted, non-frozen) documents and {manualBankAccountRecords.Count} manual bank account records...");
+                logMessages.Add($"Processing {activeDocuments.Count} active (non-deleted, non-frozen, verified) documents and {manualBankAccountRecords.Count} manual bank account records...");
 
                 // Create unified transaction items for bank accounts from documents and manual records
                 var bankAccountTransactionItems = new List<(int BankAccountId, string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string Description)>(activeDocuments.Count + manualBankAccountRecords.Count);
 
                 // Add document transactions (eliminated N+1 query)
+                // IMPORTANT: Normalize currency codes to UPPERCASE for consistency (handles USDT case sensitivity)
                 foreach (var d in activeDocuments)
                 {
+                    var normalizedCurrencyCode = (d.CurrencyCode ?? "").ToUpperInvariant().Trim();
+                    
                     if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue && d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
                     {
                         // Both sides are system bank accounts: create two transactions
-                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, d.Amount, d.Notes ?? string.Empty));
-                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "system bank to bank", d.Id, -(d.Amount), d.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, normalizedCurrencyCode, d.DocumentDate, "system bank to bank", d.Id, d.Amount, d.Notes ?? string.Empty));
+                        bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, normalizedCurrencyCode, d.DocumentDate, "system bank to bank", d.Id, -(d.Amount), d.Notes ?? string.Empty));
                     }
                     else
                     {
                         // Single side system bank account transactions
                         if (d.PayerType == PayerType.System && d.PayerBankAccountId.HasValue)
-                            bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "payment document", d.Id, d.Amount, d.Notes ?? string.Empty));
+                            bankAccountTransactionItems.Add((d.PayerBankAccountId.Value, normalizedCurrencyCode, d.DocumentDate, "payment document", d.Id, d.Amount, d.Notes ?? string.Empty));
                         if (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId.HasValue)
-                            bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, d.CurrencyCode, d.DocumentDate, "reciept document", d.Id, -(d.Amount), d.Notes ?? string.Empty));
+                            bankAccountTransactionItems.Add((d.ReceiverBankAccountId.Value, normalizedCurrencyCode, d.DocumentDate, "reciept document", d.Id, -(d.Amount), d.Notes ?? string.Empty));
                     }
                 }
 
