@@ -1,7 +1,7 @@
 name: 🚀 Deploy .NET App to VPS
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   deploy:
