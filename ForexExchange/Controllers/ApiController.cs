@@ -21,7 +21,7 @@ namespace ForexExchange.Controllers
             try
             {
                 var customers = await _context.Customers
-                    .Where(c => c.IsActive)
+                    .Where(c => c.IsActive && !c.IsSystem)
                     .Select(c => new { id = c.Id, fullName = c.FullName })
                     .OrderBy(c => c.fullName)
                     .ToListAsync();

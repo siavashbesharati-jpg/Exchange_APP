@@ -32,6 +32,8 @@ namespace ForexExchange.Models
         
         public bool IsSystem { get; set; } = false; // Indicates if this is a system customer (for exchange operations)
         
+        public bool IsShareHolder { get; set; } = false; // Indicates if this customer is a shareholder (سهامدار)
+        
         // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         

@@ -128,8 +128,11 @@ namespace ForexExchange.Controllers
             // Load currencies for dropdown filters
             ViewBag.Currencies = await _context.Currencies.OrderBy(c => c.Code).ToListAsync();
             
-            // Load customers for dropdown filters ordered by FullName
-            ViewBag.Customers = await _context.Customers.OrderBy(c => c.FullName).ToListAsync();
+            // Load customers for dropdown filters ordered by FullName (exclude system customers)
+            ViewBag.Customers = await _context.Customers
+                .Where(c => !c.IsSystem)
+                .OrderBy(c => c.FullName)
+                .ToListAsync();
 
 
             IQueryable<Order> ordersQuery;
@@ -535,9 +538,9 @@ namespace ForexExchange.Controllers
             // Pass currency data with RatePriority to JavaScript
             ViewBag.CurrenciesData = currencies.ToDictionary(c => c.Id, c => new { c.Code, c.Name, c.RatePriority });
 
-            // Load minimal customer data for dropdown (just ID and FullName)
+            // Load minimal customer data for dropdown (just ID and FullName) - exclude system customers
             var customers = _context.Customers
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive && !c.IsSystem)
                 .OrderBy(c => c.FullName);
 
             ViewBag.Customers = customers.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
@@ -566,7 +569,7 @@ namespace ForexExchange.Controllers
         {
             try
             {
-                var query = _context.Customers.Where(c => c.IsActive);
+                var query = _context.Customers.Where(c => c.IsActive && !c.IsSystem);
 
                 if (!string.IsNullOrEmpty(search))
                 {

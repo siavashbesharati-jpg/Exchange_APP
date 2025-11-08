@@ -1,0 +1,82 @@
+
+namespace ForexExchange.Models
+{
+    /// <summary>
+    /// ViewModel for Expenses Report (System Customers and their Bank Accounts)
+    /// مدل نمایشی برای گزارش هزینه‌ها (سهامداران و حساب‌های بانکی آنها)
+    /// </summary>
+    public class ExpensesReportViewModel
+    {
+        public DateTime DateFrom { get; set; }
+        public DateTime DateTo { get; set; }
+        public List<ExpensesReportCurrencyViewModel> Currencies { get; set; } = new();
+        public List<ExpensesReportSummaryConversionViewModel> ConvertedSummaries { get; set; } = new();
+        public string? SelectedSummaryCurrencyCode { get; set; }
+
+        public decimal TotalBankBalance => Currencies.Sum(c => c.BankTotal);
+        public decimal TotalCustomerBalance => Currencies.Sum(c => c.CustomerTotal);
+        public decimal TotalDifference => Currencies.Sum(c => c.Difference);
+
+        public bool HasData => Currencies.Any();
+
+        public ExpensesReportSummaryConversionViewModel? DefaultSummary => ConvertedSummaries
+            .OrderBy(c => c.RatePriority)
+            .ThenBy(c => c.CurrencyCode, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+
+        public ExpensesReportSummaryConversionViewModel? SelectedSummary
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(SelectedSummaryCurrencyCode))
+                {
+                    return ConvertedSummaries.FirstOrDefault(c =>
+                        string.Equals(c.CurrencyCode, SelectedSummaryCurrencyCode, StringComparison.OrdinalIgnoreCase));
+                }
+
+                return DefaultSummary;
+            }
+        }
+    }
+
+    public class ExpensesReportCurrencyViewModel
+    {
+        public string CurrencyCode { get; set; } = string.Empty;
+        public string CurrencyName { get; set; } = string.Empty;
+        public decimal BankTotal { get; set; }
+        public decimal CustomerTotal { get; set; }
+        public decimal Difference => BankTotal + CustomerTotal;
+        public List<ExpensesReportBankDetailViewModel> BankDetails { get; set; } = new();
+        public List<ExpensesReportCustomerDetailViewModel> CustomerDetails { get; set; } = new();
+    }
+
+    public class ExpensesReportBankDetailViewModel
+    {
+        public int? BankAccountId { get; set; }
+        public string BankName { get; set; } = string.Empty;
+        public string AccountNumber { get; set; } = string.Empty;
+        public string OwnerName { get; set; } = string.Empty;
+        public decimal Balance { get; set; }
+        public DateTime LastTransactionAt { get; set; }
+    }
+
+    public class ExpensesReportCustomerDetailViewModel
+    {
+        public int CustomerId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public decimal Balance { get; set; }
+        public DateTime LastTransactionAt { get; set; }
+    }
+
+    public class ExpensesReportSummaryConversionViewModel
+    {
+        public string CurrencyCode { get; set; } = string.Empty;
+        public string CurrencyName { get; set; } = string.Empty;
+        public int RatePriority { get; set; }
+        public decimal BankTotal { get; set; }
+        public decimal CustomerTotal { get; set; }
+        public decimal Difference => BankTotal + CustomerTotal;
+        public bool HasMissingRates { get; set; }
+    }
+}
+

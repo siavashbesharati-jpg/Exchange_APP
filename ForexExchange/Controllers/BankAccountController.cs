@@ -249,7 +249,7 @@ namespace ForexExchange.Controllers
             }
 
             ViewBag.Customers = await _context.Customers
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive && c.IsSystem)
                 .OrderBy(c => c.FullName)
                 .ToListAsync();
 
@@ -306,7 +306,7 @@ namespace ForexExchange.Controllers
             }
 
             ViewBag.Customers = await _context.Customers
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive && c.IsSystem)
                 .OrderBy(c => c.FullName)
                 .ToListAsync();
 

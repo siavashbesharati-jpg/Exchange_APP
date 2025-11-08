@@ -103,6 +103,8 @@ namespace ForexExchange.Models
         [Display(Name = "جنسیت")]
         public bool Gender { get; set; } = true;
 
+        [Display(Name = "سهامدار")]
+        public bool IsShareHolder { get; set; } = false;
 
         // Initial balances per currency (code -> amount). Allow negative and positive.
         public Dictionary<string, decimal> InitialBalances { get; set; } = new();
@@ -144,8 +146,11 @@ namespace ForexExchange.Models
 
         public bool Gender { get; set; } = true;
 
-        [Display(Name = "سهامدار / مشتری سیستمی")]
+        [Display(Name = "مشتری سیستمی")]
         public bool IsSystem { get; set; } = false;
+
+        [Display(Name = "سهامدار")]
+        public bool IsShareHolder { get; set; } = false;
 
         public DateTime CreatedAt { get; set; }
 

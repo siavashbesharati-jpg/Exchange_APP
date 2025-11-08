@@ -2580,6 +2580,115 @@ namespace ForexExchange.Controllers
             return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
+        // GET: Reports/ExpensesReport
+        public IActionResult ExpensesReport()
+        {
+            // Set default date range: from last year to today
+            var today = DateTime.Today;
+            var lastYear = today.AddYears(-1);
+            
+            ViewBag.DefaultDateFrom = lastYear.ToString("yyyy-MM-dd");
+            ViewBag.DefaultDateTo = today.ToString("yyyy-MM-dd");
+            
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExpensesReportPrint(DateTime dateFrom, DateTime dateTo, string? currencyCode = null)
+        {
+            var report = await BuildExpensesReportAsync(dateFrom, dateTo, currencyCode);
+            return View("~/Views/PrintViews/ExpensesReportPrint.cshtml", report);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportExpensesReportToExcel(DateTime dateFrom, DateTime dateTo, string? currencyCode = null)
+        {
+            var report = await BuildExpensesReportAsync(dateFrom, dateTo, currencyCode);
+            var fileName = $"ExpensesReport_{report.DateFrom:yyyyMMdd}_to_{report.DateTo:yyyyMMdd}.xlsx";
+            var fileContent = _excelExportService.GenerateExpensesReportExcel(report);
+
+            return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetExpensesReport(DateTime dateFrom, DateTime dateTo, string? currencyCode = null)
+        {
+            try
+            {
+                if (dateFrom > DateTime.Today)
+                {
+                    return Json(new { success = false, message = "تاریخ شروع نمی‌تواند در آینده باشد" });
+                }
+
+                if (dateTo > DateTime.Today)
+                {
+                    return Json(new { success = false, message = "تاریخ پایان نمی‌تواند در آینده باشد" });
+                }
+
+                if (dateFrom > dateTo)
+                {
+                    return Json(new { success = false, message = "تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد" });
+                }
+
+                var report = await BuildExpensesReportAsync(dateFrom, dateTo, currencyCode);
+
+                var payload = report.Currencies.Select(currency => new
+                {
+                    currencyCode = currency.CurrencyCode,
+                    currencyName = currency.CurrencyName,
+                    bankTotal = currency.BankTotal,
+                    customerTotal = currency.CustomerTotal,
+                    difference = currency.Difference,
+                    bankDetails = currency.BankDetails.Select(b => new
+                    {
+                        b.BankAccountId,
+                        b.BankName,
+                        b.AccountNumber,
+                        b.OwnerName,
+                        b.Balance,
+                        lastTransactionAt = b.LastTransactionAt.ToString("yyyy/MM/dd HH:mm")
+                    }),
+                    customerDetails = currency.CustomerDetails.Select(c => new
+                    {
+                        c.CustomerId,
+                        c.CustomerName,
+                        c.Balance,
+                        lastTransactionAt = c.LastTransactionAt.ToString("yyyy/MM/dd HH:mm")
+                    })
+                }).ToList();
+
+                var summaryPayload = report.ConvertedSummaries.Select(s => new
+                {
+                    s.CurrencyCode,
+                    s.CurrencyName,
+                    s.RatePriority,
+                    s.BankTotal,
+                    s.CustomerTotal,
+                    s.Difference,
+                    s.HasMissingRates
+                }).ToList();
+
+                return Json(new
+                {
+                    success = true,
+                    currencies = payload,
+                    summary = new
+                    {
+                        options = summaryPayload,
+                        totals = summaryPayload,
+                        selectedCurrencyCode = report.SelectedSummaryCurrencyCode
+                    },
+                    dateFrom = report.DateFrom.ToString("yyyy/MM/dd"),
+                    dateTo = report.DateTo.ToString("yyyy/MM/dd")
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting expenses report");
+                return Json(new { success = false, message = "خطا در دریافت گزارش هزینه‌ها: " + ex.Message });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetCustomerBankHistoryReport(DateTime dateFrom, DateTime dateTo, string? currencyCode = null)
         {
@@ -3077,8 +3186,9 @@ namespace ForexExchange.Controllers
                 var bankEntries = bankEntriesRaw ?? new List<BankAccountBalanceHistory>();
                 var customerEntries = customerEntriesRaw ?? new List<CustomerBalanceHistory>();
 
+                // جداسازی حساب‌های بانکی: حذف حساب‌های متعلق به سهامداران از محاسبات
                 var bankDetails = bankEntries
-                    .Where(b => b.BalanceAfter != 0)
+                    .Where(b => b.BalanceAfter != 0 && b.BankAccount?.Customer?.IsShareHolder != true)
                     .Select(b => new CustomerBankHistoryBankDetailViewModel
                     {
                         BankAccountId = b.BankAccountId,
@@ -3091,21 +3201,10 @@ namespace ForexExchange.Controllers
                     .OrderByDescending(b => b.Balance)
                     .ToList();
 
-                // جداسازی سهامداران (IsSystem = true) از مشتریان عادی
-                var systemCustomerDetails = customerEntries
-                    .Where(c => c.BalanceAfter != 0 && c.Customer?.IsSystem == true)
-                    .Select(c => new CustomerBankHistoryCustomerDetailViewModel
-                    {
-                        CustomerId = c.CustomerId,
-                        CustomerName = c.Customer?.FullName ?? "نامشخص",
-                        Balance = c.BalanceAfter,
-                        LastTransactionAt = c.TransactionDate
-                    })
-                    .OrderByDescending(c => c.Balance)
-                    .ToList();
-
+                // فیلتر کردن سهامداران (IsShareHolder = true) از مشتریان عادی
+                // سهامداران در این گزارش نمایش داده نمی‌شوند
                 var customerDetails = customerEntries
-                    .Where(c => c.BalanceAfter != 0 && c.Customer?.IsSystem != true)
+                    .Where(c => c.BalanceAfter != 0 && c.Customer?.IsShareHolder != true)
                     .Select(c => new CustomerBankHistoryCustomerDetailViewModel
                     {
                         CustomerId = c.CustomerId,
@@ -3116,11 +3215,11 @@ namespace ForexExchange.Controllers
                     .OrderByDescending(c => c.Balance)
                     .ToList();
 
-                // موجودی سهامداران به عنوان سرمایه شرکت به بانک‌ها اضافه می‌شود
-                var systemCustomerTotal = systemCustomerDetails.Sum(s => s.Balance);
-                var adjustedBankTotal = bankDetails.Sum(b => b.Balance) + systemCustomerTotal;
+                // حساب‌های بانکی سهامداران از محاسبات حذف شده‌اند
+                // فقط حساب‌های بانکی غیرسهامدار در محاسبات لحاظ می‌شوند
+                var bankTotal = bankDetails.Sum(b => b.Balance);
 
-                if (!bankDetails.Any() && !customerDetails.Any() && !systemCustomerDetails.Any())
+                if (!bankDetails.Any() && !customerDetails.Any())
                 {
                     continue;
                 }
@@ -3129,23 +3228,23 @@ namespace ForexExchange.Controllers
                 {
                     CurrencyCode = currency.Code,
                     CurrencyName = currency.PersianName ?? currency.Name ?? currency.Code,
-                    BankTotal = adjustedBankTotal,  // بانک‌ها + سهامداران
-                    CustomerTotal = customerDetails.Sum(c => c.Balance),  // فقط مشتریان عادی
-                    ShareholderTotal = systemCustomerTotal,  // موجودی سهامداران
+                    BankTotal = bankTotal,  // فقط حساب‌های بانکی غیرسهامدار (سهامداران حذف شده‌اند)
+                    CustomerTotal = customerDetails.Sum(c => c.Balance),  // فقط مشتریان عادی (سهامداران حذف شده‌اند)
+                    ShareholderTotal = 0,  // دیگر نمایش داده نمی‌شود
                     BankDetails = bankDetails,
                     CustomerDetails = customerDetails,
-                    ShareholderDetails = systemCustomerDetails  // جزئیات سهامداران
+                    ShareholderDetails = new List<CustomerBankHistoryCustomerDetailViewModel>()  // دیگر نمایش داده نمی‌شود
                 });
             }
 
             // Build converted summaries for different currencies
+            // سهامداران از محاسبات خلاصه حذف شده‌اند
             foreach (var targetCurrency in currencies
                 .OrderBy(c => c.RatePriority)
                 .ThenBy(c => c.DisplayOrder))
             {
                 decimal bankTotal = 0;
                 decimal customerTotal = 0;
-                decimal shareholderTotal = 0;
                 var hasMissingRates = false;
 
                 foreach (var entry in model.Currencies)
@@ -3160,7 +3259,6 @@ namespace ForexExchange.Controllers
                     {
                         bankTotal += entry.BankTotal;
                         customerTotal += entry.CustomerTotal;
-                        shareholderTotal += entry.ShareholderTotal;
                         continue;
                     }
 
@@ -3177,13 +3275,6 @@ namespace ForexExchange.Controllers
                     {
                         hasMissingRates = true;
                     }
-
-                    var shareholderConversion = _currencyConversionService.ConvertAmount(entry.ShareholderTotal, sourceCurrency.Id, targetCurrency.Id);
-                    shareholderTotal += shareholderConversion;
-                    if (entry.ShareholderTotal != 0 && shareholderConversion == 0)
-                    {
-                        hasMissingRates = true;
-                    }
                 }
 
                 model.ConvertedSummaries.Add(new CustomerBankHistorySummaryConversionViewModel
@@ -3191,14 +3282,216 @@ namespace ForexExchange.Controllers
                     CurrencyCode = targetCurrency.Code,
                     CurrencyName = targetCurrency.PersianName ?? targetCurrency.Name ?? targetCurrency.Code,
                     RatePriority = targetCurrency.RatePriority,
-                    BankTotal = bankTotal,
-                    CustomerTotal = customerTotal,
-                    ShareholderTotal = shareholderTotal,
+                    BankTotal = bankTotal,  // بدون سهامداران
+                    CustomerTotal = customerTotal,  // بدون سهامداران
+                    ShareholderTotal = 0,  // دیگر استفاده نمی‌شود
                     HasMissingRates = hasMissingRates
                 });
             }
 
             CustomerBankHistorySummaryConversionViewModel? selectedSummary = null;
+            if (!string.IsNullOrWhiteSpace(preferredCurrencyCode))
+            {
+                selectedSummary = model.ConvertedSummaries.FirstOrDefault(s =>
+                    string.Equals(s.CurrencyCode, preferredCurrencyCode, StringComparison.OrdinalIgnoreCase));
+            }
+
+            model.SelectedSummaryCurrencyCode = selectedSummary?.CurrencyCode
+                ?? model.DefaultSummary?.CurrencyCode;
+
+            return model;
+        }
+
+        private async Task<ExpensesReportViewModel> BuildExpensesReportAsync(DateTime dateFrom, DateTime dateTo, string? preferredCurrencyCode = null)
+        {
+            // Normalize dates to date-only (no time component)
+            var startDate = dateFrom.Date;
+            var endDate = dateTo.Date;
+
+            if (startDate > DateTime.Today)
+            {
+                startDate = DateTime.Today;
+            }
+
+            if (endDate > DateTime.Today)
+            {
+                endDate = DateTime.Today;
+            }
+
+            if (startDate > endDate)
+            {
+                (startDate, endDate) = (endDate, startDate);
+            }
+
+            // Set time boundaries: end at 23:59:59 for the end date
+            var endDateTime = new DateTime(endDate.Year, endDate.Month, endDate.Day, 23, 59, 59);
+
+            var currencies = await _context.Currencies
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.DisplayOrder)
+                .Select(c => new
+                {
+                    c.Id,
+                    c.Code,
+                    c.Name,
+                    c.PersianName,
+                    c.DisplayOrder,
+                    c.RatePriority
+                })
+                .ToListAsync();
+
+            var currencyLookup = currencies.ToDictionary(c => c.Code, StringComparer.OrdinalIgnoreCase);
+
+            // Get latest bank balances for system customers (IsSystem = true) up to end date
+            var latestBankBalances = await _context.BankAccountBalanceHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate <= endDateTime)
+                .Include(h => h.BankAccount)
+                    .ThenInclude(ba => ba.Customer)
+                .GroupBy(h => h.BankAccountId)
+                .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                              .ThenByDescending(h => h.Id)
+                              .First())
+                .ToListAsync();
+
+            // Filter bank accounts that belong to shareholders (IsShareHolder = true)
+            var bankGroups = latestBankBalances
+                .Where(h => h.BankAccount != null 
+                    && h.BankAccount.Customer != null 
+                    && h.BankAccount.Customer.IsShareHolder == true
+                    && !string.IsNullOrEmpty(h.BankAccount.CurrencyCode))
+                .GroupBy(h => h.BankAccount.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            // Get latest customer balances for shareholders (IsShareHolder = true) up to end date
+            var latestCustomerBalances = await _context.CustomerBalanceHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate <= endDateTime)
+                .Include(h => h.Customer)
+                .GroupBy(h => new { h.CustomerId, h.CurrencyCode })
+                .Select(g => g.OrderByDescending(h => h.TransactionDate)
+                              .ThenByDescending(h => h.Id)
+                              .First())
+                .ToListAsync();
+
+            // Filter for shareholders only
+            var customerGroups = latestCustomerBalances
+                .Where(h => h.Customer != null 
+                    && h.Customer.IsShareHolder == true
+                    && !string.IsNullOrEmpty(h.CurrencyCode))
+                .GroupBy(h => h.CurrencyCode)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var model = new ExpensesReportViewModel
+            {
+                DateFrom = startDate,
+                DateTo = endDate
+            };
+
+            foreach (var currency in currencies)
+            {
+                bankGroups.TryGetValue(currency.Code, out var bankEntriesRaw);
+                customerGroups.TryGetValue(currency.Code, out var customerEntriesRaw);
+
+                var bankEntries = bankEntriesRaw ?? new List<BankAccountBalanceHistory>();
+                var customerEntries = customerEntriesRaw ?? new List<CustomerBalanceHistory>();
+
+                // حساب‌های بانکی متعلق به سهامداران (سیستم کاستمرها)
+                var bankDetails = bankEntries
+                    .Where(b => b.BalanceAfter != 0)
+                    .Select(b => new ExpensesReportBankDetailViewModel
+                    {
+                        BankAccountId = b.BankAccountId,
+                        BankName = b.BankAccount?.BankName ?? "نامشخص",
+                        AccountNumber = b.BankAccount?.AccountNumber ?? string.Empty,
+                        OwnerName = b.BankAccount?.Customer?.FullName ?? string.Empty,
+                        Balance = b.BalanceAfter,
+                        LastTransactionAt = b.TransactionDate
+                    })
+                    .OrderByDescending(b => b.Balance)
+                    .ToList();
+
+                // موجودی سهامداران (سیستم کاستمرها)
+                var customerDetails = customerEntries
+                    .Where(c => c.BalanceAfter != 0)
+                    .Select(c => new ExpensesReportCustomerDetailViewModel
+                    {
+                        CustomerId = c.CustomerId,
+                        CustomerName = c.Customer?.FullName ?? "نامشخص",
+                        Balance = c.BalanceAfter,
+                        LastTransactionAt = c.TransactionDate
+                    })
+                    .OrderByDescending(c => c.Balance)
+                    .ToList();
+
+                var bankTotal = bankDetails.Sum(b => b.Balance);
+                var customerTotal = customerDetails.Sum(c => c.Balance);
+
+                if (!bankDetails.Any() && !customerDetails.Any())
+                {
+                    continue;
+                }
+
+                model.Currencies.Add(new ExpensesReportCurrencyViewModel
+                {
+                    CurrencyCode = currency.Code,
+                    CurrencyName = currency.PersianName ?? currency.Name ?? currency.Code,
+                    BankTotal = bankTotal,
+                    CustomerTotal = customerTotal,
+                    BankDetails = bankDetails,
+                    CustomerDetails = customerDetails
+                });
+            }
+
+            // Build converted summaries for different currencies
+            foreach (var targetCurrency in currencies
+                .OrderBy(c => c.RatePriority)
+                .ThenBy(c => c.DisplayOrder))
+            {
+                decimal bankTotal = 0;
+                decimal customerTotal = 0;
+                var hasMissingRates = false;
+
+                foreach (var entry in model.Currencies)
+                {
+                    if (!currencyLookup.TryGetValue(entry.CurrencyCode, out var sourceCurrency))
+                    {
+                        hasMissingRates = true;
+                        continue;
+                    }
+
+                    if (sourceCurrency.Id == targetCurrency.Id)
+                    {
+                        bankTotal += entry.BankTotal;
+                        customerTotal += entry.CustomerTotal;
+                        continue;
+                    }
+
+                    var bankConversion = _currencyConversionService.ConvertAmount(entry.BankTotal, sourceCurrency.Id, targetCurrency.Id);
+                    bankTotal += bankConversion;
+                    if (entry.BankTotal != 0 && bankConversion == 0)
+                    {
+                        hasMissingRates = true;
+                    }
+
+                    var customerConversion = _currencyConversionService.ConvertAmount(entry.CustomerTotal, sourceCurrency.Id, targetCurrency.Id);
+                    customerTotal += customerConversion;
+                    if (entry.CustomerTotal != 0 && customerConversion == 0)
+                    {
+                        hasMissingRates = true;
+                    }
+                }
+
+                model.ConvertedSummaries.Add(new ExpensesReportSummaryConversionViewModel
+                {
+                    CurrencyCode = targetCurrency.Code,
+                    CurrencyName = targetCurrency.PersianName ?? targetCurrency.Name ?? targetCurrency.Code,
+                    RatePriority = targetCurrency.RatePriority,
+                    BankTotal = bankTotal,
+                    CustomerTotal = customerTotal,
+                    HasMissingRates = hasMissingRates
+                });
+            }
+
+            ExpensesReportSummaryConversionViewModel? selectedSummary = null;
             if (!string.IsNullOrWhiteSpace(preferredCurrencyCode))
             {
                 selectedSummary = model.ConvertedSummaries.FirstOrDefault(s =>
@@ -3222,7 +3515,7 @@ namespace ForexExchange.Controllers
                 _logger.LogInformation("Calculating customer balances for date: {Date} using CustomerBalanceHistory", date);
 
                 var customers = await _context.Customers
-                    .Where(c => c.IsActive)
+                    .Where(c => c.IsActive && !c.IsSystem)
                     .ToListAsync();
 
                 _logger.LogInformation("Found {Count} active customers", customers.Count);

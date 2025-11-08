@@ -112,6 +112,19 @@
             </div>
         </div>
 
+        <!-- Expenses Report -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card report-card expenses-report-card h-100 shadow-sm border-0" onclick="navigateToReport('expenses')">
+                <div class="card-body text-center p-4">
+                    <div class="report-icon mb-3">
+                        <i class="fas fa-receipt text-white"></i>
+                    </div>
+                    <h5 class="card-title fw-bold text-white">گزارش هزینه‌ها</h5>
+                    <p class="text-white-50 small">گزارش سهامداران و حساب‌های بانکی آنها با فیلتر بازه زمانی</p>
+                </div>
+            </div>
+        </div>
+
          
 
        
@@ -199,6 +212,20 @@
     color: white;
 }
 
+.expenses-report-card {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: white;
+    border: 3px solid #ee5a6f;
+}
+
+.expenses-report-card:hover {
+    border-color: #dc4a5f;
+}
+
+.expenses-report-card .card-title {
+    color: white;
+}
+
 @@media (max-width: 768px) {
     .report-card {
         margin-bottom: 1rem;
@@ -259,6 +286,9 @@ function navigateToReport(type) {
             break;
         case 'customerbankhistory':
             url = '@Url.Action("CustomerBankHistoryReport", "Reports")';
+            break;
+        case 'expenses':
+            url = '@Url.Action("ExpensesReport", "Reports")';
             break;
         default:
             url = '@Url.Action("CustomerReports", "Reports")';

@@ -82,11 +82,25 @@
                             <div class="form-check">
                                 <input asp-for="IsSystem" class="form-check-input" type="checkbox" id="isSystemCheck" />
                                 <label asp-for="IsSystem" class="form-check-label" for="isSystemCheck">
-                                    <strong class="text-primary">سهامدار / مشتری سیستمی</strong>
+                                    <strong class="text-primary">مشتری سیستمی
+</strong>
                                 </label>
                                 <small class="form-text text-muted d-block mt-1">
                                     <i class="fas fa-info-circle"></i> 
-                                    سهامداران در گزارش‌های مشتریان نمایش داده نمی‌شوند و موجودی آنها به عنوان سرمایه شرکت محاسبه می‌شود.
+                                    مشتریان سیستمی برای عملیات داخلی سیستم استفاده می‌شوند.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsShareHolder" class="form-check-input" type="checkbox" id="isShareHolderCheck" />
+                                <label asp-for="IsShareHolder" class="form-check-label" for="isShareHolderCheck">
+                                    <strong class="text-warning">سهامدار</strong>
+                                </label>
+                                <small class="form-text text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle"></i> 
+                                    سهامداران در گزارش "تراز کلی" نمایش داده نمی‌شوند و در گزارش "هزینه‌ها" نمایش داده می‌شوند.
                                 </small>
                             </div>
                         </div>

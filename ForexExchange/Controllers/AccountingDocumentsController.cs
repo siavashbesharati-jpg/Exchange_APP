@@ -186,7 +186,7 @@ namespace ForexExchange.Controllers
 
             // Load customers list for filter dropdown
             var customers = await _context.Customers
-                .Where(c => c.IsActive && c.IsSystem == false)
+                .Where(c => c.IsActive && !c.IsSystem)
                 .OrderBy(c => c.FullName)
                 .ToListAsync();
 
@@ -271,7 +271,7 @@ namespace ForexExchange.Controllers
         // GET: AccountingDocuments/Upload
         public IActionResult Upload()
         {
-            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive  ).ToList();
+            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View();
@@ -349,7 +349,7 @@ namespace ForexExchange.Controllers
                     }
                     
                     TempData["ErrorMessage"] = "حجم فایل نمی‌تواند بیشتر از 10 مگابایت باشد.";
-                    ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+                    ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
                     ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
                     ViewData["BankAccounts"] = _context.BankAccounts.ToList();
                     return View(accountingDocument);
@@ -368,7 +368,7 @@ namespace ForexExchange.Controllers
                     }
                     
                     TempData["ErrorMessage"] = "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX";
-                    ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && c.IsSystem == false).ToList();
+                    ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
                     ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
                     ViewData["BankAccounts"] = _context.BankAccounts.ToList();
                     return View(accountingDocument);
@@ -458,7 +458,7 @@ namespace ForexExchange.Controllers
                 return Json(new { success = false, message = "لطفاً خطاهای اعتبارسنجی را بررسی کنید.", errors = GetModelStateErrors() });
             }
 
-            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
+            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View(accountingDocument);
@@ -497,7 +497,7 @@ namespace ForexExchange.Controllers
                 return NotFound();
             }
 
-            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
+            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View(accountingDocument);
@@ -561,7 +561,7 @@ namespace ForexExchange.Controllers
                         if (documentFile.Length > 10 * 1024 * 1024)
                         {
                             ModelState.AddModelError("documentFile", "حجم فایل نمی‌تواند بیشتر از ۱۰ مگابایت باشد.");
-                            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
+                            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
                             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
                             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
                             return View(accountingDocument);
@@ -573,7 +573,7 @@ namespace ForexExchange.Controllers
                         if (!allowedExtensions.Contains(fileExtension))
                         {
                             ModelState.AddModelError("documentFile", "فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, JPG, PNG, DOC, DOCX");
-                            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
+                            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
                             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
                             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
                             return View(accountingDocument);
@@ -646,7 +646,7 @@ namespace ForexExchange.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive).ToList();
+            ViewData["Customers"] = _context.Customers.Where(c => c.IsActive && !c.IsSystem).ToList();
             ViewData["Currencies"] = _context.Currencies.Where(c => c.IsActive).ToList();
             ViewData["BankAccounts"] = _context.BankAccounts.ToList();
             return View(accountingDocument);

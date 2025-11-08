@@ -39,7 +39,7 @@ namespace ForexExchange.Controllers
         public async Task<IActionResult> Index()
         {
             var customers = await _context.Customers
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive && !c.IsSystem)
                 .OrderBy(c => c.FullName)
                 .ToListAsync();
 
@@ -67,6 +67,7 @@ namespace ForexExchange.Controllers
                     Gender = model.Gender,
                     Address = model.Address ?? string.Empty,
                     IsActive = model.IsActive,
+                    IsShareHolder = model.IsShareHolder,
                     CreatedAt = DateTime.Now
                 };
                 _context.Customers.Add(customer);
@@ -93,6 +94,7 @@ namespace ForexExchange.Controllers
                 Address = customer.Address,
                 IsActive = customer.IsActive,
                 IsSystem = customer.IsSystem,
+                IsShareHolder = customer.IsShareHolder,
                 CreatedAt = customer.CreatedAt
             };
             return View(model);
@@ -116,6 +118,7 @@ namespace ForexExchange.Controllers
                 customer.Address = model.Address ?? string.Empty;
                 customer.IsActive = model.IsActive;
                 customer.IsSystem = model.IsSystem;
+                customer.IsShareHolder = model.IsShareHolder;
                 await _context.SaveChangesAsync();
                 return RedirectToAction("Index");
             }

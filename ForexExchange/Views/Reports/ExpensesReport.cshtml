@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "گزارش تاریخچه بانک و صندوق های نقدی و مشتری";
+    ViewData["Title"] = "گزارش هزینه‌ها";
 }
 
 <style>
@@ -127,7 +127,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h2><i class="fas fa-history text-primary me-2"></i>گزارش تاریخچه بانک و صندوق های نقدی و مشتری</h2>
+                <h2><i class="fas fa-receipt text-primary me-2"></i>گزارش هزینه‌ها</h2>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <label for="reportDateFrom" class="form-label me-2 mb-0">از تاریخ:</label>
                     <input type="date" class="form-control" id="reportDateFrom" style="width: auto;" value="@ViewBag.DefaultDateFrom">
@@ -135,15 +135,15 @@
                     <label for="reportDateTo" class="form-label me-2 mb-0 ms-3">تا تاریخ:</label>
                     <input type="date" class="form-control" id="reportDateTo" style="width: auto;" value="@ViewBag.DefaultDateTo">
                     
-                    <button type="button" class="btn btn-outline-success" onclick="openCustomerBankHistoryReportPrint()">
+                    <button type="button" class="btn btn-outline-success" onclick="openExpensesReportPrint()">
                         <i class="fas fa-print me-1"></i>
                         چاپ گزارش
                     </button>
-                    <button type="button" class="btn btn-outline-info" onclick="downloadCustomerBankHistoryReportExcel()">
+                    <button type="button" class="btn btn-outline-info" onclick="downloadExpensesReportExcel()">
                         <i class="fas fa-file-excel me-1"></i>
                         خروجی اکسل
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="loadCustomerBankHistoryReport()">
+                    <button type="button" class="btn btn-primary" onclick="loadExpensesReport()">
                         <i class="fas fa-search me-1"></i>
                         جستجو
                     </button>
@@ -203,7 +203,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // Load the report with the default dates set by backend
-    loadCustomerBankHistoryReport();
+    loadExpensesReport();
 });
 
 function setDateRange(range) {
@@ -258,10 +258,10 @@ function setDateRange(range) {
     dateFrom.value = startDate.toISOString().split('T')[0];
     dateTo.value = endDate.toISOString().split('T')[0];
     
-    loadCustomerBankHistoryReport();
+    loadExpensesReport();
 }
 
-function loadCustomerBankHistoryReport() {
+function loadExpensesReport() {
     const dateFrom = document.getElementById('reportDateFrom').value;
     const dateTo = document.getElementById('reportDateTo').value;
     
@@ -281,17 +281,17 @@ function loadCustomerBankHistoryReport() {
     toggleLoading(true);
     hideError();
 
-    const selectedCurrency = window.customerBankHistoryReportSummary?.selectedCurrency;
+    const selectedCurrency = window.expensesReportSummary?.selectedCurrency;
     const query = new URLSearchParams({ dateFrom, dateTo });
     if (selectedCurrency) {
         query.append('currencyCode', selectedCurrency);
     }
 
-    fetch(`/Reports/GetCustomerBankHistoryReport?${query.toString()}`)
+    fetch(`/Reports/GetExpensesReport?${query.toString()}`)
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
-                showError(data.message || 'خطا در دریافت گزارش تاریخچه');
+                showError(data.message || 'خطا در دریافت گزارش هزینه‌ها');
                 toggleLoading(false);
                 return;
             }
@@ -305,7 +305,7 @@ function loadCustomerBankHistoryReport() {
         });
 }
 
-function openCustomerBankHistoryReportPrint() {
+function openExpensesReportPrint() {
     const dateFrom = document.getElementById('reportDateFrom').value;
     const dateTo = document.getElementById('reportDateTo').value;
     
@@ -314,17 +314,17 @@ function openCustomerBankHistoryReportPrint() {
         return;
     }
 
-    const selectedCurrency = window.customerBankHistoryReportSummary?.selectedCurrency;
+    const selectedCurrency = window.expensesReportSummary?.selectedCurrency;
     const query = new URLSearchParams({ dateFrom, dateTo });
     if (selectedCurrency) {
         query.append('currencyCode', selectedCurrency);
     }
 
-    const url = `/Reports/CustomerBankHistoryReportPrint?${query.toString()}`;
+    const url = `/Reports/ExpensesReportPrint?${query.toString()}`;
     window.open(url, '_blank', 'noopener');
 }
 
-function downloadCustomerBankHistoryReportExcel() {
+function downloadExpensesReportExcel() {
     const dateFrom = document.getElementById('reportDateFrom').value;
     const dateTo = document.getElementById('reportDateTo').value;
     
@@ -333,13 +333,13 @@ function downloadCustomerBankHistoryReportExcel() {
         return;
     }
 
-    const selectedCurrency = window.customerBankHistoryReportSummary?.selectedCurrency;
+    const selectedCurrency = window.expensesReportSummary?.selectedCurrency;
     const query = new URLSearchParams({ dateFrom, dateTo });
     if (selectedCurrency) {
         query.append('currencyCode', selectedCurrency);
     }
 
-    const url = `/Reports/ExportCustomerBankHistoryReportToExcel?${query.toString()}`;
+    const url = `/Reports/ExportExpensesReportToExcel?${query.toString()}`;
     window.location.href = url;
 }
 
@@ -407,7 +407,7 @@ function renderReport(currencies, summary) {
                                 <i class="fas ${differenceIcon} me-1"></i>
                                 ${formatValue(currency.difference, currencyCode)}
                             </div>
-                            <small class="text-muted">تراز نهایی (بانک و صندوق های نقدی - مشتری)</small>
+                            <small class="text-muted">تراز نهایی (بانک و صندوق های نقدی - سهامداران)</small>
                         </div>
                     </div>
                     <div class="card-body">
@@ -422,7 +422,7 @@ function renderReport(currencies, summary) {
                             </div>
                             <div class="col-md-4 mb-3">
                                 <div class="border rounded p-3 h-100 bg-light">
-                                    <h6 class="text-muted"><i class="fas fa-users me-1"></i> مشتریان</h6>
+                                    <h6 class="text-muted"><i class="fas fa-user-tie me-1"></i> سهامداران</h6>
                                     <div class="fs-4 fw-bold text-primary" dir="ltr">
                                         ${formatValue(currency.customerTotal, currencyCode)}
                                     </div>
@@ -456,12 +456,12 @@ function renderReport(currencies, summary) {
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <h6 class="text-muted mb-3"><i class="fas fa-users me-2"></i>جزئیات مشتریان</h6>
+                                    <h6 class="text-muted mb-3"><i class="fas fa-user-tie me-2"></i>جزئیات سهامداران</h6>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-hover">
                                             <thead>
                                                 <tr>
-                                                    <th>مشتری</th>
+                                                    <th>سهامدار</th>
                                                     <th>موجودی</th>
                                                 </tr>
                                             </thead>
@@ -487,7 +487,7 @@ function renderSummary(summary) {
     if (!summary || !Array.isArray(summary.options) || !summary.options.length) {
         summaryContainer.classList.add('d-none');
         summaryContainer.innerHTML = '';
-        window.customerBankHistoryReportSummary = null;
+        window.expensesReportSummary = null;
         return;
     }
 
@@ -537,7 +537,7 @@ function renderSummary(summary) {
             </div>
         </div>`;
 
-    window.customerBankHistoryReportSummary = {
+    window.expensesReportSummary = {
         totals: totalsLookup,
         options,
         selectedCurrency: selectedCurrencyCode
@@ -549,7 +549,7 @@ function renderSummary(summary) {
 }
 
 function updateSummaryTotals(currencyCode) {
-    const summaryState = window.customerBankHistoryReportSummary;
+    const summaryState = window.expensesReportSummary;
     const totalsContainer = document.getElementById('summaryTotals');
     const warningElement = document.getElementById('summaryMissingRates');
 
@@ -595,8 +595,8 @@ function updateSummaryTotals(currencyCode) {
         <div class="${colWidth}">
             <div class="customer-bank-summary-card">
                 <div class="text-muted mb-2">
-                    <i class="fas fa-users"></i>
-                    مشتریان
+                    <i class="fas fa-user-tie"></i>
+                    سهامداران
                 </div>
                 <div class="fs-4 fw-bold" dir="ltr">${formatValue(totals.customerTotal, currencyCode)}</div>
             </div>
@@ -663,3 +663,4 @@ function formatValue(value, currencyCode) {
     return numericValue < 0 && !result.startsWith('-') ? `-${result}` : result;
 }
 </script>
+

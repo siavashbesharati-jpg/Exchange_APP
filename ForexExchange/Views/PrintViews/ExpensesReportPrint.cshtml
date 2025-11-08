@@ -1,7 +1,7 @@
-@model ForexExchange.Models.CustomerBankHistoryReportViewModel
+@model ForexExchange.Models.ExpensesReportViewModel
 @inject ForexExchange.Services.ISettingsService SettingsService
 @{
-    ViewData["Title"] = "گزارش تاریخچه بانک و مشتری";
+    ViewData["Title"] = "گزارش هزینه‌ها";
     Layout = null;
 
     var websiteName = await SettingsService.GetWebsiteNameAsync();
@@ -337,7 +337,7 @@
                 <div class="company-name">@companyName</div>
                 <div class="company-website">@companyWebsite</div>
             </div>
-            <div class="report-title">گزارش تاریخچه بانک و مشتری</div>
+            <div class="report-title">گزارش هزینه‌ها</div>
         </div>
 
         <div class="receipt-info">
@@ -375,7 +375,7 @@
                     </div>
                     
                     <div class="summary-card">
-                        <h4><i class="fas fa-users"></i> مشتریان (@summaryCurrencyCode)</h4>
+                        <h4><i class="fas fa-user-tie"></i> سهامداران (@summaryCurrencyCode)</h4>
                         <div class="amount">@summary.CustomerTotal.FormatCurrency(summaryCurrencyCode)</div>
                     </div>
                     
@@ -450,9 +450,8 @@
                         }
                     </div>
 
-
                     <div style="margin-top: 15px;">
-                        <h5>جزئیات مشتریان</h5>
+                        <h5>جزئیات سهامداران</h5>
                         @if (!currency.CustomerDetails.Any())
                         {
                             <div class="no-data">داده‌ای برای نمایش وجود ندارد.</div>
@@ -462,7 +461,7 @@
                             <table class="details-table">
                                 <thead>
                                     <tr>
-                                        <th>مشتری</th>
+                                        <th>سهامدار</th>
                                         <th>موجودی</th>
                                         <th>آخرین تراکنش</th>
                                     </tr>
@@ -487,7 +486,7 @@
                             <div class="value">@currency.BankTotal.FormatCurrency(currency.CurrencyCode)</div>
                         </div>
                         <div class="overview-card">
-                            <div class="label"><i class="fas fa-users"></i> مشتریان</div>
+                            <div class="label"><i class="fas fa-user-tie"></i> سهامداران</div>
                             <div class="value">@currency.CustomerTotal.FormatCurrency(currency.CurrencyCode)</div>
                         </div>
                         <div class="overview-card final-balance-card">
@@ -531,3 +530,4 @@
     </script>
 </body>
 </html>
+
