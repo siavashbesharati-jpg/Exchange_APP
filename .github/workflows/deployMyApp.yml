@@ -1,68 +1,82 @@
-name: "🚀 Deploy My App (Debug Logs Enabled)"
+name: "🚀 Deploy My App with Debug"
+
 on:
   push:
-    branches: [ master ]
+    branches: [ master ]  # make sure this is your real main branch
 
 jobs:
   deploy:
-    runs-on: [self-hosted, Linux, X64]
-    steps:
+    runs-on: [self-hosted, linux, x64]
 
-      # Step 1: Checkout the code
-      - name: Checkout code
+    steps:
+      # -----------------------------
+      # 1️⃣ Checkout code
+      # -----------------------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Show environment info for debugging
-      - name: Debug Environment
+      # -----------------------------
+      # 2️⃣ Debug environment
+      # -----------------------------
+      - name: Debug runner environment
         run: |
-          echo "Running on:"
-          uname -a
-          echo "Current directory:"
-          pwd
-          echo "Disk usage:"
-          df -h
-          echo "Free memory:"
-          free -h
-          echo "User:"
+          echo "===== DEBUG INFO ====="
           whoami
-          echo "List files in repo root:"
-          ls -la
+          pwd
+          echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}"
+          echo "PROJECT_PATH=${{ vars.PROJECT_PATH }}"
+          echo "SERVER_USER=${{ secrets.SERVER_USER }}"
+          echo "SERVER_IP=${{ secrets.SERVER_IP }}"
+          echo "======================"
 
-      # Step 3: Build .NET app with full logs
-      - name: Build .NET app
+      # -----------------------------
+      # 3️⃣ Build .NET app
+      # -----------------------------
+      - name: Build .NET application
         run: |
-          dotnet --info
-          dotnet restore
-          dotnet publish -c Release -o publish --verbosity detailed
+          set -x  # print each command
+          dotnet publish -c Release -o publish
 
-      # Step 4: Stop .NET service
+      # -----------------------------
+      # 4️⃣ Stop the .NET service
+      # -----------------------------
       - name: Stop .NET service
         run: |
-          echo "Stopping service: ${{ vars.SERVICE_NAME }}"
-          sudo systemctl stop ${{ vars.SERVICE_NAME }}
-          sudo systemctl status ${{ vars.SERVICE_NAME }} --no-pager
+          set -x
+          sudo systemctl stop ${{ vars.SERVICE_NAME }} || echo "Service might not exist yet"
 
-      # Step 5: Upload changed files with rsync verbose
-      - name: Upload changed files
+      # -----------------------------
+      # 5️⃣ Upload changed files via rsync
+      # -----------------------------
+      - name: Upload changed files to server
         run: |
-          echo "Uploading to ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}"
-          rsync -avzh --progress --delete publish/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}
+          set -x
+          rsync -avz --delete publish/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}
 
-      # Step 6: Start .NET service
+      # -----------------------------
+      # 6️⃣ Start the .NET service
+      # -----------------------------
       - name: Start .NET service
         run: |
-          echo "Starting service: ${{ vars.SERVICE_NAME }}"
+          set -x
           sudo systemctl start ${{ vars.SERVICE_NAME }}
-          sudo systemctl status ${{ vars.SERVICE_NAME }} --no-pager
 
-      # Step 7: Verify service status
+      # -----------------------------
+      # 7️⃣ Verify service status
+      # -----------------------------
       - name: Verify service status
         run: |
+          set -x
           STATUS=$(systemctl is-active ${{ vars.SERVICE_NAME }})
           echo "Service status: $STATUS"
           if [ "$STATUS" != "active" ]; then
             echo "❌ Service failed to start!"
             exit 1
-          else
-            echo "✅ Service is running"
           fi
+
+      # -----------------------------
+      # 8️⃣ Optional: List deployed files
+      # -----------------------------
+      - name: List deployed files on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "ls -la ${{ vars.PROJECT_PATH }}"
