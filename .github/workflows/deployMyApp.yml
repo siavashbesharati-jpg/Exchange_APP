@@ -1,13 +1,68 @@
-name: "Debug Runner"
-
+name: "🚀 Deploy My App (Debug Logs Enabled)"
 on:
   push:
-    branches: [ master ]  # your real branch
+    branches: [ master ]
 
 jobs:
-  test:
+  deploy:
     runs-on: [self-hosted, Linux, X64]
     steps:
-      - run: whoami
-      - run: pwd
-      - run: echo "Runner is executing a job!"
+
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Show environment info for debugging
+      - name: Debug Environment
+        run: |
+          echo "Running on:"
+          uname -a
+          echo "Current directory:"
+          pwd
+          echo "Disk usage:"
+          df -h
+          echo "Free memory:"
+          free -h
+          echo "User:"
+          whoami
+          echo "List files in repo root:"
+          ls -la
+
+      # Step 3: Build .NET app with full logs
+      - name: Build .NET app
+        run: |
+          dotnet --info
+          dotnet restore
+          dotnet publish -c Release -o publish --verbosity detailed
+
+      # Step 4: Stop .NET service
+      - name: Stop .NET service
+        run: |
+          echo "Stopping service: ${{ vars.SERVICE_NAME }}"
+          sudo systemctl stop ${{ vars.SERVICE_NAME }}
+          sudo systemctl status ${{ vars.SERVICE_NAME }} --no-pager
+
+      # Step 5: Upload changed files with rsync verbose
+      - name: Upload changed files
+        run: |
+          echo "Uploading to ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}"
+          rsync -avzh --progress --delete publish/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}
+
+      # Step 6: Start .NET service
+      - name: Start .NET service
+        run: |
+          echo "Starting service: ${{ vars.SERVICE_NAME }}"
+          sudo systemctl start ${{ vars.SERVICE_NAME }}
+          sudo systemctl status ${{ vars.SERVICE_NAME }} --no-pager
+
+      # Step 7: Verify service status
+      - name: Verify service status
+        run: |
+          STATUS=$(systemctl is-active ${{ vars.SERVICE_NAME }})
+          echo "Service status: $STATUS"
+          if [ "$STATUS" != "active" ]; then
+            echo "❌ Service failed to start!"
+            exit 1
+          else
+            echo "✅ Service is running"
+          fi
