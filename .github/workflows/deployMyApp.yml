@@ -1,11 +1,11 @@
-name: 🚀 Deploy .NET App to VPS
+name: 🚀 DeployMy App
 on:
   push:
     branches: [ main ]
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout code
