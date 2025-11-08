@@ -57,18 +57,25 @@ namespace ForexExchange.Services
         private readonly ICurrencyPoolService _currencyPoolService;
 
         /// <summary>
+        /// Service provider for creating scoped services in background tasks
+        /// </summary>
+        private readonly IServiceProvider _serviceProvider;
+
+        /// <summary>
         /// **CONSTRUCTOR** - Initializes the central financial service with required dependencies.
         /// </summary>
         /// <param name="context">Entity Framework database context for data operations</param>
         /// <param name="logger">Logger for operation tracking and debugging</param>
         /// <param name="notificationHub">Notification hub for real-time admin notifications</param>
+        /// <param name="serviceProvider">Service provider for creating scoped services</param>
 
-        public CentralFinancialService(ForexDbContext context, ILogger<CentralFinancialService> logger, INotificationHub notificationHub, ICurrencyPoolService currencyPoolService)
+        public CentralFinancialService(ForexDbContext context, ILogger<CentralFinancialService> logger, INotificationHub notificationHub, ICurrencyPoolService currencyPoolService, IServiceProvider serviceProvider)
         {
             _context = context;
             _logger = logger;
             _notificationHub = notificationHub;
             _currencyPoolService = currencyPoolService;
+            _serviceProvider = serviceProvider;
         }
 
 
@@ -112,16 +119,27 @@ namespace ForexExchange.Services
             }
             _logger.LogInformation($"ToCurrency: {order.ToCurrency.Code}");
 
-            var customerBalanceFrom = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.FromCurrency.Code);
+            // Normalize currency codes to uppercase for case-insensitive matching
+            var fromCurrencyCode = (order.FromCurrency.Code ?? "").ToUpperInvariant().Trim();
+            var toCurrencyCode = (order.ToCurrency.Code ?? "").ToUpperInvariant().Trim();
+            
+            // Load all customer balances for this customer for case-insensitive lookup
+            var customerBalances = await _context.CustomerBalances
+                .Where(cb => cb.CustomerId == order.CustomerId)
+                .ToListAsync();
+            
+            var customerBalanceFrom = customerBalances.FirstOrDefault(cb => 
+                (cb.CurrencyCode ?? "").ToUpperInvariant().Trim() == fromCurrencyCode);
+            
             if (customerBalanceFrom == null)
             {
-                _logger.LogWarning($"Customer balance not found for customer {order.CustomerId} and currency {order.FromCurrency.Code} - creating with zero balance");
+                _logger.LogWarning($"Customer balance not found for customer {order.CustomerId} and currency {fromCurrencyCode} - creating with zero balance");
                 
-                // Auto-create missing customer balance record with zero balance
+                // Auto-create missing customer balance record with zero balance (normalized to uppercase)
                 customerBalanceFrom = new CustomerBalance
                 {
                     CustomerId = order.CustomerId,
-                    CurrencyCode = order.FromCurrency.Code,
+                    CurrencyCode = fromCurrencyCode,
                     Balance = 0,
                     LastUpdated = DateTime.UtcNow
                 };
@@ -129,20 +147,29 @@ namespace ForexExchange.Services
                 _context.CustomerBalances.Add(customerBalanceFrom);
                 await _context.SaveChangesAsync();
                 
-                _logger.LogInformation($"Created new customer balance record: CustomerId={order.CustomerId}, Currency={order.FromCurrency.Code}, Balance=0");
+                _logger.LogInformation($"Created new customer balance record: CustomerId={order.CustomerId}, Currency={fromCurrencyCode}, Balance=0");
+            }
+            else if (customerBalanceFrom.CurrencyCode != fromCurrencyCode)
+            {
+                // Normalize existing balance's currency code to uppercase
+                _logger.LogWarning($"Normalizing CustomerBalance CurrencyCode from '{customerBalanceFrom.CurrencyCode}' to '{fromCurrencyCode}' for Customer {order.CustomerId}");
+                customerBalanceFrom.CurrencyCode = fromCurrencyCode;
+                await _context.SaveChangesAsync();
             }
             _logger.LogInformation($"CustomerBalanceFrom: {customerBalanceFrom.Balance}");
 
-            var customerBalanceTo = await _context.CustomerBalances.FirstOrDefaultAsync(cb => cb.CustomerId == order.CustomerId && cb.CurrencyCode == order.ToCurrency.Code);
+            var customerBalanceTo = customerBalances.FirstOrDefault(cb => 
+                (cb.CurrencyCode ?? "").ToUpperInvariant().Trim() == toCurrencyCode);
+            
             if (customerBalanceTo == null)
             {
-                _logger.LogWarning($"Customer balance not found for customer {order.CustomerId} and currency {order.ToCurrency.Code} - creating with zero balance");
+                _logger.LogWarning($"Customer balance not found for customer {order.CustomerId} and currency {toCurrencyCode} - creating with zero balance");
                 
-                // Auto-create missing customer balance record with zero balance
+                // Auto-create missing customer balance record with zero balance (normalized to uppercase)
                 customerBalanceTo = new CustomerBalance
                 {
                     CustomerId = order.CustomerId,
-                    CurrencyCode = order.ToCurrency.Code,
+                    CurrencyCode = toCurrencyCode,
                     Balance = 0,
                     LastUpdated = DateTime.UtcNow
                 };
@@ -150,7 +177,14 @@ namespace ForexExchange.Services
                 _context.CustomerBalances.Add(customerBalanceTo);
                 await _context.SaveChangesAsync();
                 
-                _logger.LogInformation($"Created new customer balance record: CustomerId={order.CustomerId}, Currency={order.ToCurrency.Code}, Balance=0");
+                _logger.LogInformation($"Created new customer balance record: CustomerId={order.CustomerId}, Currency={toCurrencyCode}, Balance=0");
+            }
+            else if (customerBalanceTo.CurrencyCode != toCurrencyCode)
+            {
+                // Normalize existing balance's currency code to uppercase
+                _logger.LogWarning($"Normalizing CustomerBalance CurrencyCode from '{customerBalanceTo.CurrencyCode}' to '{toCurrencyCode}' for Customer {order.CustomerId}");
+                customerBalanceTo.CurrencyCode = toCurrencyCode;
+                await _context.SaveChangesAsync();
             }
             _logger.LogInformation($"CustomerBalanceTo: {customerBalanceTo.Balance}");
 
@@ -572,6 +606,9 @@ namespace ForexExchange.Services
         /// and financial auditing. All amounts, exchange rates, and timing are permanently recorded.
         /// 
         /// **Validation**: Calculates expected effects before processing to log and validate consistency.
+        /// 
+        /// **PERFORMANCE OPTIMIZATION**: Balance rebuild runs asynchronously in background to prevent HTTP timeout issues.
+        /// The order is saved immediately and rebuild completes in background without blocking the HTTP response.
         /// </summary>
         /// <param name="order">Complete order with all currency and amount information</param>
         /// <param name="performedBy">Identifier of who initiated the transaction (for audit trail)</param>
@@ -585,13 +622,48 @@ namespace ForexExchange.Services
                 _logger.LogInformation($"Order {order.Id} is frozen - skipping all balance updates (pools and customers)");
                 return;
             }
+            
+            // Save order first
             _context.Add(order);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
-            // Rebuild all financial balances after order creation to ensure coherence
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            _logger.LogInformation($"Order {order.Id} saved successfully. Starting background balance rebuild...");
 
-            _logger.LogInformation($"Order {order.Id} processing completed - dual currency impact recorded");
+            // Run balance rebuild in background to prevent HTTP timeout (especially on nginx)
+            // Fire and forget - rebuild will complete asynchronously without blocking the HTTP response
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // Create a new scope for background operation to avoid DbContext disposal issues
+                    using var scope = _serviceProvider.CreateScope();
+                    var backgroundContext = scope.ServiceProvider.GetRequiredService<ForexDbContext>();
+                    var backgroundLogger = scope.ServiceProvider.GetRequiredService<ILogger<CentralFinancialService>>();
+                    var backgroundNotificationHub = scope.ServiceProvider.GetRequiredService<INotificationHub>();
+                    var backgroundCurrencyPoolService = scope.ServiceProvider.GetRequiredService<ICurrencyPoolService>();
+                    var backgroundServiceProvider = scope.ServiceProvider;
+                    
+                    // Create a new instance of the service with the background scope's dependencies
+                    var backgroundService = new CentralFinancialService(
+                        backgroundContext,
+                        backgroundLogger,
+                        backgroundNotificationHub,
+                        backgroundCurrencyPoolService,
+                        backgroundServiceProvider
+                    );
+                    
+                    backgroundLogger.LogInformation($"Background balance rebuild started for Order {order.Id}");
+                    await backgroundService.RebuildAllFinancialBalancesAsync(performedBy);
+                    backgroundLogger.LogInformation($"Background balance rebuild completed for Order {order.Id}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error in background balance rebuild for Order {order.Id}: {ex.Message}");
+                    // Optionally: Send notification to admins about rebuild failure
+                }
+            });
+
+            _logger.LogInformation($"Order {order.Id} processing initiated - balance rebuild running in background");
         }
 
         /// <summary>
@@ -618,10 +690,51 @@ namespace ForexExchange.Services
         public async Task ProcessAccountingDocumentAsync(AccountingDocument document, string performedBy = "System")
         {
             _logger.LogInformation($"Processing accounting document ID: {document.Id}");
-            // Rebuild all financial balances after document processing to ensure coherence
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            
+            // Save document first (if not already saved)
+            if (_context.Entry(document).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+            {
+                _context.Add(document);
+            }
+            await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Document {document.Id} processing completed");
+            _logger.LogInformation($"Document {document.Id} saved successfully. Starting background balance rebuild...");
+
+            // Run balance rebuild in background to prevent HTTP timeout (especially on nginx)
+            // Fire and forget - rebuild will complete asynchronously without blocking the HTTP response
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // Create a new scope for background operation to avoid DbContext disposal issues
+                    using var scope = _serviceProvider.CreateScope();
+                    var backgroundContext = scope.ServiceProvider.GetRequiredService<ForexDbContext>();
+                    var backgroundLogger = scope.ServiceProvider.GetRequiredService<ILogger<CentralFinancialService>>();
+                    var backgroundNotificationHub = scope.ServiceProvider.GetRequiredService<INotificationHub>();
+                    var backgroundCurrencyPoolService = scope.ServiceProvider.GetRequiredService<ICurrencyPoolService>();
+                    var backgroundServiceProvider = scope.ServiceProvider;
+                    
+                    // Create a new instance of the service with the background scope's dependencies
+                    var backgroundService = new CentralFinancialService(
+                        backgroundContext,
+                        backgroundLogger,
+                        backgroundNotificationHub,
+                        backgroundCurrencyPoolService,
+                        backgroundServiceProvider
+                    );
+                    
+                    backgroundLogger.LogInformation($"Background balance rebuild started for Document {document.Id}");
+                    await backgroundService.RebuildAllFinancialBalancesAsync(performedBy);
+                    backgroundLogger.LogInformation($"Background balance rebuild completed for Document {document.Id}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error in background balance rebuild for Document {document.Id}: {ex.Message}");
+                    // Optionally: Send notification to admins about rebuild failure
+                }
+            });
+
+            _logger.LogInformation($"Document {document.Id} processing initiated - balance rebuild running in background");
         }
 
 
@@ -773,20 +886,26 @@ namespace ForexExchange.Services
                 var poolTransactionItems = new List<(string CurrencyCode, DateTime TransactionDate, string TransactionType, int? ReferenceId, decimal Amount, string PoolTransactionType, string Description)>(activeOrders.Count * 2);
 
                 // Add order transactions (eliminated N+1 query by pre-loading data)
+                // IMPORTANT: Normalize currency codes to UPPERCASE to handle case sensitivity issues (e.g., USDT vs usdt)
                 foreach (var o in activeOrders)
                 {
+                    var fromCurrencyCode = (o.FromCurrencyCode ?? "").ToUpperInvariant().Trim();
+                    var toCurrencyCode = (o.ToCurrencyCode ?? "").ToUpperInvariant().Trim();
+                    
                     // Institution receives FromAmount in FromCurrency (pool increases)
-                    poolTransactionItems.Add((o.FromCurrencyCode, o.CreatedAt, "Order", o.Id, o.FromAmount, "Buy", o.Notes ?? ""));
+                    poolTransactionItems.Add((fromCurrencyCode, o.CreatedAt, "Order", o.Id, o.FromAmount, "Buy", o.Notes ?? ""));
 
                     // Institution pays ToAmount in ToCurrency (pool decreases)
-                    poolTransactionItems.Add((o.ToCurrencyCode, o.CreatedAt, "Order", o.Id, -o.ToAmount, "Sell", o.Notes ?? ""));
+                    poolTransactionItems.Add((toCurrencyCode, o.CreatedAt, "Order", o.Id, -o.ToAmount, "Sell", o.Notes ?? ""));
                 }
 
                 // Add manual pool records as transactions
+                // IMPORTANT: Normalize currency codes to UPPERCASE for consistency
                 foreach (var manual in manualPoolRecords)
                 {
+                    var currencyCode = (manual.CurrencyCode ?? "").ToUpperInvariant().Trim();
                     poolTransactionItems.Add((
-                        manual.CurrencyCode,
+                        currencyCode,
                         manual.TransactionDate,
                         "Manual",
                         (int?)manual.Id,
@@ -796,9 +915,9 @@ namespace ForexExchange.Services
                     ));
                 }
 
-                // Group by currency code to create coherent history per currency
+                // Group by currency code (now normalized to uppercase) to create coherent history per currency
                 var currencyGroups = poolTransactionItems
-                    .GroupBy(x => x.CurrencyCode)
+                    .GroupBy(x => x.CurrencyCode, StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
                 // Process pool transactions in batches for better performance
@@ -881,9 +1000,21 @@ namespace ForexExchange.Services
                 }
 
                 // Update pool balances in batch
+                // IMPORTANT: Normalize currency code lookup to handle case sensitivity (SQLite is case-sensitive by default)
+                // Load all pools first for case-insensitive matching
+                var allPools = await _context.CurrencyPools
+                    .Include(p => p.Currency)
+                    .ToListAsync();
+                
                 foreach (var (currencyCode, balances) in poolBalanceUpdates)
                 {
-                    var pool = await _context.CurrencyPools.FirstOrDefaultAsync(p => p.CurrencyCode == currencyCode);
+                    var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+                    
+                    // Case-insensitive lookup in memory (since SQLite doesn't support ToUpper in LINQ)
+                    var pool = allPools.FirstOrDefault(p => 
+                        (p.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode ||
+                        (p.Currency?.Code ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+                    
                     if (pool != null)
                     {
                         pool.Balance = balances.Balance;
@@ -892,6 +1023,17 @@ namespace ForexExchange.Services
                         pool.TotalBought = balances.TotalBought;
                         pool.TotalSold = balances.TotalSold;
                         pool.LastUpdated = DateTime.UtcNow;
+                        
+                        // Ensure CurrencyCode is normalized to uppercase for consistency
+                        if (pool.CurrencyCode != normalizedCurrencyCode)
+                        {
+                            _logger.LogWarning($"Normalizing CurrencyCode from '{pool.CurrencyCode}' to '{normalizedCurrencyCode}' for pool {pool.Id}");
+                            pool.CurrencyCode = normalizedCurrencyCode;
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Currency pool not found for currency code: {normalizedCurrencyCode}. Balance update skipped. Available pools: {string.Join(", ", allPools.Select(p => p.CurrencyCode))}");
                     }
                 }
                 await _context.SaveChangesAsync();
@@ -1082,43 +1224,52 @@ namespace ForexExchange.Services
                 var customerTransactionItems = new List<(int CustomerId, string CurrencyCode, DateTime TransactionDate, string TransactionType, string transactionCode, int? ReferenceId, decimal Amount, string Description)>(estimatedCapacity);
 
                 // Add document transactions
+                // IMPORTANT: Normalize currency codes to UPPERCASE for consistency
                 foreach (var d in allValidDocuments)
                 {
+                    var currencyCode = (d.CurrencyCode ?? "").ToUpperInvariant().Trim();
+                    
                     if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue && d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
                     {
                         // Both sides are customers: create two transactions
-                        customerTransactionItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, d.Amount, d.Description ?? string.Empty));
-                        customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
+                        customerTransactionItems.Add((d.PayerCustomerId.Value, currencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, d.Amount, d.Description ?? string.Empty));
+                        customerTransactionItems.Add((d.ReceiverCustomerId.Value, currencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
                     }
                     else
                     {
                         // Single side customer transactions
                         if (d.PayerType == PayerType.Customer && d.PayerCustomerId.HasValue)
-                            customerTransactionItems.Add((d.PayerCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, d.Amount, d.Description ?? string.Empty));
+                            customerTransactionItems.Add((d.PayerCustomerId.Value, currencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, d.Amount, d.Description ?? string.Empty));
                         if (d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId.HasValue)
-                            customerTransactionItems.Add((d.ReceiverCustomerId.Value, d.CurrencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
+                            customerTransactionItems.Add((d.ReceiverCustomerId.Value, currencyCode, d.DocumentDate, "Document", d.ReferenceNumber ?? string.Empty, d.Id, -d.Amount, d.Description ?? string.Empty));
                     }
                 }
 
                 // Add order transactions for customer history
+                // IMPORTANT: Normalize currency codes to UPPERCASE for consistency
                 foreach (var o in allValidOrders)
                 {
+                    var fromCurrencyCode = (o.FromCurrencyCode ?? "").ToUpperInvariant().Trim();
+                    var toCurrencyCode = (o.ToCurrencyCode ?? "").ToUpperInvariant().Trim();
+                    
                     // Customer pays FromAmount in FromCurrency
-                    customerTransactionItems.Add((o.CustomerId, o.FromCurrencyCode, o.CreatedAt, "Order", string.Empty, o.Id, -o.FromAmount, o.Notes ?? string.Empty));
+                    customerTransactionItems.Add((o.CustomerId, fromCurrencyCode, o.CreatedAt, "Order", string.Empty, o.Id, -o.FromAmount, o.Notes ?? string.Empty));
 
                     // Customer receives ToAmount in ToCurrency
-                    customerTransactionItems.Add((o.CustomerId, o.ToCurrencyCode, o.CreatedAt, "Order", string.Empty, o.Id, o.ToAmount, o.Notes ?? string.Empty));
+                    customerTransactionItems.Add((o.CustomerId, toCurrencyCode, o.CreatedAt, "Order", string.Empty, o.Id, o.ToAmount, o.Notes ?? string.Empty));
                 }
 
                 logMessages.Add($"start adding  [{manualCustomerRecords.Count}] manual customer records");
                 logMessages.Add($"customerTransactionItems is [{customerTransactionItems.Count}]");
 
                 // Add manual customer records as transactions
+                // IMPORTANT: Normalize currency codes to UPPERCASE for consistency
                 foreach (var manual in manualCustomerRecords)
                 {
+                    var currencyCode = (manual.CurrencyCode ?? "").ToUpperInvariant().Trim();
                     customerTransactionItems.Add((
                         manual.CustomerId,
-                        manual.CurrencyCode,
+                        currencyCode,
                         manual.TransactionDate,
                         "Manual",
                         string.Empty,
@@ -1130,7 +1281,22 @@ namespace ForexExchange.Services
                 logMessages.Add($"customerTransactionItems is [{customerTransactionItems.Count}]");
 
                 // Group by customer + currency and create coherent history (process in chunks for memory efficiency)
-                var customerGroups = customerTransactionItems
+                // Normalize currency codes to uppercase before grouping for case-insensitive matching
+                var normalizedCustomerTransactions = customerTransactionItems
+                    .Select(x => new
+                    {
+                        x.CustomerId,
+                        CurrencyCode = (x.CurrencyCode ?? "").ToUpperInvariant().Trim(),
+                        x.TransactionDate,
+                        x.TransactionType,
+                        x.transactionCode,
+                        x.ReferenceId,
+                        x.Amount,
+                        x.Description
+                    })
+                    .ToList();
+                
+                var customerGroups = normalizedCustomerTransactions
                     .GroupBy(x => new { x.CustomerId, x.CurrencyCode })
                     .ToList();
 
@@ -1212,20 +1378,41 @@ namespace ForexExchange.Services
                     }
 
                     // Update customer balances for this chunk
+                    // Load all customer balances for this chunk first for case-insensitive matching
+                    var customerIds = customerBalanceUpdates.Keys.Select(k => k.CustomerId).Distinct().ToList();
+                    var allCustomerBalances = await _context.CustomerBalances
+                        .Where(b => customerIds.Contains(b.CustomerId))
+                        .ToListAsync();
+                    
                     foreach (var ((customerId, currencyCode), balance) in customerBalanceUpdates)
                     {
-                        var customerBalance = await _context.CustomerBalances
-                            .FirstOrDefaultAsync(b => b.CustomerId == customerId && b.CurrencyCode == currencyCode);
+                        var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+                        
+                        // Case-insensitive lookup in memory
+                        var customerBalance = allCustomerBalances.FirstOrDefault(b => 
+                            b.CustomerId == customerId && 
+                            (b.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+                        
                         if (customerBalance == null)
                         {
                             customerBalance = new CustomerBalance
                             {
                                 CustomerId = customerId,
-                                CurrencyCode = currencyCode,
+                                CurrencyCode = normalizedCurrencyCode,
                                 Balance = 0,
                                 LastUpdated = DateTime.UtcNow
                             };
                             _context.CustomerBalances.Add(customerBalance);
+                            allCustomerBalances.Add(customerBalance); // Add to list for potential future lookups in this chunk
+                        }
+                        else
+                        {
+                            // Ensure CurrencyCode is normalized to uppercase for consistency
+                            if (customerBalance.CurrencyCode != normalizedCurrencyCode)
+                            {
+                                _logger.LogWarning($"Normalizing CustomerBalance CurrencyCode from '{customerBalance.CurrencyCode}' to '{normalizedCurrencyCode}' for Customer {customerId}");
+                                customerBalance.CurrencyCode = normalizedCurrencyCode;
+                            }
                         }
                         customerBalance.Balance = balance;
                         customerBalance.LastUpdated = DateTime.UtcNow;

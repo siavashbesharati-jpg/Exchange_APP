@@ -403,6 +403,18 @@
 
                 const data = getOrderPreviewData();
 
+                // Safety timeout: Auto-hide overlay after 2 minutes if no response (prevents stuck overlay)
+                const safetyTimeout = setTimeout(() => {
+                    if (isLoadingOverlayVisible()) {
+                        hideLoadingOverlay();
+                        console.warn('Order creation timeout - overlay auto-hidden after 2 minutes');
+                    }
+                }, 120000); // 2 minutes
+
+                // Create AbortController for fetch timeout
+                const controller = new AbortController();
+                const fetchTimeout = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
+
                 fetch('/Orders/Create', {
                     method: 'POST',
                     headers: {
@@ -410,9 +422,12 @@
                         'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value,
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(data),
+                    signal: controller.signal
                 })
                     .then(async res => {
+                        clearTimeout(safetyTimeout);
+                        clearTimeout(fetchTimeout);
                         if (!res.ok) {
                             hideLoadingOverlay();
                             let msg = 'خطا در ثبت معامله';
@@ -423,6 +438,8 @@
                         return res.json();
                     })
                     .then(result => {
+                        clearTimeout(safetyTimeout);
+                        clearTimeout(fetchTimeout);
                         hideLoadingOverlay();
                         if (result && result.success) {
                             // نمایش پیام موفقیت بدون بستن مودال
@@ -433,10 +450,18 @@
                         }
                     })
                     .catch(err => {
+                        clearTimeout(safetyTimeout);
+                        clearTimeout(fetchTimeout);
                         hideLoadingOverlay();
-                        alert('خطا در ارتباط با سرور: ' + err);
+                        if (err.name === 'AbortError') {
+                            alert('خطا: درخواست بیش از حد طولانی شد. لطفاً دوباره تلاش کنید.');
+                        } else {
+                            alert('خطا در ارتباط با سرور: ' + err);
+                        }
                     })
                     .finally(() => {
+                        clearTimeout(safetyTimeout);
+                        clearTimeout(fetchTimeout);
                         // بازگرداندن دکمه به حالت اولیه
                         btn.innerHTML = originalText;
                         btn.disabled = false;

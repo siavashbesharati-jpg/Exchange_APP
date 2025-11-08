@@ -135,10 +135,13 @@ namespace ForexExchange.Services
                 throw new ArgumentException($"Currency with ID {currencyId} not found");
             }
 
+            // Normalize currency code to uppercase for consistency (handles case sensitivity issues like USDT vs usdt)
+            var normalizedCurrencyCode = (currency.Code ?? "").ToUpperInvariant().Trim();
+            
             var pool = new CurrencyPool
             {
                 CurrencyId = currencyId,
-                CurrencyCode = currency.Code,
+                CurrencyCode = normalizedCurrencyCode,
                 Balance = initialBalance,
                 TotalBought = initialBalance > 0 ? initialBalance : 0,
                 TotalSold = 0,
