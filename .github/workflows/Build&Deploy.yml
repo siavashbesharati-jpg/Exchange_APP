@@ -1,46 +1,32 @@
 name: 🚀 Deploy .NET App to VPS
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+
     steps:
-      # 1️⃣ برداشتن کد از ریپو
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ بیلد دات‌نت
       - name: Build .NET app
         run: dotnet publish -c Release -o publish
 
-      # 3️⃣ توقف سرویس روی سرور قبل از آپلود
       - name: Stop .NET service
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }}
-          script: |
-            sudo systemctl stop ${{ vars.SERVICE_NAME }}
+        run: sudo systemctl stop ${{ vars.SERVICE_NAME }}
 
-      # 4️⃣ آپلود فایل‌ها به سرور
-      - name: Upload files to server
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }}
-          source: "publish/*"
-          target: ${{ vars.PROJECT_PATH }}
+      - name: Upload changed files
+        run: rsync -avz --delete publish/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}
 
-      # 5️⃣ ری‌استارت سرویس بعد از آپلود
-      - name: Restart .NET service
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }}
-          script: |
-            sudo systemctl start ${{ vars.SERVICE_NAME }}
+      - name: Start .NET service
+        run: sudo systemctl start ${{ vars.SERVICE_NAME }}
+
+      - name: Verify service status
+        run: |
+          STATUS=$(systemctl is-active ${{ vars.SERVICE_NAME }})
+          echo "Service status: $STATUS"
+          if [ "$STATUS" != "active" ]; then
+            exit 1
+          fi
