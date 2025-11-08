@@ -1,11 +1,11 @@
-name: 🚀 DeployMy App
+name: 🚀 Deploy My App
 on:
   push:
     branches: [ main ]
 
 jobs:
   deploy:
-    runs-on: runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, Linux, X64]   # ✅ fix here
 
     steps:
       - name: Checkout code
