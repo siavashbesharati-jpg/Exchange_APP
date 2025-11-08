@@ -369,6 +369,11 @@ function downloadExpensesReportExcel() {
     window.location.href = url;
 }
 
+function openQuickRateSetup() {
+    const url = '/ExchangeRates/Manage';
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function renderReport(currencies, summary) {
     const reportContent = document.getElementById('reportContent');
     const cardsContainer = document.getElementById('currencyCards');
