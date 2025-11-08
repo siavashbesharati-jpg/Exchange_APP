@@ -4,6 +4,9 @@
 @{
     ViewData["Title"] = $"جزئیات سند حسابداری #{Model.Id}";
     
+    // Set custom viewport for this page to allow zooming and maintain desktop view
+    ViewData["Viewport"] = "width=800, initial-scale=1.0, minimum-scale=0.25, maximum-scale=5.0, user-scalable=yes";
+    
     // Get dynamic branding data
     var websiteName = await SettingsService.GetWebsiteNameAsync();
     var companyName = await SettingsService.GetCompanyNameAsync();
@@ -227,6 +230,58 @@
         letter-spacing: 0.5px !important;
     }
     
+    /* Mobile: Keep exact desktop view, allow zooming and horizontal scroll */
+    @@media (max-width: 768px) {
+        /* Enable horizontal scrolling on mobile while maintaining desktop layout */
+        body {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .container-fluid {
+            overflow-x: auto;
+        }
+        
+        /* Keep exact desktop dimensions - no size changes */
+        .document-paper {
+            margin: 20px auto;
+            width: 800px;
+            max-width: none;
+            min-width: 800px;
+        }
+        
+        /* Control buttons: allow wrapping on very small screens */
+        .control-buttons {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+    }
+    
+    /* Very small mobile devices: still maintain desktop view */
+    @@media (max-width: 480px) {
+        /* Same as above - maintain desktop view */
+        body {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .container-fluid {
+            overflow-x: auto;
+        }
+        
+        .document-paper {
+            margin: 20px auto;
+            width: 800px;
+            max-width: none;
+            min-width: 800px;
+        }
+        
+        .control-buttons {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+    }
+    
     @@media print {
         body * {
             visibility: hidden;
@@ -245,6 +300,7 @@
             margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
+            min-width: auto !important;
         }
         
         .control-buttons,
@@ -256,10 +312,12 @@
         
         .document-content {
             padding: 30px 40px;
+            min-width: auto !important;
         }
         
         .document-header {
             padding: 15px 40px;
+            min-width: auto !important;
         }
     }
 </style>

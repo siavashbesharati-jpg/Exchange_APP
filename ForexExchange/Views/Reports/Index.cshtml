@@ -15,7 +15,7 @@
         
         <!-- Customer Reports -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('customer')">
+            <div class="card report-card h-100 border-0" onclick="navigateToReport('customer')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-users text-primary"></i>
@@ -28,7 +28,7 @@
 
         <!-- All Customers Balances -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('allbalances')">
+            <div class="card report-card h-100 border-0" onclick="navigateToReport('allbalances')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-wallet text-purple"></i>
@@ -41,7 +41,7 @@
 
         <!-- Bank Account Reports -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('bankaccount')">
+            <div class="card report-card h-100 border-0" onclick="navigateToReport('bankaccount')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-university text-success"></i>
@@ -54,7 +54,7 @@
 
         <!-- Pool Reports -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('pool')">
+            <div class="card report-card h-100 border-0" onclick="navigateToReport('pool')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-coins text-info"></i>
@@ -75,7 +75,7 @@
 
         <!-- Order Reports -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('order')">
+            <div class="card report-card h-100 border-0" onclick="navigateToReport('order')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-exchange-alt text-warning"></i>
@@ -88,7 +88,7 @@
 
         <!-- Accounting Documents Reports -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card h-100 shadow-sm border-0" onclick="navigateToReport('document')">
+            <div class="card report-card h-100 border-0" onclick="navigateToReport('document')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-file-invoice text-danger"></i>
@@ -101,7 +101,7 @@
 
         <!-- Customer & Bank History Report -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card customer-bank-history-card h-100 shadow-sm border-0" onclick="navigateToReport('customerbankhistory')">
+            <div class="card report-card customer-bank-history-card h-100 border-0" onclick="navigateToReport('customerbankhistory')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-history text-white"></i>
@@ -114,7 +114,7 @@
 
         <!-- Expenses Report -->
         <div class="col-md-6 col-lg-4">
-            <div class="card report-card expenses-report-card h-100 shadow-sm border-0" onclick="navigateToReport('expenses')">
+            <div class="card report-card expenses-report-card h-100 border-0" onclick="navigateToReport('expenses')">
                 <div class="card-body text-center p-4">
                     <div class="report-icon mb-3">
                         <i class="fas fa-receipt text-white"></i>
@@ -134,18 +134,21 @@
 
 <style>
 .report-card {
-    transition: all 0.3s ease;
     cursor: pointer;
-    border-radius: 15px;
+    border-radius: 12px;
     overflow: hidden;
     min-height: 120px;
-    border: 3px solid #e9ecef;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 
+                0 4px 16px rgba(0, 0, 0, 0.04);
+    background: #fff;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .report-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
-    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 
+                0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.2);
 }
 
 .report-icon i {
@@ -159,11 +162,15 @@
 .comprehensive-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border: 3px solid #764ba2;
+    border: 1px solid rgba(118, 75, 162, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25), 
+                0 8px 24px rgba(118, 75, 162, 0.15);
 }
 
 .comprehensive-card:hover {
-    border-color: #5a2d91;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35), 
+                0 12px 32px rgba(118, 75, 162, 0.25);
+    border-color: rgba(118, 75, 162, 0.5);
 }
 
 .comprehensive-card .card-title {
@@ -173,11 +180,15 @@
 .comprehensive-daily-card {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
     color: white;
-    border: 3px solid #20c997;
+    border: 1px solid rgba(32, 201, 151, 0.3);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.25), 
+                0 8px 24px rgba(32, 201, 151, 0.15);
 }
 
 .comprehensive-daily-card:hover {
-    border-color: #1a9f7b;
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.35), 
+                0 12px 32px rgba(32, 201, 151, 0.25);
+    border-color: rgba(32, 201, 151, 0.5);
 }
 
 .comprehensive-daily-card .card-title {
@@ -187,11 +198,15 @@
 .customer-bank-card {
     background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
     color: white;
-    border: 3px solid #4c0fd9;
+    border: 1px solid rgba(76, 15, 217, 0.3);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25), 
+                0 8px 24px rgba(102, 16, 242, 0.15);
 }
 
 .customer-bank-card:hover {
-    border-color: #3a0cb3;
+    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.35), 
+                0 12px 32px rgba(102, 16, 242, 0.25);
+    border-color: rgba(76, 15, 217, 0.5);
 }
 
 .customer-bank-card .card-title {
@@ -201,11 +216,15 @@
 .customer-bank-history-card {
     background: linear-gradient(135deg, #6610f2 0%, #d63384 100%);
     color: white;
-    border: 3px solid #d63384;
+    border: 1px solid rgba(214, 51, 132, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 16, 242, 0.25), 
+                0 8px 24px rgba(214, 51, 132, 0.15);
 }
 
 .customer-bank-history-card:hover {
-    border-color: #b02a69;
+    box-shadow: 0 6px 16px rgba(102, 16, 242, 0.35), 
+                0 12px 32px rgba(214, 51, 132, 0.25);
+    border-color: rgba(214, 51, 132, 0.5);
 }
 
 .customer-bank-history-card .card-title {
@@ -215,11 +234,15 @@
 .expenses-report-card {
     background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
     color: white;
-    border: 3px solid #ee5a6f;
+    border: 1px solid rgba(238, 90, 111, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.25), 
+                0 8px 24px rgba(238, 90, 111, 0.15);
 }
 
 .expenses-report-card:hover {
-    border-color: #dc4a5f;
+    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.35), 
+                0 12px 32px rgba(238, 90, 111, 0.25);
+    border-color: rgba(238, 90, 111, 0.5);
 }
 
 .expenses-report-card .card-title {
@@ -297,18 +320,4 @@ function navigateToReport(type) {
     window.location.href = url;
 }
 
-// Add some entrance animation
-document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.report-card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(30px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'all 0.6s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-});
 </script>
