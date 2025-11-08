@@ -121,6 +121,28 @@
         font-weight: 800;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+    .btn-quick-rate-setup {
+        background: linear-gradient(135deg, #6f42c1 0%, #8b5cf6 100%);
+        color: #ffffff;
+        border: 2px solid #6f42c1;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(111, 66, 193, 0.25);
+        transition: all 0.3s ease;
+    }
+    .btn-quick-rate-setup:hover {
+        background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+        border-color: #8b5cf6;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(111, 66, 193, 0.4);
+        transform: translateY(-1px);
+    }
+    .btn-quick-rate-setup:active,
+    .btn-quick-rate-setup:focus {
+        background: linear-gradient(135deg, #5b21b6 0%, #6f42c1 100%);
+        border-color: #5b21b6;
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(111, 66, 193, 0.3);
+    }
 </style>
 
 <div class="container-fluid">
@@ -142,6 +164,10 @@
                     <button type="button" class="btn btn-outline-info" onclick="downloadExpensesReportExcel()">
                         <i class="fas fa-file-excel me-1"></i>
                         خروجی اکسل
+                    </button>
+                    <button type="button" class="btn btn-quick-rate-setup" onclick="openQuickRateSetup()" title="تنظیم سریع نرخ‌های ارز">
+                        <i class="fas fa-cog me-1"></i>
+                        تنظیم سریع نرخ
                     </button>
                     <button type="button" class="btn btn-primary" onclick="loadExpensesReport()">
                         <i class="fas fa-search me-1"></i>
