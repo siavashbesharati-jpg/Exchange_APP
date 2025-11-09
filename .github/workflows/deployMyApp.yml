@@ -1,82 +1,53 @@
-name: "🚀 Deploy My App with Debug"
+name: "🚀 Deploy My App"
 
 on:
   push:
-    branches: [ master ]  # make sure this is your real main branch
+    branches: [ master ]  # your main branch
 
 jobs:
   deploy:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
-      # -----------------------------
-      # 1️⃣ Checkout code
-      # -----------------------------
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # -----------------------------
-      # 2️⃣ Debug environment
-      # -----------------------------
-      - name: Debug runner environment
+      - name: Show runner info
         run: |
-          echo "===== DEBUG INFO ====="
+          echo "Runner info:"
+          uname -a
           whoami
           pwd
-          echo "SERVICE_NAME=${{ vars.SERVICE_NAME }}"
-          echo "PROJECT_PATH=${{ vars.PROJECT_PATH }}"
-          echo "SERVER_USER=${{ secrets.SERVER_USER }}"
-          echo "SERVER_IP=${{ secrets.SERVER_IP }}"
-          echo "======================"
+          env
 
-      # -----------------------------
-      # 3️⃣ Build .NET app
-      # -----------------------------
-      - name: Build .NET application
-        run: |
-          set -x  # print each command
-          dotnet publish -c Release -o publish
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # -----------------------------
-      # 4️⃣ Stop the .NET service
-      # -----------------------------
+      - name: Show files after checkout
+        run: ls -la
+
+      - name: Build .NET app
+        run: dotnet publish -c Release -o publish
+
+      - name: Show published files
+        run: ls -la publish
+
       - name: Stop .NET service
-        run: |
-          set -x
-          sudo systemctl stop ${{ vars.SERVICE_NAME }} || echo "Service might not exist yet"
+        run: sudo systemctl stop ${{ vars.SERVICE_NAME }} || echo "Service not found, skipping stop"
 
-      # -----------------------------
-      # 5️⃣ Upload changed files via rsync
-      # -----------------------------
       - name: Upload changed files to server
         run: |
-          set -x
+          echo "Syncing files to ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}"
           rsync -avz --delete publish/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ vars.PROJECT_PATH }}
 
-      # -----------------------------
-      # 6️⃣ Start the .NET service
-      # -----------------------------
       - name: Start .NET service
-        run: |
-          set -x
-          sudo systemctl start ${{ vars.SERVICE_NAME }}
+        run: sudo systemctl start ${{ vars.SERVICE_NAME }} || echo "Service start failed, check manually"
 
-      # -----------------------------
-      # 7️⃣ Verify service status
-      # -----------------------------
       - name: Verify service status
         run: |
-          set -x
           STATUS=$(systemctl is-active ${{ vars.SERVICE_NAME }})
           echo "Service status: $STATUS"
           if [ "$STATUS" != "active" ]; then
-            echo "❌ Service failed to start!"
+            echo "Service failed to start!"
             exit 1
           fi
 
-      # -----------------------------
-      # 8️⃣ Optional: List deployed files
-      # -----------------------------
-      - name: List deployed files on server
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "ls -la ${{ vars.PROJECT_PATH }}"
+      - name: Show deployed files on server
+        run: ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "ls -la ${{ vars.PROJECT_PATH }}"
