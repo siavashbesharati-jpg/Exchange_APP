@@ -30,14 +30,19 @@ function showLoadingOverlay(text = 'در حال پردازش...', subtext = 'ل�
     
     if (loadingText) {
         loadingText.textContent = text;
+        // Force immediate visibility - no animation delay
+        loadingText.style.opacity = '1';
     }
     
     if (loadingSubtext) {
         loadingSubtext.textContent = subtext;
+        // Force immediate visibility - no animation delay
+        loadingSubtext.style.opacity = '1';
     }
     
-    // Use style.display instead of CSS classes to override any inline styles
+    // Use style.display and opacity to show immediately - no animation delay
     overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
     overlay.classList.add('show');
     document.body.style.overflow = 'hidden';
 }
