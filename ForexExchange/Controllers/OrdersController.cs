@@ -452,28 +452,48 @@ namespace ForexExchange.Controllers
                 // Update customer balances and currency pools for the order
                 await _centralFinancialService.ProcessOrderCreationAsync(order);
 
-                // Load related entities for notification
+                var orderId = order.Id;
+                var orderRate = order.Rate;
+                var orderToAmount = order.ToAmount;
+
+                // Load related entities for notification (capture before background task)
                 await _context.Entry(order).Reference(o => o.Customer).LoadAsync();
                 await _context.Entry(order).Reference(o => o.FromCurrency).LoadAsync();
                 await _context.Entry(order).Reference(o => o.ToCurrency).LoadAsync();
 
-
-                _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", order.Id);
+                _logger.LogInformation("Completed ProcessOrderCreationAsync for Order {OrderId}", orderId);
                 _logger.LogInformation($"Order currency : {order.FromCurrency.PersianName}");
-                // Log admin activity and send notifications
+
+                // Send notifications in background (fire and forget) to avoid blocking response
                 var currentUser = await _userManager.GetUserAsync(User);
                 if (currentUser != null)
                 {
-                    await _adminActivityService.LogOrderCreatedAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-                    
-                    // Send notifications through central hub (replaces individual notification calls)
-                    await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderCreated, currentUser.Id);
+                    var userId = currentUser.Id;
+                    var userName = currentUser.UserName ?? "Unknown";
+                    var orderForNotification = order; // Capture for background task
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _adminActivityService.LogOrderCreatedAsync(orderForNotification, userId, userName);
+                            await _notificationHub.SendOrderNotificationAsync(orderForNotification, NotificationEventType.OrderCreated, userId);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error in background notification for order creation {orderId}");
+                        }
+                    });
                 }
 
-                _logger.LogInformation($"Order created successfully - Id: {order.Id}, Rate: {order.Rate} , Total: {order.ToAmount}");
+                _logger.LogInformation($"Order created successfully - Id: {orderId}, Rate: {orderRate} , Total: {orderToAmount}");
 
+                // Disable nginx response buffering for immediate response delivery
+                Response.DisableNginxBuffering();
 
-                return Json(new { success = true, redirectUrl = Url.Action(nameof(Details), new { id = order.Id }) });
+                // Return response immediately - don't wait for notifications
+                // nginx will respect X-Accel-Buffering: no header and send response immediately
+                return Json(new { success = true, redirectUrl = Url.Action(nameof(Details), new { id = orderId }) });
             }
             else
             {
@@ -613,6 +633,10 @@ namespace ForexExchange.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                var orderId = order.Id;
+                var fromCurrencyCode = order.FromCurrency?.Code ?? "Unknown";
+                var toCurrencyCode = order.ToCurrency?.Code ?? "Unknown";
+
                 // Use centralized service to delete with proper financial impact reversal
                 var currentUser = await _userManager.GetUserAsync(User);
                 await _centralFinancialService.DeleteOrderAsync(order, currentUser?.UserName ?? "Admin");
@@ -622,33 +646,60 @@ namespace ForexExchange.Controllers
                 {
                     AdminUserId = currentUser?.Id ?? "Unknown",
                     ActivityType = AdminActivityType.OrderCancelled, // Using cancellation as closest to deletion
-                    Description = $"Deleted Order #{order.Id} - {order.FromCurrency.Code} to {order.ToCurrency.Code}",
+                    Description = $"Deleted Order #{orderId} - {fromCurrencyCode} to {toCurrencyCode}",
                     Timestamp = DateTime.UtcNow,
                     IpAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString()
                 };
                 _context.AdminActivities.Add(adminActivity);
                 await _context.SaveChangesAsync();
 
-                // Log admin activity and send notifications
+                // Send notifications in background (fire and forget) to avoid blocking response
                 if (currentUser != null)
                 {
-                    await _adminActivityService.LogOrderCancelledAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
-
-                    // Send notifications through central hub (replaces individual notification calls)
-                    await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderDeleted, currentUser.Id);
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _adminActivityService.LogOrderCancelledAsync(order, currentUser.Id, currentUser.UserName ?? "Unknown");
+                            await _notificationHub.SendOrderNotificationAsync(order, NotificationEventType.OrderDeleted, currentUser.Id);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error in background notification for order deletion {orderId}");
+                        }
+                    });
                 }
 
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    // Disable nginx response buffering for immediate response delivery
+                    Response.DisableNginxBuffering();
 
+                    // nginx will respect X-Accel-Buffering: no header and send response immediately
+                    return Json(new { success = true, message = $"معامله #{orderId} با موفقیت حذف شد و تأثیرات مالی آن برگردانده شد." });
+                }
 
-                TempData["SuccessMessage"] = $"معامله #{order.Id} با موفقیت حذف شد و تأثیرات مالی آن برگردانده شد.";
+                TempData["SuccessMessage"] = $"معامله #{orderId} با موفقیت حذف شد و تأثیرات مالی آن برگردانده شد.";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error deleting order {id}");
-                TempData["ErrorMessage"] = "خطا در حذف معامله. لطفاً دوباره تلاش کنید.";
-            }
+                
+                // Check if this is an AJAX request
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    // Disable nginx response buffering for immediate response delivery
+                    Response.DisableNginxBuffering();
 
-            return RedirectToAction(nameof(Index));
+                    // nginx will respect X-Accel-Buffering: no header and send response immediately
+                    return Json(new { success = false, message = "خطا در حذف معامله. لطفاً دوباره تلاش کنید." });
+                }
+
+                TempData["ErrorMessage"] = "خطا در حذف معامله. لطفاً دوباره تلاش کنید.";
+                return RedirectToAction(nameof(Index));
+            }
         }
     }
 }

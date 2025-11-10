@@ -6,6 +6,7 @@ using ForexExchange.Services;
 using ForexExchange.Hubs;
 using ForexExchange.Services.Notifications.Providers;
 using ForexExchange.Services.Notifications;
+using ForexExchange.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -220,6 +221,10 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// Add middleware to disable nginx buffering for AJAX requests
+app.UseMiddleware<NginxBufferingMiddleware>();
+
 app.UseRouting();
 
 // Add authentication middleware

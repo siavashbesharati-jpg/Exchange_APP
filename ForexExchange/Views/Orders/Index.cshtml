@@ -542,23 +542,48 @@
 
         function confirmOrderDelete(orderId, fromCurrency, toCurrency) {
             if (confirm(`آیا از حذف معامله #${orderId} (${fromCurrency} به ${toCurrency}) اطمینان دارید؟\n\nاین عملیات تمام تأثیرات مالی معامله را برمی‌گرداند و غیرقابل بازگشت است.`)) {
-                // Create and submit delete form
-                var form = document.createElement('form');
-                form.method = 'post';
-                form.action = '@Url.Action("Delete", "Orders")/' + orderId;
-
-                // Get anti-forgery token from hidden form
-                var hiddenToken = document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]');
-                if (hiddenToken) {
-                    var tokenInput = document.createElement('input');
-                    tokenInput.type = 'hidden';
-                    tokenInput.name = '__RequestVerificationToken';
-                    tokenInput.value = hiddenToken.value;
-                    form.appendChild(tokenInput);
+                // Show loading overlay
+                if (typeof showLoadingWithMessage === 'function') {
+                    showLoadingWithMessage('DELETING_DOCUMENT', 'در حال حذف معامله...', 'برگرداندن تأثیرات مالی');
+                } else if (typeof showLoadingOverlay === 'function') {
+                    showLoadingOverlay('در حال حذف معامله...', 'برگرداندن تأثیرات مالی');
                 }
 
-                document.body.appendChild(form);
-                form.submit();
+                // Get anti-forgery token
+                var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || 
+                           document.querySelector('#hiddenTokenForm input[name="__RequestVerificationToken"]')?.value;
+
+                // Use AJAX for deletion
+                fetch('@Url.Action("Delete", "Orders")/' + orderId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: '__RequestVerificationToken=' + encodeURIComponent(token)
+                })
+                .then(response => {
+                    // Hide overlay immediately when response is received (before processing)
+                    if (typeof hideLoadingOverlay === 'function') {
+                        hideLoadingOverlay();
+                    }
+                    
+                    if (response.ok) {
+                        // Success - reload page to show updated list
+                        window.location.reload();
+                    } else {
+                        // Error
+                        alert('خطا در حذف معامله. لطفاً دوباره تلاش کنید.');
+                    }
+                })
+                .catch(error => {
+                    if (typeof hideLoadingOverlay === 'function') {
+                        hideLoadingOverlay();
+                    }
+                    console.error('Error deleting order:', error);
+                    alert('خطا در ارتباط با سرور: ' + error);
+                });
             }
         }
     </script>
