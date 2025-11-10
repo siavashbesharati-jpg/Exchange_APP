@@ -1,6 +1,8 @@
 using ForexExchange.Services.Notifications;
 using ForexExchange.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using WebPush;
 
@@ -12,42 +14,37 @@ namespace ForexExchange.Services.Notifications.Providers
     /// </summary>
     public class PushNotificationProvider : INotificationProvider
     {
-        private readonly ForexDbContext _context;
-        private readonly IVapidService _vapidService;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<PushNotificationProvider> _logger;
         private readonly IConfiguration _configuration;
-        private readonly WebPushClient _webPushClient;
 
         public string ProviderName => "Push";
 
-        public bool IsEnabled => _configuration.GetValue<bool>("Notifications:Push:Enabled", true);
+        public bool IsEnabled => true;
 
         public PushNotificationProvider(
-            ForexDbContext context,
-            IVapidService vapidService,
+            IServiceScopeFactory scopeFactory,
             ILogger<PushNotificationProvider> logger,
             IConfiguration configuration)
         {
-            _context = context;
-            _vapidService = vapidService;
+            _scopeFactory = scopeFactory;
             _logger = logger;
             _configuration = configuration;
-            _webPushClient = new WebPushClient();
         }
 
         /// <summary>
         /// Initialize VAPID details for WebPush client
         /// </summary>
-        private async Task InitializeVapidAsync()
+        private static async Task InitializeVapidAsync(WebPushClient webPushClient, IVapidService vapidService, ILogger logger)
         {
             try
             {
-                var vapidDetails = await _vapidService.GetVapidDetailsAsync();
-                _webPushClient.SetVapidDetails(vapidDetails.Subject, vapidDetails.PublicKey, vapidDetails.PrivateKey);
+                var vapidDetails = await vapidService.GetVapidDetailsAsync();
+                webPushClient.SetVapidDetails(vapidDetails.Subject, vapidDetails.PublicKey, vapidDetails.PrivateKey);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error initializing VAPID details for push notifications");
+                logger.LogError(ex, "Error initializing VAPID details for push notifications");
                 throw;
             }
         }
@@ -164,69 +161,107 @@ namespace ForexExchange.Services.Notifications.Providers
             };
         }
 
-        private async Task SendPushNotificationAsync(NotificationContext context, string payload, string logDescription)
+        private Task SendPushNotificationAsync(NotificationContext context, string payload, string logDescription)
         {
-            try
+            var userId = context.UserId;
+            var explicitTargets = context.TargetUserIds?.ToList() ?? new List<string>();
+            var excludeUserIds = context.ExcludeUserIds?.ToList() ?? new List<string>();
+            var sendToAllAdmins = context.SendToAllAdmins;
+            var eventType = context.EventType;
+
+            _ = Task.Run(async () =>
             {
-                // Initialize VAPID
-                await InitializeVapidAsync();
-
-                // Get target user IDs
-                var targetUserIds = new List<string>();
-                if (!string.IsNullOrEmpty(context.UserId))
+                try
                 {
-                    targetUserIds.Add(context.UserId);
-                }
-                targetUserIds.AddRange(context.TargetUserIds);
+                    await using var scope = _scopeFactory.CreateAsyncScope();
+                    var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<PushNotificationProvider>>();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<ForexDbContext>();
+                    var vapidService = scope.ServiceProvider.GetRequiredService<IVapidService>();
+                    var webPushClient = new WebPushClient();
 
-                if (context.SendToAllAdmins)
+                    await InitializeVapidAsync(webPushClient, vapidService, scopedLogger);
+
+                    var targetUserIds = await ResolveTargetUserIdsAsync(dbContext, scopedLogger, userId, explicitTargets, excludeUserIds, sendToAllAdmins);
+
+                    if (!targetUserIds.Any())
+                    {
+                        scopedLogger.LogWarning("No target users found for push notification: {Description}", logDescription);
+                        return;
+                    }
+
+                    var totalSuccessCount = 0;
+                    var totalErrorCount = 0;
+
+                    foreach (var targetUserId in targetUserIds)
+                    {
+                        var (successCount, errorCount) = await SendToUserAsync(dbContext, webPushClient, scopedLogger, targetUserId, payload, logDescription);
+                        totalSuccessCount += successCount;
+                        totalErrorCount += errorCount;
+                    }
+
+                    scopedLogger.LogInformation("{Description} push notification sent: {SuccessCount} successful, {ErrorCount} failed to {UserCount} users",
+                        logDescription, totalSuccessCount, totalErrorCount, targetUserIds.Count);
+                }
+                catch (Exception ex)
                 {
-                    // Get all admin user IDs
-                    var adminUserIds = await GetAdminUserIdsAsync();
-                    targetUserIds.AddRange(adminUserIds);
+                    _logger.LogError(ex, "Error sending push notification in background: {Description}", logDescription);
                 }
+            });
 
-                if (!targetUserIds.Any())
-                {
-                    _logger.LogWarning("No target users found for push notification: {Description}", logDescription);
-                    return;
-                }
-
-                // Remove duplicates
-                targetUserIds = targetUserIds.Distinct().ToList();
-
-                var totalSuccessCount = 0;
-                var totalErrorCount = 0;
-
-                foreach (var userId in targetUserIds)
-                {
-                    var (successCount, errorCount) = await SendToUserAsync(userId, payload, logDescription);
-                    totalSuccessCount += successCount;
-                    totalErrorCount += errorCount;
-                }
-
-                _logger.LogInformation("{Description} push notification sent: {SuccessCount} successful, {ErrorCount} failed to {UserCount} users", 
-                    logDescription, totalSuccessCount, totalErrorCount, targetUserIds.Count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending push notification: {Description}", logDescription);
-                throw;
-            }
+            return Task.CompletedTask;
         }
 
-        private async Task<(int successCount, int errorCount)> SendToUserAsync(string userId, string payload, string logDescription)
+        private static async Task<List<string>> ResolveTargetUserIdsAsync(
+            ForexDbContext dbContext,
+            ILogger logger,
+            string? userId,
+            List<string> explicitTargets,
+            List<string> excludeUserIds,
+            bool sendToAllAdmins)
+        {
+            var targetUserIds = new List<string>();
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                targetUserIds.Add(userId);
+            }
+
+            if (explicitTargets.Any())
+            {
+                targetUserIds.AddRange(explicitTargets);
+            }
+
+            if (sendToAllAdmins)
+            {
+                var adminUserIds = await GetAdminUserIdsAsync(dbContext, logger);
+                targetUserIds.AddRange(adminUserIds);
+            }
+
+            if (excludeUserIds.Any())
+            {
+                targetUserIds = targetUserIds.Where(id => !excludeUserIds.Contains(id)).ToList();
+            }
+
+            return targetUserIds.Distinct().ToList();
+        }
+
+        private static async Task<(int successCount, int errorCount)> SendToUserAsync(
+            ForexDbContext dbContext,
+            WebPushClient webPushClient,
+            ILogger logger,
+            string userId,
+            string payload,
+            string logDescription)
         {
             try
             {
-                // Get user's active subscriptions
-                var subscriptions = await _context.PushSubscriptions
+                var subscriptions = await dbContext.PushSubscriptions
                     .Where(ps => ps.UserId == userId && ps.IsActive)
                     .ToListAsync();
 
                 if (!subscriptions.Any())
                 {
-                    _logger.LogDebug("No active push subscriptions found for user {UserId}", userId);
+                    logger.LogDebug("No active push subscriptions found for user {UserId}", userId);
                     return (0, 0);
                 }
 
@@ -242,14 +277,12 @@ namespace ForexExchange.Services.Notifications.Providers
                             subscription.P256dhKey,
                             subscription.AuthKey);
 
-                        await _webPushClient.SendNotificationAsync(webPushSubscription, payload);
+                        await webPushClient.SendNotificationAsync(webPushSubscription, payload);
                         successCount++;
 
-                        // Update subscription stats
                         subscription.SuccessfulNotifications++;
                         subscription.LastNotificationSent = DateTime.UtcNow;
 
-                        // Log successful notification
                         var successLog = new PushNotificationLog
                         {
                             PushSubscriptionId = subscription.Id,
@@ -262,24 +295,21 @@ namespace ForexExchange.Services.Notifications.Providers
                             HttpStatusCode = 200,
                             SentAt = DateTime.UtcNow
                         };
-                        _context.PushNotificationLogs.Add(successLog);
+                        dbContext.PushNotificationLogs.Add(successLog);
                     }
                     catch (WebPushException ex)
                     {
-                        _logger.LogWarning(ex, "Failed to send push notification to endpoint {Endpoint} for user {UserId}", subscription.Endpoint, userId);
+                        logger.LogWarning(ex, "Failed to send push notification to endpoint {Endpoint} for user {UserId}", subscription.Endpoint, userId);
                         errorCount++;
 
-                        // Update subscription stats
                         subscription.FailedNotifications++;
 
-                        // Deactivate subscription if permanently failed
                         if (ex.StatusCode == System.Net.HttpStatusCode.Gone)
                         {
                             subscription.IsActive = false;
-                            _logger.LogInformation("Deactivated expired push subscription for user {UserId}", userId);
+                            logger.LogInformation("Deactivated expired push subscription for user {UserId}", userId);
                         }
 
-                        // Log failed notification
                         var errorLog = new PushNotificationLog
                         {
                             PushSubscriptionId = subscription.Id,
@@ -292,30 +322,50 @@ namespace ForexExchange.Services.Notifications.Providers
                             HttpStatusCode = (int?)ex.StatusCode,
                             SentAt = DateTime.UtcNow
                         };
-                        _context.PushNotificationLogs.Add(errorLog);
+                        dbContext.PushNotificationLogs.Add(errorLog);
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+                        logger.LogWarning(ex, "Push notification timed out for endpoint {Endpoint} (user {UserId})", subscription.Endpoint, userId);
+                        errorCount++;
+
+                        subscription.FailedNotifications++;
+
+                        var errorLog = new PushNotificationLog
+                        {
+                            PushSubscriptionId = subscription.Id,
+                            Title = logDescription,
+                            Message = "Push notification timed out",
+                            Type = "business_event",
+                            Data = payload,
+                            WasSuccessful = false,
+                            ErrorMessage = ex.Message,
+                            HttpStatusCode = null,
+                            SentAt = DateTime.UtcNow
+                        };
+                        dbContext.PushNotificationLogs.Add(errorLog);
                     }
 
                     subscription.UpdatedAt = DateTime.UtcNow;
                 }
 
-                await _context.SaveChangesAsync();
+                await dbContext.SaveChangesAsync();
                 return (successCount, errorCount);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending push notifications to user {UserId}", userId);
+                logger.LogError(ex, "Error sending push notifications to user {UserId}", userId);
                 return (0, 1);
             }
         }
 
-        private async Task<List<string>> GetAdminUserIdsAsync()
+        private static async Task<List<string>> GetAdminUserIdsAsync(ForexDbContext dbContext, ILogger logger)
         {
             try
             {
-                // Get all users in Admin, Manager, or Staff roles
-                var adminUsers = await _context.Users
-                    .Join(_context.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { User = u, UserRole = ur })
-                    .Join(_context.Roles, ur => ur.UserRole.RoleId, r => r.Id, (ur, r) => new { ur.User, Role = r })
+                var adminUsers = await dbContext.Users
+                    .Join(dbContext.UserRoles, u => u.Id, ur => ur.UserId, (u, ur) => new { User = u, UserRole = ur })
+                    .Join(dbContext.Roles, ur => ur.UserRole.RoleId, r => r.Id, (ur, r) => new { ur.User, Role = r })
                     .Where(x => x.Role.Name == "Admin" || x.Role.Name == "Manager" || x.Role.Name == "Staff")
                     .Select(x => x.User.Id)
                     .Distinct()
@@ -325,7 +375,7 @@ namespace ForexExchange.Services.Notifications.Providers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting admin user IDs for push notifications");
+                logger.LogError(ex, "Error getting admin user IDs for push notifications");
                 return new List<string>();
             }
         }
