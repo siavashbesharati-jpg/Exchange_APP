@@ -583,7 +583,1035 @@ namespace ForexExchange.Services
 
         #endregion Preview
 
+        #region Incremental Update Helpers
 
+        /// <summary>
+        /// **INCREMENTAL UPDATE HELPER** - Gets the last balance history record for a customer+currency combination.
+        /// Returns the current balance from CustomerBalance table if no history exists.
+        /// Handles case-insensitive currency code matching.
+        /// </summary>
+        /// <param name="customerId">Customer ID</param>
+        /// <param name="currencyCode">Currency code (case-insensitive)</param>
+        /// <returns>Last balance (BalanceAfter from last history record, or current balance if no history)</returns>
+        private async Task<decimal> GetLastCustomerHistoryBalanceAsync(int customerId, string currencyCode)
+        {
+            var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+
+            // Get all history records for this customer (load first, then filter in memory for case-insensitive matching)
+            var allHistory = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId && !h.IsDeleted)
+                .ToListAsync();
+
+            // Filter in memory for case-insensitive currency code matching
+            var lastHistory = allHistory
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .OrderByDescending(h => h.TransactionDate)
+                .ThenByDescending(h => h.Id)
+                .FirstOrDefault();
+
+            if (lastHistory != null)
+            {
+                return lastHistory.BalanceAfter;
+            }
+
+            // No history exists, get current balance from CustomerBalance table
+            var customerBalances = await _context.CustomerBalances
+                .Where(cb => cb.CustomerId == customerId)
+                .ToListAsync();
+
+            var customerBalance = customerBalances.FirstOrDefault(cb =>
+                (cb.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+            if (customerBalance != null)
+            {
+                // Normalize currency code if needed
+                if (customerBalance.CurrencyCode != normalizedCurrencyCode)
+                {
+                    customerBalance.CurrencyCode = normalizedCurrencyCode;
+                    await _context.SaveChangesAsync();
+                }
+                return customerBalance.Balance;
+            }
+
+            // No balance record exists, return zero (will be created when needed)
+            return 0m;
+        }
+
+        /// <summary>
+        /// **INCREMENTAL UPDATE HELPER** - Gets the last balance history record for a currency pool.
+        /// Returns the current balance from CurrencyPool table if no history exists.
+        /// Handles case-insensitive currency code matching.
+        /// </summary>
+        /// <param name="currencyCode">Currency code (case-insensitive)</param>
+        /// <returns>Last balance (BalanceAfter from last history record, or current balance if no history)</returns>
+        private async Task<decimal> GetLastPoolHistoryBalanceAsync(string currencyCode)
+        {
+            var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+
+            // Get all history records (load first, then filter in memory for case-insensitive matching)
+            var allHistory = await _context.CurrencyPoolHistory
+                .Where(h => !h.IsDeleted)
+                .ToListAsync();
+
+            // Filter in memory for case-insensitive currency code matching
+            var lastHistory = allHistory
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .OrderByDescending(h => h.TransactionDate)
+                .ThenByDescending(h => h.Id)
+                .FirstOrDefault();
+
+            if (lastHistory != null)
+            {
+                return lastHistory.BalanceAfter;
+            }
+
+            // No history exists, get current balance from CurrencyPool table
+            // First, find the currency by code (load all and filter in memory)
+            var allCurrencies = await _context.Currencies.ToListAsync();
+            var currency = allCurrencies
+                .FirstOrDefault(c => (c.Code ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+            if (currency != null)
+            {
+                var pool = await _context.CurrencyPools
+                    .FirstOrDefaultAsync(p => p.CurrencyId == currency.Id);
+
+                if (pool != null)
+                {
+                    // Normalize currency code if needed
+                    if (pool.CurrencyCode != normalizedCurrencyCode)
+                    {
+                        pool.CurrencyCode = normalizedCurrencyCode;
+                        await _context.SaveChangesAsync();
+                    }
+                    return pool.Balance;
+                }
+            }
+
+            // No pool exists, return zero (should be created via CurrencyPoolService if needed)
+            return 0m;
+        }
+
+        /// <summary>
+        /// **INCREMENTAL UPDATE HELPER** - Gets the last balance history record for a bank account.
+        /// Returns the current balance from BankAccount table if no history exists.
+        /// </summary>
+        /// <param name="bankAccountId">Bank account ID</param>
+        /// <returns>Last balance (BalanceAfter from last history record, or current balance if no history)</returns>
+        private async Task<decimal> GetLastBankAccountHistoryBalanceAsync(int bankAccountId)
+        {
+            // Get last history record for this bank account
+            var lastHistory = await _context.BankAccountBalanceHistory
+                .Where(h => h.BankAccountId == bankAccountId && !h.IsDeleted)
+                .OrderByDescending(h => h.TransactionDate)
+                .ThenByDescending(h => h.Id)
+                .FirstOrDefaultAsync();
+
+            if (lastHistory != null)
+            {
+                return lastHistory.BalanceAfter;
+            }
+
+            // No history exists, get current balance from BankAccount table
+            var bankAccount = await _context.BankAccounts
+                .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
+
+            if (bankAccount != null)
+            {
+                return bankAccount.AccountBalance;
+            }
+
+            // Bank account doesn't exist, return zero
+            return 0m;
+        }
+
+        /// <summary>
+        /// **INCREMENTAL UPDATE HELPER** - Adds a customer balance history record incrementally.
+        /// Gets the last balance, calculates the new balance, creates history record, and updates CustomerBalance.
+        /// Handles transaction date ordering and case-insensitive currency matching.
+        /// </summary>
+        /// <param name="customerId">Customer ID</param>
+        /// <param name="currencyCode">Currency code</param>
+        /// <param name="transactionAmount">Transaction amount (positive or negative)</param>
+        /// <param name="transactionType">Transaction type</param>
+        /// <param name="referenceId">Reference ID (OrderId, DocumentId, or null for manual)</param>
+        /// <param name="transactionDate">Transaction date</param>
+        /// <param name="description">Description</param>
+        /// <param name="transactionNumber">Transaction number (optional)</param>
+        /// <param name="performedBy">Performed by</param>
+        /// <returns>Created history record</returns>
+        private async Task<CustomerBalanceHistory> AddCustomerBalanceHistoryIncrementalAsync(
+            int customerId,
+            string currencyCode,
+            decimal transactionAmount,
+            CustomerBalanceTransactionType transactionType,
+            int? referenceId,
+            DateTime transactionDate,
+            string description,
+            string? transactionNumber,
+            string performedBy)
+        {
+            var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+
+            // Get last balance (from history or current balance)
+            // Note: For simplicity, we assume transactions are usually in chronological order
+            // If transaction date is in the past, we use the balance before that date
+            // For future enhancement: handle out-of-order transactions by rebuilding from insertion point
+            var balanceBefore = await GetLastCustomerHistoryBalanceAsync(customerId, normalizedCurrencyCode);
+
+            // Calculate new balance
+            var balanceAfter = balanceBefore + transactionAmount;
+
+            // Ensure CustomerBalance record exists and is normalized
+            var customerBalances = await _context.CustomerBalances
+                .Where(cb => cb.CustomerId == customerId)
+                .ToListAsync();
+
+            var customerBalance = customerBalances.FirstOrDefault(cb =>
+                (cb.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+            if (customerBalance == null)
+            {
+                customerBalance = new CustomerBalance
+                {
+                    CustomerId = customerId,
+                    CurrencyCode = normalizedCurrencyCode,
+                    Balance = 0,
+                    LastUpdated = DateTime.UtcNow
+                };
+                _context.CustomerBalances.Add(customerBalance);
+                await _context.SaveChangesAsync();
+            }
+            else if (customerBalance.CurrencyCode != normalizedCurrencyCode)
+            {
+                customerBalance.CurrencyCode = normalizedCurrencyCode;
+                await _context.SaveChangesAsync();
+            }
+
+            // Create history record
+            var historyRecord = new CustomerBalanceHistory
+            {
+                CustomerId = customerId,
+                CurrencyCode = normalizedCurrencyCode,
+                TransactionType = transactionType,
+                ReferenceId = referenceId,
+                BalanceBefore = balanceBefore,
+                TransactionAmount = transactionAmount,
+                BalanceAfter = balanceAfter,
+                Description = description,
+                TransactionNumber = transactionNumber,
+                TransactionDate = transactionDate,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = performedBy,
+                IsDeleted = false
+            };
+
+            _context.CustomerBalanceHistory.Add(historyRecord);
+
+            // Update customer balance
+            customerBalance.Balance = balanceAfter;
+            customerBalance.LastUpdated = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Added incremental customer balance history: Customer {customerId}, Currency {normalizedCurrencyCode}, Amount {transactionAmount}, Balance {balanceBefore} -> {balanceAfter}");
+
+            return historyRecord;
+        }
+
+        /// <summary>
+        /// **INCREMENTAL UPDATE HELPER** - Gets the last balance for a customer+currency up to (but not including) a transaction date.
+        /// Used for out-of-order transaction insertion.
+        /// </summary>
+        private async Task<decimal> GetLastCustomerBalanceHistoryAsync(int customerId, string currencyCode, DateTime beforeDate)
+        {
+            var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+
+            // Get all history records for this customer before the date (load first, then filter in memory)
+            var allHistory = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId && !h.IsDeleted && h.TransactionDate < beforeDate)
+                .ToListAsync();
+
+            // Filter in memory for case-insensitive currency code matching
+            var lastHistory = allHistory
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .OrderByDescending(h => h.TransactionDate)
+                .ThenByDescending(h => h.Id)
+                .FirstOrDefault();
+
+            if (lastHistory != null)
+            {
+                return lastHistory.BalanceAfter;
+            }
+
+            // No history before this date, check if there are any later transactions that need to be recalculated
+            // For now, we'll assume transactions are usually in order and use the current last balance
+            return await GetLastCustomerHistoryBalanceAsync(customerId, currencyCode);
+        }
+
+        /// <summary>
+        /// **INCREMENTAL UPDATE HELPER** - Adds a pool balance history record incrementally.
+        /// Gets the last balance, calculates the new balance, creates history record, and updates CurrencyPool.
+        /// Also updates buy/sell counts and totals for orders.
+        /// </summary>
+        /// <param name="currencyCode">Currency code</param>
+        /// <param name="transactionAmount">Transaction amount (positive or negative)</param>
+        /// <param name="transactionType">Transaction type</param>
+        /// <param name="referenceId">Reference ID (OrderId or null for manual)</param>
+        /// <param name="transactionDate">Transaction date</param>
+        /// <param name="description">Description</param>
+        /// <param name="poolTransactionType">Pool transaction type (Buy/Sell/Manual)</param>
+        /// <param name="performedBy">Performed by</param>
+        /// <returns>Created history record</returns>
+        private async Task<CurrencyPoolHistory> AddPoolBalanceHistoryIncrementalAsync(
+            string currencyCode,
+            decimal transactionAmount,
+            CurrencyPoolTransactionType transactionType,
+            int? referenceId,
+            DateTime transactionDate,
+            string description,
+            string poolTransactionType,
+            string performedBy)
+        {
+            var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+
+            // Get currency by code (load all and filter in memory)
+            var allCurrencies = await _context.Currencies.ToListAsync();
+            var currency = allCurrencies
+                .FirstOrDefault(c => (c.Code ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+            if (currency == null)
+            {
+                throw new ArgumentException($"Currency with code {normalizedCurrencyCode} not found");
+            }
+
+            // Get or create pool
+            var pool = await _context.CurrencyPools
+                .FirstOrDefaultAsync(p => p.CurrencyId == currency.Id);
+
+            if (pool == null)
+            {
+                await _currencyPoolService.CreatePoolAsync(currency.Id);
+                pool = await _context.CurrencyPools
+                    .FirstOrDefaultAsync(p => p.CurrencyId == currency.Id);
+            }
+
+            if (pool == null)
+            {
+                throw new Exception($"Failed to create or retrieve pool for currency {normalizedCurrencyCode}");
+            }
+
+            // Normalize pool currency code
+            if (pool.CurrencyCode != normalizedCurrencyCode)
+            {
+                pool.CurrencyCode = normalizedCurrencyCode;
+                await _context.SaveChangesAsync();
+            }
+
+            // Get last balance (from history or current balance)
+            var balanceBefore = await GetLastPoolHistoryBalanceAsync(normalizedCurrencyCode);
+
+            // Calculate new balance
+            var balanceAfter = balanceBefore + transactionAmount;
+
+            // Create history record
+            var historyRecord = new CurrencyPoolHistory
+            {
+                CurrencyCode = normalizedCurrencyCode,
+                TransactionType = transactionType,
+                ReferenceId = referenceId,
+                BalanceBefore = balanceBefore,
+                TransactionAmount = transactionAmount,
+                BalanceAfter = balanceAfter,
+                PoolTransactionType = poolTransactionType,
+                Description = description,
+                TransactionDate = transactionDate,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = performedBy,
+                IsDeleted = false
+            };
+
+            _context.CurrencyPoolHistory.Add(historyRecord);
+
+            // Update pool balance
+            pool.Balance = balanceAfter;
+            pool.LastUpdated = DateTime.UtcNow;
+
+            // Update buy/sell counts and totals for orders
+            if (transactionType == CurrencyPoolTransactionType.Order && referenceId.HasValue)
+            {
+                if (poolTransactionType == "Buy" || transactionAmount > 0)
+                {
+                    pool.TotalBought += Math.Abs(transactionAmount);
+                    // Note: ActiveBuyOrderCount should be recalculated separately if needed
+                }
+                else if (poolTransactionType == "Sell" || transactionAmount < 0)
+                {
+                    pool.TotalSold += Math.Abs(transactionAmount);
+                    // Note: ActiveSellOrderCount should be recalculated separately if needed
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Added incremental pool balance history: Currency {normalizedCurrencyCode}, Amount {transactionAmount}, Balance {balanceBefore} -> {balanceAfter}");
+
+            return historyRecord;
+        }
+
+        /// <summary>
+        /// **INCREMENTAL UPDATE HELPER** - Adds a bank account balance history record incrementally.
+        /// Gets the last balance, calculates the new balance, creates history record, and updates BankAccount.
+        /// </summary>
+        /// <param name="bankAccountId">Bank account ID</param>
+        /// <param name="transactionAmount">Transaction amount (positive or negative)</param>
+        /// <param name="transactionType">Transaction type</param>
+        /// <param name="referenceId">Reference ID (DocumentId or null for manual)</param>
+        /// <param name="transactionDate">Transaction date</param>
+        /// <param name="description">Description</param>
+        /// <param name="performedBy">Performed by</param>
+        /// <returns>Created history record</returns>
+        private async Task<BankAccountBalanceHistory> AddBankAccountBalanceHistoryIncrementalAsync(
+            int bankAccountId,
+            decimal transactionAmount,
+            BankAccountTransactionType transactionType,
+            int? referenceId,
+            DateTime transactionDate,
+            string description,
+            string performedBy)
+        {
+            // Get bank account
+            var bankAccount = await _context.BankAccounts
+                .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
+
+            if (bankAccount == null)
+            {
+                throw new ArgumentException($"Bank account with ID {bankAccountId} not found");
+            }
+
+            // Get last balance (from history or current balance)
+            var balanceBefore = await GetLastBankAccountHistoryBalanceAsync(bankAccountId);
+
+            // Calculate new balance
+            var balanceAfter = balanceBefore + transactionAmount;
+
+            // Create history record
+            var historyRecord = new BankAccountBalanceHistory
+            {
+                BankAccountId = bankAccountId,
+                TransactionType = transactionType,
+                ReferenceId = referenceId,
+                BalanceBefore = balanceBefore,
+                TransactionAmount = transactionAmount,
+                BalanceAfter = balanceAfter,
+                Description = description,
+                TransactionDate = transactionDate,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = performedBy,
+                IsDeleted = false
+            };
+
+            _context.BankAccountBalanceHistory.Add(historyRecord);
+
+            // Update bank account balance
+            bankAccount.AccountBalance = balanceAfter;
+            bankAccount.LastModified = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Added incremental bank account balance history: Bank Account {bankAccountId}, Amount {transactionAmount}, Balance {balanceBefore} -> {balanceAfter}");
+
+            return historyRecord;
+        }
+
+        #endregion Incremental Update Helpers
+
+        #region Partial Rebuild Helpers
+
+        /// <summary>
+        /// **PARTIAL REBUILD HELPER** - Rebuilds balances for a specific customer+currency combination from a transaction date forward.
+        /// Used when a transaction is deleted and subsequent balances need recalculation.
+        /// Rebuilds from source data (Orders, Documents, Manual records) not from history.
+        /// Much faster than full rebuild (only affects one customer+currency combination).
+        /// </summary>
+        /// <param name="customerId">Customer ID</param>
+        /// <param name="currencyCode">Currency code</param>
+        /// <param name="fromDate">Transaction date to rebuild from (inclusive)</param>
+        /// <param name="performedBy">Identifier of who initiated the rebuild</param>
+        private async Task RebuildCustomerBalanceFromDateAsync(int customerId, string currencyCode, DateTime fromDate, string performedBy)
+        {
+            var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+
+            _logger.LogInformation($"Rebuilding customer balance from date: Customer {customerId}, Currency {normalizedCurrencyCode}, FromDate {fromDate:yyyy-MM-dd}");
+
+            // Get the balance before the fromDate
+            var balanceBefore = await GetLastCustomerBalanceHistoryAsync(customerId, normalizedCurrencyCode, fromDate);
+
+            // Get manual records BEFORE marking existing records as deleted (so we can include them in rebuild)
+            // Load first, then filter in memory for case-insensitive currency code matching
+            var allManualRecords = await _context.CustomerBalanceHistory
+                .Where(h => h.TransactionType == CustomerBalanceTransactionType.Manual &&
+                           !h.IsDeleted &&
+                           h.CustomerId == customerId &&
+                           h.TransactionDate >= fromDate)
+                .ToListAsync();
+
+            var manualRecords = allManualRecords
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .ToList();
+
+            // Mark existing history records from fromDate forward as deleted (soft delete)
+            // Load first, then filter in memory for case-insensitive currency code matching
+            var allExistingRecords = await _context.CustomerBalanceHistory
+                .Where(h => h.CustomerId == customerId &&
+                           !h.IsDeleted &&
+                           h.TransactionDate >= fromDate)
+                .ToListAsync();
+
+            var existingRecords = allExistingRecords
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .ToList();
+
+            foreach (var record in existingRecords)
+            {
+                record.IsDeleted = true;
+                record.DeletedAt = DateTime.UtcNow;
+                record.DeletedBy = performedBy;
+            }
+            await _context.SaveChangesAsync();
+
+            // Rebuild from source data: Get all orders for this customer+currency from fromDate forward
+            var orders = await _context.Orders
+                .Where(o => !o.IsDeleted &&
+                           o.CustomerId == customerId &&
+                           o.CreatedAt >= fromDate)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .ToListAsync();
+
+            // Get all documents for this customer+currency from fromDate forward
+            var documents = await _context.AccountingDocuments
+                .Where(d => !d.IsDeleted &&
+                           d.IsVerified &&
+                           d.DocumentDate >= fromDate &&
+                           ((d.PayerType == PayerType.Customer && d.PayerCustomerId == customerId) ||
+                            (d.ReceiverType == ReceiverType.Customer && d.ReceiverCustomerId == customerId)))
+                .ToListAsync();
+
+            // Create transaction items from source data
+            var transactionItems = new List<(DateTime TransactionDate, CustomerBalanceTransactionType TransactionType, int? ReferenceId, decimal Amount, string Description, string? TransactionNumber)>();
+
+            // Add order transactions
+            foreach (var order in orders)
+            {
+                var fromCurrencyCode = (order.FromCurrency?.Code ?? "").ToUpperInvariant().Trim();
+                var toCurrencyCode = (order.ToCurrency?.Code ?? "").ToUpperInvariant().Trim();
+
+                if (fromCurrencyCode == normalizedCurrencyCode)
+                {
+                    var description = $"معامله {order.CurrencyPair} - نرخ: {order.Rate}";
+                    if (!string.IsNullOrEmpty(order.Notes))
+                        description += $" - توضیحات: {order.Notes}";
+                    transactionItems.Add((order.CreatedAt, CustomerBalanceTransactionType.Order, order.Id, -order.FromAmount, description, null));
+                }
+
+                if (toCurrencyCode == normalizedCurrencyCode)
+                {
+                    var description = $"معامله {order.CurrencyPair} - نرخ: {order.Rate}";
+                    if (!string.IsNullOrEmpty(order.Notes))
+                        description += $" - توضیحات: {order.Notes}";
+                    transactionItems.Add((order.CreatedAt, CustomerBalanceTransactionType.Order, order.Id, order.ToAmount, description, null));
+                }
+            }
+
+            // Add document transactions
+            foreach (var doc in documents)
+            {
+                var docCurrencyCode = (doc.CurrencyCode ?? "").ToUpperInvariant().Trim();
+                if (docCurrencyCode != normalizedCurrencyCode)
+                    continue;
+
+                var description = $"{doc.Title} - مبلغ: {doc.Amount} {docCurrencyCode}";
+                if (!string.IsNullOrEmpty(doc.Description))
+                    description += $" - {doc.Description}";
+
+                if (doc.PayerType == PayerType.Customer && doc.PayerCustomerId == customerId)
+                {
+                    transactionItems.Add((doc.DocumentDate, CustomerBalanceTransactionType.AccountingDocument, doc.Id, doc.Amount, description, doc.ReferenceNumber));
+                }
+
+                if (doc.ReceiverType == ReceiverType.Customer && doc.ReceiverCustomerId == customerId)
+                {
+                    transactionItems.Add((doc.DocumentDate, CustomerBalanceTransactionType.AccountingDocument, doc.Id, -doc.Amount, description, doc.ReferenceNumber));
+                }
+            }
+
+            // Add manual records
+            foreach (var manual in manualRecords)
+            {
+                transactionItems.Add((manual.TransactionDate, CustomerBalanceTransactionType.Manual, manual.ReferenceId, manual.TransactionAmount, manual.Description ?? "Manual adjustment", manual.TransactionNumber));
+            }
+
+            if (!transactionItems.Any())
+            {
+                // No transactions to rebuild, just update the balance
+                var allCustomerBalancesForUpdate = await _context.CustomerBalances
+                    .Where(cb => cb.CustomerId == customerId)
+                    .ToListAsync();
+
+                var customerBalanceForUpdate = allCustomerBalancesForUpdate
+                    .FirstOrDefault(cb => (cb.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+                if (customerBalanceForUpdate != null)
+                {
+                    customerBalanceForUpdate.Balance = balanceBefore;
+                    customerBalanceForUpdate.LastUpdated = DateTime.UtcNow;
+                    if (customerBalanceForUpdate.CurrencyCode != normalizedCurrencyCode)
+                    {
+                        customerBalanceForUpdate.CurrencyCode = normalizedCurrencyCode;
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                _logger.LogInformation($"No transactions to rebuild for Customer {customerId}, Currency {normalizedCurrencyCode} from {fromDate:yyyy-MM-dd}. Balance set to {balanceBefore}");
+                return;
+            }
+
+            // Sort transactions by date
+            transactionItems = transactionItems.OrderBy(t => t.TransactionDate).ThenBy(t => t.ReferenceId).ToList();
+
+            // Rebuild history from source data
+            decimal runningBalance = balanceBefore;
+            var newHistoryRecords = new List<CustomerBalanceHistory>();
+
+            foreach (var transaction in transactionItems)
+            {
+                runningBalance += transaction.Amount;
+
+                var note = $"{transaction.TransactionType} - مبلغ: {transaction.Amount} {normalizedCurrencyCode}";
+                if (!string.IsNullOrEmpty(transaction.TransactionNumber))
+                    note += $" - شناسه تراکنش: {transaction.TransactionNumber}";
+
+                newHistoryRecords.Add(new CustomerBalanceHistory
+                {
+                    CustomerId = customerId,
+                    CurrencyCode = normalizedCurrencyCode,
+                    TransactionType = transaction.TransactionType,
+                    ReferenceId = transaction.ReferenceId,
+                    BalanceBefore = runningBalance - transaction.Amount,
+                    TransactionAmount = transaction.Amount,
+                    BalanceAfter = runningBalance,
+                    Description = transaction.Description,
+                    TransactionNumber = transaction.TransactionNumber,
+                    Note = note,
+                    TransactionDate = transaction.TransactionDate,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = performedBy,
+                    IsDeleted = false
+                });
+            }
+
+            // Save new history records
+            await _context.CustomerBalanceHistory.AddRangeAsync(newHistoryRecords);
+
+            // Update customer balance
+            var allCustomerBalances = await _context.CustomerBalances
+                .Where(cb => cb.CustomerId == customerId)
+                .ToListAsync();
+
+            var customerBalance = allCustomerBalances
+                .FirstOrDefault(cb => (cb.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+            if (customerBalance != null)
+            {
+                customerBalance.Balance = runningBalance;
+                customerBalance.LastUpdated = DateTime.UtcNow;
+                if (customerBalance.CurrencyCode != normalizedCurrencyCode)
+                {
+                    customerBalance.CurrencyCode = normalizedCurrencyCode;
+                }
+            }
+            else
+            {
+                customerBalance = new CustomerBalance
+                {
+                    CustomerId = customerId,
+                    CurrencyCode = normalizedCurrencyCode,
+                    Balance = runningBalance,
+                    LastUpdated = DateTime.UtcNow
+                };
+                _context.CustomerBalances.Add(customerBalance);
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Rebuilt customer balance: Customer {customerId}, Currency {normalizedCurrencyCode}, Final Balance {runningBalance}");
+        }
+
+        /// <summary>
+        /// **PARTIAL REBUILD HELPER** - Rebuilds balances for a specific currency pool from a transaction date forward.
+        /// Used when a transaction is deleted and subsequent balances need recalculation.
+        /// Rebuilds from source data (Orders, Manual records) not from history.
+        /// Much faster than full rebuild (only affects one currency).
+        /// </summary>
+        /// <param name="currencyCode">Currency code</param>
+        /// <param name="fromDate">Transaction date to rebuild from (inclusive)</param>
+        /// <param name="performedBy">Identifier of who initiated the rebuild</param>
+        private async Task RebuildPoolBalanceFromDateAsync(string currencyCode, DateTime fromDate, string performedBy)
+        {
+            var normalizedCurrencyCode = (currencyCode ?? "").ToUpperInvariant().Trim();
+
+            _logger.LogInformation($"Rebuilding pool balance from date: Currency {normalizedCurrencyCode}, FromDate {fromDate:yyyy-MM-dd}");
+
+            // Get the balance before the fromDate
+            // Load first, then filter in memory for case-insensitive currency code matching
+            var allHistoryBefore = await _context.CurrencyPoolHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate < fromDate)
+                .ToListAsync();
+
+            var lastHistoryBefore = allHistoryBefore
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .OrderByDescending(h => h.TransactionDate)
+                .ThenByDescending(h => h.Id)
+                .FirstOrDefault();
+
+            var balanceBefore = lastHistoryBefore != null ? lastHistoryBefore.BalanceAfter : await GetLastPoolHistoryBalanceAsync(normalizedCurrencyCode);
+
+            // Get manual records BEFORE marking existing records as deleted (so we can include them in rebuild)
+            // Load first, then filter in memory for case-insensitive currency code matching
+            var allManualRecords = await _context.CurrencyPoolHistory
+                .Where(h => h.TransactionType == CurrencyPoolTransactionType.ManualEdit &&
+                           !h.IsDeleted &&
+                           h.TransactionDate >= fromDate)
+                .ToListAsync();
+
+            var manualRecords = allManualRecords
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .ToList();
+
+            // Mark existing history records from fromDate forward as deleted (soft delete)
+            // Load first, then filter in memory for case-insensitive currency code matching
+            var allExistingRecords = await _context.CurrencyPoolHistory
+                .Where(h => !h.IsDeleted && h.TransactionDate >= fromDate)
+                .ToListAsync();
+
+            var existingRecords = allExistingRecords
+                .Where(h => (h.CurrencyCode ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode)
+                .ToList();
+
+            foreach (var record in existingRecords)
+            {
+                record.IsDeleted = true;
+                record.DeletedAt = DateTime.UtcNow;
+                record.DeletedBy = performedBy;
+            }
+            await _context.SaveChangesAsync();
+
+            // Rebuild from source data: Get all non-frozen, non-deleted orders from fromDate forward
+            var orders = await _context.Orders
+                .Where(o => !o.IsDeleted && !o.IsFrozen && o.CreatedAt >= fromDate)
+                .Include(o => o.FromCurrency)
+                .Include(o => o.ToCurrency)
+                .ToListAsync();
+
+            // Create transaction items from source data
+            var transactionItems = new List<(DateTime TransactionDate, CurrencyPoolTransactionType TransactionType, int? ReferenceId, decimal Amount, string PoolTransactionType, string Description)>();
+
+            // Add order transactions
+            foreach (var order in orders)
+            {
+                var fromCurrencyCode = (order.FromCurrency?.Code ?? "").ToUpperInvariant().Trim();
+                var toCurrencyCode = (order.ToCurrency?.Code ?? "").ToUpperInvariant().Trim();
+
+                if (fromCurrencyCode == normalizedCurrencyCode)
+                {
+                    // Institution receives FromAmount (pool increases)
+                    var description = $"معامله {order.CurrencyPair} - نرخ: {order.Rate}";
+                    if (!string.IsNullOrEmpty(order.Notes))
+                        description += $" - توضیحات: {order.Notes}";
+                    transactionItems.Add((order.CreatedAt, CurrencyPoolTransactionType.Order, order.Id, order.FromAmount, "Buy", description));
+                }
+
+                if (toCurrencyCode == normalizedCurrencyCode)
+                {
+                    // Institution pays ToAmount (pool decreases)
+                    var description = $"معامله {order.CurrencyPair} - نرخ: {order.Rate}";
+                    if (!string.IsNullOrEmpty(order.Notes))
+                        description += $" - توضیحات: {order.Notes}";
+                    transactionItems.Add((order.CreatedAt, CurrencyPoolTransactionType.Order, order.Id, -order.ToAmount, "Sell", description));
+                }
+            }
+
+            // Add manual records
+            foreach (var manual in manualRecords)
+            {
+                transactionItems.Add((manual.TransactionDate, CurrencyPoolTransactionType.ManualEdit, manual.ReferenceId, manual.TransactionAmount, "Manual", manual.Description ?? "Manual adjustment"));
+            }
+
+            if (!transactionItems.Any())
+            {
+                // No transactions to rebuild, just update the balance
+                var allCurrenciesForUpdate = await _context.Currencies.ToListAsync();
+                var currencyForUpdate = allCurrenciesForUpdate
+                    .FirstOrDefault(c => (c.Code ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+                if (currencyForUpdate != null)
+                {
+                    var pool = await _context.CurrencyPools
+                        .FirstOrDefaultAsync(p => p.CurrencyId == currencyForUpdate.Id);
+
+                    if (pool != null)
+                    {
+                        pool.Balance = balanceBefore;
+                        pool.LastUpdated = DateTime.UtcNow;
+                        if (pool.CurrencyCode != normalizedCurrencyCode)
+                        {
+                            pool.CurrencyCode = normalizedCurrencyCode;
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                _logger.LogInformation($"No transactions to rebuild for Currency {normalizedCurrencyCode} from {fromDate:yyyy-MM-dd}. Balance set to {balanceBefore}");
+                return;
+            }
+
+            // Sort transactions by date
+            transactionItems = transactionItems.OrderBy(t => t.TransactionDate).ThenBy(t => t.ReferenceId).ToList();
+
+            // Rebuild history from source data
+            decimal runningBalance = balanceBefore;
+            var newHistoryRecords = new List<CurrencyPoolHistory>();
+
+            foreach (var transaction in transactionItems)
+            {
+                runningBalance += transaction.Amount;
+
+                newHistoryRecords.Add(new CurrencyPoolHistory
+                {
+                    CurrencyCode = normalizedCurrencyCode,
+                    TransactionType = transaction.TransactionType,
+                    ReferenceId = transaction.ReferenceId,
+                    BalanceBefore = runningBalance - transaction.Amount,
+                    TransactionAmount = transaction.Amount,
+                    BalanceAfter = runningBalance,
+                    PoolTransactionType = transaction.PoolTransactionType,
+                    Description = transaction.Description,
+                    TransactionDate = transaction.TransactionDate,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = performedBy,
+                    IsDeleted = false
+                });
+            }
+
+            // Save new history records
+            await _context.CurrencyPoolHistory.AddRangeAsync(newHistoryRecords);
+
+            // Update pool balance and totals
+            var allCurrencies = await _context.Currencies.ToListAsync();
+            var currency = allCurrencies
+                .FirstOrDefault(c => (c.Code ?? "").ToUpperInvariant().Trim() == normalizedCurrencyCode);
+
+            if (currency != null)
+            {
+                var pool = await _context.CurrencyPools
+                    .FirstOrDefaultAsync(p => p.CurrencyId == currency.Id);
+
+                if (pool != null)
+                {
+                    pool.Balance = runningBalance;
+                    pool.LastUpdated = DateTime.UtcNow;
+                    if (pool.CurrencyCode != normalizedCurrencyCode)
+                    {
+                        pool.CurrencyCode = normalizedCurrencyCode;
+                    }
+
+                    // Recalculate totals from ALL source data (not just from fromDate)
+                    // Note: For accurate totals, we need to recalculate from all orders, not just from fromDate
+                    // This is still faster than full rebuild since we only process one currency
+                    var allOrdersForCurrency = await _context.Orders
+                        .Where(o => !o.IsDeleted && !o.IsFrozen &&
+                                   (o.FromCurrencyId == currency.Id || o.ToCurrencyId == currency.Id))
+                        .Include(o => o.FromCurrency)
+                        .Include(o => o.ToCurrency)
+                        .ToListAsync();
+
+                    decimal totalBought = 0;
+                    decimal totalSold = 0;
+
+                    foreach (var order in allOrdersForCurrency)
+                    {
+                        var fromCurrencyCode = (order.FromCurrency?.Code ?? "").ToUpperInvariant().Trim();
+                        var toCurrencyCode = (order.ToCurrency?.Code ?? "").ToUpperInvariant().Trim();
+
+                        if (fromCurrencyCode == normalizedCurrencyCode)
+                        {
+                            totalBought += order.FromAmount; // Institution receives (buy)
+                        }
+
+                        if (toCurrencyCode == normalizedCurrencyCode)
+                        {
+                            totalSold += order.ToAmount; // Institution provides (sell)
+                        }
+                    }
+
+                    pool.TotalBought = totalBought;
+                    pool.TotalSold = totalSold;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Rebuilt pool balance: Currency {normalizedCurrencyCode}, Final Balance {runningBalance}");
+        }
+
+        /// <summary>
+        /// **PARTIAL REBUILD HELPER** - Rebuilds balances for a specific bank account from a transaction date forward.
+        /// Used when a transaction is deleted and subsequent balances need recalculation.
+        /// Rebuilds from source data (Documents, Manual records) not from history.
+        /// Much faster than full rebuild (only affects one bank account).
+        /// </summary>
+        /// <param name="bankAccountId">Bank account ID</param>
+        /// <param name="fromDate">Transaction date to rebuild from (inclusive)</param>
+        /// <param name="performedBy">Identifier of who initiated the rebuild</param>
+        private async Task RebuildBankAccountBalanceFromDateAsync(int bankAccountId, DateTime fromDate, string performedBy)
+        {
+            _logger.LogInformation($"Rebuilding bank account balance from date: Bank Account {bankAccountId}, FromDate {fromDate:yyyy-MM-dd}");
+
+            // Get the balance before the fromDate
+            var lastHistoryBefore = await _context.BankAccountBalanceHistory
+                .Where(h => !h.IsDeleted && h.BankAccountId == bankAccountId && h.TransactionDate < fromDate)
+                .OrderByDescending(h => h.TransactionDate)
+                .ThenByDescending(h => h.Id)
+                .FirstOrDefaultAsync();
+
+            var balanceBefore = lastHistoryBefore != null ? lastHistoryBefore.BalanceAfter : await GetLastBankAccountHistoryBalanceAsync(bankAccountId);
+
+            // Get manual records BEFORE marking existing records as deleted (so we can include them in rebuild)
+            var manualRecords = await _context.BankAccountBalanceHistory
+                .Where(h => h.TransactionType == BankAccountTransactionType.ManualEdit &&
+                           !h.IsDeleted &&
+                           h.BankAccountId == bankAccountId &&
+                           h.TransactionDate >= fromDate)
+                .ToListAsync();
+
+            // Mark existing history records from fromDate forward as deleted (soft delete)
+            var existingRecords = await _context.BankAccountBalanceHistory
+                .Where(h => !h.IsDeleted &&
+                           h.BankAccountId == bankAccountId &&
+                           h.TransactionDate >= fromDate)
+                .ToListAsync();
+
+            foreach (var record in existingRecords)
+            {
+                record.IsDeleted = true;
+                record.DeletedAt = DateTime.UtcNow;
+                record.DeletedBy = performedBy;
+            }
+            await _context.SaveChangesAsync();
+
+            // Rebuild from source data: Get all non-frozen, non-deleted, verified documents from fromDate forward
+            var documents = await _context.AccountingDocuments
+                .Where(d => !d.IsDeleted &&
+                           !d.IsFrozen &&
+                           d.IsVerified &&
+                           d.DocumentDate >= fromDate &&
+                           ((d.PayerType == PayerType.System && d.PayerBankAccountId == bankAccountId) ||
+                            (d.ReceiverType == ReceiverType.System && d.ReceiverBankAccountId == bankAccountId)))
+                .ToListAsync();
+
+            // Create transaction items from source data
+            var transactionItems = new List<(DateTime TransactionDate, BankAccountTransactionType TransactionType, int? ReferenceId, decimal Amount, string Description)>();
+
+            // Add document transactions
+            foreach (var doc in documents)
+            {
+                var description = $"{doc.Title} - مبلغ: {doc.Amount} {doc.CurrencyCode}";
+                if (!string.IsNullOrEmpty(doc.Description))
+                    description += $" - {doc.Description}";
+
+                if (doc.PayerType == PayerType.System && doc.PayerBankAccountId == bankAccountId)
+                {
+                    // Bank pays out (balance increases)
+                    transactionItems.Add((doc.DocumentDate, BankAccountTransactionType.Document, doc.Id, doc.Amount, description));
+                }
+
+                if (doc.ReceiverType == ReceiverType.System && doc.ReceiverBankAccountId == bankAccountId)
+                {
+                    // Bank receives (balance decreases)
+                    transactionItems.Add((doc.DocumentDate, BankAccountTransactionType.Document, doc.Id, -doc.Amount, description));
+                }
+            }
+
+            // Add manual records
+            foreach (var manual in manualRecords)
+            {
+                transactionItems.Add((manual.TransactionDate, BankAccountTransactionType.ManualEdit, manual.ReferenceId, manual.TransactionAmount, manual.Description ?? "Manual adjustment"));
+            }
+
+            if (!transactionItems.Any())
+            {
+                // No transactions to rebuild, just update the balance
+                var bankAccountForUpdate = await _context.BankAccounts
+                    .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
+
+                if (bankAccountForUpdate != null)
+                {
+                    bankAccountForUpdate.AccountBalance = balanceBefore;
+                    bankAccountForUpdate.LastModified = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
+                _logger.LogInformation($"No transactions to rebuild for Bank Account {bankAccountId} from {fromDate:yyyy-MM-dd}. Balance set to {balanceBefore}");
+                return;
+            }
+
+            // Sort transactions by date
+            transactionItems = transactionItems.OrderBy(t => t.TransactionDate).ThenBy(t => t.ReferenceId).ToList();
+
+            // Rebuild history from source data
+            decimal runningBalance = balanceBefore;
+            var newHistoryRecords = new List<BankAccountBalanceHistory>();
+
+            foreach (var transaction in transactionItems)
+            {
+                runningBalance += transaction.Amount;
+
+                newHistoryRecords.Add(new BankAccountBalanceHistory
+                {
+                    BankAccountId = bankAccountId,
+                    TransactionType = transaction.TransactionType,
+                    ReferenceId = transaction.ReferenceId,
+                    BalanceBefore = runningBalance - transaction.Amount,
+                    TransactionAmount = transaction.Amount,
+                    BalanceAfter = runningBalance,
+                    Description = transaction.Description,
+                    TransactionDate = transaction.TransactionDate,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = performedBy,
+                    IsDeleted = false
+                });
+            }
+
+            // Save new history records
+            await _context.BankAccountBalanceHistory.AddRangeAsync(newHistoryRecords);
+
+            // Update bank account balance
+            var bankAccount = await _context.BankAccounts
+                .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
+
+            if (bankAccount != null)
+            {
+                bankAccount.AccountBalance = runningBalance;
+                bankAccount.LastModified = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Rebuilt bank account balance: Bank Account {bankAccountId}, Final Balance {runningBalance}");
+        }
+
+        #endregion Partial Rebuild Helpers
 
         #region Create reocrds
 
@@ -607,8 +1635,8 @@ namespace ForexExchange.Services
         /// 
         /// **Validation**: Calculates expected effects before processing to log and validate consistency.
         /// 
-        /// **PERFORMANCE OPTIMIZATION**: Balance rebuild runs asynchronously in background to prevent HTTP timeout issues.
-        /// The order is saved immediately and rebuild completes in background without blocking the HTTP response.
+        /// **PERFORMANCE OPTIMIZATION**: Uses incremental updates instead of full rebuild for faster processing.
+        /// Updates are synchronous and transactional to ensure data consistency.
         /// </summary>
         /// <param name="order">Complete order with all currency and amount information</param>
         /// <param name="performedBy">Identifier of who initiated the transaction (for audit trail)</param>
@@ -616,21 +1644,109 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Processing order creation for Order ID: {order.Id}");
 
-            // NEW: Check if order is frozen - frozen orders don't affect current balances or pool balances
+            // Check if order is frozen - frozen orders don't affect current balances or pool balances
             if (order.IsFrozen)
             {
                 _logger.LogInformation($"Order {order.Id} is frozen - skipping all balance updates (pools and customers)");
+                // Still save the order even if frozen
+                if (_context.Entry(order).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+                {
+                    _context.Add(order);
+                }
+                await _context.SaveChangesAsync();
                 return;
             }
-            
-            // Save order first
-            _context.Add(order);
-            await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Order {order.Id} saved successfully. Starting background balance rebuild...");
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Save order first (if not already saved)
+                if (_context.Entry(order).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+                {
+                    _context.Add(order);
+                }
+                await _context.SaveChangesAsync();
 
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("Order", order.Id, performedBy);
+                // Load order with currency navigation properties if not already loaded
+                if (order.FromCurrency == null || order.ToCurrency == null)
+                {
+                    await _context.Entry(order)
+                        .Reference(o => o.FromCurrency)
+                        .LoadAsync();
+                    await _context.Entry(order)
+                        .Reference(o => o.ToCurrency)
+                        .LoadAsync();
+                }
+
+                var fromCurrencyCode = (order.FromCurrency?.Code ?? "").ToUpperInvariant().Trim();
+                var toCurrencyCode = (order.ToCurrency?.Code ?? "").ToUpperInvariant().Trim();
+                var transactionDate = order.CreatedAt;
+                var description = $"معامله {order.CurrencyPair} - نرخ: {order.Rate}";
+                if (!string.IsNullOrEmpty(order.Notes))
+                {
+                    description += $" - توضیحات: {order.Notes}";
+                }
+
+                // Update customer balance for FromCurrency (customer pays - negative impact)
+                await AddCustomerBalanceHistoryIncrementalAsync(
+                    customerId: order.CustomerId,
+                    currencyCode: fromCurrencyCode,
+                    transactionAmount: -order.FromAmount, // Negative: customer pays
+                    transactionType: CustomerBalanceTransactionType.Order,
+                    referenceId: order.Id,
+                    transactionDate: transactionDate,
+                    description: description,
+                    transactionNumber: null,
+                    performedBy: performedBy
+                );
+
+                // Update customer balance for ToCurrency (customer receives - positive impact)
+                await AddCustomerBalanceHistoryIncrementalAsync(
+                    customerId: order.CustomerId,
+                    currencyCode: toCurrencyCode,
+                    transactionAmount: order.ToAmount, // Positive: customer receives
+                    transactionType: CustomerBalanceTransactionType.Order,
+                    referenceId: order.Id,
+                    transactionDate: transactionDate,
+                    description: description,
+                    transactionNumber: null,
+                    performedBy: performedBy
+                );
+
+                // Update pool balance for FromCurrency (institution receives - positive impact)
+                await AddPoolBalanceHistoryIncrementalAsync(
+                    currencyCode: fromCurrencyCode,
+                    transactionAmount: order.FromAmount, // Positive: pool increases
+                    transactionType: CurrencyPoolTransactionType.Order,
+                    referenceId: order.Id,
+                    transactionDate: transactionDate,
+                    description: description,
+                    poolTransactionType: "Buy",
+                    performedBy: performedBy
+                );
+
+                // Update pool balance for ToCurrency (institution provides - negative impact)
+                await AddPoolBalanceHistoryIncrementalAsync(
+                    currencyCode: toCurrencyCode,
+                    transactionAmount: -order.ToAmount, // Negative: pool decreases
+                    transactionType: CurrencyPoolTransactionType.Order,
+                    referenceId: order.Id,
+                    transactionDate: transactionDate,
+                    description: description,
+                    poolTransactionType: "Sell",
+                    performedBy: performedBy
+                );
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Order {order.Id} processed successfully with incremental balance updates");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error processing order {order.Id}: {ex.Message}");
+                throw;
+            }
         }
 
         /// <summary>
@@ -643,87 +1759,141 @@ namespace ForexExchange.Services
         /// - Bank account transactions
         /// 
         /// **Multi-Party Logic**:
-        /// - **Payer**: Entity making the payment (balance increases for deposits, decreases for withdrawals)
-        /// - **Receiver**: Entity receiving payment (balance decreases for payments made to them)
-        /// - **Bank Accounts**: Institutional accounts affected by the document
+        /// - **Payer Customer**: Gets +amount (receives money/credit)
+        /// - **Receiver Customer**: Gets -amount (pays money/debit)
+        /// - **Payer Bank Account**: Gets +amount (money flows out)
+        /// - **Receiver Bank Account**: Gets -amount (money flows in)
         /// 
         /// **Verification Requirement**: Only processes verified documents to prevent unauthorized transactions.
         /// 
         /// **Complete Audit Trail**: Every document impact is logged with document reference numbers,
         /// dates, amounts, and all parties involved for comprehensive financial auditing.
+        /// 
+        /// **PERFORMANCE OPTIMIZATION**: Uses incremental updates instead of full rebuild for faster processing.
+        /// Updates are synchronous and transactional to ensure data consistency.
         /// </summary>
         /// <param name="document">Verified accounting document with all party and amount information</param>
         /// <param name="performedBy">Identifier of who processed the document (for audit trail)</param>
         public async Task ProcessAccountingDocumentAsync(AccountingDocument document, string performedBy = "System")
         {
             _logger.LogInformation($"Processing accounting document ID: {document.Id}");
-            
-            // Save document first (if not already saved)
-            if (_context.Entry(document).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+
+            // Only process verified documents
+            if (!document.IsVerified)
             {
-                _context.Add(document);
+                _logger.LogInformation($"Document {document.Id} is not verified - skipping balance updates");
+                // Still save the document even if not verified
+                if (_context.Entry(document).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+                {
+                    _context.Add(document);
+                }
+                await _context.SaveChangesAsync();
+                return;
             }
-            await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Document {document.Id} saved successfully. Starting background balance rebuild...");
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Save document first (if not already saved)
+                if (_context.Entry(document).State == Microsoft.EntityFrameworkCore.EntityState.Detached)
+                {
+                    _context.Add(document);
+                }
+                await _context.SaveChangesAsync();
 
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("Document", document.Id, performedBy);
+                var currencyCode = (document.CurrencyCode ?? "").ToUpperInvariant().Trim();
+                var transactionDate = document.DocumentDate;
+                var description = $"{document.Title} - مبلغ: {document.Amount} {currencyCode}";
+                if (!string.IsNullOrEmpty(document.Description))
+                {
+                    description += $" - {document.Description}";
+                }
+
+                // Process customer balance updates
+                // Payer Customer: Gets +amount (receives money/credit)
+                if (document.PayerType == PayerType.Customer && document.PayerCustomerId.HasValue)
+                {
+                    await AddCustomerBalanceHistoryIncrementalAsync(
+                        customerId: document.PayerCustomerId.Value,
+                        currencyCode: currencyCode,
+                        transactionAmount: document.Amount, // Positive: customer receives
+                        transactionType: CustomerBalanceTransactionType.AccountingDocument,
+                        referenceId: document.Id,
+                        transactionDate: transactionDate,
+                        description: description,
+                        transactionNumber: document.ReferenceNumber,
+                        performedBy: performedBy
+                    );
+                }
+
+                // Receiver Customer: Gets -amount (pays money/debit)
+                if (document.ReceiverType == ReceiverType.Customer && document.ReceiverCustomerId.HasValue)
+                {
+                    await AddCustomerBalanceHistoryIncrementalAsync(
+                        customerId: document.ReceiverCustomerId.Value,
+                        currencyCode: currencyCode,
+                        transactionAmount: -document.Amount, // Negative: customer pays
+                        transactionType: CustomerBalanceTransactionType.AccountingDocument,
+                        referenceId: document.Id,
+                        transactionDate: transactionDate,
+                        description: description,
+                        transactionNumber: document.ReferenceNumber,
+                        performedBy: performedBy
+                    );
+                }
+
+                // Process bank account balance updates (only for non-frozen documents)
+                // Frozen documents don't affect bank account balances (same as pool balances)
+                if (!document.IsFrozen)
+                {
+                    // Payer Bank Account: Gets +amount (money flows out)
+                    if (document.PayerType == PayerType.System && document.PayerBankAccountId.HasValue)
+                    {
+                        await AddBankAccountBalanceHistoryIncrementalAsync(
+                            bankAccountId: document.PayerBankAccountId.Value,
+                            transactionAmount: document.Amount, // Positive: bank pays out
+                            transactionType: BankAccountTransactionType.Document,
+                            referenceId: document.Id,
+                            transactionDate: transactionDate,
+                            description: description,
+                            performedBy: performedBy
+                        );
+                    }
+
+                    // Receiver Bank Account: Gets -amount (money flows in)
+                    if (document.ReceiverType == ReceiverType.System && document.ReceiverBankAccountId.HasValue)
+                    {
+                        await AddBankAccountBalanceHistoryIncrementalAsync(
+                            bankAccountId: document.ReceiverBankAccountId.Value,
+                            transactionAmount: -document.Amount, // Negative: bank receives
+                            transactionType: BankAccountTransactionType.Document,
+                            referenceId: document.Id,
+                            transactionDate: transactionDate,
+                            description: description,
+                            performedBy: performedBy
+                        );
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation($"Document {document.Id} is frozen - skipping bank account balance updates");
+                }
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Document {document.Id} processed successfully with incremental balance updates");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error processing document {document.Id}: {ex.Message}");
+                throw;
+            }
         }
 
 
 
         #endregion Create reocrds
-
-        #region Background Rebuild Helper
-
-        /// <summary>
-        /// Helper method to run balance rebuild in background without blocking the HTTP request.
-        /// This allows operations to complete quickly while the rebuild happens asynchronously.
-        /// </summary>
-        /// <param name="entityType">Type of entity that triggered the rebuild (for logging)</param>
-        /// <param name="entityId">ID of the entity that triggered the rebuild (for logging)</param>
-        /// <param name="performedBy">Identifier of who initiated the operation</param>
-        private void QueueBackgroundRebuild(string entityType, int entityId, string performedBy = "System")
-        {
-            // Run balance rebuild in background to prevent HTTP timeout
-            // Fire and forget - rebuild will complete asynchronously without blocking the HTTP response
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    // Create a new scope for background operation to avoid DbContext disposal issues
-                    using var scope = _serviceProvider.CreateScope();
-                    var backgroundContext = scope.ServiceProvider.GetRequiredService<ForexDbContext>();
-                    var backgroundLogger = scope.ServiceProvider.GetRequiredService<ILogger<CentralFinancialService>>();
-                    var backgroundNotificationHub = scope.ServiceProvider.GetRequiredService<INotificationHub>();
-                    var backgroundCurrencyPoolService = scope.ServiceProvider.GetRequiredService<ICurrencyPoolService>();
-                    var backgroundServiceProvider = scope.ServiceProvider;
-                    
-                    // Create a new instance of the service with the background scope's dependencies
-                    var backgroundService = new CentralFinancialService(
-                        backgroundContext,
-                        backgroundLogger,
-                        backgroundNotificationHub,
-                        backgroundCurrencyPoolService,
-                        backgroundServiceProvider
-                    );
-                    
-                    backgroundLogger.LogInformation($"Background balance rebuild started for {entityType} {entityId}");
-                    await backgroundService.RebuildAllFinancialBalancesAsync(performedBy);
-                    backgroundLogger.LogInformation($"Background balance rebuild completed for {entityType} {entityId}");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Error in background balance rebuild for {entityType} {entityId}: {ex.Message}");
-                    // Optionally: Send notification to admins about rebuild failure
-                }
-            });
-
-            _logger.LogInformation($"{entityType} {entityId} processing initiated - balance rebuild running in background");
-        }
-
-        #endregion Background Rebuild Helper
 
 
 
@@ -1581,56 +2751,168 @@ namespace ForexExchange.Services
         #region Smart Delete Operations with History Soft Delete and Recalculation
 
         /// <summary>
-        /// Safely delete an order by soft-deleting its history records and recalculating balances
+        /// Safely delete an order by soft-deleting its history records and recalculating balances using partial rebuild.
+        /// Uses incremental partial rebuilds for affected customer+currency and pool+currency combinations.
         /// </summary>
         public async Task DeleteOrderAsync(Order order, string performedBy = "Admin")
         {
+            _logger.LogInformation($"Starting smart order deletion: Order {order.Id} by {performedBy}");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                _logger.LogInformation($"Starting smart order deletion: Order {order.Id} by {performedBy}");
+                // Load order with currency navigation properties if not already loaded
+                if (order.FromCurrency == null || order.ToCurrency == null)
+                {
+                    await _context.Entry(order)
+                        .Reference(o => o.FromCurrency)
+                        .LoadAsync();
+                    await _context.Entry(order)
+                        .Reference(o => o.ToCurrency)
+                        .LoadAsync();
+                }
 
+                var fromCurrencyCode = (order.FromCurrency?.Code ?? "").ToUpperInvariant().Trim();
+                var toCurrencyCode = (order.ToCurrency?.Code ?? "").ToUpperInvariant().Trim();
+                var transactionDate = order.CreatedAt;
+
+                // Mark order as deleted
                 order.IsDeleted = true;
                 order.DeletedAt = DateTime.UtcNow;
                 order.DeletedBy = performedBy;
+
+                // Mark related history records as deleted (soft delete)
+                var customerHistoryRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.Order &&
+                               h.ReferenceId == order.Id &&
+                               !h.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var history in customerHistoryRecords)
+                {
+                    history.IsDeleted = true;
+                    history.DeletedAt = DateTime.UtcNow;
+                    history.DeletedBy = performedBy;
+                }
+
+                var poolHistoryRecords = await _context.CurrencyPoolHistory
+                    .Where(h => h.TransactionType == CurrencyPoolTransactionType.Order &&
+                               h.ReferenceId == order.Id &&
+                               !h.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var history in poolHistoryRecords)
+                {
+                    history.IsDeleted = true;
+                    history.DeletedAt = DateTime.UtcNow;
+                    history.DeletedBy = performedBy;
+                }
+
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Order {order.Id} marked as deleted. Starting background balance rebuild...");
+                // Rebuild affected customer balances from transaction date forward
+                await RebuildCustomerBalanceFromDateAsync(order.CustomerId, fromCurrencyCode, transactionDate, performedBy);
+                await RebuildCustomerBalanceFromDateAsync(order.CustomerId, toCurrencyCode, transactionDate, performedBy);
 
-                // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-                QueueBackgroundRebuild("Order", order.Id, performedBy);
+                // Rebuild affected pool balances from transaction date forward (only if order was not frozen)
+                if (!order.IsFrozen)
+                {
+                    await RebuildPoolBalanceFromDateAsync(fromCurrencyCode, transactionDate, performedBy);
+                    await RebuildPoolBalanceFromDateAsync(toCurrencyCode, transactionDate, performedBy);
+                }
 
-                _logger.LogInformation($"Smart order deletion completed: Order {order.Id} - balance rebuild running in background");
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Smart order deletion completed: Order {order.Id} - balances rebuilt successfully");
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, $"Error in smart order deletion {order.Id}: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// Safely delete an accounting document by soft-deleting its history records and recalculating balances
+        /// Safely delete an accounting document by soft-deleting its history records and recalculating balances using partial rebuild.
+        /// Uses incremental partial rebuilds for affected customer+currency and bank account combinations.
         /// </summary>
         public async Task DeleteAccountingDocumentAsync(AccountingDocument document, string performedBy = "Admin")
         {
+            _logger.LogInformation($"Starting smart document deletion: Document {document.Id} by {performedBy}");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                _logger.LogInformation($"Starting smart document deletion: Document {document.Id} by {performedBy}");
+                var currencyCode = (document.CurrencyCode ?? "").ToUpperInvariant().Trim();
+                var transactionDate = document.DocumentDate;
 
+                // Mark document as deleted
                 document.IsDeleted = true;
                 document.DeletedAt = DateTime.UtcNow;
                 document.DeletedBy = performedBy;
+
+                // Mark related history records as deleted (soft delete)
+                var customerHistoryRecords = await _context.CustomerBalanceHistory
+                    .Where(h => h.TransactionType == CustomerBalanceTransactionType.AccountingDocument &&
+                               h.ReferenceId == document.Id &&
+                               !h.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var history in customerHistoryRecords)
+                {
+                    history.IsDeleted = true;
+                    history.DeletedAt = DateTime.UtcNow;
+                    history.DeletedBy = performedBy;
+                }
+
+                var bankHistoryRecords = await _context.BankAccountBalanceHistory
+                    .Where(h => h.TransactionType == BankAccountTransactionType.Document &&
+                               h.ReferenceId == document.Id &&
+                               !h.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var history in bankHistoryRecords)
+                {
+                    history.IsDeleted = true;
+                    history.DeletedAt = DateTime.UtcNow;
+                    history.DeletedBy = performedBy;
+                }
+
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Document {document.Id} marked as deleted. Starting background balance rebuild...");
+                // Rebuild affected customer balances from transaction date forward
+                if (document.PayerType == PayerType.Customer && document.PayerCustomerId.HasValue)
+                {
+                    await RebuildCustomerBalanceFromDateAsync(document.PayerCustomerId.Value, currencyCode, transactionDate, performedBy);
+                }
 
-                // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-                QueueBackgroundRebuild("Document", document.Id, performedBy);
+                if (document.ReceiverType == ReceiverType.Customer && document.ReceiverCustomerId.HasValue)
+                {
+                    await RebuildCustomerBalanceFromDateAsync(document.ReceiverCustomerId.Value, currencyCode, transactionDate, performedBy);
+                }
 
-                _logger.LogInformation($"Smart document deletion completed: Document {document.Id} - balance rebuild running in background");
+                // Rebuild affected bank account balances from transaction date forward (only if document was not frozen)
+                if (!document.IsFrozen)
+                {
+                    if (document.PayerType == PayerType.System && document.PayerBankAccountId.HasValue)
+                    {
+                        await RebuildBankAccountBalanceFromDateAsync(document.PayerBankAccountId.Value, transactionDate, performedBy);
+                    }
+
+                    if (document.ReceiverType == ReceiverType.System && document.ReceiverBankAccountId.HasValue)
+                    {
+                        await RebuildBankAccountBalanceFromDateAsync(document.ReceiverBankAccountId.Value, transactionDate, performedBy);
+                    }
+                }
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Smart document deletion completed: Document {document.Id} - balances rebuilt successfully");
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, $"Error in smart document deletion {document.Id}: {ex.Message}");
                 throw;
             }
@@ -1645,10 +2927,12 @@ namespace ForexExchange.Services
         #region Manual Balance History Creation
 
         /// <summary>
-        /// Creates a manual customer balance history record with specified transaction date following the coherent history pattern.
+        /// Creates a manual customer balance history record with specified transaction date using incremental updates.
         /// This method creates proper balance chains with correct BalanceBefore, TransactionAmount, and BalanceAfter calculations.
-        /// Uses the same coherent sequencing pattern as RebuildAllFinancialBalances to ensure consistency.
         /// Manual transactions are never frozen and always affect current balance calculations.
+        /// 
+        /// **Note**: If transaction date is in the past, this uses the last balance before that date.
+        /// For complex out-of-order scenarios, a partial rebuild may be needed.
         /// </summary>
         public async Task CreateManualCustomerBalanceHistoryAsync(
             int customerId,
@@ -1661,7 +2945,6 @@ namespace ForexExchange.Services
             string? performingUserId = null)
         {
             _logger.LogInformation($"Creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}, Date {transactionDate:yyyy-MM-dd}");
-
 
             // Validate customer exists
             var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == customerId);
@@ -1677,46 +2960,63 @@ namespace ForexExchange.Services
                 throw new ArgumentException($"Currency with code {currencyCode} not found");
             }
 
-
-            // Create the manual history record with proper coherent balance calculations
-            var historyRecord = new CustomerBalanceHistory
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                CustomerId = customerId,
-                CurrencyCode = currencyCode,
-                BalanceBefore = 0, //will update to corect value in rebuild 
-                TransactionAmount = amount,
-                BalanceAfter = 0, //will update to corect value in rebuild 
-                TransactionType = CustomerBalanceTransactionType.Manual,
-                ReferenceId = null, // Manual entries don't have reference IDs
-                Description = reason,
-                TransactionNumber = transactionNumber,
-                TransactionDate = transactionDate, // Use the specified date
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = performedBy,
-                IsDeleted = false // Manual transactions are never deleted via soft delete
-            };
+                // Use incremental update helper to create history record
+                var historyRecord = await AddCustomerBalanceHistoryIncrementalAsync(
+                    customerId: customerId,
+                    currencyCode: currencyCode,
+                    transactionAmount: amount,
+                    transactionType: CustomerBalanceTransactionType.Manual,
+                    referenceId: null, // Manual entries don't have reference IDs
+                    transactionDate: transactionDate,
+                    description: reason,
+                    transactionNumber: transactionNumber,
+                    performedBy: performedBy
+                );
 
+                await transaction.CommitAsync();
 
+                _logger.LogInformation($"Manual customer balance history created: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
 
-            _context.CustomerBalanceHistory.Add(historyRecord);
-            await _context.SaveChangesAsync();
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    var customerName = customer.FullName ?? $"مشتری {customerId}";
+                    await _notificationHub.SendManualAdjustmentNotificationAsync(
+                        title: "تعدیل دستی موجودی ایجاد شد",
+                        message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode} | دلیل: {reason}",
+                        eventType: NotificationEventType.ManualAdjustment,
+                        userId: performingUserId,
+                        navigationUrl: $"/Reports/CustomerReports?customerId={customerId}",
+                        priority: NotificationPriority.Normal
+                    );
 
-            _logger.LogInformation($"Manual customer balance history created: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
-            _logger.LogInformation($"Starting background balance rebuild...");
-
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("ManualCustomerBalance", (int)historyRecord.Id, performedBy);
+                    _logger.LogInformation($"Notification sent for manual balance creation: Customer {customerId}, Amount {amount} {currencyCode}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual balance creation: Customer {customerId}, Amount {amount} {currencyCode}");
+                    // Don't fail the main operation due to notification errors
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error creating manual customer balance history: Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+                throw;
+            }
         }
 
         /// <summary>
-        /// Deletes a manual customer balance history record and recalculates balances from the transaction date.
+        /// Deletes a manual customer balance history record and recalculates balances from the transaction date using partial rebuild.
         /// Only manual transactions (TransactionType.Manual) can be deleted for safety.
         /// After deletion, balances are automatically recalculated to maintain coherence.
         /// </summary>
         public async Task DeleteManualCustomerBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null)
         {
             _logger.LogInformation($"Deleting manual customer balance history: Transaction ID {transactionId}");
-
 
             // Find the manual transaction
             var historyRecord = await _context.CustomerBalanceHistory
@@ -1733,49 +3033,57 @@ namespace ForexExchange.Services
             {
                 throw new InvalidOperationException($"Only manual transactions can be deleted. Transaction ID {transactionId} is of type {historyRecord.TransactionType}");
             }
-            // Delete the manual transaction
-            _context.CustomerBalanceHistory.Remove(historyRecord);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation($"Manual customer balance history deleted: ID {transactionId}, Customer {historyRecord.CustomerId}, Currency {historyRecord.CurrencyCode}, Amount {historyRecord.TransactionAmount}");
-            _logger.LogInformation($"Starting background balance rebuild...");
-
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("ManualCustomerBalance", (int)transactionId, performedBy);
-
-            // Send notification to admin users (excluding the performing user)
 
             var customerId = historyRecord.CustomerId;
             var currencyCode = historyRecord.CurrencyCode;
-            var amount = historyRecord.TransactionAmount;
             var transactionDate = historyRecord.TransactionDate;
             var customerName = historyRecord.Customer?.FullName ?? $"مشتری {customerId}";
 
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // Hard delete the manual transaction
+                _context.CustomerBalanceHistory.Remove(historyRecord);
+                await _context.SaveChangesAsync();
 
-                await _notificationHub.SendManualAdjustmentNotificationAsync(
-                    title: "تعدیل دستی موجودی حذف شد",
-                    message: $"مشتری: {customerName} | مبلغ: {amount:N2} {currencyCode}",
-                    eventType: NotificationEventType.ManualAdjustment,
-                    userId: performingUserId, // This will exclude the current user from SignalR notifications
-                    navigationUrl: $"/Reports/CustomerReports?customerId={customerId}",
-                    priority: NotificationPriority.Normal
-                );
+                // Rebuild affected customer balance from transaction date forward
+                await RebuildCustomerBalanceFromDateAsync(customerId, currencyCode, transactionDate, performedBy);
 
-                _logger.LogInformation($"Notification sent for manual balance deletion: Customer {customerId}, Amount {amount} {currencyCode}");
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Manual customer balance history deleted: ID {transactionId}, Customer {customerId}, Currency {currencyCode}, Amount {historyRecord.TransactionAmount}");
+
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    await _notificationHub.SendManualAdjustmentNotificationAsync(
+                        title: "تعدیل دستی موجودی حذف شد",
+                        message: $"مشتری: {customerName} | مبلغ: {historyRecord.TransactionAmount:N2} {currencyCode}",
+                        eventType: NotificationEventType.ManualAdjustment,
+                        userId: performingUserId,
+                        navigationUrl: $"/Reports/CustomerReports?customerId={customerId}",
+                        priority: NotificationPriority.Normal
+                    );
+
+                    _logger.LogInformation($"Notification sent for manual balance deletion: Customer {customerId}, Amount {historyRecord.TransactionAmount} {currencyCode}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual balance deletion: Customer {customerId}, Amount {historyRecord.TransactionAmount} {currencyCode}");
+                    // Don't fail the main operation due to notification errors
+                }
             }
-            catch (Exception notificationEx)
+            catch (Exception ex)
             {
-                _logger.LogError(notificationEx, $"Error sending notification for manual balance deletion: Customer {customerId}, Amount {amount} {currencyCode}");
-                // Don't fail the main operation due to notification errors
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error deleting manual customer balance history: Transaction ID {transactionId}");
+                throw;
             }
-
         }
 
         /// <summary>
-        /// Creates a manual currency pool balance history record with specified transaction date following the coherent history pattern.
+        /// Creates a manual currency pool balance history record with specified transaction date using incremental updates.
         /// This method creates proper balance chains with correct BalanceBefore, TransactionAmount, and BalanceAfter calculations.
-        /// Uses the same coherent sequencing pattern as RebuildAllFinancialBalances to ensure consistency.
         /// Manual transactions are never frozen and always affect current balance calculations.
         /// </summary>
         public async Task CreateManualPoolBalanceHistoryAsync(
@@ -1788,65 +3096,61 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Creating manual pool balance history: Currency {currencyCode}, Amount {adjustmentAmount}, Date {transactionDate:yyyy-MM-dd}");
 
-
-
-            // Create the manual history record with proper coherent balance calculations
-            var historyRecord = new CurrencyPoolHistory
-            {
-                CurrencyCode = currencyCode,
-                BalanceBefore = 0, //will update in rebuild
-                TransactionAmount = adjustmentAmount,
-                BalanceAfter = 0, //will update in rebuild
-                TransactionType = CurrencyPoolTransactionType.ManualEdit,
-                ReferenceId = null,
-                Description = reason,
-                TransactionDate = transactionDate,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = performedBy,
-                IsDeleted = false
-            };
-
-
-            _context.CurrencyPoolHistory.Add(historyRecord);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Manual pool balance history created: ID {historyRecord.Id}, Currency {currencyCode}, Amount {adjustmentAmount}");
-            _logger.LogInformation($"Starting background balance rebuild...");
-
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("ManualPoolBalance", (int)historyRecord.Id, performedBy);
-
-            // Send notification to admin users (excluding the performing user)
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _notificationHub.SendManualAdjustmentNotificationAsync(
-                    title: "تعدیل دستی داشبورد ارزی ایجاد شد",
-                    message: $"ارز: {currencyCode} | مبلغ: {adjustmentAmount:N2} || دلیل: {reason}",
-                    eventType: NotificationEventType.ManualAdjustment,
-                    userId: performingUserId,
-                    navigationUrl: $"/Reports/PoolReports?currencyCode={currencyCode}",
-                    priority: NotificationPriority.Normal
+                // Use incremental update helper to create history record
+                var historyRecord = await AddPoolBalanceHistoryIncrementalAsync(
+                    currencyCode: currencyCode,
+                    transactionAmount: adjustmentAmount,
+                    transactionType: CurrencyPoolTransactionType.ManualEdit,
+                    referenceId: null, // Manual entries don't have reference IDs
+                    transactionDate: transactionDate,
+                    description: reason,
+                    poolTransactionType: "Manual",
+                    performedBy: performedBy
                 );
 
-                _logger.LogInformation($"Notification sent for manual pool balance creation: Currency {currencyCode}, Amount {adjustmentAmount}");
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Manual pool balance history created: ID {historyRecord.Id}, Currency {currencyCode}, Amount {adjustmentAmount}");
+
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    await _notificationHub.SendManualAdjustmentNotificationAsync(
+                        title: "تعدیل دستی داشبورد ارزی ایجاد شد",
+                        message: $"ارز: {currencyCode} | مبلغ: {adjustmentAmount:N2} || دلیل: {reason}",
+                        eventType: NotificationEventType.ManualAdjustment,
+                        userId: performingUserId,
+                        navigationUrl: $"/Reports/PoolReports?currencyCode={currencyCode}",
+                        priority: NotificationPriority.Normal
+                    );
+
+                    _logger.LogInformation($"Notification sent for manual pool balance creation: Currency {currencyCode}, Amount {adjustmentAmount}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual pool balance creation: Currency {currencyCode}, Amount {adjustmentAmount}");
+                    // Don't fail the main operation due to notification errors
+                }
             }
-            catch (Exception notificationEx)
+            catch (Exception ex)
             {
-                _logger.LogError(notificationEx, $"Error sending notification for manual pool balance creation: Currency {currencyCode}, Amount {adjustmentAmount}");
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error creating manual pool balance history: Currency {currencyCode}, Amount {adjustmentAmount}");
+                throw;
             }
-
-
         }
 
         /// <summary>
-        /// Deletes a manual currency pool balance history record and recalculates balances from the transaction date.
+        /// Deletes a manual currency pool balance history record and recalculates balances from the transaction date using partial rebuild.
         /// Only manual transactions (TransactionType.ManualEdit) can be deleted for safety.
         /// After deletion, balances are automatically recalculated to maintain coherence.
         /// </summary>
         public async Task DeleteManualPoolBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null)
         {
             _logger.LogInformation($"Deleting manual pool balance history: Transaction ID {transactionId}");
-
 
             var historyRecord = await _context.CurrencyPoolHistory
                 .FirstOrDefaultAsync(h => h.Id == transactionId);
@@ -1865,41 +3169,51 @@ namespace ForexExchange.Services
             var amount = historyRecord.TransactionAmount;
             var transactionDate = historyRecord.TransactionDate;
 
-            _context.CurrencyPoolHistory.Remove(historyRecord);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Manual pool balance history deleted: ID {transactionId}, Currency {currencyCode}, Amount {amount}");
-            _logger.LogInformation($"Starting background balance rebuild...");
-
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("ManualPoolBalance", (int)transactionId, performedBy);
-
-            // Send notification to admin users (excluding the performing user)
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _notificationHub.SendManualAdjustmentNotificationAsync(
-                    title: "تعدیل دستی داشبورد ارزی حذف شد",
-                    message: $"ارز: {currencyCode} | مبلغ: {amount:N2}",
-                    eventType: NotificationEventType.ManualAdjustment,
-                    userId: performingUserId,
-                    navigationUrl: $"/Reports/PoolReports?currencyCode={currencyCode}",
-                    priority: NotificationPriority.Normal
-                );
+                // Hard delete the manual transaction
+                _context.CurrencyPoolHistory.Remove(historyRecord);
+                await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Notification sent for manual pool balance deletion: Currency {currencyCode}, Amount {amount}");
+                // Rebuild affected pool balance from transaction date forward
+                await RebuildPoolBalanceFromDateAsync(currencyCode, transactionDate, performedBy);
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Manual pool balance history deleted: ID {transactionId}, Currency {currencyCode}, Amount {amount}");
+
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    await _notificationHub.SendManualAdjustmentNotificationAsync(
+                        title: "تعدیل دستی داشبورد ارزی حذف شد",
+                        message: $"ارز: {currencyCode} | مبلغ: {amount:N2}",
+                        eventType: NotificationEventType.ManualAdjustment,
+                        userId: performingUserId,
+                        navigationUrl: $"/Reports/PoolReports?currencyCode={currencyCode}",
+                        priority: NotificationPriority.Normal
+                    );
+
+                    _logger.LogInformation($"Notification sent for manual pool balance deletion: Currency {currencyCode}, Amount {amount}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual pool balance deletion: Currency {currencyCode}, Amount {amount}");
+                    // Don't fail the main operation due to notification errors
+                }
             }
-            catch (Exception notificationEx)
+            catch (Exception ex)
             {
-                _logger.LogError(notificationEx, $"Error sending notification for manual pool balance deletion: Currency {currencyCode}, Amount {amount}");
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error deleting manual pool balance history: Transaction ID {transactionId}");
+                throw;
             }
-
-
         }
 
         /// <summary>
-        /// Creates a manual bank account balance history record with specified transaction date following the coherent history pattern.
+        /// Creates a manual bank account balance history record with specified transaction date using incremental updates.
         /// This method creates proper balance chains with correct BalanceBefore, TransactionAmount, and BalanceAfter calculations.
-        /// Uses the same coherent sequencing pattern as RebuildAllFinancialBalances to ensure consistency.
         /// Manual transactions are never frozen and always affect current balance calculations.
         /// </summary>
         public async Task CreateManualBankAccountBalanceHistoryAsync(
@@ -1912,67 +3226,64 @@ namespace ForexExchange.Services
         {
             _logger.LogInformation($"Creating manual bank account balance history: Bank Account {bankAccountId}, Amount {amount}, Date {transactionDate:yyyy-MM-dd}");
 
-
-
-            // Create the manual history record with proper coherent balance calculations
-            var historyRecord = new BankAccountBalanceHistory
-            {
-                BankAccountId = bankAccountId,
-                BalanceBefore = 0, //will update in rebuild
-                TransactionAmount = amount,
-                BalanceAfter = 0, //will update in rebuild
-                TransactionType = BankAccountTransactionType.ManualEdit,
-                ReferenceId = null,
-                Description = reason,
-                TransactionDate = transactionDate,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = performedBy,
-                IsDeleted = false
-            };
-
-
-            _context.BankAccountBalanceHistory.Add(historyRecord);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Manual bank account balance history created: ID {historyRecord.Id}, Bank Account {bankAccountId}, Amount {amount}");
-            _logger.LogInformation($"Starting background balance rebuild...");
-
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("ManualBankAccountBalance", (int)historyRecord.Id, performedBy);
-
-            // Send notification to admin users (excluding the performing user)
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var bankrecord = _context.BankAccountBalanceHistory.FirstOrDefault(c => c.BankAccountId == bankAccountId);
-                var accountName = bankrecord?.BankAccount.AccountHolderName ?? $"حساب {bankAccountId}";
-
-                await _notificationHub.SendManualAdjustmentNotificationAsync(
-                    title: "تعدیل دستی حساب بانکی ایجاد شد",
-                    message: $"حساب: {accountName} | مبلغ: {amount:N2} | موجودی نهایی: {bankrecord?.BalanceAfter:N2} | دلیل: {reason}",
-                    eventType: NotificationEventType.ManualAdjustment,
-                    userId: performingUserId,
-                    navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
-                    priority: NotificationPriority.Normal
+                // Use incremental update helper to create history record
+                var historyRecord = await AddBankAccountBalanceHistoryIncrementalAsync(
+                    bankAccountId: bankAccountId,
+                    transactionAmount: amount,
+                    transactionType: BankAccountTransactionType.ManualEdit,
+                    referenceId: null, // Manual entries don't have reference IDs
+                    transactionDate: transactionDate,
+                    description: reason,
+                    performedBy: performedBy
                 );
 
-                _logger.LogInformation($"Notification sent for manual bank account balance creation: Bank Account {bankAccountId}, Amount {amount}");
-            }
-            catch (Exception notificationEx)
-            {
-                _logger.LogError(notificationEx, $"Error sending notification for manual bank account balance creation: Bank Account {bankAccountId}, Amount {amount}");
-            }
+                await transaction.CommitAsync();
 
+                _logger.LogInformation($"Manual bank account balance history created: ID {historyRecord.Id}, Bank Account {bankAccountId}, Amount {amount}");
+
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    var bankAccount = await _context.BankAccounts
+                        .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
+                    var accountName = bankAccount?.AccountHolderName ?? $"حساب {bankAccountId}";
+
+                    await _notificationHub.SendManualAdjustmentNotificationAsync(
+                        title: "تعدیل دستی حساب بانکی ایجاد شد",
+                        message: $"حساب: {accountName} | مبلغ: {amount:N2} | موجودی نهایی: {historyRecord.BalanceAfter:N2} | دلیل: {reason}",
+                        eventType: NotificationEventType.ManualAdjustment,
+                        userId: performingUserId,
+                        navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
+                        priority: NotificationPriority.Normal
+                    );
+
+                    _logger.LogInformation($"Notification sent for manual bank account balance creation: Bank Account {bankAccountId}, Amount {amount}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual bank account balance creation: Bank Account {bankAccountId}, Amount {amount}");
+                    // Don't fail the main operation due to notification errors
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error creating manual bank account balance history: Bank Account {bankAccountId}, Amount {amount}");
+                throw;
+            }
         }
 
         /// <summary>
-        /// Deletes a manual bank account balance history record and recalculates balances from the transaction date.
+        /// Deletes a manual bank account balance history record and recalculates balances from the transaction date using partial rebuild.
         /// Only manual transactions (TransactionType.ManualEdit) can be deleted for safety.
         /// After deletion, balances are automatically recalculated to maintain coherence.
         /// </summary>
         public async Task DeleteManualBankAccountBalanceHistoryAsync(long transactionId, string performedBy = "Manual Deletion", string? performingUserId = null)
         {
             _logger.LogInformation($"Deleting manual bank account balance history: Transaction ID {transactionId}");
-
 
             var historyRecord = await _context.BankAccountBalanceHistory
                 .FirstOrDefaultAsync(h => h.Id == transactionId);
@@ -1996,34 +3307,46 @@ namespace ForexExchange.Services
                 .FirstOrDefaultAsync(ba => ba.Id == bankAccountId);
             var accountName = bankAccount?.AccountHolderName ?? $"حساب {bankAccountId}";
 
-            _context.BankAccountBalanceHistory.Remove(historyRecord);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Manual bank account balance history deleted: ID {transactionId}, Bank Account {bankAccountId}, Amount {amount}");
-            _logger.LogInformation($"Starting background balance rebuild...");
-
-            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
-            QueueBackgroundRebuild("ManualBankAccountBalance", (int)transactionId, performedBy);
-
-            // Send notification to admin users (excluding the performing user)
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                await _notificationHub.SendManualAdjustmentNotificationAsync(
-                    title: "تعدیل دستی حساب بانکی حذف شد",
-                    message: $"حساب: {accountName} | مبلغ: {amount:N2}",
-                    eventType: NotificationEventType.ManualAdjustment,
-                    userId: performingUserId,
-                    navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
-                    priority: NotificationPriority.Normal
-                );
+                // Hard delete the manual transaction
+                _context.BankAccountBalanceHistory.Remove(historyRecord);
+                await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Notification sent for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
+                // Rebuild affected bank account balance from transaction date forward
+                await RebuildBankAccountBalanceFromDateAsync(bankAccountId, transactionDate, performedBy);
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation($"Manual bank account balance history deleted: ID {transactionId}, Bank Account {bankAccountId}, Amount {amount}");
+
+                // Send notification to admin users (excluding the performing user)
+                try
+                {
+                    await _notificationHub.SendManualAdjustmentNotificationAsync(
+                        title: "تعدیل دستی حساب بانکی حذف شد",
+                        message: $"حساب: {accountName} | مبلغ: {amount:N2}",
+                        eventType: NotificationEventType.ManualAdjustment,
+                        userId: performingUserId,
+                        navigationUrl: $"/Reports/BankAccountReports?bankAccountId={bankAccountId}",
+                        priority: NotificationPriority.Normal
+                    );
+
+                    _logger.LogInformation($"Notification sent for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
+                }
+                catch (Exception notificationEx)
+                {
+                    _logger.LogError(notificationEx, $"Error sending notification for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
+                    // Don't fail the main operation due to notification errors
+                }
             }
-            catch (Exception notificationEx)
+            catch (Exception ex)
             {
-                _logger.LogError(notificationEx, $"Error sending notification for manual bank account balance deletion: Bank Account {bankAccountId}, Amount {amount}");
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, $"Error deleting manual bank account balance history: Transaction ID {transactionId}");
+                throw;
             }
-
         }
 
         #endregion
