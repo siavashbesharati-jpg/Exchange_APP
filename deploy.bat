@@ -1,6 +1,6 @@
 @echo off
 setlocal ENABLEDELAYEDEXPANSION
-title 🚀 Micro Deploy Taban (.NET Core)
+title 🚀 Micro Deploy Taban (.NET 9.0)
 
 :: === CONFIG ===
 set SERVER=root@104.234.46.151
@@ -8,7 +8,8 @@ set APP_DIR=/var/www/taban
 set BACKUP_DIR=/var/www/Taban_backUp
 set SERVICE=taban.service
 set PROJECT_PATH=%~dp0
-set LOCAL_PUBLISH_DIR=%PROJECT_PATH%publish
+set FRAMEWORK=net9.0
+set LOCAL_PUBLISH_DIR=%PROJECT_PATH%bin\Release\%FRAMEWORK%
 
 :: === Timestamp ===
 for /f "tokens=1-4 delims=/ " %%a in ("%date%") do (
@@ -25,10 +26,10 @@ set HH=%HH: =0%
 set DATETIME=%YYYY%-%MM%-%DD%_%HH%-%MN%-%SS%
 
 echo =============================================
-echo 🧱 Publishing (quick mode)
+echo 🧱 Publishing project (Release, net9.0)
 echo =============================================
 
-dotnet publish -c Release -o "%LOCAL_PUBLISH_DIR%"
+dotnet publish -c Release
 if errorlevel 1 (
     echo ❌ Build failed.
     exit /b 1
