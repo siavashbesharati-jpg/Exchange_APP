@@ -629,41 +629,8 @@ namespace ForexExchange.Services
 
             _logger.LogInformation($"Order {order.Id} saved successfully. Starting background balance rebuild...");
 
-            // Run balance rebuild in background to prevent HTTP timeout (especially on nginx)
-            // Fire and forget - rebuild will complete asynchronously without blocking the HTTP response
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    // Create a new scope for background operation to avoid DbContext disposal issues
-                    using var scope = _serviceProvider.CreateScope();
-                    var backgroundContext = scope.ServiceProvider.GetRequiredService<ForexDbContext>();
-                    var backgroundLogger = scope.ServiceProvider.GetRequiredService<ILogger<CentralFinancialService>>();
-                    var backgroundNotificationHub = scope.ServiceProvider.GetRequiredService<INotificationHub>();
-                    var backgroundCurrencyPoolService = scope.ServiceProvider.GetRequiredService<ICurrencyPoolService>();
-                    var backgroundServiceProvider = scope.ServiceProvider;
-                    
-                    // Create a new instance of the service with the background scope's dependencies
-                    var backgroundService = new CentralFinancialService(
-                        backgroundContext,
-                        backgroundLogger,
-                        backgroundNotificationHub,
-                        backgroundCurrencyPoolService,
-                        backgroundServiceProvider
-                    );
-                    
-                    backgroundLogger.LogInformation($"Background balance rebuild started for Order {order.Id}");
-                    await backgroundService.RebuildAllFinancialBalancesAsync(performedBy);
-                    backgroundLogger.LogInformation($"Background balance rebuild completed for Order {order.Id}");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Error in background balance rebuild for Order {order.Id}: {ex.Message}");
-                    // Optionally: Send notification to admins about rebuild failure
-                }
-            });
-
-            _logger.LogInformation($"Order {order.Id} processing initiated - balance rebuild running in background");
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("Order", order.Id, performedBy);
         }
 
         /// <summary>
@@ -700,7 +667,26 @@ namespace ForexExchange.Services
 
             _logger.LogInformation($"Document {document.Id} saved successfully. Starting background balance rebuild...");
 
-            // Run balance rebuild in background to prevent HTTP timeout (especially on nginx)
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("Document", document.Id, performedBy);
+        }
+
+
+
+        #endregion Create reocrds
+
+        #region Background Rebuild Helper
+
+        /// <summary>
+        /// Helper method to run balance rebuild in background without blocking the HTTP request.
+        /// This allows operations to complete quickly while the rebuild happens asynchronously.
+        /// </summary>
+        /// <param name="entityType">Type of entity that triggered the rebuild (for logging)</param>
+        /// <param name="entityId">ID of the entity that triggered the rebuild (for logging)</param>
+        /// <param name="performedBy">Identifier of who initiated the operation</param>
+        private void QueueBackgroundRebuild(string entityType, int entityId, string performedBy = "System")
+        {
+            // Run balance rebuild in background to prevent HTTP timeout
             // Fire and forget - rebuild will complete asynchronously without blocking the HTTP response
             _ = Task.Run(async () =>
             {
@@ -723,24 +709,21 @@ namespace ForexExchange.Services
                         backgroundServiceProvider
                     );
                     
-                    backgroundLogger.LogInformation($"Background balance rebuild started for Document {document.Id}");
+                    backgroundLogger.LogInformation($"Background balance rebuild started for {entityType} {entityId}");
                     await backgroundService.RebuildAllFinancialBalancesAsync(performedBy);
-                    backgroundLogger.LogInformation($"Background balance rebuild completed for Document {document.Id}");
+                    backgroundLogger.LogInformation($"Background balance rebuild completed for {entityType} {entityId}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Error in background balance rebuild for Document {document.Id}: {ex.Message}");
+                    _logger.LogError(ex, $"Error in background balance rebuild for {entityType} {entityId}: {ex.Message}");
                     // Optionally: Send notification to admins about rebuild failure
                 }
             });
 
-            _logger.LogInformation($"Document {document.Id} processing initiated - balance rebuild running in background");
+            _logger.LogInformation($"{entityType} {entityId} processing initiated - balance rebuild running in background");
         }
 
-
-
-        #endregion Create reocrds
-
+        #endregion Background Rebuild Helper
 
 
 
@@ -1606,16 +1589,17 @@ namespace ForexExchange.Services
             {
                 _logger.LogInformation($"Starting smart order deletion: Order {order.Id} by {performedBy}");
 
-
                 order.IsDeleted = true;
                 order.DeletedAt = DateTime.UtcNow;
                 order.DeletedBy = performedBy;
                 await _context.SaveChangesAsync();
 
-                // Rebuild all financial balances after order deletion to ensure coherence
-                await RebuildAllFinancialBalancesAsync(performedBy);
+                _logger.LogInformation($"Order {order.Id} marked as deleted. Starting background balance rebuild...");
 
-                _logger.LogInformation($"Smart order deletion completed: Order {order.Id}");
+                // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+                QueueBackgroundRebuild("Order", order.Id, performedBy);
+
+                _logger.LogInformation($"Smart order deletion completed: Order {order.Id} - balance rebuild running in background");
             }
             catch (Exception ex)
             {
@@ -1631,15 +1615,19 @@ namespace ForexExchange.Services
         {
             try
             {
+                _logger.LogInformation($"Starting smart document deletion: Document {document.Id} by {performedBy}");
+
                 document.IsDeleted = true;
                 document.DeletedAt = DateTime.UtcNow;
                 document.DeletedBy = performedBy;
                 await _context.SaveChangesAsync();
 
-                // Rebuild all financial balances after document deletion to ensure coherence
-                await RebuildAllFinancialBalancesAsync(performedBy);
+                _logger.LogInformation($"Document {document.Id} marked as deleted. Starting background balance rebuild...");
 
-                _logger.LogInformation($"Smart document deletion completed: Document {document.Id}");
+                // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+                QueueBackgroundRebuild("Document", document.Id, performedBy);
+
+                _logger.LogInformation($"Smart document deletion completed: Document {document.Id} - balance rebuild running in background");
             }
             catch (Exception ex)
             {
@@ -1713,9 +1701,11 @@ namespace ForexExchange.Services
             _context.CustomerBalanceHistory.Add(historyRecord);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Manual customer balance history created with coherent balances: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+            _logger.LogInformation($"Manual customer balance history created: ID {historyRecord.Id}, Customer {customerId}, Currency {currencyCode}, Amount {amount}");
+            _logger.LogInformation($"Starting background balance rebuild...");
 
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("ManualCustomerBalance", (int)historyRecord.Id, performedBy);
         }
 
         /// <summary>
@@ -1747,10 +1737,10 @@ namespace ForexExchange.Services
             _context.CustomerBalanceHistory.Remove(historyRecord);
             await _context.SaveChangesAsync();
             _logger.LogInformation($"Manual customer balance history deleted: ID {transactionId}, Customer {historyRecord.CustomerId}, Currency {historyRecord.CurrencyCode}, Amount {historyRecord.TransactionAmount}");
+            _logger.LogInformation($"Starting background balance rebuild...");
 
-
-            // Rebuild all financial balances after manual customer balance deletion to ensure complete coherence
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("ManualCustomerBalance", (int)transactionId, performedBy);
 
             // Send notification to admin users (excluding the performing user)
 
@@ -1820,14 +1810,11 @@ namespace ForexExchange.Services
             _context.CurrencyPoolHistory.Add(historyRecord);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Manual pool balance history created with coherent balances: ID {historyRecord.Id}, Currency {currencyCode}, Amount {adjustmentAmount}");
+            _logger.LogInformation($"Manual pool balance history created: ID {historyRecord.Id}, Currency {currencyCode}, Amount {adjustmentAmount}");
+            _logger.LogInformation($"Starting background balance rebuild...");
 
-
-
-            await _context.SaveChangesAsync();
-
-            // Rebuild all financial balances after manual pool balance creation to ensure complete coherence
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("ManualPoolBalance", (int)historyRecord.Id, performedBy);
 
             // Send notification to admin users (excluding the performing user)
             try
@@ -1882,11 +1869,10 @@ namespace ForexExchange.Services
             await _context.SaveChangesAsync();
 
             _logger.LogInformation($"Manual pool balance history deleted: ID {transactionId}, Currency {currencyCode}, Amount {amount}");
+            _logger.LogInformation($"Starting background balance rebuild...");
 
-
-
-            // Rebuild all financial balances after manual pool balance deletion to ensure complete coherence
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("ManualPoolBalance", (int)transactionId, performedBy);
 
             // Send notification to admin users (excluding the performing user)
             try
@@ -1948,11 +1934,11 @@ namespace ForexExchange.Services
             _context.BankAccountBalanceHistory.Add(historyRecord);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Manual bank account balance history created with coherent balances: ID {historyRecord.Id}, Bank Account {bankAccountId}, Amount {amount}");
+            _logger.LogInformation($"Manual bank account balance history created: ID {historyRecord.Id}, Bank Account {bankAccountId}, Amount {amount}");
+            _logger.LogInformation($"Starting background balance rebuild...");
 
-
-            // Rebuild all financial balances after manual bank account balance creation to ensure complete coherence
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("ManualBankAccountBalance", (int)historyRecord.Id, performedBy);
 
             // Send notification to admin users (excluding the performing user)
             try
@@ -2013,12 +1999,11 @@ namespace ForexExchange.Services
             _context.BankAccountBalanceHistory.Remove(historyRecord);
             await _context.SaveChangesAsync();
 
+            _logger.LogInformation($"Manual bank account balance history deleted: ID {transactionId}, Bank Account {bankAccountId}, Amount {amount}");
+            _logger.LogInformation($"Starting background balance rebuild...");
 
-
-            _logger.LogInformation($"Successfully deleted manual bank account transaction and recalculated balances for Bank Account {bankAccountId}");
-
-            // Rebuild all financial balances after manual bank account balance deletion to ensure complete coherence
-            await RebuildAllFinancialBalancesAsync(performedBy);
+            // Queue background rebuild - this will run asynchronously without blocking the HTTP response
+            QueueBackgroundRebuild("ManualBankAccountBalance", (int)transactionId, performedBy);
 
             // Send notification to admin users (excluding the performing user)
             try
