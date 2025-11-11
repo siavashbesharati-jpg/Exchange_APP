@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using ForexExchange.Models;
 using ForexExchange.Services;
@@ -13,6 +14,7 @@ namespace ForexExchange.Controllers
     [Route("api/[controller]")]
     public class PushController : ControllerBase
     {
+        private const bool WebPushEnabled = false;
         private readonly ForexDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<PushController> _logger;
@@ -59,6 +61,11 @@ namespace ForexExchange.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetPublicKey()
         {
+            if (!WebPushEnabled)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Push notifications are currently disabled" });
+            }
+
             try
             {
                 var vapidDetails = await _vapidService.GetVapidDetailsAsync();
@@ -78,6 +85,11 @@ namespace ForexExchange.Controllers
         [Authorize]
         public async Task<IActionResult> Subscribe([FromBody] PushSubscriptionRequest request)
         {
+            if (!WebPushEnabled)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Push notifications are currently disabled" });
+            }
+
             string? userId = null;
             try
             {
@@ -188,7 +200,11 @@ namespace ForexExchange.Controllers
                     _logger.LogInformation("Push subscription deactivated for user {UserId}", userId);
                 }
 
-                return Ok(new { message = "Unsubscribed successfully" });
+                var responseMessage = WebPushEnabled
+                    ? "Unsubscribed successfully"
+                    : "Push notifications are disabled; subscription deactivated if it existed.";
+
+                return Ok(new { message = responseMessage });
             }
             catch (Exception ex)
             {
@@ -204,6 +220,11 @@ namespace ForexExchange.Controllers
         [Authorize]
         public async Task<IActionResult> GetSubscriptionStatus()
         {
+            if (!WebPushEnabled)
+            {
+                return Ok(new { isSubscribed = false, hasActiveSubscriptions = false, message = "Push notifications are disabled" });
+            }
+
             try
             {
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -231,6 +252,11 @@ namespace ForexExchange.Controllers
         [Authorize] // Temporarily allow any authenticated user for debugging
         public async Task<IActionResult> SendTestNotification()
         {
+            if (!WebPushEnabled)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Push notifications are currently disabled" });
+            }
+
             try
             {
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -342,6 +368,11 @@ namespace ForexExchange.Controllers
         [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> GetPushStats()
         {
+            if (!WebPushEnabled)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Push notifications are currently disabled" });
+            }
+
             try
             {
                 var stats = new
@@ -373,6 +404,11 @@ namespace ForexExchange.Controllers
         [Authorize]
         public async Task<IActionResult> SendTestNotificationWithUrl([FromBody] TestUrlRequest request)
         {
+            if (!WebPushEnabled)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Push notifications are currently disabled" });
+            }
+
             try
             {
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
