@@ -200,6 +200,30 @@
                     }
                 </div>
             </div>
+            @if (ViewBag.CurrentUserRole == ForexExchange.Models.UserRole.Programmer)
+            {
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-power-off me-2"></i>
+                            مدیریت نشست‌ها
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">
+                            با اجرای این عملیات، تمام کاربران از سیستم خارج می‌شوند و برای ورود مجدد باید احراز هویت کنند.
+                        </p>
+                        <form asp-action="ResetAllSessions" method="post"
+                              onsubmit="return confirm('آیا از ریست تمام نشست‌های کاربران اطمینان دارید؟');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-sign-out-alt me-1"></i>
+                                ریست نشست همه کاربران
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>

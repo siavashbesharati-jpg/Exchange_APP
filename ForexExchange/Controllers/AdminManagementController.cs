@@ -280,6 +280,37 @@ namespace ForexExchange.Controllers
             return RedirectToAction("ManageAdmins");
         }
 
+        [HttpPost]
+        [Authorize(Roles = "Programmer")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetAllSessions()
+        {
+            var currentAdmin = await _userManager.GetUserAsync(User);
+            if (currentAdmin == null)
+            {
+                TempData["Error"] = "برای انجام این عملیات ابتدا وارد شوید.";
+                return RedirectToAction("Login", "Account");
+            }
+
+            var users = await _userManager.Users.ToListAsync();
+            foreach (var user in users)
+            {
+                await _userManager.UpdateSecurityStampAsync(user);
+            }
+
+            await _adminActivityService.LogActivityAsync(
+                currentAdmin.Id,
+                currentAdmin.UserName ?? currentAdmin.PhoneNumber ?? "admin",
+                AdminActivityType.UserUpdated,
+                "نشست همهٔ کاربران ریست شد.",
+                entityType: "ApplicationUser",
+                newValue: "***"
+            );
+
+            TempData["Success"] = "تمام کاربران برای ورود مجدد نیازمند احراز هویت خواهند بود.";
+            return RedirectToAction("ManageAdmins");
+        }
+
         /// <summary>
         /// Create New Admin User
         /// ایجاد کاربر ادمین جدید
