@@ -54,10 +54,146 @@
                     </form>
                 </div>
             </div>
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">اعلان‌های مرورگر</h4>
+                    <span id="push-permission-status" class="badge bg-secondary">در حال بررسی...</span>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        برای دریافت اعلان‌های مهم (مثلاً ثبت معاملات جدید) می‌توانید اعلان‌های مرورگر را فعال کنید.
+                        هر زمان که بخواهید می‌توانید از همین قسمت دوباره درخواست دهید.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" id="btn-enable-push" class="btn btn-outline-primary">
+                            <i class="fas fa-bell me-2"></i>
+                            فعال‌سازی اعلان‌ها
+                        </button>
+                        <button type="button" id="btn-reset-push-state" class="btn btn-outline-secondary">
+                            <i class="fas fa-history me-2"></i>
+                            پاکسازی وضعیت یادآوری
+                        </button>
+                    </div>
+                    <div class="mt-3 small text-muted" id="push-subscription-detail">
+                        وضعیت فعلی اعلان‌ها در حال بررسی است...
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const statusBadge = document.getElementById('push-permission-status');
+            const detailText = document.getElementById('push-subscription-detail');
+            const enableBtn = document.getElementById('btn-enable-push');
+            const resetBtn = document.getElementById('btn-reset-push-state');
+
+            const setBadgeState = (permission, supported) => {
+                let text = 'نامشخص';
+                let badgeClass = 'badge bg-secondary';
+
+                if (!supported) {
+                    text = 'پشتیبانی نمی‌شود';
+                } else {
+                    switch (permission) {
+                        case 'granted':
+                            text = 'فعال';
+                            badgeClass = 'badge bg-success';
+                            break;
+                        case 'denied':
+                            text = 'مسدود';
+                            badgeClass = 'badge bg-danger';
+                            break;
+                        case 'default':
+                        default:
+                            text = 'در انتظار اجازه';
+                            badgeClass = 'badge bg-warning text-dark';
+                            break;
+                    }
+                }
+
+                statusBadge.textContent = text;
+                statusBadge.className = badgeClass;
+            };
+
+            const refreshStatus = async () => {
+                const supported = typeof Notification !== 'undefined';
+                const permission = supported ? Notification.permission : 'unsupported';
+                setBadgeState(permission, supported);
+
+                const messages = [];
+
+                if (!supported) {
+                    messages.push('مرورگر شما از اعلان‌های فشاری پشتیبانی نمی‌کند.');
+                } else if (permission === 'denied') {
+                    messages.push('اعلان‌ها در مرورگر مسدود شده‌اند. لطفاً از تنظیمات مرورگر گزینه «Allow» را فعال کنید.');
+                } else if (permission === 'default') {
+                    messages.push('هنوز اجازه‌ای برای ارسال اعلان صادر نشده است.');
+                } else if (permission === 'granted') {
+                    messages.push('مجوز اعلان صادر شده است.');
+                }
+
+                if (window.webPushManager && window.webPushManager.isSupported) {
+                    if (window.webPushManager.isSubscribed) {
+                        messages.push('اشتراک اعلان در مرورگر فعال است.');
+                    } else {
+                        messages.push('اشتراک فعالی در مرورگر یافت نشد.');
+                    }
+
+                    try {
+                        const serverStatus = await window.webPushManager.checkServerSubscriptionStatus();
+                        if (serverStatus) {
+                            if (serverStatus.hasActiveSubscriptions || serverStatus.isSubscribed) {
+                                messages.push('سرور نیز اشتراک فعال شما را تشخیص داده است.');
+                            } else {
+                                messages.push('در سرور اشتراک فعالی برای شما ثبت نشده است.');
+                            }
+                        }
+                    } catch (error) {
+                        messages.push('امکان بررسی وضعیت روی سرور وجود نداشت.');
+                    }
+                } else {
+                    messages.push('سیستم اعلان هنوز بارگذاری نشده است یا مرورگر آن را پشتیبانی نمی‌کند.');
+                }
+
+                detailText.textContent = messages.join(' ');
+            };
+
+            enableBtn?.addEventListener('click', async (event) => {
+                event.preventDefault();
+                if (!window.webPushManager || typeof window.webPushManager.manualSubscribe !== 'function') {
+                    alert('سیستم اعلان بارگذاری نشده است.');
+                    return;
+                }
+
+                const originalHtml = enableBtn.innerHTML;
+                enableBtn.disabled = true;
+                enableBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>در حال اجرا...';
+
+                try {
+                    await window.webPushManager.manualSubscribe();
+                } finally {
+                    enableBtn.disabled = false;
+                    enableBtn.innerHTML = originalHtml;
+                    refreshStatus();
+                }
+            });
+
+            resetBtn?.addEventListener('click', (event) => {
+                event.preventDefault();
+                try {
+                    localStorage.removeItem('pushNotificationPrompted');
+                    window.webPushManager?.showNotificationMessage('وضعیت یادآوری اعلان‌ها پاک شد', 'info');
+                } catch (error) {
+                }
+                refreshStatus();
+            });
+
+            refreshStatus();
+        });
+    </script>
 }

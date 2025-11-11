@@ -598,5 +598,60 @@ namespace ForexExchange.Controllers
 
 
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAllVapidConfigurations()
+        {
+            try
+            {
+                var vapidConfigs = await _context.VapidConfigurations.ToListAsync();
+                var deletedCount = vapidConfigs.Count;
+
+                if (deletedCount > 0)
+                {
+                    _context.VapidConfigurations.RemoveRange(vapidConfigs);
+                    await _context.SaveChangesAsync();
+                }
+
+                TempData["Success"] = deletedCount > 0
+                    ? $"تمام کلیدهای VAPID ({deletedCount} مورد) حذف شدند. کاربران برای فعال‌سازی اعلان فشاری باید مجدداً تنظیمات را انجام دهند."
+                    : "هیچ کلید VAPID فعالی برای حذف وجود نداشت.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در حذف کلیدهای VAPID: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteAllPushSubscriptions()
+        {
+            try
+            {
+                var subscriptions = await _context.PushSubscriptions.ToListAsync();
+                var deletedCount = subscriptions.Count;
+
+                if (deletedCount > 0)
+                {
+                    _context.PushSubscriptions.RemoveRange(subscriptions);
+                    await _context.SaveChangesAsync();
+                }
+
+                TempData["Success"] = deletedCount > 0
+                    ? $"تمام اشتراک‌های اعلان فشاری ({deletedCount} مورد) حذف شدند."
+                    : "هیچ اشتراک فعالی برای حذف وجود نداشت.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"خطا در حذف اشتراک‌های اعلان فشاری: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+
     }
 }

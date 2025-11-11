@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using WebPush;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using System.Net;
 
 namespace ForexExchange.Services
 {
@@ -323,9 +324,7 @@ namespace ForexExchange.Services
                 subscription.UpdatedAt = DateTime.UtcNow;
 
                 // Deactivate subscription if it's invalid
-                if (ex.StatusCode == System.Net.HttpStatusCode.Gone || 
-                    ex.StatusCode == System.Net.HttpStatusCode.BadRequest ||
-                    ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                if (IsPermanentFailure(ex.StatusCode))
                 {
                     subscription.IsActive = false;
                     _logger.LogInformation("Deactivated invalid push subscription {Id}", subscription.Id);
@@ -336,6 +335,18 @@ namespace ForexExchange.Services
                 log.ErrorMessage = ex.Message;
                 log.HttpStatusCode = (int?)ex.StatusCode;
             }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogWarning(ex, "Timed out sending push notification to endpoint {Endpoint}", subscription.Endpoint);
+
+                subscription.FailedNotifications++;
+                subscription.IsActive = false;
+                subscription.UpdatedAt = DateTime.UtcNow;
+
+                log.WasSuccessful = false;
+                log.ErrorMessage = "Timeout while sending notification";
+                log.HttpStatusCode = (int)HttpStatusCode.RequestTimeout;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error sending push notification to subscription {Id}", subscription.Id);
@@ -343,10 +354,12 @@ namespace ForexExchange.Services
                 // Update subscription stats
                 subscription.FailedNotifications++;
                 subscription.UpdatedAt = DateTime.UtcNow;
+                subscription.IsActive = false;
 
                 // Update log
                 log.WasSuccessful = false;
                 log.ErrorMessage = ex.Message;
+                log.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
             }
             finally
             {
@@ -417,6 +430,20 @@ namespace ForexExchange.Services
             {
                 return "info";
             }
+        }
+
+        private static bool IsPermanentFailure(HttpStatusCode? statusCode)
+        {
+            if (!statusCode.HasValue)
+            {
+                return false;
+            }
+
+            return statusCode.Value == HttpStatusCode.Gone ||
+                   statusCode.Value == HttpStatusCode.Unauthorized ||
+                   statusCode.Value == HttpStatusCode.Forbidden ||
+                   statusCode.Value == HttpStatusCode.NotFound ||
+                   statusCode.Value == HttpStatusCode.BadRequest;
         }
     }
 }

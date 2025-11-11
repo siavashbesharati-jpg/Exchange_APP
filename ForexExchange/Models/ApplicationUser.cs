@@ -19,6 +19,11 @@ namespace ForexExchange.Models
 
         public bool IsActive { get; set; } = true; public UserRole Role { get; set; } = UserRole.Customer;
 
+        [StringLength(160)]
+        public string? TotpSecret { get; set; }
+
+        public DateTime? TotpSecretUpdatedAt { get; set; }
+
         // Link to Customer entity if this is a customer user
         public int? CustomerId { get; set; }
         public Customer? Customer { get; set; }

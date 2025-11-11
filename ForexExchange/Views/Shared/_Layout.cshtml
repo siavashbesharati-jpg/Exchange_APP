@@ -900,24 +900,6 @@
     <script>
         // Set current user ID for client-side notification filtering
         window.currentUserId = '@(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "")';
-
-        document.addEventListener("DOMContentLoaded", function () {
-            // Initialize push notifications after a short delay
-            setTimeout(() => {
-                if (window.webPushManager && window.webPushManager.isSupported) {
-                    // Check if user has been prompted before
-                    const hasBeenPrompted = localStorage.getItem('pushNotificationPrompted');
-
-                    if (!hasBeenPrompted && Notification.permission === 'default') {
-                        // Show push notification setup after 5 seconds
-                        setTimeout(() => {
-                            window.webPushManager.showNotificationSetup();
-                            localStorage.setItem('pushNotificationPrompted', 'true');
-                        }, 5000);
-                    }
-                }
-            }, 1000);
-        });
     </script>
 </body>
 

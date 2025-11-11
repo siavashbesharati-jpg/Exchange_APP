@@ -1,5 +1,6 @@
 @model IEnumerable<ForexExchange.Models.ApplicationUser>
 @using ForexExchange.Services
+@using ForexExchange.Helpers
 
 @{
     ViewData["Title"] = "مدیریت ادمین‌ها";
@@ -75,6 +76,7 @@
                                         <th>ایمیل</th>
                                         <th>نقش</th>
                                         <th>تاریخ عضویت</th>
+                                        <th>کلید یکبارمصرف (TOTP)</th>
                                         <th>وضعیت</th>
                                         <th>عملیات</th>
                                     </tr>
@@ -120,8 +122,42 @@
                                                 }
                                             </td>
                                             <td>@user.CreatedAt.ToString("yyyy/MM/dd")</td>
+                                            <td class="text-start">
+                                                @if (!string.IsNullOrWhiteSpace(user.TotpSecret))
+                                                {
+                                                    <div class="input-group input-group-sm">
+                                                        <input id="totp-@user.Id" type="text" class="form-control text-center" value="@user.TotpSecret" readonly />
+                                                        <button type="button" class="btn btn-outline-secondary" id="copy-btn-@user.Id" title="کپی" onclick="copyTotpSecret('@user.Id')">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                    </div>
+                                                    if (user.TotpSecretUpdatedAt.HasValue)
+                                                    {
+                                                        <small class="text-muted d-block mt-1">بروزرسانی: @user.TotpSecretUpdatedAt.Value.ToDisplayDateTime()</small>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">تعریف نشده</span>
+                                                }
+                                                <form asp-action="RegenerateTotpSecret" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="userId" value="@user.Id" />
+                                                    <button type="submit" class="btn btn-warning btn-sm mt-2" onclick="return confirm('آیا از تولید کلید جدید برای این کاربر مطمئن هستید؟')">
+                                                        <i class="fas fa-sync-alt me-1"></i>
+                                                        تولید/بازتولید کلید
+                                                    </button>
+                                                </form>
+                                            </td>
                                             <td>
-                                                <span class="badge bg-success">فعال</span>
+                                                @if (user.IsActive)
+                                                {
+                                                    <span class="badge bg-success">فعال</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">غیرفعال</span>
+                                                }
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
@@ -303,6 +339,46 @@
 
 @section Scripts {
     <script>
+        function copyTotpSecret(userId) {
+            const input = document.getElementById(`totp-${userId}`);
+            const button = document.getElementById(`copy-btn-${userId}`);
+            if (!input || !input.value) {
+                return;
+            }
+
+            const setSuccessState = () => {
+                if (!button) {
+                    return;
+                }
+
+                const originalHtml = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+
+                setTimeout(() => {
+                    button.innerHTML = originalHtml;
+                    button.classList.add('btn-outline-secondary');
+                    button.classList.remove('btn-success');
+                }, 1500);
+            };
+
+            const fallbackCopy = () => {
+                input.select();
+                document.execCommand('copy');
+                input.blur();
+                setSuccessState();
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(input.value)
+                    .then(setSuccessState)
+                    .catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+        }
+
         function changeUserRole(userId, newRole) {
             if (confirm('آیا از تغییر نقش این کاربر اطمینان دارید؟')) {
                 fetch(`/AdminManagement/ChangeAdminRole?userId=${userId}&newRole=${newRole}`, {

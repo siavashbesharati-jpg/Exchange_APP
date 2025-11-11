@@ -3,6 +3,7 @@ using ForexExchange.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using WebPush;
+using System.Net;
 
 namespace ForexExchange.Services.Notifications.Providers
 {
@@ -245,11 +246,9 @@ namespace ForexExchange.Services.Notifications.Providers
                         await _webPushClient.SendNotificationAsync(webPushSubscription, payload);
                         successCount++;
 
-                        // Update subscription stats
                         subscription.SuccessfulNotifications++;
                         subscription.LastNotificationSent = DateTime.UtcNow;
 
-                        // Log successful notification
                         var successLog = new PushNotificationLog
                         {
                             PushSubscriptionId = subscription.Id,
@@ -269,17 +268,14 @@ namespace ForexExchange.Services.Notifications.Providers
                         _logger.LogWarning(ex, "Failed to send push notification to endpoint {Endpoint} for user {UserId}", subscription.Endpoint, userId);
                         errorCount++;
 
-                        // Update subscription stats
                         subscription.FailedNotifications++;
 
-                        // Deactivate subscription if permanently failed
-                        if (ex.StatusCode == System.Net.HttpStatusCode.Gone)
+                        if (IsPermanentFailure(ex.StatusCode))
                         {
                             subscription.IsActive = false;
-                            _logger.LogInformation("Deactivated expired push subscription for user {UserId}", userId);
+                            _logger.LogInformation("Deactivated push subscription {SubscriptionId} for user {UserId} due to status {StatusCode}", subscription.Id, userId, ex.StatusCode);
                         }
 
-                        // Log failed notification
                         var errorLog = new PushNotificationLog
                         {
                             PushSubscriptionId = subscription.Id,
@@ -294,8 +290,54 @@ namespace ForexExchange.Services.Notifications.Providers
                         };
                         _context.PushNotificationLogs.Add(errorLog);
                     }
+                    catch (TaskCanceledException ex)
+                    {
+                        _logger.LogWarning(ex, "Timed out sending push notification to endpoint {Endpoint} for user {UserId}", subscription.Endpoint, userId);
+                        errorCount++;
 
-                    subscription.UpdatedAt = DateTime.UtcNow;
+                        subscription.FailedNotifications++;
+                        subscription.IsActive = false;
+
+                        var timeoutLog = new PushNotificationLog
+                        {
+                            PushSubscriptionId = subscription.Id,
+                            Title = logDescription,
+                            Message = "Push notification timed out",
+                            Type = "business_event",
+                            Data = payload,
+                            WasSuccessful = false,
+                            ErrorMessage = "Timeout while sending notification",
+                            HttpStatusCode = (int)HttpStatusCode.RequestTimeout,
+                            SentAt = DateTime.UtcNow
+                        };
+                        _context.PushNotificationLogs.Add(timeoutLog);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error sending push notification to subscription {Id}", subscription.Id);
+                        errorCount++;
+
+                        subscription.FailedNotifications++;
+                        subscription.IsActive = false;
+
+                        var errorLog = new PushNotificationLog
+                        {
+                            PushSubscriptionId = subscription.Id,
+                            Title = logDescription,
+                            Message = "Unexpected error sending push notification",
+                            Type = "business_event",
+                            Data = payload,
+                            WasSuccessful = false,
+                            ErrorMessage = ex.Message,
+                            HttpStatusCode = (int)HttpStatusCode.InternalServerError,
+                            SentAt = DateTime.UtcNow
+                        };
+                        _context.PushNotificationLogs.Add(errorLog);
+                    }
+                    finally
+                    {
+                        subscription.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
 
                 await _context.SaveChangesAsync();
@@ -306,6 +348,20 @@ namespace ForexExchange.Services.Notifications.Providers
                 _logger.LogError(ex, "Error sending push notifications to user {UserId}", userId);
                 return (0, 1);
             }
+        }
+
+        private static bool IsPermanentFailure(HttpStatusCode? statusCode)
+        {
+            if (!statusCode.HasValue)
+            {
+                return false;
+            }
+
+            return statusCode.Value == HttpStatusCode.Gone ||
+                   statusCode.Value == HttpStatusCode.Unauthorized ||
+                   statusCode.Value == HttpStatusCode.Forbidden ||
+                   statusCode.Value == HttpStatusCode.NotFound ||
+                   statusCode.Value == HttpStatusCode.BadRequest;
         }
 
         private async Task<List<string>> GetAdminUserIdsAsync()

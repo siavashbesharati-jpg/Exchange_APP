@@ -1,13 +1,32 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
+using System.IO;
 using ForexExchange.Models;
 using ForexExchange.Services;
 using ForexExchange.Hubs;
 using ForexExchange.Services.Notifications.Providers;
 using ForexExchange.Services.Notifications;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .WriteTo.Console()
+        .WriteTo.Async(a => a.File(
+            path: Path.Combine("Logs", "log-.txt"),
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 14,
+            fileSizeLimitBytes: 10_000_000,
+            rollOnFileSizeLimit: true,
+            shared: true,
+            flushToDiskInterval: TimeSpan.FromSeconds(1)));
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews()
@@ -104,6 +123,7 @@ builder.Services.AddScoped<CustomerFinancialHistoryService>();
 builder.Services.AddScoped<PoolFinancialHistoryService>();
 // Bank account financial history service
 builder.Services.AddScoped<BankAccountFinancialHistoryService>();
+builder.Services.AddSingleton<ITotpService, TotpService>();
 // Central Financial Service - Event Sourcing with Complete Audit Trail
 builder.Services.AddScoped<ICentralFinancialService, CentralFinancialService>();
 // Order data preparation service - SRP for shared order validation logic
@@ -235,4 +255,17 @@ app.MapControllerRoute(
 // Map SignalR hubs
 app.MapHub<ForexExchange.Hubs.NotificationHub>("/notificationHub");
 
-app.Run();
+try
+{
+    Log.Information("Application starting up");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}

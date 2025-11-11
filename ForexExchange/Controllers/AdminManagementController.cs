@@ -21,17 +21,20 @@ namespace ForexExchange.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ForexDbContext _context;
+        private readonly ITotpService _totpService;
 
         public AdminManagementController(
             AdminActivityService adminActivityService,
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            ForexDbContext context)
+            ForexDbContext context,
+            ITotpService totpService)
         {
             _adminActivityService = adminActivityService;
             _userManager = userManager;
             _roleManager = roleManager;
             _context = context;
+            _totpService = totpService;
         }
 
         /// <summary>
@@ -225,6 +228,56 @@ namespace ForexExchange.Controllers
             ViewBag.CurrentUserRole = currentUser.Role;
 
             return View(adminUsers);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegenerateTotpSecret(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                TempData["Error"] = "شناسه کاربر نامعتبر است.";
+                return RedirectToAction("ManageAdmins");
+            }
+
+            var currentAdmin = await _userManager.GetUserAsync(User);
+            if (currentAdmin == null)
+            {
+                TempData["Error"] = "برای انجام این عملیات ابتدا وارد شوید.";
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                TempData["Error"] = "کاربر مورد نظر یافت نشد.";
+                return RedirectToAction("ManageAdmins");
+            }
+
+            var oldSecretExists = !string.IsNullOrWhiteSpace(user.TotpSecret);
+            user.TotpSecret = _totpService.GenerateSecret();
+            user.TotpSecretUpdatedAt = DateTime.UtcNow;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                TempData["Error"] = "بروزرسانی کلید یکبارمصرف با خطا مواجه شد.";
+                return RedirectToAction("ManageAdmins");
+            }
+
+            await _adminActivityService.LogActivityAsync(
+                currentAdmin.Id,
+                currentAdmin.UserName ?? currentAdmin.PhoneNumber ?? "admin",
+                AdminActivityType.UserUpdated,
+                $"کلید یکبارمصرف کاربر {user.UserName} {(oldSecretExists ? "بازتولید" : "ایجاد")} شد.",
+                entityType: "ApplicationUser",
+                entityId: null,
+                oldValue: oldSecretExists ? "***" : null,
+                newValue: "***"
+            );
+
+            TempData["Success"] = $"کلید یکبارمصرف جدید برای کاربر {user.FullName ?? user.UserName} ایجاد شد.";
+            return RedirectToAction("ManageAdmins");
         }
 
         /// <summary>

@@ -315,6 +315,40 @@ class WebPushManager {
     }
 
     /**
+     * Manually trigger subscription flow from UI
+     * فعال‌سازی دستی فرآیند اشتراک از رابط کاربری
+     */
+    async manualSubscribe() {
+        try {
+            localStorage.removeItem('pushNotificationPrompted');
+        } catch (error) {
+        }
+
+        if (!this.isSupported) {
+            this.showNotificationMessage('مرورگر شما از اعلان‌های فشاری پشتیبانی نمی‌کند', 'warning');
+            return false;
+        }
+
+        if (Notification.permission === 'denied') {
+            this.showPermissionDeniedMessage();
+            return false;
+        }
+
+        if (Notification.permission === 'granted' && this.isSubscribed) {
+            try {
+                await this.syncSubscriptionStatus();
+                this.showNotificationMessage('اشتراک اعلان‌ها فعال و همگام‌سازی شد', 'success');
+            } catch (error) {
+                this.showNotificationMessage('خطا در همگام‌سازی اشتراک با سرور', 'error');
+            }
+            return true;
+        }
+
+        this.showNotificationSetup();
+        return true;
+    }
+
+    /**
      * Convert VAPID key to Uint8Array
      * تبدیل کلید VAPID به Uint8Array
      */
@@ -626,6 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add debugging functions to global scope
     window.debugPushNotifications = {
+        manualSubscribe: () => window.webPushManager?.manualSubscribe(),
         forceResubscribe: () => window.webPushManager?.forceResubscribe(),
         checkStatus: () => window.webPushManager?.checkServerSubscriptionStatus(),
         testNotification: () => window.webPushManager?.testPushNotification(),
@@ -633,6 +668,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return window.webPushManager?.subscription;
         }
     };
+
+    window.requestPushPermission = () => window.webPushManager?.manualSubscribe();
 });
 
 // Export for use in other scripts

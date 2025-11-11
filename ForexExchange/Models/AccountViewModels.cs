@@ -37,10 +37,11 @@ namespace ForexExchange.Models
         [Display(Name = "شماره تلفن")]
         public string PhoneNumber { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "رمز عبور الزامی است")]
-        [DataType(DataType.Password)]
-        [Display(Name = "رمز عبور")]
-        public string Password { get; set; } = string.Empty;
+        [Required(ErrorMessage = "کد یکبارمصرف الزامی است")]
+        [Display(Name = "کد یکبارمصرف")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "کد یکبارمصرف باید 6 رقم باشد")]
+        [RegularExpression("^[0-9]{6}$", ErrorMessage = "کد یکبارمصرف باید فقط شامل 6 عدد باشد")]
+        public string OtpCode { get; set; } = string.Empty;
 
         [Display(Name = "مرا به خاطر بسپار")]
         public bool RememberMe { get; set; }

@@ -15,19 +15,22 @@ namespace ForexExchange.Controllers
         private readonly ForexDbContext _context;
 
         private readonly ISettingsService _settingsService;
+        private readonly ITotpService _totpService;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager,
             ISettingsService settingsService,
-            ForexDbContext context)
+            ForexDbContext context,
+            ITotpService totpService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _context = context;
             _settingsService = settingsService;
+            _totpService = totpService;
         }
 
         // GET: /Account/Register
@@ -168,17 +171,24 @@ namespace ForexExchange.Controllers
             var setting = await _settingsService.GetSystemSettingsAsync();
             ViewData["WebsiteName"] = setting.WebsiteName;
             ViewBag.IsInDemoMode = setting.IsDemoMode;
+            ViewBag.DemoOtpWarning = null;
+            var model = new LoginViewModel();
             if (setting.IsDemoMode) // if we are in demo mode, then we can display the admin user name and passowrd 
             {
-                var model = new LoginViewModel()
+                model.PhoneNumber = "09120674032";
+                var normalizedDemoPhone = PhoneNumberService.NormalizePhoneNumber(model.PhoneNumber);
+                var demoUser = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == normalizedDemoPhone || u.UserName == normalizedDemoPhone);
+                if (demoUser?.TotpSecret != null)
                 {
-                    PhoneNumber = "09120674032",
-                    Password = "admindemo1"
-                };
+                    model.OtpCode = _totpService.GenerateCode(demoUser.TotpSecret);
+                }
+                else
+                {
+                    ViewBag.DemoOtpWarning = "برای کاربر دمو Secret تنظیم نشده است. لطفاً با مدیر سیستم تماس بگیرید.";
+                }
                 return View(model);
-
             }
-            return View();
+            return View(model);
         }
 
         // POST: /Account/Login
@@ -201,6 +211,19 @@ namespace ForexExchange.Controllers
                 if (user != null)
                 {
                     Console.WriteLine($"+++++ User {user.PhoneNumber} found with normalized input: {normalizedPhoneNumber}");
+
+                    if (await _userManager.IsLockedOutAsync(user))
+                    {
+                        ModelState.AddModelError(string.Empty, "حساب کاربری شما به دلیل تلاش‌های ناموفق زیاد قفل شده است.");
+                        return View(model);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(user.TotpSecret))
+                    {
+                        ModelState.AddModelError(string.Empty, "برای این کاربر کد یکبارمصرف فعال نشده است. لطفاً با مدیر سیستم تماس بگیرید.");
+                        return View(model);
+                    }
+
                     // Ensure FullName and Role claims are present for navbar display and authorization
                     var userClaims = await _userManager.GetClaimsAsync(user);
                     var existingFullNameClaim = userClaims.FirstOrDefault(c => c.Type == "FullName");
@@ -225,28 +248,33 @@ namespace ForexExchange.Controllers
                     await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("FullName", fullNameValue));
                     await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("Role", roleValue));
 
-                    var result = await _signInManager.PasswordSignInAsync(
-                        user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: true);
+                    var otpCode = model.OtpCode?.Trim();
+                    var isOtpValid = _totpService.ValidateCode(user.TotpSecret!, otpCode ?? string.Empty, out var matchedStep);
 
-                    Console.WriteLine($"+++++ Login result is: {result}");
+                    Console.WriteLine($"+++++ OTP validation for user {user.UserName}: {isOtpValid}, step: {matchedStep}");
 
-                    if (result.Succeeded)
+                    if (isOtpValid)
                     {
+                        await _userManager.ResetAccessFailedCountAsync(user);
+                        await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
                         return RedirectToLocal(returnUrl);
                     }
-                    if (result.IsLockedOut)
+
+                    await _userManager.AccessFailedAsync(user);
+
+                    if (await _userManager.IsLockedOutAsync(user))
                     {
                         ModelState.AddModelError(string.Empty, "حساب کاربری شما به دلیل تلاش‌های ناموفق زیاد قفل شده است.");
                     }
                     else
                     {
-                        ModelState.AddModelError(string.Empty, "شماره تلفن یا رمز عبور اشتباه است.");
+                        ModelState.AddModelError(string.Empty, "کد یکبارمصرف نامعتبر است. لطفاً مجدداً تلاش کنید.");
                     }
                 }
                 else
                 {
                     Console.WriteLine($"+++++ USER NOT FOUND - No user with phone: {model.PhoneNumber} (normalized: {normalizedPhoneNumber})");
-                    ModelState.AddModelError(string.Empty, "شماره تلفن یا رمز عبور اشتباه است.");
+                    ModelState.AddModelError(string.Empty, "شماره تلفن یا کد یکبارمصرف اشتباه است.");
                 }
             }
 
