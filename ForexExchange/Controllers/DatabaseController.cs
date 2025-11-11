@@ -600,30 +600,43 @@ namespace ForexExchange.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteAllVapidConfigurations()
+        public async Task<IActionResult> RegenerateVapidConfigurations()
         {
             try
             {
-                var vapidConfigs = await _context.VapidConfigurations.ToListAsync();
-                var deletedCount = vapidConfigs.Count;
-
+                // 1. حذف کلیدهای قبلی
+                var oldConfigs = await _context.VapidConfigurations.ToListAsync();
+                var deletedCount = oldConfigs.Count;
                 if (deletedCount > 0)
                 {
-                    _context.VapidConfigurations.RemoveRange(vapidConfigs);
-                    await _context.SaveChangesAsync();
+                    _context.VapidConfigurations.RemoveRange(oldConfigs);
                 }
 
+                // 2. ساخت کلید جدید
+                var newKeys = WebPush.VapidHelper.GenerateVapidKeys();
+                var newConfig = new VapidConfiguration
+                {
+                    PublicKey = newKeys.PublicKey,
+                    PrivateKey = newKeys.PrivateKey,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.VapidConfigurations.Add(newConfig);
+
+                // 3. ذخیره تغییرات در دیتابیس
+                await _context.SaveChangesAsync();
+
                 TempData["Success"] = deletedCount > 0
-                    ? $"تمام کلیدهای VAPID ({deletedCount} مورد) حذف شدند. کاربران برای فعال‌سازی اعلان فشاری باید مجدداً تنظیمات را انجام دهند."
-                    : "هیچ کلید VAPID فعالی برای حذف وجود نداشت.";
+                    ? $"کلیدهای قدیمی ({deletedCount} مورد) حذف و یک کلید جدید VAPID ساخته شد: {newKeys.PublicKey}"
+                    : $"هیچ کلید قدیمی وجود نداشت، اما یک کلید جدید VAPID ساخته شد: {newKeys.PublicKey}";
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"خطا در حذف کلیدهای VAPID: {ex.Message}";
+                TempData["Error"] = $"خطا در بازسازی کلیدهای VAPID: {ex.Message}";
             }
 
             return RedirectToAction(nameof(Index));
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]

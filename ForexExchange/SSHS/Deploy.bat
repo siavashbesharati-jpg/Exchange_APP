@@ -7,7 +7,10 @@ set SERVER=root@104.234.46.151
 set APP_DIR=/var/www/taban
 set BACKUP_DIR=/var/www/Taban_backUp
 set SERVICE=taban.service
-set PROJECT_PATH=%~dp0
+
+:: Go one folder up from sshs to project root
+pushd "%~dp0.."
+set PROJECT_PATH=%CD%\
 set FRAMEWORK=net9.0
 set LOCAL_PUBLISH_DIR=%PROJECT_PATH%bin\Release\%FRAMEWORK%\publish
 set ZIP_FILE=deploy_package.zip
@@ -33,6 +36,7 @@ echo =============================================
 dotnet publish -c Release
 if errorlevel 1 (
     echo ❌ Build failed.
+    popd
     exit /b 1
 )
 
@@ -43,6 +47,7 @@ if exist "%LOCAL_PUBLISH_DIR%\%ZIP_FILE%" del "%LOCAL_PUBLISH_DIR%\%ZIP_FILE%"
 powershell -NoLogo -NoProfile -Command "Compress-Archive -Path '%LOCAL_PUBLISH_DIR%\*' -DestinationPath '%LOCAL_PUBLISH_DIR%\%ZIP_FILE%' -Force"
 if errorlevel 1 (
     echo ❌ Zipping failed.
+    popd
     exit /b 1
 )
 
@@ -62,6 +67,7 @@ echo =============================================
 scp -o ConnectTimeout=10 -o BatchMode=yes "%LOCAL_PUBLISH_DIR%\%ZIP_FILE%" %SERVER%:%APP_DIR%/
 if errorlevel 1 (
     echo ❌ Upload failed.
+    popd
     exit /b 1
 )
 
@@ -78,5 +84,7 @@ ssh -o ConnectTimeout=10 -o BatchMode=yes %SERVER% "systemctl start %SERVICE% &&
 echo =============================================
 echo ✅ Done! Backup saved as: bin_%DATETIME%
 echo =============================================
+
+popd
 endlocal
 pause

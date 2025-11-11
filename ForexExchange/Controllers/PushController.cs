@@ -14,7 +14,7 @@ namespace ForexExchange.Controllers
     [Route("api/[controller]")]
     public class PushController : ControllerBase
     {
-        private const bool WebPushEnabled = false;
+        private const bool WebPushEnabled = true;
         private readonly ForexDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<PushController> _logger;
