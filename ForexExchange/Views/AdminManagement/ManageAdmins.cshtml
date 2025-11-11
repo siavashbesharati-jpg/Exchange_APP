@@ -140,7 +140,7 @@
                                                 {
                                                     <span class="badge bg-secondary">تعریف نشده</span>
                                                 }
-                                                <form asp-action="RegenerateTotpSecret" method="post" class="d-inline">
+                                                <form asp-controller="AdminManagement" asp-action="RegenerateTotpSecret" method="post" class="d-inline">
                                                     @Html.AntiForgeryToken()
                                                     <input type="hidden" name="userId" value="@user.Id" />
                                                     <button type="submit" class="btn btn-warning btn-sm mt-2" onclick="return confirm('آیا از تولید کلید جدید برای این کاربر مطمئن هستید؟')">
@@ -213,7 +213,7 @@
                         <p class="text-muted">
                             با اجرای این عملیات، تمام کاربران از سیستم خارج می‌شوند و برای ورود مجدد باید احراز هویت کنند.
                         </p>
-                        <form asp-action="ResetAllSessions" method="post"
+                        <form asp-controller="AdminManagement" asp-action="ResetAllSessions" method="post"
                               onsubmit="return confirm('آیا از ریست تمام نشست‌های کاربران اطمینان دارید؟');">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-danger">
