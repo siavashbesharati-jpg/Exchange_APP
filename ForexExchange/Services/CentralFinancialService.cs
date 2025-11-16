@@ -1471,11 +1471,12 @@ namespace ForexExchange.Services
                         .SetProperty(o => o.UpdatedAt, _ => timestamp));
                 
 
-                //freezing documetns is Idempotent, it is not affect ony banks andd customer , orr vevey where else 
-                var documentsFrozen = await _context.AccountingDocuments
+                //NO longer freezing documents, it is not affect ony banks andd customer , orr vevey where else 
+
+                /*var documentsFrozen = await _context.AccountingDocuments
                     .Where(d => !d.IsFrozen)
                     .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(d => d.IsFrozen, _ => true));
+                        .SetProperty(d => d.IsFrozen, _ => true)); */
 
                 await transaction.CommitAsync();
 
