@@ -1,0 +1,277 @@
+/* Shared responsive styles for print report pages (screen only — tables unchanged) */
+
+@media screen {
+    .receipt-container {
+        width: 100%;
+    }
+
+    .company-name {
+        font-size: clamp(17px, 2.4vw, 20px);
+    }
+
+    .company-website {
+        font-size: clamp(10px, 2.2vw, 12px);
+    }
+
+    .report-title {
+        font-size: clamp(14px, 2.8vw, 18px);
+    }
+
+    .info-label {
+        font-size: clamp(10px, 2.2vw, 11px);
+    }
+
+    .info-value {
+        font-size: clamp(12px, 2.6vw, 13px);
+    }
+
+    .summary-card h4,
+    .summary-section-title,
+    .summary-title,
+    .balance-title,
+    .currency-title {
+        font-size: clamp(13px, 2.8vw, 16px);
+    }
+
+    .summary-card .amount,
+    .summary-box-balance,
+    .balance-amount {
+        font-size: clamp(14px, 3vw, 17px);
+    }
+
+    .summary-box-currency {
+        font-size: clamp(10px, 2.4vw, 11px);
+    }
+
+    .receipt-footer {
+        font-size: clamp(10px, 2.2vw, 11px);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    body {
+        font-size: clamp(11px, 2.8vw, 13px);
+        line-height: 1.5;
+    }
+
+    .receipt-container {
+        max-width: 100%;
+        margin: 8px auto;
+        border-width: 1px;
+    }
+
+    .receipt-header {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .company-logo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .company-logo img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .company-info {
+        flex: 1 1 calc(100% - 52px);
+        min-width: 0;
+    }
+
+    .company-name {
+        font-size: clamp(16px, 4.5vw, 20px) !important;
+        word-break: break-word;
+    }
+
+    .company-website {
+        font-size: clamp(10px, 2.5vw, 12px) !important;
+        word-break: break-word;
+    }
+
+    .report-title {
+        flex: 1 1 100%;
+        width: 100%;
+        margin-right: 0 !important;
+        margin-top: 2px;
+        font-size: clamp(14px, 3.8vw, 18px) !important;
+        text-align: center;
+        padding: 8px 10px;
+        line-height: 1.4;
+    }
+
+    .receipt-info,
+    .summary-section,
+    .transactions-section {
+        padding: 12px !important;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .info-item {
+        padding: 10px !important;
+    }
+
+    .summary-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        margin: 12px !important;
+    }
+
+    .summary-cards,
+    .currency-overview,
+    .balance-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .summary-card,
+    .summary-box {
+        flex: 1 1 100% !important;
+        min-width: 0 !important;
+        width: 100%;
+        padding: 12px !important;
+    }
+
+    .summary-card h4,
+    .summary-box-currency {
+        font-size: clamp(12px, 3.2vw, 14px) !important;
+        line-height: 1.4;
+    }
+
+    .summary-card .amount,
+    .summary-box-balance {
+        font-size: clamp(14px, 3.8vw, 17px) !important;
+    }
+
+    .summary-section {
+        margin: 12px !important;
+        padding: 16px !important;
+        border-radius: 12px;
+    }
+
+    .summary-section-title {
+        flex-wrap: wrap;
+        justify-content: center;
+        text-align: center;
+        gap: 8px;
+        font-size: clamp(13px, 3.5vw, 15px) !important;
+    }
+
+    .summary-section-pill {
+        font-size: clamp(10px, 2.6vw, 12px) !important;
+        padding: 4px 10px;
+        max-width: 100%;
+        word-break: break-word;
+    }
+
+    .summary-title {
+        font-size: clamp(14px, 3.8vw, 16px) !important;
+        padding: 0 8px;
+    }
+
+    .balance-summary {
+        margin: 12px !important;
+        padding: 12px !important;
+    }
+
+    .balance-title {
+        font-size: clamp(12px, 3.2vw, 14px) !important;
+    }
+
+    .balance-item,
+    .overview-card {
+        padding: 10px !important;
+    }
+
+    .balance-currency,
+    .overview-card .label {
+        font-size: clamp(11px, 2.8vw, 12px) !important;
+    }
+
+    .balance-amount,
+    .overview-card .value {
+        font-size: clamp(13px, 3.5vw, 14px) !important;
+    }
+
+    .currency-section {
+        padding: 12px !important;
+    }
+
+    .currency-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .currency-title,
+    .section-title {
+        font-size: clamp(13px, 3.5vw, 16px) !important;
+        line-height: 1.4;
+    }
+
+    .section-title {
+        margin-left: -12px !important;
+        margin-right: -12px !important;
+        padding: 10px 12px !important;
+    }
+
+    .receipt-footer {
+        padding: 12px 14px !important;
+        font-size: clamp(10px, 2.5vw, 11px) !important;
+    }
+
+    .print-info,
+    .disclaimer {
+        font-size: clamp(9px, 2.3vw, 10px) !important;
+        line-height: 1.5;
+    }
+
+    .no-print {
+        margin: 12px !important;
+        padding: 12px !important;
+    }
+
+    .no-print .btn,
+    .no-print button {
+        display: block;
+        width: 100%;
+        margin: 0 0 8px 0 !important;
+    }
+
+    .no-data {
+        padding: 16px !important;
+        font-size: clamp(11px, 2.8vw, 12px) !important;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .receipt-container {
+        margin: 4px auto;
+    }
+
+    .receipt-header {
+        padding: 10px 12px;
+    }
+
+    .report-title {
+        border-radius: 10px;
+    }
+
+    .summary-section {
+        margin: 8px !important;
+        padding: 12px !important;
+    }
+
+    .balance-summary {
+        margin: 8px !important;
+    }
+}
