@@ -446,6 +446,7 @@ function renderAllCustomersTable(customers) {
             return `
                 <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1" style="border-color: #f5f5f5 !important;">
                     <span class="text-muted small fw-normal px-2 py-1 bg-light rounded">${typeof renderCurrencyCode === 'function' ? renderCurrencyCode(balance.currencyCode) : balance.currencyCode}</span>
+                    <span class="text-muted small">${formatTransactionDate(balance.transactionDate || balance.lastUpdated)}</span>
                     <span class="${statusClass} fw-medium" data-no-format="true" data-skip-format="true" class="skip-auto-format" dir="ltr">
                         ${statusSymbol}${formattedAmount}
                     </span>
@@ -513,6 +514,7 @@ function renderCurrencySpecificTable(customers, currencyCode) {
                 <td class="text-center" data-sort-value="${escapeHtmlAttr(customer.fullName)}">
                     <div class="fw-bold">${customer.fullName}</div>
                 </td>
+                ${buildTransactionDateCell(balance.transactionDate || balance.lastUpdated)}
                 <td class="text-center" data-sort-value="${isPositive ? 1 : 0}">
                     <span class="text-muted small">${statusText}</span>
                 </td>
@@ -538,10 +540,11 @@ function renderCurrencySpecificTable(customers, currencyCode) {
                     <table class="table table-striped table-hover mb-0">
                         <thead class="table-dark">
                             <tr>
-                                <th class="sortable" style="width: 10%" data-sort-type="number"># <i class="fas fa-sort"></i></th>
-                                <th class="sortable" style="width: 40%" data-sort-type="text">نام مشتری <i class="fas fa-sort"></i></th>
-                                <th class="sortable" style="width: 20%" data-sort-type="text" data-sort-key="status">وضعیت <i class="fas fa-sort"></i></th>
-                                <th class="sortable" style="width: 30%" data-sort-type="number">تراز <i class="fas fa-sort"></i></th>
+                                <th class="sortable" style="width: 8%" data-sort-type="number"># <i class="fas fa-sort"></i></th>
+                                <th class="sortable" style="width: 32%" data-sort-type="text">نام مشتری <i class="fas fa-sort"></i></th>
+                                <th class="sortable" style="width: 18%" data-sort-type="date">آخرین تراکنش <i class="fas fa-sort"></i></th>
+                                <th class="sortable" style="width: 18%" data-sort-type="text" data-sort-key="status">وضعیت <i class="fas fa-sort"></i></th>
+                                <th class="sortable" style="width: 24%" data-sort-type="number">تراز <i class="fas fa-sort"></i></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -702,6 +705,7 @@ function renderCustomerBasedTables(customers) {
                     <td class="text-center" data-sort-value="${escapeHtmlAttr(balance.currencyCode)}">
                         <span class="text-muted small fw-medium px-2 py-1 bg-light rounded">${typeof renderCurrencyCode === 'function' ? renderCurrencyCode(balance.currencyCode) : balance.currencyCode}</span>
                     </td>
+                    ${buildTransactionDateCell(balance.transactionDate || balance.lastUpdated)}
                     <td class="text-center" data-sort-value="${isPositive ? 1 : 0}">
                         <span class="text-muted small">${statusText}</span>
                     </td>
@@ -725,10 +729,11 @@ function renderCustomerBasedTables(customers) {
                         <table class="table table-striped table-hover mb-0">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="sortable" style="width: 10%" data-sort-type="number"># <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" style="width: 25%" data-sort-type="text">ارز <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" style="width: 25%" data-sort-type="text" data-sort-key="status">وضعیت <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" style="width: 40%" data-sort-type="number">تراز <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 8%" data-sort-type="number"># <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 22%" data-sort-type="text">ارز <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 20%" data-sort-type="date">تاریخ تراکنش <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 20%" data-sort-type="text" data-sort-key="status">وضعیت <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 30%" data-sort-type="number">تراز <i class="fas fa-sort"></i></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -802,6 +807,7 @@ function renderCurrencyBasedTables(customers) {
                     <td class="text-center" data-sort-value="${escapeHtmlAttr(item.customer.fullName)}">
                         <div class="fw-bold">${item.customer.fullName}</div>
                     </td>
+                    ${buildTransactionDateCell(item.balance.transactionDate || item.balance.lastUpdated)}
                     <td class="text-center" data-sort-value="${isPositive ? 1 : 0}">
                         <span class="text-muted small">${statusText}</span>
                     </td>
@@ -824,6 +830,7 @@ function renderCurrencyBasedTables(customers) {
             <tr class="table-info border-top border-2">
                 <td class="text-center fw-bold">جمع</td>
                 <td class="text-center fw-bold">کل ${currency}</td>
+                <td></td>
                 <td class="text-center" dir="ltr">
                     <small class="text-muted">
                         <span class="text-success">+${formatCurrency(totalPositive, currency)}</span> | 
@@ -849,10 +856,11 @@ function renderCurrencyBasedTables(customers) {
                         <table class="table table-striped table-hover mb-0">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="sortable" style="width: 10%" data-sort-type="number"># <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" style="width: 40%" data-sort-type="text">نام مشتری <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" style="width: 20%" data-sort-type="text" data-sort-key="status">وضعیت <i class="fas fa-sort"></i></th>
-                                    <th class="sortable" style="width: 30%" data-sort-type="number">تراز <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 8%" data-sort-type="number"># <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 32%" data-sort-type="text">نام مشتری <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 18%" data-sort-type="date">تاریخ تراکنش <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 18%" data-sort-type="text" data-sort-key="status">وضعیت <i class="fas fa-sort"></i></th>
+                                    <th class="sortable" style="width: 24%" data-sort-type="number">تراز <i class="fas fa-sort"></i></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -878,6 +886,40 @@ function escapeHtmlAttr(value) {
         .replace(/'/g, '&#39;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+}
+
+function formatTransactionDate(dateValue) {
+    if (!dateValue) {
+        return '-';
+    }
+
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return '-';
+    }
+
+    return date.toLocaleDateString('fa-IR');
+}
+
+function getTransactionDateSortValue(dateValue) {
+    if (!dateValue) {
+        return '';
+    }
+
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return date.toISOString();
+}
+
+function buildTransactionDateCell(dateValue) {
+    return `
+        <td class="text-center" data-sort-value="${getTransactionDateSortValue(dateValue)}">
+            <span class="text-muted small">${formatTransactionDate(dateValue)}</span>
+        </td>
+    `;
 }
 
 function handleSortableHeaderClick(event) {
@@ -970,6 +1012,10 @@ function compareSortValues(valueA, valueB, sortType, direction) {
         const numberA = parseFloat(valueA) || 0;
         const numberB = parseFloat(valueB) || 0;
         comparison = numberA - numberB;
+    } else if (sortType === 'date') {
+        const dateA = valueA ? new Date(valueA).getTime() : 0;
+        const dateB = valueB ? new Date(valueB).getTime() : 0;
+        comparison = dateA - dateB;
     } else {
         comparison = String(valueA).localeCompare(String(valueB), 'fa', { sensitivity: 'base', numeric: true });
     }

@@ -224,14 +224,13 @@
                                                 <span class="badge bg-warning">
                                                     <i class="fas fa-clock"></i> در انتظار تأیید
                                                 </span>
-                                                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
-                                                {
+                                               
                                                     <button type="button" class="btn btn-sm btn-success" 
                                                             onclick="confirmDocument(@item.Id)" 
                                                             title="تأیید سند">
                                                         <i class="fas fa-check"></i>
                                                     </button>
-                                                }
+                                                
                                             </div>
                                         }
                                     </td>
@@ -242,13 +241,12 @@
                                             </a>
                                            
                                            
-                                            @if (User.IsInRole("Admin"))
-                                            {
+                                          
                                                 <button type="button" class="btn btn-sm btn-outline-danger" title="حذف سند (ادمین)"
                                                         onclick="confirmDocumentDelete(@item.Id, @System.Text.Json.JsonSerializer.Serialize(item.Title), @item.IsVerified.ToString().ToLower())">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
-                                            }
+                                            
                                         </div>
                                     </td>
                                 </tr>

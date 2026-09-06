@@ -319,10 +319,65 @@ namespace ForexExchange.Controllers
 
                 _logger.LogInformation("After filtering, {Count} customers have balances", customers.Count);
 
+                var customerIds = customers.Select(c => c.id).ToList();
+                var lastTransactionLookup = new Dictionary<(int CustomerId, string CurrencyCode), DateTime>();
+
+                if (customerIds.Count > 0)
+                {
+                    var historyQuery = _context.CustomerBalanceHistory
+                        .AsNoTracking()
+                        .Where(h => !h.IsDeleted && customerIds.Contains(h.CustomerId));
+
+                    if (!string.IsNullOrEmpty(currencyFilter))
+                    {
+                        historyQuery = historyQuery.Where(h => h.CurrencyCode == currencyFilter);
+                    }
+
+                    var lastTransactions = await historyQuery
+                        .GroupBy(h => new { h.CustomerId, h.CurrencyCode })
+                        .Select(g => new
+                        {
+                            g.Key.CustomerId,
+                            g.Key.CurrencyCode,
+                            TransactionDate = g.Max(h => h.TransactionDate)
+                        })
+                        .ToListAsync();
+
+                    foreach (var item in lastTransactions)
+                    {
+                        lastTransactionLookup[(item.CustomerId, item.CurrencyCode)] = item.TransactionDate;
+                    }
+                }
+
+                var customersWithTransactionDates = customers.Select(c => new
+                {
+                    c.id,
+                    c.fullName,
+                    c.phoneNumber,
+                    c.email,
+                    c.createdAt,
+                    c.isActive,
+                    balances = c.balances.Select(b => new
+                    {
+                        b.currencyId,
+                        b.currencyCode,
+                        b.balance,
+                        b.lastUpdated,
+                        transactionDate = lastTransactionLookup.TryGetValue((c.id, b.currencyCode), out var transactionDate)
+                            ? transactionDate
+                            : b.lastUpdated,
+                        b.balanceStatus,
+                        b.absoluteBalance
+                    }).ToList(),
+                    c.hasBalances,
+                    c.totalDebt,
+                    c.totalCredit
+                }).ToList();
+
                 // Get summary statistics
-                var totalCustomersWithBalances = customers.Count;
-                var totalCustomersWithDebt = customers.Count(c => c.totalDebt > 0);
-                var totalCustomersWithCredit = customers.Count(c => c.totalCredit > 0);
+                var totalCustomersWithBalances = customersWithTransactionDates.Count;
+                var totalCustomersWithDebt = customersWithTransactionDates.Count(c => c.totalDebt > 0);
+                var totalCustomersWithCredit = customersWithTransactionDates.Count(c => c.totalCredit > 0);
 
                 // Currency-specific totals
                 var currencyTotals = new Dictionary<string, object>();
@@ -396,7 +451,7 @@ namespace ForexExchange.Controllers
 
                 var result = new
                 {
-                    customers,
+                    customers = customersWithTransactionDates,
                     stats = new
                     {
                         totalCustomersWithBalances,
