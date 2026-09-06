@@ -335,15 +335,12 @@
                                                 class="btn btn-sm btn-outline-primary" title="جزئیات">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-
-                                            @if (User.IsInRole("Admin"))
-                                            {
-                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
                                                     title="حذف معامله (ادمین)"
                                                     onclick="confirmOrderDelete(@item.Id, '@item.FromCurrency?.Code', '@item.ToCurrency?.Code')">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
-                                            }
+                                            
                                         </div>
                                     </td>
                                 </tr>
